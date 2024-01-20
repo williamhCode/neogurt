@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0...3.25)
+cmake_minimum_required(VERSION 3.0...3.28)
 
 project(
   NeovimGui
@@ -6,19 +6,20 @@ project(
   LANGUAGES CXX C
 )
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS 1)  # clangd
+
 add_subdirectory(deps/webgpu_tools)
 
 set(APP_SRC
 	src/main.cpp
+  src/gfx/context.cpp
 )
 
 add_executable(App ${APP_SRC})
 
 set_target_properties(App PROPERTIES
     CXX_STANDARD 20
-    CXX_STANDARD_REQUIRED YES
-    CXX_EXTENSIONS NO
-    CMAKE_EXPORT_COMPILE_COMMANDS 1
+    CXX_STANDARD_REQUIRED ON
 )
 
 target_include_directories(App PRIVATE 

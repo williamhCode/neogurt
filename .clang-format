@@ -1,0 +1,18 @@
+---
+Language:        Cpp
+ColumnLimit:     88
+# AlignAfterOpenBracket: AlwaysBreak
+AlignAfterOpenBracket: BlockIndent
+IndentWidth: 2
+ContinuationIndentWidth: 2
+SortIncludes: false
+
+# BinPackArguments: false
+BinPackParameters: false
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: WithoutElse
+PenaltyReturnTypeOnItsOwnLine: 10000
+AlwaysBreakTemplateDeclarations: Yes
+...
+
+
