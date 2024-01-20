@@ -1,0 +1,3 @@
+[submodule "deps/webgpu_tools"]
+	path = deps/webgpu_tools
+	url = https://github.com/williamhCode/webgpu_tools.git

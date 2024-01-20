@@ -1,0 +1,51 @@
+cmake_minimum_required(VERSION 3.0...3.25)
+
+project(
+  NeovimGui
+  VERSION 0.1.0
+  LANGUAGES CXX C
+)
+
+add_subdirectory(deps/webgpu_tools)
+
+set(APP_SRC
+	src/main.cpp
+)
+
+add_executable(App ${APP_SRC})
+
+set_target_properties(App PROPERTIES
+    CXX_STANDARD 20
+    CXX_STANDARD_REQUIRED YES
+    CXX_EXTENSIONS NO
+    CMAKE_EXPORT_COMPILE_COMMANDS 1
+)
+
+target_include_directories(App PRIVATE 
+  ${PROJECT_SOURCE_DIR}/src
+)
+
+target_compile_definitions(App PRIVATE
+  ROOT_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+
+target_link_libraries(App PRIVATE 
+  WebGPU_Tools
+)
+
+if (MSVC)
+  target_compile_options(App PRIVATE /W4)
+else()
+  target_compile_options(App PRIVATE -Wall -Wextra -pedantic)
+  # assert in release
+  target_compile_options(App PRIVATE -UNDEBUG)
+endif()
+
+if(XCODE)
+  set_target_properties(App PROPERTIES
+    XCODE_GENERATE_SCHEME ON
+    XCODE_SCHEME_ENABLE_GPU_FRAME_CAPTURE_MODE "Metal"
+  )
+  set(CMAKE_XCODE_ATTRIBUTE_OTHER_CODE_SIGN_FLAGS "-o linker-signed")
+endif()
+
