@@ -1,3 +1,6 @@
 [submodule "deps/webgpu_tools"]
 	path = deps/webgpu_tools
 	url = https://github.com/williamhCode/webgpu_tools.git
+[submodule "deps/msgpack"]
+	path = deps/msgpack
+	url = https://github.com/msgpack/msgpack-c.git

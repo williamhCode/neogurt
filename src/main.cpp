@@ -38,7 +38,6 @@ int main() {
   glfwGetFramebufferSize(window, &width, &height);
   WGPUContext ctx = WGPUContext(window, {width, height});
 
-  // application loop
   while (!glfwWindowShouldClose(window)) {
     // error callback
     ctx.device.Tick();

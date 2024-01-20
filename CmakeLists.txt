@@ -9,10 +9,14 @@ project(
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)  # clangd
 
 add_subdirectory(deps/webgpu_tools)
+add_subdirectory(deps/msgpack)
 
 set(APP_SRC
 	src/main.cpp
+
   src/gfx/context.cpp
+  src/gfx/pipeline.cpp
+  src/gfx/renderer.cpp
 )
 
 add_executable(App ${APP_SRC})
@@ -32,6 +36,7 @@ target_compile_definitions(App PRIVATE
 
 target_link_libraries(App PRIVATE 
   WebGPU_Tools
+  msgpack-cxx
 )
 
 if (MSVC)
