@@ -6,18 +6,28 @@
 const WGPUContext &ctx = Window::ctx;
 
 static void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods) {
-  Window *win = reinterpret_cast<Window *>(glfwGetWindowUserPointer(window));
-  win->keyCallbacks.push_back({key, scancode, action, mods});
+  Window &win = *reinterpret_cast<Window *>(glfwGetWindowUserPointer(window));
+  win.keyCallbacks.push_back({key, scancode, action, mods});
 }
 
 static void MouseButtonCallback(GLFWwindow *window, int button, int action, int mods) {
-  Window *win = reinterpret_cast<Window *>(glfwGetWindowUserPointer(window));
-  win->mouseButtonCallbacks.push_back({button, action, mods});
+  Window &win = *reinterpret_cast<Window *>(glfwGetWindowUserPointer(window));
+  win.mouseButtonCallbacks.push_back({button, action, mods});
 }
 
 static void CursorPosCallback(GLFWwindow *window, double xpos, double ypos) {
-  Window *win = reinterpret_cast<Window *>(glfwGetWindowUserPointer(window));
-  win->cursorPosCallbacks.push_back({xpos, ypos});
+  Window &win = *reinterpret_cast<Window *>(glfwGetWindowUserPointer(window));
+  win.cursorPosCallbacks.push_back({xpos, ypos});
+}
+
+static void WindowSizeCallback(GLFWwindow *window, int width, int height) {
+  Window &win = *reinterpret_cast<Window *>(glfwGetWindowUserPointer(window));
+  win.size = {width, height};
+}
+
+static void FramebufferSizeCallback(GLFWwindow *window, int width, int height) {
+  Window &win = *reinterpret_cast<Window *>(glfwGetWindowUserPointer(window));
+  win.ctx.Resize({width, height});
 }
 
 Window::Window(glm::uvec2 size, std::string title, wgpu::PresentMode presentMode) {
@@ -36,8 +46,10 @@ Window::Window(glm::uvec2 size, std::string title, wgpu::PresentMode presentMode
 
   glfwSetWindowUserPointer(window, this);
   glfwSetKeyCallback(window, KeyCallback);
-  glfwSetCursorPosCallback(window, CursorPosCallback);
   glfwSetMouseButtonCallback(window, MouseButtonCallback);
+  glfwSetCursorPosCallback(window, CursorPosCallback);
+  glfwSetWindowSizeCallback(window, WindowSizeCallback);
+  glfwSetFramebufferSizeCallback(window, FramebufferSizeCallback);
 
   // webgpu ------------------------------------
   int width, height;
@@ -63,6 +75,13 @@ void Window::PollEvents() {
   mouseButtonCallbacks.clear();
   cursorPosCallbacks.clear();
   glfwPollEvents();
+}
+
+void Window::WaitEvents() {
+  keyCallbacks.clear();
+  mouseButtonCallbacks.clear();
+  cursorPosCallbacks.clear();
+  glfwWaitEvents();
 }
 
 bool Window::KeyPressed(int key) {

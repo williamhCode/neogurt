@@ -9,7 +9,7 @@
 using namespace wgpu;
 
 WGPUContext::WGPUContext(GLFWwindow *window, glm::uvec2 size, PresentMode presentMode)
-    : size(size) {
+    : size(size), presentMode(presentMode) {
   instance = CreateInstance();
   if (!instance) {
     std::cerr << "Could not initialize WebGPU!" << std::endl;
@@ -52,4 +52,17 @@ WGPUContext::WGPUContext(GLFWwindow *window, glm::uvec2 size, PresentMode presen
   swapChain = device.CreateSwapChain(surface, &swapChainDesc);
 
   pipeline = Pipeline(*this);
+}
+
+void WGPUContext::Resize(glm::uvec2 size) {
+  this->size = size;
+
+  SwapChainDescriptor swapChainDesc{
+    .usage = TextureUsage::RenderAttachment,
+    .format = swapChainFormat,
+    .width = size.x,
+    .height = size.y,
+    .presentMode = presentMode,
+  };
+  swapChain = device.CreateSwapChain(surface, &swapChainDesc);
 }

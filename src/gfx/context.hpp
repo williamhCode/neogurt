@@ -18,9 +18,11 @@ struct WGPUContext {
 
   wgpu::TextureFormat swapChainFormat;
   glm::uvec2 size;
+  wgpu::PresentMode presentMode;
 
   Pipeline pipeline;
 
   WGPUContext() = default;
   WGPUContext(GLFWwindow *window, glm::uvec2 size, wgpu::PresentMode presentMode);
+  void Resize(glm::uvec2 size);
 };
