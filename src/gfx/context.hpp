@@ -1,11 +1,12 @@
 #pragma once
 
+#include "GLFW/glfw3.h"
+#include "glm/ext/vector_uint2.hpp"
+#include "webgpu/webgpu_cpp.h"
+
 #include "gfx/pipeline.hpp"
 
-#include "glm/ext/vector_uint2.hpp"
-#include <webgpu/webgpu_cpp.h>
-
-#include <GLFW/glfw3.h>
+extern const WGPUContext &ctx;
 
 struct WGPUContext {
   wgpu::Instance instance;
@@ -21,6 +22,5 @@ struct WGPUContext {
   Pipeline pipeline;
 
   WGPUContext() = default;
-  WGPUContext(GLFWwindow *window, glm::uvec2 size);
+  WGPUContext(GLFWwindow *window, glm::uvec2 size, wgpu::PresentMode presentMode);
 };
-
