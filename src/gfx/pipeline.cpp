@@ -1,5 +1,4 @@
 #include "pipeline.hpp"
 
-Pipeline::Pipeline(WGPUContext &ctx) {
+Pipeline::Pipeline(WGPUContext& ctx) {
 }
-

@@ -8,7 +8,7 @@
 
 using namespace wgpu;
 
-WGPUContext::WGPUContext(GLFWwindow *window, glm::uvec2 size, PresentMode presentMode)
+WGPUContext::WGPUContext(GLFWwindow* window, glm::uvec2 size, PresentMode presentMode)
     : size(size), presentMode(presentMode) {
   instance = CreateInstance();
   if (!instance) {

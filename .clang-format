@@ -6,6 +6,7 @@ AlignAfterOpenBracket: BlockIndent
 IndentWidth: 2
 ContinuationIndentWidth: 2
 SortIncludes: false
+PointerAlignment: Left
 
 # BinPackArguments: false
 BinPackParameters: false

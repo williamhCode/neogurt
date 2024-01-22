@@ -26,7 +26,7 @@ struct CursorPosData {
 
 struct Window {
   inline static WGPUContext ctx;
-  GLFWwindow *window;
+  GLFWwindow* window;
 
   glm::uvec2 size;
 
@@ -35,7 +35,7 @@ struct Window {
   std::vector<CursorPosData> cursorPosCallbacks;
 
   Window() = default;
-  Window(glm::uvec2 size, std::string title, wgpu::PresentMode presentMode);
+  Window(glm::uvec2 size, const std::string& title, wgpu::PresentMode presentMode);
   ~Window();
 
   void SetShouldClose(bool value);

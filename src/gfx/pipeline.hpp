@@ -6,6 +6,5 @@ struct WGPUContext;
 
 struct Pipeline {
   Pipeline() = default;
-  Pipeline(WGPUContext &ctx);
+  Pipeline(WGPUContext& ctx);
 };
-

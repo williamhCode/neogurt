@@ -6,7 +6,7 @@
 
 #include "gfx/pipeline.hpp"
 
-extern const WGPUContext &ctx;
+extern const WGPUContext& ctx;
 
 struct WGPUContext {
   wgpu::Instance instance;
@@ -23,6 +23,6 @@ struct WGPUContext {
   Pipeline pipeline;
 
   WGPUContext() = default;
-  WGPUContext(GLFWwindow *window, glm::uvec2 size, wgpu::PresentMode presentMode);
+  WGPUContext(GLFWwindow* window, glm::uvec2 size, wgpu::PresentMode presentMode);
   void Resize(glm::uvec2 size);
 };
