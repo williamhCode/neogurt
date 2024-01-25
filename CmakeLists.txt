@@ -6,7 +6,10 @@ project(
   LANGUAGES CXX C
 )
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS 1)  # clangd
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)  # clangd
 
 add_subdirectory(deps/webgpu_tools)
 add_subdirectory(deps/msgpack)
@@ -20,15 +23,13 @@ set(APP_SRC
   src/gfx/renderer.cpp
   src/gfx/window.cpp
 
-  src/nvim/client.cpp
+  src/nvim/msgpack_rpc/client.cpp
 )
 
 add_executable(App ${APP_SRC})
 
-set_target_properties(App PROPERTIES
-    CXX_STANDARD 20
-    CXX_STANDARD_REQUIRED ON
-)
+# set_target_properties(App PROPERTIES
+# )
 
 target_include_directories(App PRIVATE 
   ${PROJECT_SOURCE_DIR}/src

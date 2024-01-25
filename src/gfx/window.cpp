@@ -5,9 +5,8 @@
 
 const WGPUContext& ctx = Window::ctx;
 
-static void KeyCallback(
-  GLFWwindow* window, int key, int scancode, int action, int mods
-) {
+static void
+KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
   Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
   win.keyCallbacks.push_back({key, scancode, action, mods});
 }

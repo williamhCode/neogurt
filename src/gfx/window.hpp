@@ -7,29 +7,28 @@
 
 #include <string>
 
-// callback data
-struct KeyData {
-  int key;
-  int scancode;
-  int action;
-  int mods;
-};
-struct MouseButtonData {
-  int button;
-  int action;
-  int mods;
-};
-struct CursorPosData {
-  double xpos;
-  double ypos;
-};
-
 struct Window {
   inline static WGPUContext ctx;
   GLFWwindow* window;
 
   glm::uvec2 size;
 
+  // callback data
+  struct KeyData {
+    int key;
+    int scancode;
+    int action;
+    int mods;
+  };
+  struct MouseButtonData {
+    int button;
+    int action;
+    int mods;
+  };
+  struct CursorPosData {
+    double xpos;
+    double ypos;
+  };
   std::vector<KeyData> keyCallbacks;
   std::vector<MouseButtonData> mouseButtonCallbacks;
   std::vector<CursorPosData> cursorPosCallbacks;
