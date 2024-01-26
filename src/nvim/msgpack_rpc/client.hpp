@@ -5,7 +5,6 @@
 
 #include "tsqueue.hpp"
 
-#include <exception>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -137,7 +136,7 @@ private:
   void Write() {
     if (!self.IsConnected()) return;
 
-    std::cout << "Size: " << msgsOut.size() << std::endl;
+    std::cout << "Size: " << self.msgsOut.size() << std::endl;
 
     auto& buffer = self.msgsOut.front();
     asio::async_write(
@@ -158,6 +157,6 @@ private:
   void QueueWrite(msgpack::sbuffer& buffer) {
     self.msgsOut.push(buffer);
     if (self.msgsOut.size() > 1) return;
-    Write();
+    self.Write();
   }
 };
