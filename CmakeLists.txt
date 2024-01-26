@@ -13,7 +13,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)  # clangd
 
 add_subdirectory(deps/webgpu_tools)
 add_subdirectory(deps/msgpack)
-set(ASIO_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/deps/asio-1.28.0/include)
+set(ASIO_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/deps/asio/asio/include)
 
 set(APP_SRC
 	src/main.cpp
@@ -22,8 +22,6 @@ set(APP_SRC
   src/gfx/pipeline.cpp
   src/gfx/renderer.cpp
   src/gfx/window.cpp
-
-  src/nvim/msgpack_rpc/client.cpp
 )
 
 add_executable(App ${APP_SRC})
