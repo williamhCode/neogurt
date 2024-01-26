@@ -6,6 +6,7 @@
 #include "msgpack.hpp"
 
 #include <iostream>
+#include <stdexcept>
 #include <thread>
 #include <vector>
 
@@ -20,11 +21,11 @@ void GrabData(asio::ip::tcp::socket& socket) {
       if (!ec) {
         std::cout << "\n\nRead " << length << " bytes\n\n";
         auto handle = msgpack::unpack(sbuffer.data(), length);
-        Client::RespondMsg data = handle.get().convert();
-        std::cout << "type: " << data.type << "\n";
-        std::cout << "msgid: " << data.msgid << "\n";
-        std::cout << "error: " << data.error << "\n";
-        std::cout << "result: " << data.result << "\n";
+        // Client::RespondMsg data = handle.get().convert();
+        // std::cout << "type: " << data.type << "\n";
+        // std::cout << "msgid: " << data.msgid << "\n";
+        // std::cout << "error: " << data.error << "\n";
+        // std::cout << "result: " << data.result << "\n";
 
         GrabData(socket);
       }
@@ -35,73 +36,59 @@ void GrabData(asio::ip::tcp::socket& socket) {
 
 void AsioTest() {
   // nvim --listen 127.0.0.1:6666
-  // asio::error_code ec;
-  // asio::io_context context;
-  // asio::io_context::work idleWork(context);
-  // std::thread thrContext = std::thread([&]() { context.run(); });
+  asio::error_code ec;
+  asio::io_context context;
+  asio::io_context::work idleWork(context);
+  std::thread thrContext = std::thread([&]() { context.run(); });
 
-  // asio::ip::tcp::endpoint endpoint(asio::ip::make_address("127.0.0.1", ec), 6666);
+  asio::ip::tcp::endpoint endpoint(asio::ip::make_address("127.0.0.1", ec), 6666);
 
-  // asio::ip::tcp::socket socket(context);
-  // socket.connect(endpoint, ec);
+  asio::ip::tcp::socket socket(context);
+  socket.connect(endpoint, ec);
 
-  // if (!ec) {
-  //   std::cout << "Connected!" << std::endl;
-  // } else {
-  //   std::cout << "Failed to connect to address:\n" << ec.message() << std::endl;
-  //   socket.close();
-  // }
+  if (!ec) {
+    std::cout << "Connected!" << std::endl;
+  } else {
+    std::cout << "Failed to connect to address:\n" << ec.message() << std::endl;
+    socket.close();
+  }
 
-  // if (socket.is_open()) {
-  //   GrabData(socket);
+  if (socket.is_open()) {
+    GrabData(socket);
 
-  //   {
-  //     Client::RequestMsg msg{
-  //       .msgid = 0,
-  //       .method = "nvim_win_get_cursor",
-  //       .params = std::tuple(0),
-  //     };
-  //     msgpack::sbuffer buffer;
-  //     msgpack::pack(buffer, msg);
-  //     socket.write_some(asio::buffer(buffer.data(), buffer.size()), ec);
-  //   }
+    using namespace std::chrono_literals;
+    std::this_thread::sleep_for(100ms);
 
-  //   {
-  //     std::tuple call_obj = std::make_tuple(
-  //       (int8_t)0, (uint32_t)1, "nvim_buf_get_lines", std::tuple(0, 0, -1, 0)
-  //     );
-  //     msgpack::sbuffer buffer;
-  //     msgpack::pack(buffer, call_obj);
-  //     socket.write_some(asio::buffer(buffer.data(), buffer.size()), ec);
-  //   }
+    {
+      std::tuple call_obj = std::make_tuple(
+        (int8_t)0, (uint32_t)1, "nvim_buf_get_lines", std::tuple(0, 0, -1, 0)
+      );
+      msgpack::sbuffer buffer;
+      msgpack::pack(buffer, call_obj);
+      socket.write_some(asio::buffer(buffer.data(), buffer.size()), ec);
+    }
 
-  //   using namespace std::chrono_literals;
-  //   std::this_thread::sleep_for(1s);
+    {
+      // Client::RequestMsg msg{
+      //   .msgid = 0,
+      //   .method = "nvim_win_get_cursor",
+      //   .params = std::tuple(0),
+      // };
+      // msgpack::sbuffer buffer;
+      // msgpack::pack(buffer, msg);
+      // socket.write_some(asio::buffer(buffer.data(), buffer.size()), ec);
+    }
 
-  //   context.stop();
-  //   if (thrContext.joinable()) thrContext.join();
-  // }
+    std::this_thread::sleep_for(1s);
+
+    context.stop();
+    if (thrContext.joinable()) thrContext.join();
+  }
 }
 
-struct Test {
-  Test() {
-    try {
-      asio::io_context context;
-      asio::ip::tcp::resolver resolver(context);
-      auto endpoints = resolver.resolve("a", std::to_string(80));
-
-    } catch (std::exception& e) {
-      std::cerr << "Client Exception: " << e.what() << "\n";
-    }
-  }
-};
-
 int main() {
-  // AsioTest();
-
-  // Client client("a", 6666);
-  Test test;
-  // std::cout << client.IsConnected() << "\n";
+  Client client("127.0.0.1", 6666);
+  std::cout << client.IsConnected() << std::endl;
 
   Window window({1200, 800}, "Neovim GUI", PresentMode::Fifo);
 
@@ -113,6 +100,9 @@ int main() {
       if (action == GLFW_PRESS) {
         if (key == GLFW_KEY_ESCAPE) {
           window.SetShouldClose(true);
+        }
+        if (key == GLFW_KEY_T) {
+          client.AsyncCall("nvim_get_current_line");
         }
       }
     }

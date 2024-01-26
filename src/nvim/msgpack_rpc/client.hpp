@@ -3,11 +3,15 @@
 #include "asio.hpp"
 #include "msgpack.hpp"
 
+#include "tsqueue.hpp"
+
 #include <exception>
 #include <iostream>
 #include <string>
+#include <vector>
 
 struct Client {
+private:
   Client& self = *this;
 
   template <typename T>
@@ -35,48 +39,42 @@ struct Client {
     MSGPACK_DEFINE(type, msgid, error, result);
   };
 
-  // asio::error_code ec;
   asio::io_context context;
-  std::thread thrContext;
   asio::ip::tcp::socket socket;
+  std::thread contextThr;
+  // std::thread writeThr;
+  bool exit = false;
 
-  Client(const std::string& host, const uint16_t port) : socket(self.context) {
-    try {
-      asio::ip::tcp::resolver resolver(self.context);
-      auto endpoints = resolver.resolve(host, std::to_string(port));
-      // throw std::exception();
+public:
+  Client(const std::string& host, const uint16_t port)
+      : socket(self.context), getBuffer(1024 * 100) {
+    asio::error_code ec;
+    asio::ip::tcp::endpoint endpoint(asio::ip::make_address(host), port);
+    self.socket.connect(endpoint, ec);
 
-      // asio::async_connect(
-      //   self.socket, endpoints,
-      //   [this](std::error_code ec, asio::ip::tcp::endpoint endpoint) {
-      //     if (!ec) {
-      //     }
-      //   }
-      // );
-
-      // asio::error_code ec;
-      // asio::ip::tcp::endpoint endpoint(asio::ip::make_address("localhost", ec), port);
-      // self.socket.connect(endpoint, ec);
-      // if (ec) {
-      //   std::cerr << "Failed to connect to address:\n" << ec.message() << std::endl;
-      //   self.socket.close();
-      // }
-
-      // self.thrContext = std::thread([&]() { self.context.run(); });
-
-    } catch (std::exception& e) {
-      std::cerr << "Client Exception: " << e.what() << "\n";
+    if (ec) {
+      std::cerr << "Failed to connect to address:\n" << ec.message() << std::endl;
+      self.socket.close();
+      return;
     }
+
+    asio::io_context::work idleWork(self.context);
+    self.contextThr = std::thread([&]() { self.context.run(); });
+
+    self.GetData();
   }
 
   ~Client() {
-    // self.Disconnect();
+    self.Disconnect();
   }
 
   void Disconnect() {
-    // if (self.IsConnected()) asio::post(self.context, [this]() { self.socket.close(); });
+    if (self.IsConnected()) self.socket.close();
+
     self.context.stop();
-    // if (self.thrContext.joinable()) self.thrContext.join();
+    if (self.contextThr.joinable()) self.contextThr.join();
+
+    exit = true;
   }
 
   bool IsConnected() {
@@ -84,12 +82,82 @@ struct Client {
   }
 
   template <typename... Args>
-  msgpack::object_handle Call(const std::string& method, Args... args);
+  msgpack::object_handle Call(const std::string& method, Args... args) {
+  }
 
   template <typename... Args>
-  std::future<msgpack::object_handle>
-  AsyncCall(const std::string& func_name, Args... args);
+  // std::future<msgpack::object_handle>
+  void
+  AsyncCall(const std::string& func_name, Args... args) {
+    RequestMsg msg{
+      .msgid = self.Msgid(),
+      .method = func_name,
+      .params = std::tuple(args...),
+    };
+    msgpack::sbuffer buffer;
+    msgpack::pack(buffer, msg);
+    self.QueueWrite(buffer);
+  }
 
   template <typename... Args>
   void Send(const std::string& func_name, Args... args);
+
+private:
+  std::vector<char> getBuffer;
+
+  void GetData() {
+    socket.async_read_some(
+      asio::buffer(getBuffer.data(), getBuffer.size()),
+      [&](std::error_code ec, std::size_t length) {
+        if (!ec) {
+          std::cout << "\n\nRead " << length << " bytes\n\n";
+          auto handle = msgpack::unpack(getBuffer.data(), length);
+
+          RespondMsg data = handle.get().convert();
+          std::cout << "type: " << data.type << "\n";
+          std::cout << "msgid: " << data.msgid << "\n";
+          std::cout << "error: " << data.error << "\n";
+          std::cout << "result: " << data.result << "\n";
+
+          self.GetData();
+        }
+        std::cout << "---------------------- \n";
+      }
+    );
+  }
+
+  TSQueue<msgpack::sbuffer> msgsOut;
+  uint32_t currId = 0;
+
+  uint32_t Msgid() {
+    return self.currId++;
+  }
+
+  // write loop, call in own thread
+  void Write() {
+    if (!self.IsConnected()) return;
+
+    std::cout << "Size: " << msgsOut.size() << std::endl;
+
+    auto& buffer = self.msgsOut.front();
+    asio::async_write(
+      self.socket, asio::buffer(buffer.data(), buffer.size()),
+      [&](const asio::error_code& ec, size_t bytes) {
+        (void)bytes;
+        if (!ec) {
+          self.msgsOut.pop();
+          if (self.msgsOut.size() == 0 || exit) return;
+          self.Write();
+        } else {
+          std::cerr << "Failed to write to socket:\n" << ec.message() << std::endl;
+        }
+      }
+    );
+  }
+
+  void QueueWrite(msgpack::sbuffer& buffer) {
+    self.msgsOut.push(buffer);
+    if (self.msgsOut.size() > 1) return;
+    Write();
+  }
 };
