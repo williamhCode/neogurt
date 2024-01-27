@@ -37,7 +37,6 @@ int main() {
 
     for (auto& [codepoint] : window.charCallbacks) {
       auto string = unicodeToUTF8(codepoint);
-      // std::cout << string << std::endl;
       client.Send("nvim_input", string);
     }
 

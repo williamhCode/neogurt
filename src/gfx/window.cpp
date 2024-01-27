@@ -33,7 +33,7 @@ static void WindowSizeCallback(GLFWwindow* window, int width, int height) {
 
 static void FramebufferSizeCallback(GLFWwindow* window, int width, int height) {
   Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
-  win.ctx.Resize({width, height});
+  // win.ctx.Resize({width, height});
 }
 
 Window::Window(glm::uvec2 size, const std::string& title, wgpu::PresentMode presentMode)
