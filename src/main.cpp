@@ -44,6 +44,7 @@ int main() {
     if (!client.IsConnected()) window.SetShouldClose(true);
 
     // rendering ------------------------------------------------
+    // sometimes segfaults when beginning to render
     TextureView nextTexture = ctx.swapChain.GetCurrentTextureView();
     RenderPassColorAttachment colorAttachment{
       .view = nextTexture,
