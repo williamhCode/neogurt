@@ -14,6 +14,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)  # clangd
 add_subdirectory(deps/webgpu_tools)
 add_subdirectory(deps/msgpack)
 set(ASIO_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/deps/asio/asio/include)
+set(UTFCPP_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/deps/utfcpp/source)
 
 set(APP_SRC
 	src/main.cpp
@@ -32,6 +33,7 @@ add_executable(App ${APP_SRC})
 target_include_directories(App PRIVATE 
   ${PROJECT_SOURCE_DIR}/src
   ${ASIO_INCLUDE_DIR}
+  ${UTFCPP_INCLUDE_DIR}
 )
 
 target_compile_definitions(App PRIVATE

@@ -2,6 +2,7 @@
 
 #include "asio.hpp"
 #include "msgpack.hpp"
+#include "GLFW/glfw3.h"
 
 #include "tsqueue.hpp"
 
@@ -59,20 +60,10 @@ private:
 public:
   Client(const std::string& host, const uint16_t port) : socket(context) {
     asio::error_code ec;
-    asio::ip::tcp::resolver resolver(context);
-    auto endpoints = resolver.resolve(host, std::to_string(port), ec);
+    asio::ip::tcp::endpoint endpoint(asio::ip::make_address(host, ec), port);
+    socket.connect(endpoint, ec);
     if (ec) {
-      std::cerr << ec.message() << std::endl;
-      exit = true;
-      return;
-    }
-
-    for (auto& endpoint : endpoints) {
-      socket.connect(endpoint, ec);
-      if (!ec) break;
-    }
-    if (ec) {
-      std::cerr << ec.message() << std::endl;
+      std::cerr << "Can't connect to server: " << ec.message() << std::endl;
       exit = true;
       return;
     }
@@ -94,6 +85,7 @@ public:
 
   void Disconnect() {
     exit = true;
+    glfwPostEmptyEvent();
   }
 
   bool IsConnected() {
@@ -157,21 +149,20 @@ private:
 
             if (type == MessageType::Response) {
               RespondMessage msg = obj.convert();
-              // std::cout << "msgid: " << msg.msgid << "\n";
-              // std::cout << "error: " << msg.error << "\n";
-              // std::cout << "result: " << msg.result << "\n";
+              std::cout << "msgid: " << msg.msgid << "\n";
+              std::cout << "error: " << msg.error << "\n";
+              std::cout << "result: " << msg.result << "\n";
             } else if (type == MessageType::Notification) {
               NotificationMessageIn msg = obj.convert();
-              // std::cout << "method: " << msg.method << "\n";
-              // std::cout << "params: " << msg.params << "\n";
+              std::cout << "method: " << msg.method << "\n";
+              std::cout << "params: " << msg.params << "\n";
             } else {
               std::cout << "Unknown type: " << type << "\n";
             }
-
-            std::cout << "object: " << obj << "\n";
           }
 
           GetData();
+
         } else if (ec == asio::error::eof) {
           std::cout << "The server closed the connection\n";
           Disconnect();

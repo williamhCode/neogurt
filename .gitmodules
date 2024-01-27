@@ -7,3 +7,6 @@
 [submodule "deps/asio"]
 	path = deps/asio
 	url = https://github.com/chriskohlhoff/asio.git
+[submodule "deps/utfcpp"]
+	path = deps/utfcpp
+	url = https://github.com/nemtrif/utfcpp.git

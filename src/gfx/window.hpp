@@ -20,6 +20,9 @@ struct Window {
     int action;
     int mods;
   };
+  struct CharData {
+    unsigned int codepoint;
+  };
   struct MouseButtonData {
     int button;
     int action;
@@ -30,6 +33,7 @@ struct Window {
     double ypos;
   };
   std::vector<KeyData> keyCallbacks;
+  std::vector<CharData> charCallbacks;
   std::vector<MouseButtonData> mouseButtonCallbacks;
   std::vector<CursorPosData> cursorPosCallbacks;
 

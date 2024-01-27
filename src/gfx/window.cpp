@@ -11,6 +11,11 @@ KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
   win.keyCallbacks.push_back({key, scancode, action, mods});
 }
 
+static void CharCallback(GLFWwindow* window, unsigned int codepoint) {
+  Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
+  win.charCallbacks.push_back({codepoint});
+}
+
 static void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
   Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
   win.mouseButtonCallbacks.push_back({button, action, mods});
@@ -48,6 +53,7 @@ Window::Window(glm::uvec2 size, const std::string& title, wgpu::PresentMode pres
 
   glfwSetWindowUserPointer(window, this);
   glfwSetKeyCallback(window, KeyCallback);
+  glfwSetCharCallback(window, CharCallback);
   glfwSetMouseButtonCallback(window, MouseButtonCallback);
   glfwSetCursorPosCallback(window, CursorPosCallback);
   glfwSetWindowSizeCallback(window, WindowSizeCallback);
@@ -74,6 +80,7 @@ bool Window::ShouldClose() {
 
 void Window::PollEvents() {
   keyCallbacks.clear();
+  charCallbacks.clear();
   mouseButtonCallbacks.clear();
   cursorPosCallbacks.clear();
   glfwPollEvents();
@@ -81,6 +88,7 @@ void Window::PollEvents() {
 
 void Window::WaitEvents() {
   keyCallbacks.clear();
+  charCallbacks.clear();
   mouseButtonCallbacks.clear();
   cursorPosCallbacks.clear();
   glfwWaitEvents();
