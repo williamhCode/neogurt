@@ -7,12 +7,15 @@
 using namespace wgpu;
 
 int main() {
-  Client client("127.0.0.1", 6666);
-  std::cout << client.IsConnected() << std::endl;
+  Client client("localhost", 6666);
+  client.Send("nvim_ui_attach", 100, 100, std::tuple());
 
   Window window({1200, 800}, "Neovim GUI", PresentMode::Fifo);
 
   while (!window.ShouldClose()) {
+    // if nvim disconnects, close the window
+    if (!client.IsConnected()) window.SetShouldClose(true);
+
     ctx.device.Tick();
 
     window.PollEvents();
@@ -20,9 +23,19 @@ int main() {
       if (action == GLFW_PRESS) {
         if (key == GLFW_KEY_ESCAPE) {
           window.SetShouldClose(true);
+          client.Disconnect();
+        }
+        if (key == GLFW_KEY_J) {
+          client.Send("nvim_input", std::string("j"));
+        }
+        if (key == GLFW_KEY_K) {
+          client.Send("nvim_input", std::string("k"));
         }
         if (key == GLFW_KEY_T) {
           client.AsyncCall("nvim_get_current_line");
+        }
+        if (key == GLFW_KEY_C) {
+          std::cout << client.IsConnected() << std::endl;
         }
       }
     }
