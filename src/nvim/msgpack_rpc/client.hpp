@@ -60,6 +60,11 @@ private:
   std::unordered_map<int, std::promise<msgpack::object_handle>> promises;
 
 public:
+  struct NotificationData {
+    std::string method;
+    msgpack::object_handle params;
+  };
+
   Client(const std::string& host, const uint16_t port) : socket(context) {
     asio::error_code ec;
     asio::ip::tcp::endpoint endpoint(asio::ip::make_address(host, ec), port);
@@ -86,7 +91,7 @@ public:
 
   void Disconnect() {
     exit = true;
-    glfwPostEmptyEvent();
+    // glfwPostEmptyEvent();
   }
 
   bool IsConnected() {
@@ -118,7 +123,6 @@ public:
     return future;
   }
 
-  bool ran = false;
   template <typename... Args>
   void Send(const std::string& func_name, Args... args) {
     if (!IsConnected()) return;
@@ -132,16 +136,25 @@ public:
     Write(buffer);
   }
 
+  // returns next notification at front of queue
+  NotificationData PopNotification() {
+    return msgsIn.Pop();
+  }
+
+  bool HasNotification() {
+    return !msgsIn.Empty();
+  }
+
 private:
+  msgpack::unpacker unpacker;
+  static constexpr std::size_t readSize = 1024 * 10;
+  TSQueue<NotificationData> msgsIn;
+  TSQueue<msgpack::sbuffer> msgsOut;
+  uint32_t currId = 0;
+
   uint32_t Msgid() {
     return currId++;
   }
-
-  msgpack::unpacker unpacker;
-  static constexpr std::size_t readSize = 1024 * 10;
-  TSQueue<msgpack::object_handle> msgsIn;
-  TSQueue<msgpack::sbuffer> msgsOut;
-  uint32_t currId = 0;
 
   void GetData() {
     if (!IsConnected()) return;
@@ -150,13 +163,18 @@ private:
       asio::buffer(unpacker.buffer(), readSize),
       [&](asio::error_code ec, std::size_t length) {
         if (!ec) {
-          std::cout << "\n\n----------------------------------\n";
-          std::cout << "Read " << length << " bytes\n";
+          // std::cout << "\n\n----------------------------------\n";
+          // std::cout << "Read " << length << " bytes\n";
           unpacker.buffer_consumed(length);
 
           msgpack::object_handle obj;
           while (unpacker.next(obj)) {
-            std::cout << "----------------------------------\n";
+            // sometimes doesn't get array for some reason probably nvim issue
+            if (obj.get().type != msgpack::type::ARRAY) {
+              std::cout << "Not an array" << std::endl;
+              continue;
+            }
+            // std::cout << "----------------------------------\n";
             int type = obj->via.array.ptr[0].convert();
 
             if (type == MessageType::Response) {
@@ -170,12 +188,13 @@ private:
                   );
 
                 } else {
-                  it->second.set_exception(std::make_exception_ptr(
-                    std::runtime_error(msg.error.via.array.ptr[1].as<std::string>())
-                  ));
-                  // std::string errStr = msg.error.via.array.ptr[1].convert();
-                  // std::cout << "ERROR: " << msg.error.via.array.ptr[1] << "\n";
-                  // std::cout << "ERROR TYPE: " << msg.error.via.array.ptr[1].type <<
+                  // TODO: do something with error
+
+                  // it->second.set_exception(std::make_exception_ptr(
+                  //   std::runtime_error(msg.error.via.array.ptr[1].as<std::string>())
+                  // ));
+                  // std::cout << "ERROR_TYPE: " << msg.error.via.array.ptr[0] <<
+                  // "\n"; std::cout << "ERROR: " << msg.error.via.array.ptr[1] <<
                   // "\n";
                 }
                 promises.erase(it);
@@ -184,21 +203,20 @@ private:
                 std::cout << "Unknown msgid: " << msg.msgid << "\n";
               }
 
-              std::cout << "msgid: " << msg.msgid << "\n";
-              // std::cout << "error: " << msg.error << "\n";
-              std::cout << "result: " << msg.result << "\n";
-
             } else if (type == MessageType::Notification) {
               NotificationMessageIn msg = obj->convert();
+              msgsIn.Push(NotificationData{
+                .method = std::move(msg.method),
+                .params = msgpack::object_handle(msg.params, std::move(obj.zone())),
+              });
 
-              std::cout << "method: " << msg.method << "\n";
-              std::cout << "result: " << msg.params << "\n";
+              // std::cout << "method: " << msg.method << "\n";
+              // std::cout << "params: " << msg.params << "\n";
 
             } else {
               std::cout << "Unknown type: " << type << "\n";
             }
           }
-
           GetData();
 
         } else if (ec == asio::error::eof) {
@@ -216,8 +234,8 @@ private:
   }
 
   void Write(msgpack::sbuffer& buffer) {
-    msgsOut.push(buffer);
-    if (msgsOut.size() > 1) return;
+    msgsOut.Push(std::move(buffer));
+    if (msgsOut.Size() > 1) return;
     DoWrite();
   }
 
@@ -225,14 +243,14 @@ private:
   void DoWrite() {
     if (!IsConnected()) return;
 
-    auto& buffer = msgsOut.front();
+    if (msgsOut.Size() == 0 || exit) return;
+    auto& buffer = msgsOut.Front();
     asio::async_write(
       socket, asio::buffer(buffer.data(), buffer.size()),
       [&](const asio::error_code& ec, size_t length) {
         (void)length;
         if (!ec) {
-          msgsOut.pop();
-          if (msgsOut.size() == 0 || exit) return;
+          msgsOut.Pop();
           DoWrite();
 
         } else {

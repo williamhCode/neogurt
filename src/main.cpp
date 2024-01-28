@@ -19,11 +19,13 @@ int main() {
 
   Window window({1200, 800}, "Neovim GUI", PresentMode::Fifo);
 
+  // std::future<msgpack::object_handle> future;
+
   while (!window.ShouldClose()) {
     ctx.device.Tick();
 
     // events ------------------------------------------------
-    window.WaitEvents();
+    window.PollEvents();
 
     for (auto& [key, scancode, action, modes] : window.keyCallbacks) {
       if (action == GLFW_PRESS || action == GLFW_REPEAT) {
@@ -32,9 +34,21 @@ int main() {
         } else if (key == GLFW_KEY_A) {
           client.AsyncCall("nvim_ui_attach", 100, 100, std::tuple());
         } else if (key == GLFW_KEY_T) {
-          client.AsyncCall("nvim_get_current_line");
+          auto future = client.AsyncCall("nvim_get_current_line");
+          std::thread thread([&]() {
+            auto result = future.get();
+            std::cout << "future result: " << result.get() << std::endl;
+          });
+          thread.join();
         }
       }
+    }
+
+    while (client.HasNotification()) {
+      auto notification = client.PopNotification();
+      std::cout << "---------------------------------\n";
+      std::cout << "method: " << notification.method << std::endl;
+      std::cout << "params: " << notification.params.get() << std::endl;
     }
 
     for (auto& [codepoint] : window.charCallbacks) {
@@ -46,7 +60,7 @@ int main() {
     if (!client.IsConnected()) window.SetShouldClose(true);
 
     // rendering ------------------------------------------------
-    // sometimes segfaults when beginning to render
+    // TODO: figure out why sometimes WebGPU segfaults when beginning to render
     TextureView nextTexture = ctx.swapChain.GetCurrentTextureView();
     RenderPassColorAttachment colorAttachment{
       .view = nextTexture,
