@@ -14,12 +14,12 @@ std::string unicodeToUTF8(unsigned int unicode) {
 }
 
 int main() {
-  Client client("localhost", 6666);
+  rpc::Client client("localhost", 6666);
   client.Send("nvim_ui_attach", 100, 100, std::tuple());
 
   Window window({1200, 800}, "Neovim GUI", PresentMode::Fifo);
 
-  // std::future<msgpack::object_handle> future;
+  std::vector<std::future<void>> threads;
 
   while (!window.ShouldClose()) {
     ctx.device.Tick();
@@ -29,26 +29,21 @@ int main() {
 
     for (auto& [key, scancode, action, modes] : window.keyCallbacks) {
       if (action == GLFW_PRESS || action == GLFW_REPEAT) {
-        if (key == GLFW_KEY_ESCAPE) {
-          window.SetShouldClose(true);
+        if (key == GLFW_KEY_UNKNOWN) {
+          // window.SetShouldClose(true);
         } else if (key == GLFW_KEY_A) {
           client.AsyncCall("nvim_ui_attach", 100, 100, std::tuple());
-        } else if (key == GLFW_KEY_T) {
+        } else if (key == GLFW_KEY_ESCAPE) {
           auto future = client.AsyncCall("nvim_get_current_line");
-          std::thread thread([&]() {
-            auto result = future.get();
-            std::cout << "future result: " << result.get() << std::endl;
-          });
-          thread.join();
+          threads.emplace_back(std::async(
+            std::launch::async,
+            [future = std::move(future)]() mutable {
+              auto result = future.get();
+              std::cout << "future result: " << result.get() << std::endl;
+            }
+          ));
         }
       }
-    }
-
-    while (client.HasNotification()) {
-      auto notification = client.PopNotification();
-      std::cout << "---------------------------------\n";
-      std::cout << "method: " << notification.method << std::endl;
-      std::cout << "params: " << notification.params.get() << std::endl;
     }
 
     for (auto& [codepoint] : window.charCallbacks) {
@@ -58,6 +53,18 @@ int main() {
 
     if (window.ShouldClose()) client.Disconnect();
     if (!client.IsConnected()) window.SetShouldClose(true);
+
+    // get info and stuff ---------------------------------------
+    while (client.HasNotification()) {
+      auto notification = client.PopNotification();
+      // std::cout << "\n\n---------------------------------" << std::endl;
+      // std::cout << "method: " << notification.method << std::endl;
+      // std::cout << "params: " << notification.params.get() << std::endl;
+    }
+
+    std::erase_if(threads, [](const std::future<void>& f) {
+      return f.wait_for(std::chrono::seconds(0)) == std::future_status::ready;
+    });
 
     // rendering ------------------------------------------------
     // TODO: figure out why sometimes WebGPU segfaults when beginning to render

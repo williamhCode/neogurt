@@ -9,7 +9,10 @@
 #include <iostream>
 #include <string>
 #include <unordered_map>
-#include <vector>
+#include <future>
+#include <thread>
+
+namespace rpc {
 
 struct Client {
 private:
@@ -22,7 +25,7 @@ private:
   };
 
   template <typename T>
-  struct RequestMessage {
+  struct Request {
     int type = MessageType::Request;
     uint32_t msgid;
     std::string method;
@@ -30,7 +33,7 @@ private:
     MSGPACK_DEFINE(type, msgid, method, params);
   };
 
-  struct RespondMessage {
+  struct Response {
     int type;
     uint32_t msgid;
     msgpack::object error;
@@ -39,14 +42,14 @@ private:
   };
 
   template <typename T>
-  struct NotificationMessageOut {
+  struct NotificationOut {
     int type = MessageType::Notification;
     std::string method;
     T params;
     MSGPACK_DEFINE(type, method, params);
   };
 
-  struct NotificationMessageIn {
+  struct NotificationIn {
     int type;
     std::string method;
     msgpack::object params;
@@ -57,7 +60,7 @@ private:
   asio::ip::tcp::socket socket;
   std::thread contextThr;
   std::atomic_bool exit = false;
-  std::unordered_map<int, std::promise<msgpack::object_handle>> promises;
+  std::unordered_map<int, std::promise<msgpack::object_handle>> responses;
 
 public:
   struct NotificationData {
@@ -100,6 +103,8 @@ public:
 
   template <typename... Args>
   msgpack::object_handle Call(const std::string& method, Args... args) {
+    auto future = AsyncCall(method, args...);
+    return future.get();
   }
 
   template <typename... Args>
@@ -107,7 +112,7 @@ public:
   AsyncCall(const std::string& func_name, Args... args) {
     if (!IsConnected()) return {};
 
-    RequestMessage<std::tuple<Args...>> msg{
+    Request<std::tuple<Args...>> msg{
       .msgid = Msgid(),
       .method = func_name,
       .params = std::tuple(args...),
@@ -118,7 +123,7 @@ public:
 
     std::promise<msgpack::object_handle> promise;
     auto future = promise.get_future();
-    promises[msg.msgid] = std::move(promise);
+    responses[msg.msgid] = std::move(promise);
 
     return future;
   }
@@ -127,7 +132,7 @@ public:
   void Send(const std::string& func_name, Args... args) {
     if (!IsConnected()) return;
 
-    NotificationMessageOut<std::tuple<Args...>> msg{
+    NotificationOut<std::tuple<Args...>> msg{
       .method = func_name,
       .params = std::tuple(args...),
     };
@@ -178,10 +183,10 @@ private:
             int type = obj->via.array.ptr[0].convert();
 
             if (type == MessageType::Response) {
-              RespondMessage msg = obj->convert();
+              Response msg(obj->convert());
 
-              auto it = promises.find(msg.msgid);
-              if (it != promises.end()) {
+              auto it = responses.find(msg.msgid);
+              if (it != responses.end()) {
                 if (msg.error.is_nil()) {
                   it->second.set_value(
                     msgpack::object_handle(msg.result, std::move(obj.zone()))
@@ -189,7 +194,6 @@ private:
 
                 } else {
                   // TODO: do something with error
-
                   // it->second.set_exception(std::make_exception_ptr(
                   //   std::runtime_error(msg.error.via.array.ptr[1].as<std::string>())
                   // ));
@@ -197,21 +201,22 @@ private:
                   // "\n"; std::cout << "ERROR: " << msg.error.via.array.ptr[1] <<
                   // "\n";
                 }
-                promises.erase(it);
+                responses.erase(it);
 
               } else {
                 std::cout << "Unknown msgid: " << msg.msgid << "\n";
               }
 
             } else if (type == MessageType::Notification) {
-              NotificationMessageIn msg = obj->convert();
+              NotificationIn msg(obj->convert());
+              std::cout << "\n\n---------------------------------" << std::endl;
+              std::cout << "method: " << msg.method << "\n";
+              std::cout << "params: " << msg.params << "\n";
+
               msgsIn.Push(NotificationData{
                 .method = std::move(msg.method),
                 .params = msgpack::object_handle(msg.params, std::move(obj.zone())),
               });
-
-              // std::cout << "method: " << msg.method << "\n";
-              // std::cout << "params: " << msg.params << "\n";
 
             } else {
               std::cout << "Unknown type: " << type << "\n";
@@ -239,7 +244,6 @@ private:
     DoWrite();
   }
 
-  // write loop, call in own thread
   void DoWrite() {
     if (!IsConnected()) return;
 
@@ -260,3 +264,5 @@ private:
     );
   }
 };
+
+} // namespace rpc
