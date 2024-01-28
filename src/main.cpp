@@ -29,6 +29,8 @@ int main() {
       if (action == GLFW_PRESS || action == GLFW_REPEAT) {
         if (key == GLFW_KEY_ESCAPE) {
           window.SetShouldClose(true);
+        } else if (key == GLFW_KEY_A) {
+          client.AsyncCall("nvim_ui_attach", 100, 100, std::tuple());
         } else if (key == GLFW_KEY_T) {
           client.AsyncCall("nvim_get_current_line");
         }

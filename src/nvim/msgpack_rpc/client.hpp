@@ -8,6 +8,7 @@
 
 #include <iostream>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 struct Client {
@@ -56,6 +57,7 @@ private:
   asio::ip::tcp::socket socket;
   std::thread contextThr;
   std::atomic_bool exit = false;
+  std::unordered_map<int, std::promise<msgpack::object_handle>> promises;
 
 public:
   Client(const std::string& host, const uint16_t port) : socket(context) {
@@ -96,9 +98,9 @@ public:
   }
 
   template <typename... Args>
-  // std::future<msgpack::object_handle>
-  void AsyncCall(const std::string& func_name, Args... args) {
-    if (!IsConnected()) return;
+  std::future<msgpack::object_handle>
+  AsyncCall(const std::string& func_name, Args... args) {
+    if (!IsConnected()) return {};
 
     RequestMessage<std::tuple<Args...>> msg{
       .msgid = Msgid(),
@@ -108,6 +110,12 @@ public:
     msgpack::sbuffer buffer;
     msgpack::pack(buffer, msg);
     Write(buffer);
+
+    std::promise<msgpack::object_handle> promise;
+    auto future = promise.get_future();
+    promises[msg.msgid] = std::move(promise);
+
+    return future;
   }
 
   bool ran = false;
@@ -153,13 +161,39 @@ private:
 
             if (type == MessageType::Response) {
               RespondMessage msg = obj->convert();
+
+              auto it = promises.find(msg.msgid);
+              if (it != promises.end()) {
+                if (msg.error.is_nil()) {
+                  it->second.set_value(
+                    msgpack::object_handle(msg.result, std::move(obj.zone()))
+                  );
+
+                } else {
+                  it->second.set_exception(std::make_exception_ptr(
+                    std::runtime_error(msg.error.via.array.ptr[1].as<std::string>())
+                  ));
+                  // std::string errStr = msg.error.via.array.ptr[1].convert();
+                  // std::cout << "ERROR: " << msg.error.via.array.ptr[1] << "\n";
+                  // std::cout << "ERROR TYPE: " << msg.error.via.array.ptr[1].type <<
+                  // "\n";
+                }
+                promises.erase(it);
+
+              } else {
+                std::cout << "Unknown msgid: " << msg.msgid << "\n";
+              }
+
               std::cout << "msgid: " << msg.msgid << "\n";
-              std::cout << "error: " << msg.error << "\n";
+              // std::cout << "error: " << msg.error << "\n";
               std::cout << "result: " << msg.result << "\n";
+
             } else if (type == MessageType::Notification) {
               NotificationMessageIn msg = obj->convert();
+
               std::cout << "method: " << msg.method << "\n";
-              std::cout << "params: " << msg.params << "\n";
+              std::cout << "result: " << msg.params << "\n";
+
             } else {
               std::cout << "Unknown type: " << type << "\n";
             }
