@@ -1,8 +1,9 @@
 #include "gfx/context.hpp"
-#include "gfx/window.hpp"
+#include "editor/window.hpp"
 #include "nvim/msgpack_rpc/client.hpp"
 
 #include <iostream>
+#include "nvim/nvim.hpp"
 #include "utf8/unchecked.h"
 
 using namespace wgpu;
@@ -14,8 +15,9 @@ std::string unicodeToUTF8(unsigned int unicode) {
 }
 
 int main() {
-  rpc::Client client("localhost", 6666);
-  client.Send("nvim_ui_attach", 100, 100, std::tuple());
+  // rpc::Client client("localhost", 6666);
+  // client.Send("nvim_ui_attach", 100, 100, std::tuple());
+  Nvim nvim;
 
   Window window({1200, 800}, "Neovim GUI", PresentMode::Fifo);
 
@@ -26,37 +28,45 @@ int main() {
 
     // events ------------------------------------------------
     window.PollEvents();
-
-    for (auto& [key, scancode, action, modes] : window.keyCallbacks) {
-      if (action == GLFW_PRESS || action == GLFW_REPEAT) {
-        if (key == GLFW_KEY_UNKNOWN) {
-          // window.SetShouldClose(true);
-        } else if (key == GLFW_KEY_A) {
-          client.AsyncCall("nvim_ui_attach", 100, 100, std::tuple());
-        } else if (key == GLFW_KEY_ESCAPE) {
-          auto future = client.AsyncCall("nvim_get_current_line");
-          threads.emplace_back(std::async(
-            std::launch::async,
-            [future = std::move(future)]() mutable {
-              auto result = future.get();
-              std::cout << "future result: " << result.get() << std::endl;
-            }
-          ));
+    for (const auto& event : window.events) {
+      switch (event.type) {
+      case Window::EventType::Key: {
+        auto& [key, scancode, action, mods] = std::get<Window::KeyData>(event.data);
+        if (action == GLFW_PRESS || action == GLFW_REPEAT) {
+          if (key == GLFW_KEY_ESCAPE) {
+            auto future = nvim.client.AsyncCall("nvim_get_current_line");
+            threads.emplace_back(std::async(
+              std::launch::async,
+              [future = std::move(future)]() mutable {
+                auto result = future.get();
+                std::cout << "future result: " << result.get() << std::endl;
+              }
+            ));
+          }
         }
+        break;
+      }
+      case Window::EventType::Char: {
+        auto& [codepoint] = std::get<Window::CharData>(event.data);
+        auto string = unicodeToUTF8(codepoint);
+        nvim.Input(string);
+        break;
+      }
+      case Window::EventType::MouseButton: {
+        break;
+      }
+      case Window::EventType::CursorPos: {
+        break;
+      }
       }
     }
 
-    for (auto& [codepoint] : window.charCallbacks) {
-      auto string = unicodeToUTF8(codepoint);
-      client.Send("nvim_input", string);
-    }
-
-    if (window.ShouldClose()) client.Disconnect();
-    if (!client.IsConnected()) window.SetShouldClose(true);
+    if (window.ShouldClose()) nvim.client.Disconnect();
+    if (!nvim.client.IsConnected()) window.SetShouldClose(true);
 
     // get info and stuff ---------------------------------------
-    while (client.HasNotification()) {
-      auto notification = client.PopNotification();
+    while (nvim.client.HasNotification()) {
+      auto notification = nvim.client.PopNotification();
       // std::cout << "\n\n---------------------------------" << std::endl;
       // std::cout << "method: " << notification.method << std::endl;
       // std::cout << "params: " << notification.params.get() << std::endl;

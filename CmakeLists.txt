@@ -15,6 +15,7 @@ add_subdirectory(deps/webgpu_tools)
 add_subdirectory(deps/msgpack)
 set(ASIO_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/deps/asio/asio/include)
 set(UTFCPP_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/deps/utfcpp/source)
+set(SUBPROCESS_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/deps/subprocess)
 
 set(APP_SRC
 	src/main.cpp
@@ -22,7 +23,10 @@ set(APP_SRC
   src/gfx/context.cpp
   src/gfx/pipeline.cpp
   src/gfx/renderer.cpp
-  src/gfx/window.cpp
+
+  src/editor/window.cpp
+
+  src/nvim/nvim.cpp
 )
 
 add_executable(App ${APP_SRC})
@@ -34,6 +38,7 @@ target_include_directories(App PRIVATE
   ${PROJECT_SOURCE_DIR}/src
   ${ASIO_INCLUDE_DIR}
   ${UTFCPP_INCLUDE_DIR}
+  ${SUBPROCESS_INCLUDE_DIR}
 )
 
 target_compile_definitions(App PRIVATE

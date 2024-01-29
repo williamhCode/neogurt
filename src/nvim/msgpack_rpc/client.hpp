@@ -68,21 +68,7 @@ public:
     msgpack::object_handle params;
   };
 
-  Client(const std::string& host, const uint16_t port) : socket(context) {
-    asio::error_code ec;
-    asio::ip::tcp::endpoint endpoint(asio::ip::make_address(host, ec), port);
-    socket.connect(endpoint, ec);
-    if (ec) {
-      std::cerr << "Can't connect to server: " << ec.message() << std::endl;
-      exit = true;
-      return;
-    }
-
-    std::cout << "Connected to " << socket.remote_endpoint() << std::endl;
-
-    GetData();
-
-    contextThr = std::thread([&]() { context.run(); });
+  Client() : socket(context) {
   }
 
   ~Client() {
@@ -90,6 +76,22 @@ public:
 
     if (contextThr.joinable()) contextThr.join();
     context.stop();
+  }
+
+  bool Connect(const std::string& host, const uint16_t port) {
+    asio::error_code ec;
+    asio::ip::tcp::endpoint endpoint(asio::ip::make_address(host, ec), port);
+    socket.connect(endpoint, ec);
+    if (ec) {
+      std::cerr << "Can't connect to server: " << ec.message() << std::endl;
+      return false;
+    }
+
+    std::cout << "Connected to " << socket.remote_endpoint() << std::endl;
+
+    GetData();
+
+    return true;
   }
 
   void Disconnect() {

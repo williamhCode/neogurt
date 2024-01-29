@@ -10,3 +10,6 @@
 [submodule "deps/utfcpp"]
 	path = deps/utfcpp
 	url = https://github.com/nemtrif/utfcpp.git
+[submodule "deps/subprocess"]
+	path = deps/subprocess
+	url = https://github.com/sheredom/subprocess.h.git

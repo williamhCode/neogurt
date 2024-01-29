@@ -10,10 +10,14 @@
 struct Window {
   inline static WGPUContext ctx;
   GLFWwindow* window;
-
   glm::uvec2 size;
 
-  // callback data
+  enum class EventType {
+    Key,
+    Char,
+    MouseButton,
+    CursorPos,
+  };
   struct KeyData {
     int key;
     int scancode;
@@ -32,10 +36,12 @@ struct Window {
     double xpos;
     double ypos;
   };
-  std::vector<KeyData> keyCallbacks;
-  std::vector<CharData> charCallbacks;
-  std::vector<MouseButtonData> mouseButtonCallbacks;
-  std::vector<CursorPosData> cursorPosCallbacks;
+  typedef std::variant<KeyData, CharData, MouseButtonData, CursorPosData> EventData;
+  struct Event {
+    EventType type;
+    EventData data;
+  };
+  std::vector<Event> events;
 
   Window() = default;
   Window(glm::uvec2 size, const std::string& title, wgpu::PresentMode presentMode);

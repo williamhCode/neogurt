@@ -8,22 +8,30 @@ const WGPUContext& ctx = Window::ctx;
 static void
 KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
   Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
-  win.keyCallbacks.push_back({key, scancode, action, mods});
+  win.events.push_back(
+    {Window::EventType::Key, Window::KeyData{key, scancode, action, mods}}
+  );
 }
 
 static void CharCallback(GLFWwindow* window, unsigned int codepoint) {
   Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
-  win.charCallbacks.push_back({codepoint});
+  win.events.push_back(
+    {Window::EventType::Char, Window::CharData{codepoint}}
+  );
 }
 
 static void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
   Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
-  win.mouseButtonCallbacks.push_back({button, action, mods});
+  win.events.push_back(
+    {Window::EventType::MouseButton, Window::MouseButtonData{button, action, mods}}
+  );
 }
 
 static void CursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
   Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
-  win.cursorPosCallbacks.push_back({xpos, ypos});
+  win.events.push_back(
+    {Window::EventType::CursorPos, Window::CursorPosData{xpos, ypos}}
+  );
 }
 
 static void WindowSizeCallback(GLFWwindow* window, int width, int height) {
@@ -79,18 +87,12 @@ bool Window::ShouldClose() {
 }
 
 void Window::PollEvents() {
-  keyCallbacks.clear();
-  charCallbacks.clear();
-  mouseButtonCallbacks.clear();
-  cursorPosCallbacks.clear();
+  events.clear();
   glfwPollEvents();
 }
 
 void Window::WaitEvents() {
-  keyCallbacks.clear();
-  charCallbacks.clear();
-  mouseButtonCallbacks.clear();
-  cursorPosCallbacks.clear();
+  events.clear();
   glfwWaitEvents();
 }
 
