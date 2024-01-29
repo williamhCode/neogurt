@@ -59,7 +59,7 @@ private:
   asio::io_context context;
   asio::ip::tcp::socket socket;
   std::thread contextThr;
-  std::atomic_bool exit = false;
+  std::atomic_bool exit;
   std::unordered_map<int, std::promise<msgpack::object_handle>> responses;
 
 public:
@@ -84,12 +84,17 @@ public:
     socket.connect(endpoint, ec);
     if (ec) {
       std::cerr << "Can't connect to server: " << ec.message() << std::endl;
+      socket.close();
+      exit = true;
       return false;
     }
 
     std::cout << "Connected to " << socket.remote_endpoint() << std::endl;
+    exit = false;
 
     GetData();
+
+    contextThr = std::thread([this]() { context.run(); });
 
     return true;
   }

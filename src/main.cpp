@@ -15,9 +15,8 @@ std::string unicodeToUTF8(unsigned int unicode) {
 }
 
 int main() {
-  // rpc::Client client("localhost", 6666);
-  // client.Send("nvim_ui_attach", 100, 100, std::tuple());
   Nvim nvim;
+  nvim.StartUi(120, 80);
 
   Window window({1200, 800}, "Neovim GUI", PresentMode::Fifo);
 
@@ -67,9 +66,9 @@ int main() {
     // get info and stuff ---------------------------------------
     while (nvim.client.HasNotification()) {
       auto notification = nvim.client.PopNotification();
-      // std::cout << "\n\n---------------------------------" << std::endl;
-      // std::cout << "method: " << notification.method << std::endl;
-      // std::cout << "params: " << notification.params.get() << std::endl;
+      std::cout << "\n\n---------------------------------" << std::endl;
+      std::cout << "method: " << notification.method << std::endl;
+      std::cout << "params: " << notification.params.get() << std::endl;
     }
 
     std::erase_if(threads, [](const std::future<void>& f) {

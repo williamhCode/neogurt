@@ -15,7 +15,7 @@ add_subdirectory(deps/webgpu_tools)
 add_subdirectory(deps/msgpack)
 set(ASIO_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/deps/asio/asio/include)
 set(UTFCPP_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/deps/utfcpp/source)
-set(SUBPROCESS_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/deps/subprocess)
+add_subdirectory(deps/tiny_process_library)
 
 set(APP_SRC
 	src/main.cpp
@@ -38,7 +38,6 @@ target_include_directories(App PRIVATE
   ${PROJECT_SOURCE_DIR}/src
   ${ASIO_INCLUDE_DIR}
   ${UTFCPP_INCLUDE_DIR}
-  ${SUBPROCESS_INCLUDE_DIR}
 )
 
 target_compile_definitions(App PRIVATE
@@ -48,6 +47,7 @@ target_compile_definitions(App PRIVATE
 target_link_libraries(App PRIVATE 
   WebGPU_Tools
   msgpack-cxx
+  tiny-process-library
 )
 
 if (MSVC)
