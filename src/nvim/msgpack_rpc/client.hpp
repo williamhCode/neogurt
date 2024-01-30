@@ -83,13 +83,11 @@ public:
     asio::ip::tcp::endpoint endpoint(asio::ip::make_address(host, ec), port);
     socket.connect(endpoint, ec);
     if (ec) {
-      std::cerr << "Can't connect to server: " << ec.message() << std::endl;
       socket.close();
       exit = true;
       return false;
     }
 
-    std::cout << "Connected to " << socket.remote_endpoint() << std::endl;
     exit = false;
 
     GetData();
@@ -126,7 +124,7 @@ public:
     };
     msgpack::sbuffer buffer;
     msgpack::pack(buffer, msg);
-    Write(buffer);
+    Write(std::move(buffer));
 
     std::promise<msgpack::object_handle> promise;
     auto future = promise.get_future();
@@ -145,7 +143,7 @@ public:
     };
     msgpack::sbuffer buffer;
     msgpack::pack(buffer, msg);
-    Write(buffer);
+    Write(std::move(buffer));
   }
 
   // returns next notification at front of queue
@@ -245,7 +243,7 @@ private:
     );
   }
 
-  void Write(msgpack::sbuffer& buffer) {
+  void Write(msgpack::sbuffer&& buffer) {
     msgsOut.Push(std::move(buffer));
     if (msgsOut.Size() > 1) return;
     DoWrite();

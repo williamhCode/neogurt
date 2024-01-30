@@ -15,10 +15,10 @@ std::string unicodeToUTF8(unsigned int unicode) {
 }
 
 int main() {
-  Nvim nvim;
+  Nvim nvim(true);
   nvim.StartUi(120, 80);
 
-  Window window({1200, 800}, "Neovim GUI", PresentMode::Fifo);
+  Window window({600, 400}, "Neovim GUI", PresentMode::Fifo);
 
   std::vector<std::future<void>> threads;
 
@@ -29,34 +29,34 @@ int main() {
     window.PollEvents();
     for (const auto& event : window.events) {
       switch (event.type) {
-      case Window::EventType::Key: {
-        auto& [key, scancode, action, mods] = std::get<Window::KeyData>(event.data);
-        if (action == GLFW_PRESS || action == GLFW_REPEAT) {
-          if (key == GLFW_KEY_ESCAPE) {
-            auto future = nvim.client.AsyncCall("nvim_get_current_line");
-            threads.emplace_back(std::async(
-              std::launch::async,
-              [future = std::move(future)]() mutable {
-                auto result = future.get();
+        case Window::EventType::Key:
+        {
+          auto& [key, scancode, action, mods] = std::get<Window::KeyData>(event.data);
+          if (action == GLFW_PRESS || action == GLFW_REPEAT) {
+            if (key == GLFW_KEY_ESCAPE) {
+              threads.emplace_back(std::async(std::launch::async, [&]() mutable {
+                auto result = nvim.client.Call("nvim_get_current_line");
                 std::cout << "future result: " << result.get() << std::endl;
-              }
-            ));
+              }));
+            }
           }
+          break;
         }
-        break;
-      }
-      case Window::EventType::Char: {
-        auto& [codepoint] = std::get<Window::CharData>(event.data);
-        auto string = unicodeToUTF8(codepoint);
-        nvim.Input(string);
-        break;
-      }
-      case Window::EventType::MouseButton: {
-        break;
-      }
-      case Window::EventType::CursorPos: {
-        break;
-      }
+        case Window::EventType::Char:
+        {
+          auto& [codepoint] = std::get<Window::CharData>(event.data);
+          auto string = unicodeToUTF8(codepoint);
+          nvim.Input(string);
+          break;
+        }
+        case Window::EventType::MouseButton:
+        {
+          break;
+        }
+        case Window::EventType::CursorPos:
+        {
+          break;
+        }
       }
     }
 

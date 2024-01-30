@@ -7,7 +7,7 @@ struct Nvim {
   rpc::Client client;
   std::unique_ptr<TinyProcessLib::Process> nvimProcess;
 
-  Nvim();
+  Nvim(bool debug);
   ~Nvim();
   void StartUi(int width, int height);
   void Input(std::string input);

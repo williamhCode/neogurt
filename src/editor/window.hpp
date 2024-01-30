@@ -36,7 +36,7 @@ struct Window {
     double xpos;
     double ypos;
   };
-  typedef std::variant<KeyData, CharData, MouseButtonData, CursorPosData> EventData;
+  using EventData = std::variant<KeyData, CharData, MouseButtonData, CursorPosData>;
   struct Event {
     EventType type;
     EventData data;

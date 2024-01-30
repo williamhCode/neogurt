@@ -7,6 +7,10 @@ IndentWidth: 2
 ContinuationIndentWidth: 2
 SortIncludes: false
 PointerAlignment: Left
+IndentCaseLabels: true
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterCaseLabel: true
 
 # BinPackArguments: false
 BinPackParameters: false
