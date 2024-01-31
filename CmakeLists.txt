@@ -23,6 +23,7 @@ set(APP_SRC
   src/gfx/context.cpp
   src/gfx/pipeline.cpp
   src/gfx/renderer.cpp
+  src/gfx/font.cpp
 
   src/editor/window.cpp
 
