@@ -5,6 +5,7 @@
 #include "GLFW/glfw3.h"
 
 #include "tsqueue.hpp"
+#include "messages.hpp"
 
 #include <iostream>
 #include <string>
@@ -16,46 +17,6 @@ namespace rpc {
 
 struct Client {
 private:
-  struct MessageType {
-    enum : int {
-      Request = 0,
-      Response = 1,
-      Notification = 2,
-    };
-  };
-
-  template <typename T>
-  struct Request {
-    int type = MessageType::Request;
-    uint32_t msgid;
-    std::string method;
-    T params;
-    MSGPACK_DEFINE(type, msgid, method, params);
-  };
-
-  struct Response {
-    int type;
-    uint32_t msgid;
-    msgpack::object error;
-    msgpack::object result;
-    MSGPACK_DEFINE(type, msgid, error, result);
-  };
-
-  template <typename T>
-  struct NotificationOut {
-    int type = MessageType::Notification;
-    std::string method;
-    T params;
-    MSGPACK_DEFINE(type, method, params);
-  };
-
-  struct NotificationIn {
-    int type;
-    std::string method;
-    msgpack::object params;
-    MSGPACK_DEFINE(type, method, params);
-  };
-
   asio::io_context context;
   asio::ip::tcp::socket socket;
   std::thread contextThr;
@@ -106,8 +67,7 @@ public:
     return !exit;
   }
 
-  template <typename... Args>
-  msgpack::object_handle Call(const std::string& method, Args... args) {
+  msgpack::object_handle Call(const std::string& method, auto... args) {
     auto future = AsyncCall(method, args...);
     return future.get();
   }
@@ -117,6 +77,7 @@ public:
   AsyncCall(const std::string& func_name, Args... args) {
     if (!IsConnected()) return {};
 
+    // template required for Apple Clang
     Request<std::tuple<Args...>> msg{
       .msgid = Msgid(),
       .method = func_name,
@@ -137,6 +98,7 @@ public:
   void Send(const std::string& func_name, Args... args) {
     if (!IsConnected()) return;
 
+    // template required for Apple Clang
     NotificationOut<std::tuple<Args...>> msg{
       .method = func_name,
       .params = std::tuple(args...),
@@ -157,6 +119,7 @@ public:
 
 private:
   msgpack::unpacker unpacker;
+  // TODO: make size dynamic if needed
   static constexpr std::size_t readSize = 1024 * 10;
   TSQueue<NotificationData> msgsIn;
   TSQueue<msgpack::sbuffer> msgsOut;
@@ -214,10 +177,6 @@ private:
 
             } else if (type == MessageType::Notification) {
               NotificationIn msg(obj->convert());
-              std::cout << "\n\n---------------------------------" << std::endl;
-              std::cout << "method: " << msg.method << "\n";
-              std::cout << "params: " << msg.params << "\n";
-
               msgsIn.Push(NotificationData{
                 .method = std::move(msg.method),
                 .params = msgpack::object_handle(msg.params, std::move(obj.zone())),

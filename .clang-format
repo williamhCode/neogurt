@@ -9,8 +9,8 @@ SortIncludes: false
 PointerAlignment: Left
 IndentCaseLabels: true
 BreakBeforeBraces: Custom
-BraceWrapping:
-  AfterCaseLabel: true
+# BraceWrapping:
+#   AfterCaseLabel: true
 
 # BinPackArguments: false
 BinPackParameters: false

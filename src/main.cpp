@@ -1,18 +1,12 @@
 #include "gfx/context.hpp"
 #include "editor/window.hpp"
 #include "nvim/msgpack_rpc/client.hpp"
+#include "editor/input.hpp"
 
 #include <iostream>
 #include "nvim/nvim.hpp"
-#include "utf8/unchecked.h"
 
 using namespace wgpu;
-
-std::string unicodeToUTF8(unsigned int unicode) {
-  std::string utf8String;
-  utf8::unchecked::append(unicode, std::back_inserter(utf8String));
-  return utf8String;
-}
 
 int main() {
   Nvim nvim(true);
@@ -29,32 +23,32 @@ int main() {
     window.PollEvents();
     for (const auto& event : window.events) {
       switch (event.type) {
-        case Window::EventType::Key:
-        {
+        case Window::EventType::Key: {
           auto& [key, scancode, action, mods] = std::get<Window::KeyData>(event.data);
           if (action == GLFW_PRESS || action == GLFW_REPEAT) {
-            if (key == GLFW_KEY_ESCAPE) {
-              threads.emplace_back(std::async(std::launch::async, [&]() mutable {
-                auto result = nvim.client.Call("nvim_get_current_line");
-                std::cout << "future result: " << result.get() << std::endl;
-              }));
-            }
+            auto string = KeyInput(key, mods);
+            std::cout << "key: " << string << std::endl;
+            if (string != "") nvim.Input(string);
+
+            // if (key == GLFW_KEY_ESCAPE) {
+            //   threads.emplace_back(std::async(std::launch::async, [&]() mutable {
+            //     auto result = nvim.client.Call("nvim_get_current_line");
+            //     std::cout << "future result: " << result.get() << std::endl;
+            //   }));
+            // }
           }
           break;
         }
-        case Window::EventType::Char:
-        {
+        case Window::EventType::Char: {
           auto& [codepoint] = std::get<Window::CharData>(event.data);
-          auto string = unicodeToUTF8(codepoint);
-          nvim.Input(string);
+          auto string = CharInput(codepoint);
+          if (string != "") nvim.Input(string);
           break;
         }
-        case Window::EventType::MouseButton:
-        {
+        case Window::EventType::MouseButton: {
           break;
         }
-        case Window::EventType::CursorPos:
-        {
+        case Window::EventType::CursorPos: {
           break;
         }
       }
@@ -66,9 +60,9 @@ int main() {
     // get info and stuff ---------------------------------------
     while (nvim.client.HasNotification()) {
       auto notification = nvim.client.PopNotification();
-      std::cout << "\n\n---------------------------------" << std::endl;
-      std::cout << "method: " << notification.method << std::endl;
-      std::cout << "params: " << notification.params.get() << std::endl;
+      // std::cout << "\n\n---------------------------------" << std::endl;
+      // std::cout << "method: " << notification.method << std::endl;
+      // std::cout << "params: " << notification.params.get() << std::endl;
     }
 
     std::erase_if(threads, [](const std::future<void>& f) {
