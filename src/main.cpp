@@ -9,10 +9,10 @@
 using namespace wgpu;
 
 int main() {
+  Window window({600, 400}, "Neovim GUI", PresentMode::Fifo);
+
   Nvim nvim(true);
   nvim.StartUi(120, 80);
-
-  Window window({600, 400}, "Neovim GUI", PresentMode::Fifo);
 
   std::vector<std::future<void>> threads;
 
@@ -27,7 +27,7 @@ int main() {
           auto& [key, scancode, action, mods] = std::get<Window::KeyData>(event.data);
           if (action == GLFW_PRESS || action == GLFW_REPEAT) {
             auto string = KeyInput(key, mods);
-            std::cout << "key: " << string << std::endl;
+            // std::cout << "key: " << string << std::endl;
             if (string != "") nvim.Input(string);
 
             // if (key == GLFW_KEY_ESCAPE) {
@@ -60,9 +60,9 @@ int main() {
     // get info and stuff ---------------------------------------
     while (nvim.client.HasNotification()) {
       auto notification = nvim.client.PopNotification();
-      // std::cout << "\n\n---------------------------------" << std::endl;
-      // std::cout << "method: " << notification.method << std::endl;
-      // std::cout << "params: " << notification.params.get() << std::endl;
+      std::cout << "\n\n---------------------------------" << std::endl;
+      std::cout << "method: " << notification.method << std::endl;
+      std::cout << "params: " << notification.params.get() << std::endl;
     }
 
     std::erase_if(threads, [](const std::future<void>& f) {

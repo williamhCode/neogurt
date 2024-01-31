@@ -22,6 +22,7 @@ private:
   std::thread contextThr;
   std::atomic_bool exit;
   std::unordered_map<int, std::promise<msgpack::object_handle>> responses;
+  std::mutex responsesMutex;
 
 public:
   struct NotificationData {
@@ -48,11 +49,9 @@ public:
       exit = true;
       return false;
     }
-
     exit = false;
 
     GetData();
-
     contextThr = std::thread([this]() { context.run(); });
 
     return true;
@@ -89,7 +88,10 @@ public:
 
     std::promise<msgpack::object_handle> promise;
     auto future = promise.get_future();
-    responses[msg.msgid] = std::move(promise);
+    {
+      std::scoped_lock lock(responsesMutex);
+      responses[msg.msgid] = std::move(promise);
+    }
 
     return future;
   }
@@ -169,7 +171,10 @@ private:
                   // "\n"; std::cout << "ERROR: " << msg.error.via.array.ptr[1] <<
                   // "\n";
                 }
-                responses.erase(it);
+                {
+                  std::scoped_lock lock(responsesMutex);
+                  responses.erase(it);
+                }
 
               } else {
                 std::cout << "Unknown msgid: " << msg.msgid << "\n";

@@ -3,7 +3,6 @@
 #include "GLFW/glfw3.h"
 #include "utf8/unchecked.h"
 #include <unordered_map>
-#include <iostream>
 
 inline std::string UnicodeToUTF8(unsigned int unicode) {
   std::string utf8String;

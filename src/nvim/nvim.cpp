@@ -34,6 +34,7 @@ Nvim::~Nvim() {
 void Nvim::StartUi(int width, int height) {
   std::map<std::string, bool> options{
     {"rgb", true},
+    {"ext_hlstate", true},
     {"ext_linegrid", true},
     {"ext_multigrid", true},
   };

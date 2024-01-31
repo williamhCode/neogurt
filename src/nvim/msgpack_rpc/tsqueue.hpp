@@ -6,7 +6,6 @@ struct TSQueue {
 private:
   std::queue<T> queue;
   std::mutex mutex;
-  bool toExit = false;
 
 public:
   T& Front() {
