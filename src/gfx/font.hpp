@@ -1,15 +1,19 @@
 #pragma once
 
-#include "webgpu/webgpu_cpp.h"
+#include "freetype/freetype.h"
 #include "glm/ext/vector_int2.hpp"
+#include "gfx/texture.hpp"
 
 struct Font {
-  // number of glyphs in a row
+  static inline FT_Library library;
+  static inline bool ftInitialized = false;
+
+  int size;  // font size
+
+  // texture related
+  TextureHandle texture;
   static constexpr int atlasWidth = 16;
   int atlasHeight;
-
-  int size;
-  wgpu::Texture texture;
 
   struct GlyphInfo {
     glm::ivec2 size;

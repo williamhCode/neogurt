@@ -9,10 +9,12 @@
 
 using namespace wgpu;
 
-int main() {
-  Font font("/System/Library/Fonts/Supplemental/Arial.ttf", 30, 1);
+WGPUContext ctx;
 
+int main() {
   Window window({600, 400}, "Neovim GUI", PresentMode::Fifo);
+
+  Font font("/System/Library/Fonts/Supplemental/Arial.ttf", 30, 1);
 
   Nvim nvim(true);
   nvim.StartUi(120, 80);
