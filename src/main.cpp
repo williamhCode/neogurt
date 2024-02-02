@@ -1,5 +1,6 @@
-#include "gfx/context.hpp"
+#include "gfx/instance.hpp"
 #include "editor/window.hpp"
+#include "gfx/font.hpp"
 #include "nvim/msgpack_rpc/client.hpp"
 #include "editor/input.hpp"
 
@@ -9,6 +10,8 @@
 using namespace wgpu;
 
 int main() {
+  Font font("/System/Library/Fonts/Supplemental/Arial.ttf", 30, 1);
+
   Window window({600, 400}, "Neovim GUI", PresentMode::Fifo);
 
   Nvim nvim(true);
@@ -60,9 +63,9 @@ int main() {
     // get info and stuff ---------------------------------------
     while (nvim.client.HasNotification()) {
       auto notification = nvim.client.PopNotification();
-      std::cout << "\n\n---------------------------------" << std::endl;
-      std::cout << "method: " << notification.method << std::endl;
-      std::cout << "params: " << notification.params.get() << std::endl;
+      // std::cout << "\n\n---------------------------------" << std::endl;
+      // std::cout << "method: " << notification.method << std::endl;
+      // std::cout << "params: " << notification.params.get() << std::endl;
     }
 
     std::erase_if(threads, [](const std::future<void>& f) {

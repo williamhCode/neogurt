@@ -1,4 +1,5 @@
 #include "window.hpp"
+#include "gfx/instance.hpp"
 
 #include <iostream>
 #include <ostream>

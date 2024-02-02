@@ -2,7 +2,6 @@
 #include <webgpu/webgpu_cpp.h>
 #include <webgpu/webgpu_glfw.h>
 #include "utils/webgpu.hpp"
-#include <dawn/utils/TextureUtils.h>
 
 #include <iostream>
 

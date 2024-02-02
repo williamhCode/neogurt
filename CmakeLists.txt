@@ -16,6 +16,7 @@ add_subdirectory(deps/msgpack)
 set(ASIO_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/deps/asio/asio/include)
 set(UTFCPP_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/deps/utfcpp/source)
 add_subdirectory(deps/tiny_process_library)
+add_subdirectory(deps/freetype)
 
 set(APP_SRC
 	src/main.cpp
@@ -49,6 +50,7 @@ target_link_libraries(App PRIVATE
   WebGPU_Tools
   msgpack-cxx
   tiny-process-library
+  freetype
 )
 
 if (MSVC)

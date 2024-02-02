@@ -6,8 +6,6 @@
 
 #include "gfx/pipeline.hpp"
 
-extern const WGPUContext& ctx;
-
 struct WGPUContext {
   wgpu::Instance instance;
   wgpu::Surface surface;
