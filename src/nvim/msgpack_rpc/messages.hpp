@@ -39,7 +39,7 @@ struct NotificationOut {
 
 struct NotificationIn {
   int32_t type;
-  std::string method;
+  std::string_view method;
   msgpack::object params;
   MSGPACK_DEFINE(type, method, params);
 };

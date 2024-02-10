@@ -1,11 +1,12 @@
-#include "editor/parse.hpp"
+#include "nvim/parse.hpp"
 #include "gfx/instance.hpp"
-#include "editor/window.hpp"
+#include "app/window.hpp"
 #include "gfx/font.hpp"
 #include "nvim/msgpack_rpc/client.hpp"
-#include "editor/input.hpp"
+#include "nvim/input.hpp"
 
 #include <iostream>
+#include <numeric>
 #include "nvim/nvim.hpp"
 
 using namespace wgpu;

@@ -26,7 +26,7 @@ private:
 
 public:
   struct NotificationData {
-    std::string method;
+    std::string_view method;
     msgpack::object_handle params;
   };
 
@@ -141,8 +141,8 @@ private:
       asio::buffer(unpacker.buffer(), readSize),
       [&](asio::error_code ec, std::size_t length) {
         if (!ec) {
-          std::cout << "\n\n----------------------------------\n";
-          std::cout << "Read " << length << " bytes\n";
+          // std::cout << "\n\n----------------------------------\n";
+          // std::cout << "Read " << length << " bytes\n";
           unpacker.buffer_consumed(length);
 
           static int count = 0;
@@ -193,12 +193,12 @@ private:
             } else if (type == MessageType::Notification) {
               NotificationIn msg(obj->convert());
 
-              std::cout << "\n\n--------------------------------- " << count << std::endl;
-              std::cout << "method: " << msg.method << std::endl;
-              std::cout << "params: " << msg.params << std::endl;
+              // std::cout << "\n\n--------------------------------- " << count << std::endl;
+              // std::cout << "method: " << msg.method << std::endl;
+              // std::cout << "params: " << msg.params << std::endl;
 
               msgsIn.Push(NotificationData{
-                .method = std::move(msg.method),
+                .method = msg.method,
                 .params = msgpack::object_handle(msg.params, std::move(obj.zone())),
               });
             } else {
