@@ -2,6 +2,7 @@
 
 #include "GLFW/glfw3.h"
 #include "utf8/unchecked.h"
+#include <iostream>
 #include <unordered_map>
 
 inline std::string UnicodeToUTF8(unsigned int unicode) {
@@ -45,7 +46,7 @@ static std::unordered_map<int, std::string> specialKeys{
 
 // handle when modifier or special keys are pressed.
 // returning "" means ignore output
-inline std::string KeyInput(int key, int mods) {
+inline std::string KeyInputToString(int key, int mods) {
   bool isSpecial =
     (key >= GLFW_KEY_ESCAPE && key < GLFW_KEY_LEFT_SHIFT) || key == GLFW_KEY_SPACE;
   bool onlyMod = key >= GLFW_KEY_LEFT_SHIFT && key <= GLFW_KEY_RIGHT_SUPER;
@@ -64,7 +65,7 @@ inline std::string KeyInput(int key, int mods) {
 }
 
 // returning "" means ignore output
-inline std::string CharInput(unsigned int unicode) {
+inline std::string CharInputToString(unsigned int unicode) {
   // handle space in KeyInput
   if (unicode == GLFW_KEY_SPACE) return "";
   return UnicodeToUTF8(unicode);

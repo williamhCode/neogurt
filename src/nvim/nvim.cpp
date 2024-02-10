@@ -12,10 +12,7 @@ Nvim::Nvim(bool debug) {
   auto elapsed = 0ms;
   auto delay = 50ms;
   while (elapsed < timeout) {
-    bool connected = client.Connect("localhost", 6666);
-    if (connected) {
-      break;
-    }
+    if (client.Connect("localhost", 6666)) break;
     std::this_thread::sleep_for(delay);
     elapsed += delay;
   }

@@ -1,3 +1,4 @@
+#include "editor/parse.hpp"
 #include "gfx/instance.hpp"
 #include "editor/window.hpp"
 #include "gfx/font.hpp"
@@ -9,17 +10,16 @@
 
 using namespace wgpu;
 
-WGPUContext ctx;
+const WGPUContext& ctx = Window::_ctx;
 
 int main() {
-  Window window({600, 400}, "Neovim GUI", PresentMode::Fifo);
-
-  Font font("/System/Library/Fonts/Supplemental/Arial.ttf", 30, 1);
-
   Nvim nvim(true);
   nvim.StartUi(120, 80);
 
-  std::vector<std::future<void>> threads;
+  Window window({600, 400}, "Neovim GUI", PresentMode::Fifo);
+  Font font("/System/Library/Fonts/Supplemental/Arial.ttf", 30, 1);
+
+  // std::vector<std::future<void>> threads;
 
   while (!window.ShouldClose()) {
     ctx.device.Tick();
@@ -31,8 +31,7 @@ int main() {
         case Window::EventType::Key: {
           auto& [key, scancode, action, mods] = std::get<Window::KeyData>(event.data);
           if (action == GLFW_PRESS || action == GLFW_REPEAT) {
-            auto string = KeyInput(key, mods);
-            // std::cout << "key: " << string << std::endl;
+            auto string = KeyInputToString(key, mods);
             if (string != "") nvim.Input(string);
 
             // if (key == GLFW_KEY_ESCAPE) {
@@ -46,7 +45,7 @@ int main() {
         }
         case Window::EventType::Char: {
           auto& [codepoint] = std::get<Window::CharData>(event.data);
-          auto string = CharInput(codepoint);
+          auto string = CharInputToString(codepoint);
           if (string != "") nvim.Input(string);
           break;
         }
@@ -63,19 +62,13 @@ int main() {
     if (!nvim.client.IsConnected()) window.SetShouldClose(true);
 
     // get info and stuff ---------------------------------------
-    while (nvim.client.HasNotification()) {
-      auto notification = nvim.client.PopNotification();
-      // std::cout << "\n\n---------------------------------" << std::endl;
-      // std::cout << "method: " << notification.method << std::endl;
-      // std::cout << "params: " << notification.params.get() << std::endl;
-    }
+    ParseNotifications(nvim.client);
 
-    std::erase_if(threads, [](const std::future<void>& f) {
-      return f.wait_for(std::chrono::seconds(0)) == std::future_status::ready;
-    });
+    // std::erase_if(threads, [](const std::future<void>& f) {
+    //   return f.wait_for(std::chrono::seconds(0)) == std::future_status::ready;
+    // });
 
     // rendering ------------------------------------------------
-    // TODO: figure out why sometimes WebGPU segfaults when beginning to render
     TextureView nextTexture = ctx.swapChain.GetCurrentTextureView();
     RenderPassColorAttachment colorAttachment{
       .view = nextTexture,

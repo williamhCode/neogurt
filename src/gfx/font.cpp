@@ -6,6 +6,9 @@
 #include <iostream>
 #include <vector>
 
+static FT_Library library;
+static bool ftInitialized = false;
+
 Font::Font(const std::string& path, int _size, int ratio) : size(_size) {
   if (!ftInitialized) {
     if (FT_Init_FreeType(&library)) {
@@ -32,13 +35,14 @@ Font::Font(const std::string& path, int _size, int ratio) : size(_size) {
   };
   std::vector<Color> textureData(bufferSize.x * bufferSize.y, {0, 0, 0, 0});
 
-  // stat off by rendering the first 128 characters
+  // start off by rendering the first 128 characters
   for (uint32_t i = 0; i < numChars; i++) {
-    auto glyph_index = FT_Get_Char_Index(face, i);
+    auto glyphIndex = FT_Get_Char_Index(face, i);
     // if (glyph_index == 0) {
-    //   throw std::runtime_error(std::format("Failed to load glyph for character {}", i));
+    //   throw std::runtime_error(std::format("Failed to load glyph for character {}",
+    //   i));
     // }
-    FT_Load_Glyph(face, glyph_index, FT_LOAD_RENDER);
+    FT_Load_Glyph(face, glyphIndex, FT_LOAD_RENDER);
 
     glm::ivec2 pos{
       (i % atlasWidth) * (size + 2) + 1,
@@ -59,7 +63,7 @@ Font::Font(const std::string& path, int _size, int ratio) : size(_size) {
     }
 
     glyphInfoMap.emplace(
-      glyph_index,
+      glyphIndex,
       GlyphInfo{
         .size =
           {
@@ -77,7 +81,6 @@ Font::Font(const std::string& path, int _size, int ratio) : size(_size) {
     );
   }
 
-  std::cout << "ctx pointer: " << &ctx << std::endl;
   texture = TextureHandle{
     .texture = utils::CreateTexture(
       ctx.device,

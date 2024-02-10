@@ -8,7 +8,7 @@
 #include <string>
 
 struct Window {
-  // static inline WGPUContext _ctx;
+  static inline WGPUContext _ctx;
   GLFWwindow* window;
   glm::uvec2 size;
 

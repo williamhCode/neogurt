@@ -1,8 +1,8 @@
 #include "window.hpp"
-#include "gfx/instance.hpp"
 
 #include <iostream>
 #include <ostream>
+
 
 static void
 KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
@@ -40,7 +40,7 @@ static void WindowSizeCallback(GLFWwindow* window, int width, int height) {
 
 static void FramebufferSizeCallback(GLFWwindow* window, int width, int height) {
   Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
-  // ctx.Resize({width, height});
+  win._ctx.Resize({width, height});
 }
 
 Window::Window(glm::uvec2 size, const std::string& title, wgpu::PresentMode presentMode)
@@ -69,7 +69,7 @@ Window::Window(glm::uvec2 size, const std::string& title, wgpu::PresentMode pres
   // webgpu ------------------------------------
   int width, height;
   glfwGetFramebufferSize(window, &width, &height);
-  ctx = WGPUContext(window, {width, height}, presentMode);
+  _ctx = WGPUContext(window, {width, height}, presentMode);
   std::cout << "WGPUContext created" << std::endl;
 }
 

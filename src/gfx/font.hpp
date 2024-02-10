@@ -5,10 +5,7 @@
 #include "gfx/texture.hpp"
 
 struct Font {
-  static inline FT_Library library;
-  static inline bool ftInitialized = false;
-
-  int size;  // font size
+  int size; // font size
 
   // texture related
   TextureHandle texture;

@@ -2,7 +2,7 @@
 
 #include "asio.hpp"
 #include "msgpack.hpp"
-#include "GLFW/glfw3.h"
+// #include "GLFW/glfw3.h"
 
 #include "tsqueue.hpp"
 #include "messages.hpp"
@@ -42,8 +42,10 @@ public:
 
   bool Connect(const std::string& host, const uint16_t port) {
     asio::error_code ec;
-    asio::ip::tcp::endpoint endpoint(asio::ip::make_address(host, ec), port);
-    socket.connect(endpoint, ec);
+    asio::ip::tcp::resolver resolver(context);
+    auto endpoints = resolver.resolve(host, std::to_string(port), ec);
+    asio::connect(socket, endpoints, ec);
+
     if (ec) {
       socket.close();
       exit = true;
@@ -51,6 +53,7 @@ public:
     }
     exit = false;
 
+    unpacker.reserve_buffer(readSize);
     GetData();
     contextThr = std::thread([this]() { context.run(); });
 
@@ -122,7 +125,7 @@ public:
 private:
   msgpack::unpacker unpacker;
   // TODO: make size dynamic if needed
-  static constexpr std::size_t readSize = 1024 * 10;
+  static constexpr std::size_t readSize = 1024 << 10;
   TSQueue<NotificationData> msgsIn;
   TSQueue<msgpack::sbuffer> msgsOut;
   uint32_t currId = 0;
@@ -138,9 +141,11 @@ private:
       asio::buffer(unpacker.buffer(), readSize),
       [&](asio::error_code ec, std::size_t length) {
         if (!ec) {
-          // std::cout << "\n\n----------------------------------\n";
-          // std::cout << "Read " << length << " bytes\n";
+          std::cout << "\n\n----------------------------------\n";
+          std::cout << "Read " << length << " bytes\n";
           unpacker.buffer_consumed(length);
+
+          static int count = 0;
 
           msgpack::object_handle obj;
           while (unpacker.next(obj)) {
@@ -154,6 +159,11 @@ private:
 
             if (type == MessageType::Response) {
               Response msg(obj->convert());
+
+              // std::cout << "\n\n--------------------------------- " << count << std::endl;
+              // std::cout << "msgid: " << msg.msgid << std::endl;
+              // std::cout << "error: " << msg.error << std::endl;
+              // std::cout << "result: " << msg.result << std::endl;
 
               auto it = responses.find(msg.msgid);
               if (it != responses.end()) {
@@ -182,14 +192,20 @@ private:
 
             } else if (type == MessageType::Notification) {
               NotificationIn msg(obj->convert());
+
+              std::cout << "\n\n--------------------------------- " << count << std::endl;
+              std::cout << "method: " << msg.method << std::endl;
+              std::cout << "params: " << msg.params << std::endl;
+
               msgsIn.Push(NotificationData{
                 .method = std::move(msg.method),
                 .params = msgpack::object_handle(msg.params, std::move(obj.zone())),
               });
-
             } else {
               std::cout << "Unknown type: " << type << "\n";
             }
+
+            count++;
           }
           GetData();
 
