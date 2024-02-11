@@ -1,127 +1,145 @@
 #pragma once
 
-#include "editor/grid.hpp"
+#include "util/logger.hpp"
 #include "nvim/msgpack_rpc/client.hpp"
-#include <functional>
 #include <string_view>
 #include <unordered_map>
-#include <iostream>
 
-static void ParseRedraw(msgpack::object_handle& params);
+static void ParseRedraw(const msgpack::object& params);
 
 inline void ParseNotifications(rpc::Client& client) {
+  // LOG_DISABLE();
   while (client.HasNotification()) {
     static int count = 0;
     auto notification = client.PopNotification();
-    std::cout << "\n\n--------------------------------- " << count << std::endl;
-    // std::cout << "method: " << notification.method << std::endl;
-    // std::cout << "params: " << notification.params.get() << std::endl;
-    count++;
+    LOG("\n\n--------------------------------- {}", count++);
+    // LOG("method: {}", notification.method);
+    // LOG("params: {}", ToString(notification.params.get()));
     if (notification.method == "redraw") {
       ParseRedraw(notification.params);
     }
   }
+  // LOG_ENABLE();
 }
 
 using UiEventFunc = void (*)(const msgpack::object& args);
 static std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
-  {"flush", [](const msgpack::object& args) { std::cout << "flush" << std::endl; }},
+  // Global Events ----------------------------------------------------------
+  {"set_title", [](const msgpack::object& args) {
+    auto [title] = args.as<std::tuple<std::string>>();
+    LOG("set_title: {}", title);
+  }},
+
+  {"set_icon", [](const msgpack::object& args) {
+    auto [icon] = args.as<std::tuple<std::string>>();
+    LOG("set_icon: {}", icon);
+  }},
+
+  {"mode_info_set", [](const msgpack::object& args) {
+    auto [cursor_style_enabled, mode_info] =
+      args.as<std::tuple<bool, msgpack::object>>();
+    LOG("mode_info_set: {} {}", cursor_style_enabled, ToString(mode_info));
+  }},
+
+  {"option_set", [](const msgpack::object& args) {
+    auto [name, value] = args.as<std::tuple<std::string, msgpack::object>>();
+    LOG("option_set: {} {}", name, ToString(value));
+  }},
+
+  {"mode_change", [](const msgpack::object& args) {
+    auto [mode, modeIdx] = args.as<std::tuple<std::string, int>>();
+    LOG("mode_change: {} {}", mode, modeIdx);
+  }},
+
+  {"flush", [](const msgpack::object& args) {
+    LOG("flush");
+  }},
 
   {"default_colors_set", [](const msgpack::object& args) {
 
   }},
 
-  // Grid Events ------------------------------------------------------------------
+  // Grid Events --------------------------------------------------------------
   {"grid_resize", [](const msgpack::object& args) {
     auto [grid, width, height] = args.as<std::tuple<int, int, int>>();
-    std::cout << "grid_resize: " << grid << " " << width << " " << height << std::endl;
+    LOG("grid_resize: {} {} {}", grid, width, height);
   }},
 
   {"grid_clear", [](const msgpack::object& args) {
     auto [grid] = args.as<std::tuple<int>>();
-    std::cout << "grid_clear: " << grid << std::endl;
+    LOG("grid_clear: {}", grid);
   }},
 
   {"grid_cursor_goto", [](const msgpack::object& args) {
     auto [grid, row, col] = args.as<std::tuple<int, int, int>>();
-    std::cout << "grid_cursor_goto: " << grid << " " << row << " " << col << std::endl;
+    LOG("grid_cursor_goto: {} {} {}", grid, row, col);
   }},
 
   {"grid_line", [](const msgpack::object& args) {
-    auto [grid, row, colStart, cells] =
+    auto [grid, row, col_start, cells] =
       args.as<std::tuple<int, int, int, msgpack::object>>();
-    std::cout << "grid_line: " << grid << " " << row << " " << colStart << " " << cells
-              << std::endl;
+    LOG("grid_line: {} {} {} {}", grid, row, col_start, ToString(cells));
   }},
 
   {"grid_scroll", [](const msgpack::object& args) {
     auto [grid, top, bot, left, right, rows, cols] =
       args.as<std::tuple<int, int, int, int, int, int, int>>();
-    std::cout << "grid_scroll: " << grid << " " << top << " " << bot << " " << left
-               << " " << right << " " << rows << " " << cols << std::endl;
+    LOG("grid_scroll: {} {} {} {} {} {} {}", grid, top, bot, left, right, rows, cols);
   }},
 
   {"grid_destroy", [](const msgpack::object& args) {
     auto [grid] = args.as<std::tuple<int>>();
-    std::cout << "grid_destroy: " << grid << std::endl;
+    LOG("grid_destroy: {}", grid);
   }},
 
   // Multigrid Events ------------------------------------------------------------
   {"win_pos", [](const msgpack::object& args) {
     auto [grid, win, start_row, start_col, width, height] =
       args.as<std::tuple<int, msgpack::object, int, int, int, int>>();  
-    std::cout << "win_pos: " << grid << " " << win << " " << start_row << " " << start_col
-              << " " << width << " " << height << std::endl;
+    LOG("win_pos: {} {} {} {} {} {}", grid, ToString(win), start_row, start_col, width, height);
   }},
 
-  // {"win_float_pos", [](const msgpack::object& args) {
-  //   auto [grid, win, anchor, anchor_grid, anchor_row, anchor_col, focusable]
-  // }},
+  {"win_float_pos", [](const msgpack::object& args) {
+    auto [grid, win, anchor, anchor_grid, anchor_row, anchor_col, focusable]
+      = args.as<std::tuple<int, msgpack::object, std::string, int, float, float, bool>>();
+    LOG("win_float_pos: {} {} {} {} {} {} {}", grid, ToString(win), anchor, anchor_grid, anchor_row, anchor_col, focusable);
+  }},
 
-  // {"win_external_pos", [](const msgpack::object& args) {
-  //   auto [grid, pos]
-  // }},
+  {"win_external_pos", [](const msgpack::object& args) {
+    auto [grid, pos] = args.as<std::tuple<int, msgpack::object>>();
+    LOG("win_external_pos: {} {}", grid, ToString(pos));
+  }},
 
-  // {"win_hide", [](const msgpack::object& args) {
-  //   auto [grid] = args.as<std::tuple<int>>();
-  //   std::cout << "win_hide: " << win << std::endl;
-  // }},
+  {"win_hide", [](const msgpack::object& args) {
+    auto [grid] = args.as<std::tuple<int>>();
+    LOG("win_hide: {}", grid);
+  }},
 
-  // {"win_close", [](const msgpack::object& args) {
-  //   auto [grid] = args.as<std::tuple<int>>();
-  //   std::cout << "win_close: " << win << std::endl;
-  // }},
+  {"win_close", [](const msgpack::object& args) {
+    auto [grid] = args.as<std::tuple<int>>();
+    LOG("win_close: {}", grid);
+  }},
 
-  // {"msg_set_pos", [](const msgpack::object& args) {
-  //   auto [grid, row, scrolled, sep_char]
-  // }},
+  {"msg_set_pos", [](const msgpack::object& args) {
+    auto [grid, row, scrolled, sep_char] = args.as<std::tuple<int, int, bool, std::string>>();
+    LOG("msg_set_pos: {} {} {} {}", grid, row, scrolled, sep_char);
+  }},
 
   {"win_viewport", [](const msgpack::object& args) {
     auto [grid, win, topline, botline, curline, curcol, line_count, scroll_delta] =
       args.as<std::tuple<int, msgpack::object, int, int, int, int, int, int>>();
-    std::cout << "win_viewport: " << grid << " " << win << " " << topline << " " << botline
-              << " " << curline << " " << curcol << " " << line_count << " " << scroll_delta
-              << std::endl;
-
-    // auto size = win.via.ext.size;
-    // auto data = reinterpret_cast<const int8_t*>(win.via.ext.data());
-    // int result = 0;
-    // result |= static_cast<int>(data[0]) << 16; // Shift the first byte left by 16 bits
-    // result |= static_cast<int>(data[1]) << 8;  // Shift the second byte left by 8 bits
-    // result |= static_cast<int>(data[2]);
-    // std::cout << "id: " << result << std::endl;
+    LOG("win_viewport: {} {} {} {} {} {} {} {}", grid, ToString(win), topline, botline, curline, curcol, line_count, scroll_delta);
   }},
 
   {"win_extmark", [](const msgpack::object& args) {
     auto [grid, win, ns_id, mark_id, row, col]
       = args.as<std::tuple<int, msgpack::object, int, int, int, int>>();
-    std::cout << "win_extmark: " << grid << " " << win << " " << ns_id << " " << mark_id << " "
-              << row << " " << col << std::endl;
+    LOG("win_extmark: {} {} {} {} {} {}", grid, ToString(win), ns_id, mark_id, row, col);
   }},
 };
 
-static void ParseRedraw(msgpack::object_handle& params) {
-  std::span<const msgpack::object> paramList(params->via.array);
+static void ParseRedraw(const msgpack::object& params) {
+  std::span<const msgpack::object> paramList(params.via.array);
 
   for (const auto& param : paramList) {
     auto paramArr = param.via.array;

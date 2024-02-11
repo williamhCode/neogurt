@@ -1,6 +1,7 @@
 #pragma once
 
 #include "asio.hpp"
+#include "util/logger.hpp"
 #include "msgpack.hpp"
 // #include "GLFW/glfw3.h"
 
@@ -27,7 +28,8 @@ private:
 public:
   struct NotificationData {
     std::string_view method;
-    msgpack::object_handle params;
+    msgpack::object params;
+    msgpack::unique_ptr<msgpack::zone> _zone;  // holds the lifetime of the data
   };
 
   Client() : socket(context) {
@@ -141,24 +143,25 @@ private:
       asio::buffer(unpacker.buffer(), readSize),
       [&](asio::error_code ec, std::size_t length) {
         if (!ec) {
-          // std::cout << "\n\n----------------------------------\n";
-          // std::cout << "Read " << length << " bytes\n";
+          // LOG("\n\n----------------------------------");
+          // LOG("Read {} bytes", length);
           unpacker.buffer_consumed(length);
 
           static int count = 0;
 
-          msgpack::object_handle obj;
-          while (unpacker.next(obj)) {
+          msgpack::object_handle handle;
+          while (unpacker.next(handle)) {
+            auto &obj = handle.get();
             // sometimes doesn't get array for some reason probably nvim issue
-            if (obj.get().type != msgpack::type::ARRAY) {
+            if (obj.type != msgpack::type::ARRAY) {
               std::cout << "Not an array" << std::endl;
               continue;
             }
             // std::cout << "----------------------------------\n";
-            int type = obj->via.array.ptr[0].convert();
+            int type = obj.via.array.ptr[0].convert();
 
             if (type == MessageType::Response) {
-              Response msg(obj->convert());
+              Response msg(obj.convert());
 
               // std::cout << "\n\n--------------------------------- " << count << std::endl;
               // std::cout << "msgid: " << msg.msgid << std::endl;
@@ -169,7 +172,7 @@ private:
               if (it != responses.end()) {
                 if (msg.error.is_nil()) {
                   it->second.set_value(
-                    msgpack::object_handle(msg.result, std::move(obj.zone()))
+                    msgpack::object_handle(msg.result, std::move(handle.zone()))
                   );
 
                 } else {
@@ -191,15 +194,11 @@ private:
               }
 
             } else if (type == MessageType::Notification) {
-              NotificationIn msg(obj->convert());
-
-              // std::cout << "\n\n--------------------------------- " << count << std::endl;
-              // std::cout << "method: " << msg.method << std::endl;
-              // std::cout << "params: " << msg.params << std::endl;
-
+              NotificationIn msg(obj.convert());
               msgsIn.Push(NotificationData{
                 .method = msg.method,
-                .params = msgpack::object_handle(msg.params, std::move(obj.zone())),
+                .params = msg.params,
+                ._zone = std::move(handle.zone()),
               });
             } else {
               std::cout << "Unknown type: " << type << "\n";
