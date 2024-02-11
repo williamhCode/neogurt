@@ -29,7 +29,7 @@ public:
   struct NotificationData {
     std::string_view method;
     msgpack::object params;
-    msgpack::unique_ptr<msgpack::zone> _zone;  // holds the lifetime of the data
+    msgpack::unique_ptr<msgpack::zone> _zone; // holds the lifetime of the data
   };
 
   Client() : socket(context) {
@@ -151,7 +151,7 @@ private:
 
           msgpack::object_handle handle;
           while (unpacker.next(handle)) {
-            auto &obj = handle.get();
+            auto& obj = handle.get();
             // sometimes doesn't get array for some reason probably nvim issue
             if (obj.type != msgpack::type::ARRAY) {
               std::cout << "Not an array" << std::endl;
@@ -163,10 +163,10 @@ private:
             if (type == MessageType::Response) {
               Response msg(obj.convert());
 
-              // std::cout << "\n\n--------------------------------- " << count << std::endl;
-              // std::cout << "msgid: " << msg.msgid << std::endl;
-              // std::cout << "error: " << msg.error << std::endl;
-              // std::cout << "result: " << msg.result << std::endl;
+              // std::cout << "\n\n--------------------------------- " << count <<
+              // std::endl; std::cout << "msgid: " << msg.msgid << std::endl; std::cout
+              // << "error: " << msg.error << std::endl; std::cout << "result: " <<
+              // msg.result << std::endl;
 
               auto it = responses.find(msg.msgid);
               if (it != responses.end()) {
@@ -190,7 +190,7 @@ private:
                 }
 
               } else {
-                std::cout << "Unknown msgid: " << msg.msgid << "\n";
+                LOG("Response not found for msgid: {}", msg.msgid);
               }
 
             } else if (type == MessageType::Notification) {
@@ -200,6 +200,7 @@ private:
                 .params = msg.params,
                 ._zone = std::move(handle.zone()),
               });
+
             } else {
               std::cout << "Unknown type: " << type << "\n";
             }

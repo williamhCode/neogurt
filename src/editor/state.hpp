@@ -1,5 +1,9 @@
 #pragma once
 
-struct EditorState {
+#include "editor/grid.hpp"
 
+struct EditorState {
+  GridManager gridManager;
 };
+
+inline EditorState editorState;

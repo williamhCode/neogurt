@@ -51,12 +51,40 @@ static std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
     LOG("mode_change: {} {}", mode, modeIdx);
   }},
 
-  {"flush", [](const msgpack::object& args) {
+  {"mouse_on", [](const msgpack::object&) {
+    LOG("mouse_on");
+  }},
+
+  {"mouse_off", [](const msgpack::object&) {
+    LOG("mouse_off");
+  }},
+
+  {"busy_start", [](const msgpack::object&) {
+    LOG("busy_start");
+  }},
+
+  {"busy_stop", [](const msgpack::object&) {
+    LOG("busy_stop");
+  }},
+
+  {"update_menu", [](const msgpack::object&) {
+    LOG("update_menu");
+  }},
+
+  {"flush", [](const msgpack::object&) {
     LOG("flush");
   }},
 
   {"default_colors_set", [](const msgpack::object& args) {
+    LOG("default_colors_set");
+  }},
 
+  {"hl_attr_define", [](const msgpack::object& args) {
+    LOG("hl_attr_define");
+  }},
+
+  {"hl_group_set", [](const msgpack::object& args) {
+    LOG("hl_group_set");
   }},
 
   // Grid Events --------------------------------------------------------------
@@ -148,7 +176,7 @@ static void ParseRedraw(const msgpack::object& params) {
 
     auto uiEventFunc = uiEventFuncs[eventName];
     if (uiEventFunc == nullptr) {
-      // std::cout << "Unknown event: " << eventName << std::endl;
+      LOG("Unknown event: {}", eventName);
       continue;
     }
     for (const auto& arg : eventArgs) {
