@@ -2,6 +2,7 @@
 
 #include "editor/state.hpp"
 #include "util/logger.hpp"
+#include "util/timer.hpp"
 
 #include <string_view>
 #include <unordered_map>
@@ -75,6 +76,7 @@ static std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
   {"flush", [](const msgpack::object&) {
     LOG("flush");
     editorState.flush = true;
+    numFlushes++;
     renderState.UpdateState(editorState);
   }},
 

@@ -3,34 +3,25 @@
 #include <iostream>
 #include <ostream>
 
-
 static void
 KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
   Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
-  win.events.push_back(
-    {Window::EventType::Key, Window::KeyData{key, scancode, action, mods}}
-  );
+  win.events.push_back({Window::KeyData{key, scancode, action, mods}});
 }
 
 static void CharCallback(GLFWwindow* window, unsigned int codepoint) {
   Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
-  win.events.push_back(
-    {Window::EventType::Char, Window::CharData{codepoint}}
-  );
+  win.events.push_back(Window::CharData{codepoint});
 }
 
 static void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
   Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
-  win.events.push_back(
-    {Window::EventType::MouseButton, Window::MouseButtonData{button, action, mods}}
-  );
+  win.events.push_back({Window::MouseButtonData{button, action, mods}});
 }
 
 static void CursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
   Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
-  win.events.push_back(
-    {Window::EventType::CursorPos, Window::CursorPosData{xpos, ypos}}
-  );
+  win.events.push_back({Window::CursorPosData{xpos, ypos}});
 }
 
 static void WindowSizeCallback(GLFWwindow* window, int width, int height) {

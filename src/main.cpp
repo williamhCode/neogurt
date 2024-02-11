@@ -28,9 +28,9 @@ int main() {
     // events ------------------------------------------------
     window.PollEvents();
     for (const auto& event : window.events) {
-      switch (event.type) {
-        case Window::EventType::Key: {
-          auto& [key, scancode, action, mods] = std::get<Window::KeyData>(event.data);
+      switch (event.Index()) {
+        case Window::Event::Index<Window::KeyData>(): {
+          auto& [key, scancode, action, mods] = event.Get<Window::KeyData>();
           if (action == GLFW_PRESS || action == GLFW_REPEAT) {
             auto string = KeyInputToString(key, mods);
             if (string != "") nvim.Input(string);
@@ -44,31 +44,36 @@ int main() {
           }
           break;
         }
-        case Window::EventType::Char: {
-          auto& [codepoint] = std::get<Window::CharData>(event.data);
+        case Window::Event::Index<Window::CharData>(): {
+          auto& [codepoint] = event.Get<Window::CharData>();
           auto string = CharInputToString(codepoint);
           if (string != "") nvim.Input(string);
           break;
         }
-        case Window::EventType::MouseButton: {
+        case Window::Event::Index<Window::MouseButtonData>(): {
           break;
         }
-        case Window::EventType::CursorPos: {
-          break;
-        }
+          // case Window::EventType::CursorPos: {
+          //   break;
+          // }
       }
     }
 
     if (window.ShouldClose()) nvim.client.Disconnect();
     if (!nvim.client.IsConnected()) window.SetShouldClose(true);
 
-    // static Timer timer;
-    // timer.Start();
+    using namespace std::chrono_literals;
+    static Timer timer(1);
+    timer.Start();
+    numFlushes = 0;
     ParseNotifications(nvim.client);
-    // timer.End();
-    // auto duration =
-    //   std::chrono::duration_cast<std::chrono::microseconds>(timer.GetAverageDuration());
-    // LOG("parse_notifications: {}", duration);
+    timer.End();
+    auto duration =
+      std::chrono::duration_cast<std::chrono::microseconds>(timer.GetAverageDuration());
+    if (duration > 5us) {
+      LOG("\nnumFlushes: {}", numFlushes);
+      LOG("parse_notifications: {}", duration);
+    }
 
     // std::erase_if(threads, [](const std::future<void>& f) {
     //   return f.wait_for(std::chrono::seconds(0)) == std::future_status::ready;

@@ -5,11 +5,11 @@
 #include <numeric>
 
 struct Timer {
-  int bufferSize;
+  size_t bufferSize;
   std::chrono::time_point<std::chrono::steady_clock> start;
   std::deque<std::chrono::nanoseconds> durations;
 
-  Timer(int bufferSize = 20) : bufferSize(bufferSize) {
+  Timer(size_t bufferSize = 20) : bufferSize(bufferSize) {
   }
 
   void Start() {
@@ -19,7 +19,7 @@ struct Timer {
   void End() {
     auto end = std::chrono::steady_clock::now();
     durations.push_back(end - start);
-    if (durations.size() > 20) durations.pop_front();
+    if (durations.size() > bufferSize) durations.pop_front();
   }
 
   auto GetAverageDuration() {

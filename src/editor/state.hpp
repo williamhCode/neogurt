@@ -11,3 +11,5 @@ struct EditorState {
 
 inline EditorState editorState;
 inline EditorState renderState;  // only used by renderer
+
+inline int numFlushes;

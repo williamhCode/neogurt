@@ -4,6 +4,7 @@
 #include "glm/ext/vector_uint2.hpp"
 
 #include "gfx/context.hpp"
+#include "util/tagged_union.hpp"
 
 #include <string>
 
@@ -12,12 +13,6 @@ struct Window {
   GLFWwindow* window;
   glm::uvec2 size;
 
-  enum class EventType {
-    Key,
-    Char,
-    MouseButton,
-    CursorPos,
-  };
   struct KeyData {
     int key;
     int scancode;
@@ -36,11 +31,7 @@ struct Window {
     double xpos;
     double ypos;
   };
-  using EventData = std::variant<KeyData, CharData, MouseButtonData, CursorPosData>;
-  struct Event {
-    EventType type;
-    EventData data;
-  };
+  using Event = TaggedUnion<KeyData, CharData, MouseButtonData, CursorPosData>;
   std::vector<Event> events;
 
   Window() = default;
