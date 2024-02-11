@@ -4,6 +4,10 @@
 
 struct EditorState {
   GridManager gridManager;
+  bool flush;
+
+  void UpdateState(EditorState& source);
 };
 
 inline EditorState editorState;
+inline EditorState renderState;  // only used by renderer

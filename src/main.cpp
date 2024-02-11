@@ -1,13 +1,13 @@
-#include "nvim/parse.hpp"
-#include "gfx/instance.hpp"
 #include "app/window.hpp"
+#include "editor/state.hpp"
+#include "gfx/instance.hpp"
 #include "gfx/font.hpp"
-#include "nvim/msgpack_rpc/client.hpp"
-#include "nvim/input.hpp"
-
-#include <iostream>
-#include <numeric>
 #include "nvim/nvim.hpp"
+#include "nvim/msgpack_rpc/client.hpp"
+#include "nvim/parse.hpp"
+#include "nvim/input.hpp"
+#include "util/logger.hpp"
+#include "util/timer.hpp"
 
 using namespace wgpu;
 
@@ -62,14 +62,33 @@ int main() {
     if (window.ShouldClose()) nvim.client.Disconnect();
     if (!nvim.client.IsConnected()) window.SetShouldClose(true);
 
-    // get info and stuff ---------------------------------------
+    // static Timer timer;
+    // timer.Start();
     ParseNotifications(nvim.client);
+    // timer.End();
+    // auto duration =
+    //   std::chrono::duration_cast<std::chrono::microseconds>(timer.GetAverageDuration());
+    // LOG("parse_notifications: {}", duration);
 
     // std::erase_if(threads, [](const std::future<void>& f) {
     //   return f.wait_for(std::chrono::seconds(0)) == std::future_status::ready;
     // });
 
     // rendering ------------------------------------------------
+    // LOG("\nrendering---------------------------------------");
+    // LOG("flush: {}", renderState.flush);
+    // for (auto& [id, grid] : renderState.gridManager.grids) {
+    //   LOG("grid: {}", id);
+    //   LOG("  width: {}", grid.width);
+    //   LOG("  height: {}", grid.height);
+    //   LOG("  cursorRow: {}", grid.cursorRow);
+    //   LOG("  cursorCol: {}", grid.cursorCol);
+    //   LOG("  resize: {}", grid.resize);
+    //   LOG("  clear: {}", grid.clear);
+    //   LOG("  cursorGoto: {}", grid.cursorGoto);
+    //   LOG("  newCells: {}", grid.newCells.size());
+    // }
+
     TextureView nextTexture = ctx.swapChain.GetCurrentTextureView();
     RenderPassColorAttachment colorAttachment{
       .view = nextTexture,

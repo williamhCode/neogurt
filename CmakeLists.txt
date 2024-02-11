@@ -21,14 +21,19 @@ add_subdirectory(deps/freetype)
 set(APP_SRC
 	src/main.cpp
 
+  src/app/window.cpp
+
+  src/editor/grid.cpp
+  src/editor/state.cpp
+
   src/gfx/context.cpp
   src/gfx/pipeline.cpp
   src/gfx/renderer.cpp
   src/gfx/font.cpp
 
-  src/app/window.cpp
-
   src/nvim/nvim.cpp
+  src/nvim/parse.cpp
+  src/nvim/input.cpp
 )
 
 add_executable(App ${APP_SRC})
