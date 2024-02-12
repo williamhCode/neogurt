@@ -29,8 +29,8 @@ int main() {
     // events ------------------------------------------------
     window.PollEvents();
     for (const auto& event : window.events) {
-      switch (event.index()){
-      case Index<Window::Event, Window::KeyData>(): {
+      switch (event.index()) {
+        case Index<Window::Event, Window::KeyData>(): {
           auto& [key, scancode, action, mods] = std::get<Window::KeyData>(event);
           if (action == GLFW_PRESS || action == GLFW_REPEAT) {
             auto string = KeyInputToString(key, mods);
@@ -63,39 +63,59 @@ int main() {
     if (window.ShouldClose()) nvim.client.Disconnect();
     if (!nvim.client.IsConnected()) window.SetShouldClose(true);
 
+    // LOG("\n -----------------------------------------------");
     using namespace std::chrono_literals;
     static Timer timer(1);
     timer.Start();
-    numFlushes = 0;
     ParseNotifications(nvim.client);
     timer.End();
     auto duration =
       std::chrono::duration_cast<std::chrono::microseconds>(timer.GetAverageDuration());
     if (duration > 5us) {
-      LOG("\nnumFlushes: {}", numFlushes);
+      LOG("\nnumFlushes: {}", editorState.numFlushes);
       LOG("parse_notifications: {}", duration);
     }
-
-    redrawEvents.clear();
 
     // std::erase_if(threads, [](const std::future<void>& f) {
     //   return f.wait_for(std::chrono::seconds(0)) == std::future_status::ready;
     // });
 
     // rendering ------------------------------------------------
-    // LOG("\nrendering---------------------------------------");
-    // LOG("flush: {}", renderState.flush);
-    // for (auto& [id, grid] : renderState.gridManager.grids) {
-    //   LOG("grid: {}", id);
-    //   LOG("  width: {}", grid.width);
-    //   LOG("  height: {}", grid.height);
-    //   LOG("  cursorRow: {}", grid.cursorRow);
-    //   LOG("  cursorCol: {}", grid.cursorCol);
-    //   LOG("  resize: {}", grid.resize);
-    //   LOG("  clear: {}", grid.clear);
-    //   LOG("  cursorGoto: {}", grid.cursorGoto);
-    //   LOG("  newCells: {}", grid.newCells.size());
-    // }
+    LOG_DISABLE();
+    // size of queue
+    for (int i = 0; i < editorState.numFlushes; i++) {
+      const auto& redrawEvents = editorState.redrawEventsQueue.front();
+      for (const auto& event : redrawEvents) {
+        switch (event.index()) {
+          case Index<RedrawEvent, Flush>(): {
+            LOG("flush");
+            break;
+          }
+          case Index<RedrawEvent, GridResize>(): {
+            auto& [grid, width, height] = std::get<GridResize>(event);
+            LOG("grid_resize");
+            break;
+          }
+          case Index<RedrawEvent, GridClear>(): {
+            auto& [grid] = std::get<GridClear>(event);
+            LOG("grid_clear");
+            break;
+          }
+          case Index<RedrawEvent, GridCursorGoto>(): {
+            auto& [grid, row, col] = std::get<GridCursorGoto>(event);
+            LOG("grid_cursor_goto");
+            break;
+          }
+          case Index<RedrawEvent, GridLine>(): {
+            auto& [grid, row, colStart, cells] = std::get<GridLine>(event);
+            LOG("grid_line");
+            break;
+          }
+        }
+      }
+      editorState.redrawEventsQueue.pop_front();
+    }
+    LOG_ENABLE();
 
     TextureView nextTexture = ctx.swapChain.GetCurrentTextureView();
     RenderPassColorAttachment colorAttachment{

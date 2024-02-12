@@ -1,15 +1,19 @@
 #pragma once
 
-#include "editor/grid.hpp"
+#include "nvim/parse.hpp"
+#include <deque>
 
-// struct EditorState {
-  // GridManager gridManager;
-  // bool flush;
+struct EditorState {
+  int numFlushes;
+  std::deque<std::vector<RedrawEvent>> redrawEventsQueue;
 
-//   void UpdateState(EditorState& source);
-// };
+  EditorState() : numFlushes(0) {
+    redrawEventsQueue.emplace_back();
+  }
 
-// inline EditorState editorState;
-// inline EditorState renderState;  // only used by renderer
+  auto& currEvents() {
+    return redrawEventsQueue.back();
+  }
+};
 
-inline int numFlushes;
+inline EditorState editorState;

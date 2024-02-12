@@ -11,12 +11,11 @@ static void ParseRedraw(const msgpack::object& params);
 
 void ParseNotifications(rpc::Client& client) {
   LOG_DISABLE();
+  editorState.numFlushes = 0;
   while (client.HasNotification()) {
-    static int count = 0;
+    // static int count = 0;
     auto notification = client.PopNotification();
-    LOG("\n\n--------------------------------- {}", count++);
-    // LOG("method: {}", notification.method);
-    // LOG("params: {}", ToString(notification.params.get()));
+    // LOG("\n\n--------------------------------- {}", count++);
     if (notification.method == "redraw") {
       ParseRedraw(notification.params);
     }
@@ -74,7 +73,9 @@ static std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
   }},
 
   {"flush", [](const msgpack::object&) {
-    LOG("flush");
+    editorState.currEvents().push_back(Flush{});
+    editorState.redrawEventsQueue.emplace_back();
+    editorState.numFlushes++;
   }},
 
   {"default_colors_set", [](const msgpack::object& args) {
@@ -91,15 +92,15 @@ static std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
 
   // Grid Events --------------------------------------------------------------
   {"grid_resize", [](const msgpack::object& args) {
-    redrawEvents.push_back(args.as<GridResize>());
+    editorState.currEvents().push_back(args.as<GridResize>());
   }},
 
   {"grid_clear", [](const msgpack::object& args) {
-    redrawEvents.push_back(args.as<GridClear>());
+    editorState.currEvents().push_back(args.as<GridClear>());
   }},
 
   {"grid_cursor_goto", [](const msgpack::object& args) {
-    redrawEvents.push_back(args.as<GridCursorGoto>());
+    editorState.currEvents().push_back(args.as<GridCursorGoto>());
   }},
 
   {"grid_line", [](const msgpack::object& args) {
@@ -131,15 +132,15 @@ static std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
       }
     }
 
-    redrawEvents.push_back(gridLine);
+    editorState.currEvents().push_back(std::move(gridLine));
   }},
 
   {"grid_scroll", [](const msgpack::object& args) {
-    redrawEvents.push_back(args.as<GridScroll>());
+    editorState.currEvents().push_back(args.as<GridScroll>());
   }},
 
   {"grid_destroy", [](const msgpack::object& args) {
-    redrawEvents.push_back(args.as<GridDestroy>());
+    editorState.currEvents().push_back(args.as<GridDestroy>());
   }},
 
   // Multigrid Events ------------------------------------------------------------

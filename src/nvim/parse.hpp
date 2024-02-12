@@ -3,6 +3,7 @@
 #include "msgpack_rpc/client.hpp"
 #include <variant>
 
+struct Flush {};
 struct GridResize {
   int grid;
   int width;
@@ -45,7 +46,9 @@ struct GridDestroy {
   MSGPACK_DEFINE(grid);
 };
 
+// clang-format off
 using RedrawEvent = std::variant<
+  Flush,
   GridResize,
   GridClear,
   GridCursorGoto,
@@ -53,7 +56,6 @@ using RedrawEvent = std::variant<
   GridScroll,
   GridDestroy
 >;
-
-inline std::vector<RedrawEvent> redrawEvents;
+// clang-format on
 
 void ParseNotifications(rpc::Client& client);
