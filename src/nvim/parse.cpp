@@ -75,9 +75,6 @@ static std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
 
   {"flush", [](const msgpack::object&) {
     LOG("flush");
-    editorState.flush = true;
-    numFlushes++;
-    renderState.UpdateState(editorState);
   }},
 
   {"default_colors_set", [](const msgpack::object& args) {
@@ -94,27 +91,55 @@ static std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
 
   // Grid Events --------------------------------------------------------------
   {"grid_resize", [](const msgpack::object& args) {
-    editorState.gridManager.Resize(args);
+    redrawEvents.push_back(args.as<GridResize>());
   }},
 
   {"grid_clear", [](const msgpack::object& args) {
-    editorState.gridManager.Clear(args);
+    redrawEvents.push_back(args.as<GridClear>());
   }},
 
   {"grid_cursor_goto", [](const msgpack::object& args) {
-    editorState.gridManager.CursorGoto(args);
+    redrawEvents.push_back(args.as<GridCursorGoto>());
   }},
 
   {"grid_line", [](const msgpack::object& args) {
-    editorState.gridManager.Line(args);
+    auto [grid, row, col_start, cells] =
+      args.as<std::tuple<int, int, int, msgpack::object>>();
+    GridLine gridLine{grid, row, col_start, {}};
+
+    std::span<const msgpack::object> cellsList(cells.via.array);
+    int curr_hl_id = -1;
+    for (const auto& cell : cellsList) {
+      switch (cell.via.array.size) {
+        case 3: {
+          auto [text, hl_id, repeat] = cell.as<std::tuple<std::string, int, int>>();
+          curr_hl_id = hl_id;
+          gridLine.cells.push_back({text, hl_id, repeat});
+          break;
+        }
+        case 2: {
+          auto [text, hl_id] = cell.as<std::tuple<std::string, int>>();
+          curr_hl_id = hl_id;
+          gridLine.cells.push_back({text, hl_id});
+          break;
+        }
+        case 1: {
+          auto [text] = cell.as<std::tuple<std::string>>();
+          gridLine.cells.push_back({text, curr_hl_id});
+          break;
+        }
+      }
+    }
+
+    redrawEvents.push_back(gridLine);
   }},
 
   {"grid_scroll", [](const msgpack::object& args) {
-    editorState.gridManager.Scroll(args);
+    redrawEvents.push_back(args.as<GridScroll>());
   }},
 
   {"grid_destroy", [](const msgpack::object& args) {
-    editorState.gridManager.Destroy(args);
+    redrawEvents.push_back(args.as<GridDestroy>());
   }},
 
   // Multigrid Events ------------------------------------------------------------

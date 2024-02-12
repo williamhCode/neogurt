@@ -4,7 +4,6 @@
 #include "glm/ext/vector_uint2.hpp"
 
 #include "gfx/context.hpp"
-#include "util/tagged_union.hpp"
 
 #include <string>
 
@@ -31,7 +30,7 @@ struct Window {
     double xpos;
     double ypos;
   };
-  using Event = TaggedUnion<KeyData, CharData, MouseButtonData, CursorPosData>;
+  using Event = std::variant<KeyData, CharData, MouseButtonData, CursorPosData>;
   std::vector<Event> events;
 
   Window() = default;

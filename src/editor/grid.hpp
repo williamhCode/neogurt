@@ -2,6 +2,7 @@
 
 #include "msgpack/object_fwd.hpp"
 #include <unordered_map>
+#include <string>
 
 struct Grid {
   // data

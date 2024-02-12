@@ -6,7 +6,7 @@
 static void
 KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
   Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
-  win.events.push_back({Window::KeyData{key, scancode, action, mods}});
+  win.events.push_back(Window::KeyData{key, scancode, action, mods});
 }
 
 static void CharCallback(GLFWwindow* window, unsigned int codepoint) {

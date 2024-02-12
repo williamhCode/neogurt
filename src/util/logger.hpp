@@ -22,5 +22,6 @@ inline std::string ToString(const msgpack::object& obj) {
 inline Logger logger;
 
 #define LOG(...) logger.Log(std::format(__VA_ARGS__))
+// #define LOG(...) {}
 #define LOG_ENABLE() logger.enabled = true
 #define LOG_DISABLE() logger.enabled = false

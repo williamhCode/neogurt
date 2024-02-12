@@ -8,6 +8,7 @@
 #include "nvim/input.hpp"
 #include "util/logger.hpp"
 #include "util/timer.hpp"
+#include "util/variant.hpp"
 
 using namespace wgpu;
 
@@ -28,9 +29,9 @@ int main() {
     // events ------------------------------------------------
     window.PollEvents();
     for (const auto& event : window.events) {
-      switch (event.Index()) {
-        case Window::Event::Index<Window::KeyData>(): {
-          auto& [key, scancode, action, mods] = event.Get<Window::KeyData>();
+      switch (event.index()){
+      case Index<Window::Event, Window::KeyData>(): {
+          auto& [key, scancode, action, mods] = std::get<Window::KeyData>(event);
           if (action == GLFW_PRESS || action == GLFW_REPEAT) {
             auto string = KeyInputToString(key, mods);
             if (string != "") nvim.Input(string);
@@ -44,18 +45,18 @@ int main() {
           }
           break;
         }
-        case Window::Event::Index<Window::CharData>(): {
-          auto& [codepoint] = event.Get<Window::CharData>();
+        case Index<Window::Event, Window::CharData>(): {
+          auto& [codepoint] = std::get<Window::CharData>(event);
           auto string = CharInputToString(codepoint);
           if (string != "") nvim.Input(string);
           break;
         }
-        case Window::Event::Index<Window::MouseButtonData>(): {
+        case Index<Window::Event, Window::MouseButtonData>(): {
           break;
         }
-          // case Window::EventType::CursorPos: {
-          //   break;
-          // }
+        case Index<Window::Event, Window::CursorPosData>(): {
+          break;
+        }
       }
     }
 
@@ -74,6 +75,8 @@ int main() {
       LOG("\nnumFlushes: {}", numFlushes);
       LOG("parse_notifications: {}", duration);
     }
+
+    redrawEvents.clear();
 
     // std::erase_if(threads, [](const std::future<void>& f) {
     //   return f.wait_for(std::chrono::seconds(0)) == std::future_status::ready;

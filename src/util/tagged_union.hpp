@@ -1,5 +1,6 @@
 #pragma once
 
+#include "util/logger.hpp"
 #include <type_traits>
 #include <utility>
 
@@ -19,25 +20,56 @@ private:
 
   // still looking
   template <typename T, typename F, typename... R>
-  struct _Index<T, F, R...> : std::integral_constant<size_t, 1 + _Index<T, R...>::value> {
-  };
+  struct _Index<T, F, R...>
+      : std::integral_constant<size_t, 1 + _Index<T, R...>::value> {};
 
   static constexpr size_t invalid_index = -1;
 
   size_t typeIndex = invalid_index;
   std::aligned_union_t<0, Types...> data;
 
-  // Helper to destroy the current data
+  // Helper to invoke destructor based on runtime index
+  template <size_t I = 0>
+  void destroy_helper() {
+    if (I == typeIndex) {
+      using CurrentType = typename std::tuple_element<I, std::tuple<Types...>>::type;
+      reinterpret_cast<CurrentType*>(&data)->~CurrentType();
+    } else if constexpr (I + 1 < sizeof...(Types)) {
+      destroy_helper<I + 1>();
+    }
+  }
+
   void destroy() {
     if (typeIndex != invalid_index) {
-      // Call the destructor of the current type
-      ((void)reinterpret_cast<Types*>(&data)->~Types(), ...);
+      destroy_helper();
       typeIndex = invalid_index;
     }
   }
 
 public:
   TaggedUnion() = default;
+
+  TaggedUnion(const TaggedUnion&) = delete;
+  TaggedUnion& operator=(const TaggedUnion&) = delete;
+
+  TaggedUnion(TaggedUnion&& other) noexcept : typeIndex(other.typeIndex) {
+    if (typeIndex != invalid_index) {
+      std::memcpy(&data, &other.data, sizeof(data));
+      other.typeIndex = invalid_index;
+    }
+  }
+
+  TaggedUnion& operator=(TaggedUnion&& other) noexcept {
+    if (this != &other) {
+      destroy();
+      typeIndex = other.typeIndex;
+      if (typeIndex != invalid_index) {
+        std::memcpy(&data, &other.data, sizeof(data));
+        other.typeIndex = invalid_index;
+      }
+    }
+    return *this;
+  }
 
   template <SameAsAny<Types...> T>
   TaggedUnion(const T& value) {
@@ -56,15 +88,16 @@ public:
   template <SameAsAny<Types...> T>
   void Set(const T& value) {
     destroy();
-    new (&data) T(std::forward<T>(value));
-    typeIndex = _Index<T, Types...>();
+    // copy data
+    new (&data) T(value);
+    typeIndex = Type<T>();
   }
 
   template <SameAsAny<Types...> T>
   void Set(T&& value) {
     destroy();
     new (&data) T(std::forward<T>(value));
-    typeIndex = _Index<T, Types...>();
+    typeIndex = Type<T>();
   }
 
   template <SameAsAny<Types...> T>
@@ -77,13 +110,13 @@ public:
     return *reinterpret_cast<const T*>(&data);
   }
 
-  size_t Index() const {
+  size_t Type() const {
     return typeIndex;
   }
 
   // Static method to get the index of a type
   template <SameAsAny<Types...> T>
-  static constexpr size_t Index() {
-    return _Index<T, Types...>::value;
+  static constexpr size_t Type() {
+    return _Index<T, Types...>();
   }
 };
