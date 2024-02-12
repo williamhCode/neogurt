@@ -20,12 +20,12 @@ struct GridCursorGoto {
   int col;
   MSGPACK_DEFINE(grid, row, col);
 };
-struct Cell {
-  std::string text;
-  int hlId;
-  int repeat = 1;
-};
 struct GridLine {
+  struct Cell {
+    std::string text;
+    int hlId;
+    int repeat = 1;
+  };
   int grid;
   int row;
   int colStart;

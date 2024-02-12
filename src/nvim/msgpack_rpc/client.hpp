@@ -207,6 +207,10 @@ private:
 
             count++;
           }
+          if (unpacker.buffer_capacity() < readSize) {
+              LOG("Reserving extra buffer: {}", readSize);
+              unpacker.reserve_buffer(readSize);
+          }
           GetData();
 
         } else if (ec == asio::error::eof) {

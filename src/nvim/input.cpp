@@ -45,7 +45,7 @@ static std::unordered_map<int, std::string> specialKeys{
 
 // handle when modifier or special keys are pressed.
 // returning "" means ignore output
-std::string KeyInputToString(int key, int mods) {
+std::string ConvertKeyInput(int key, int mods) {
   bool isSpecial =
     (key >= GLFW_KEY_ESCAPE && key < GLFW_KEY_LEFT_SHIFT) || key == GLFW_KEY_SPACE;
   bool onlyMod = key >= GLFW_KEY_LEFT_SHIFT && key <= GLFW_KEY_RIGHT_SUPER;
@@ -64,7 +64,7 @@ std::string KeyInputToString(int key, int mods) {
 }
 
 // returning "" means ignore output
-std::string CharInputToString(unsigned int unicode) {
+std::string ConvertCharInput(unsigned int unicode) {
   // handle space in KeyInput
   if (unicode == GLFW_KEY_SPACE) return "";
   return UnicodeToUTF8(unicode);

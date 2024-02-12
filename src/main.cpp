@@ -30,10 +30,10 @@ int main() {
     window.PollEvents();
     for (const auto& event : window.events) {
       switch (event.index()) {
-        case Index<Window::Event, Window::KeyData>(): {
+        case vIndex<Window::Event, Window::KeyData>(): {
           auto& [key, scancode, action, mods] = std::get<Window::KeyData>(event);
           if (action == GLFW_PRESS || action == GLFW_REPEAT) {
-            auto string = KeyInputToString(key, mods);
+            auto string = ConvertKeyInput(key, mods);
             if (string != "") nvim.Input(string);
 
             // if (key == GLFW_KEY_ESCAPE) {
@@ -45,16 +45,16 @@ int main() {
           }
           break;
         }
-        case Index<Window::Event, Window::CharData>(): {
+        case vIndex<Window::Event, Window::CharData>(): {
           auto& [codepoint] = std::get<Window::CharData>(event);
-          auto string = CharInputToString(codepoint);
+          auto string = ConvertCharInput(codepoint);
           if (string != "") nvim.Input(string);
           break;
         }
-        case Index<Window::Event, Window::MouseButtonData>(): {
+        case vIndex<Window::Event, Window::MouseButtonData>(): {
           break;
         }
-        case Index<Window::Event, Window::CursorPosData>(): {
+        case vIndex<Window::Event, Window::CursorPosData>(): {
           break;
         }
       }
@@ -72,8 +72,8 @@ int main() {
     auto duration =
       std::chrono::duration_cast<std::chrono::microseconds>(timer.GetAverageDuration());
     if (duration > 5us) {
-      LOG("\nnumFlushes: {}", editorState.numFlushes);
-      LOG("parse_notifications: {}", duration);
+      // LOG("\nnumFlushes: {}", editorState.numFlushes);
+      // LOG("parse_notifications: {}", duration);
     }
 
     // std::erase_if(threads, [](const std::future<void>& f) {
@@ -87,26 +87,26 @@ int main() {
       const auto& redrawEvents = editorState.redrawEventsQueue.front();
       for (const auto& event : redrawEvents) {
         switch (event.index()) {
-          case Index<RedrawEvent, Flush>(): {
+          case vIndex<RedrawEvent, Flush>(): {
             LOG("flush");
             break;
           }
-          case Index<RedrawEvent, GridResize>(): {
+          case vIndex<RedrawEvent, GridResize>(): {
             auto& [grid, width, height] = std::get<GridResize>(event);
             LOG("grid_resize");
             break;
           }
-          case Index<RedrawEvent, GridClear>(): {
+          case vIndex<RedrawEvent, GridClear>(): {
             auto& [grid] = std::get<GridClear>(event);
             LOG("grid_clear");
             break;
           }
-          case Index<RedrawEvent, GridCursorGoto>(): {
+          case vIndex<RedrawEvent, GridCursorGoto>(): {
             auto& [grid, row, col] = std::get<GridCursorGoto>(event);
             LOG("grid_cursor_goto");
             break;
           }
-          case Index<RedrawEvent, GridLine>(): {
+          case vIndex<RedrawEvent, GridLine>(): {
             auto& [grid, row, colStart, cells] = std::get<GridLine>(event);
             LOG("grid_line");
             break;

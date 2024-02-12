@@ -23,7 +23,6 @@ set(APP_SRC
 
   src/app/window.cpp
 
-  src/editor/grid.cpp
   src/editor/state.cpp
 
   src/gfx/context.cpp
