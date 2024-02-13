@@ -1,11 +1,11 @@
 #include "app/window.hpp"
 #include "editor/state.hpp"
-#include "gfx/instance.hpp"
 #include "gfx/font.hpp"
-#include "nvim/nvim.hpp"
-#include "nvim/msgpack_rpc/client.hpp"
-#include "nvim/parse.hpp"
+#include "gfx/instance.hpp"
 #include "nvim/input.hpp"
+#include "nvim/msgpack_rpc/client.hpp"
+#include "nvim/nvim.hpp"
+#include "nvim/parse.hpp"
 #include "util/logger.hpp"
 #include "util/timer.hpp"
 #include "util/variant.hpp"
@@ -65,57 +65,64 @@ int main() {
 
     // LOG("\n -----------------------------------------------");
     using namespace std::chrono_literals;
-    static Timer timer(1);
-    timer.Start();
+    using namespace std::chrono;
+    static Timer timer{60};
+    // timer.Start();
     ParseNotifications(nvim.client);
-    timer.End();
-    auto duration =
-      std::chrono::duration_cast<std::chrono::microseconds>(timer.GetAverageDuration());
-    if (duration > 5us) {
+    // timer.End();
+    // auto duration = timer.GetAverageDuration();
+    // if (duration > 5us) {
       // LOG("\nnumFlushes: {}", editorState.numFlushes);
       // LOG("parse_notifications: {}", duration);
-    }
+    // }
 
     // std::erase_if(threads, [](const std::future<void>& f) {
     //   return f.wait_for(std::chrono::seconds(0)) == std::future_status::ready;
     // });
 
     // rendering ------------------------------------------------
-    LOG_DISABLE();
+    // LOG_DISABLE();
     // size of queue
+    timer.Start();
     for (int i = 0; i < editorState.numFlushes; i++) {
-      const auto& redrawEvents = editorState.redrawEventsQueue.front();
-      for (const auto& event : redrawEvents) {
-        switch (event.index()) {
-          case vIndex<RedrawEvent, Flush>(): {
-            LOG("flush");
-            break;
-          }
-          case vIndex<RedrawEvent, GridResize>(): {
-            auto& [grid, width, height] = std::get<GridResize>(event);
-            LOG("grid_resize");
-            break;
-          }
-          case vIndex<RedrawEvent, GridClear>(): {
-            auto& [grid] = std::get<GridClear>(event);
-            LOG("grid_clear");
-            break;
-          }
-          case vIndex<RedrawEvent, GridCursorGoto>(): {
-            auto& [grid, row, col] = std::get<GridCursorGoto>(event);
-            LOG("grid_cursor_goto");
-            break;
-          }
-          case vIndex<RedrawEvent, GridLine>(): {
-            auto& [grid, row, colStart, cells] = std::get<GridLine>(event);
-            LOG("grid_line");
-            break;
-          }
-        }
+      auto& redrawEvents = editorState.redrawEventsQueue.front();
+      for (auto& event : redrawEvents) {
+        std::visit(overloaded{
+          [&](Flush&) {
+            // LOG("flush");
+          },
+          [&](GridResize& e) {
+            auto& [grid, width, height] = e;
+            // LOG("grid_resize");
+          },
+          [&](GridClear& e) {
+            auto& [grid] = e;
+            // LOG("grid_clear");
+          },
+          [&](GridCursorGoto& e) {
+            auto& [grid, row, col] = e;
+            // LOG("grid_cursor_goto");
+          },
+          [&](GridLine& e) {
+            auto& [grid, row, colStart, cells] = e;
+            // LOG("grid_line");
+          },
+          [&](GridScroll& e) {
+            auto& [grid, top, bot, left, right, rows, cols] = e;
+            // LOG("grid_scroll");
+          },
+          [&](GridDestroy& e) {
+            auto& [grid] = e;
+            // LOG("grid_destroy");
+          },
+        }, event);
       }
       editorState.redrawEventsQueue.pop_front();
     }
     LOG_ENABLE();
+    // timer.End();
+    // auto duration = duration_cast<nanoseconds>(timer.GetAverageDuration());
+    // LOG("rendering: {}", duration);
 
     TextureView nextTexture = ctx.swapChain.GetCurrentTextureView();
     RenderPassColorAttachment colorAttachment{

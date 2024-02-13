@@ -22,7 +22,7 @@ struct Timer {
     if (durations.size() > bufferSize) durations.pop_front();
   }
 
-  auto GetAverageDuration() {
+  std::chrono::nanoseconds GetAverageDuration() {
     return std::accumulate(durations.begin(), durations.end(), std::chrono::nanoseconds(0)) / durations.size();
   }
 };

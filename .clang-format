@@ -8,9 +8,11 @@ ContinuationIndentWidth: 2
 SortIncludes: false
 PointerAlignment: Left
 IndentCaseLabels: true
-BreakBeforeBraces: Custom
+# BreakBeforeBraces: Custom
 # BraceWrapping:
-#   AfterCaseLabel: true
+#   BeforeLambdaBody: false
+
+# LambdaBodyIndentationKind: Signature
 
 # BinPackArguments: false
 BinPackParameters: false
