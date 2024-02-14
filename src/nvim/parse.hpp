@@ -58,4 +58,17 @@ using RedrawEvent = std::variant<
 >;
 // clang-format on
 
-void ParseNotifications(rpc::Client& client);
+struct RedrawState {
+  int numFlushes = 0;
+  std::deque<std::vector<RedrawEvent>> eventsQueue;
+  
+  RedrawState() {
+    eventsQueue.emplace_back();
+  }
+
+  auto& currEvents() {
+    return eventsQueue.back();
+  }
+};
+
+void ParseNotifications(rpc::Client& client, RedrawState& state);

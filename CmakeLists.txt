@@ -24,6 +24,7 @@ set(APP_SRC
   src/app/window.cpp
 
   src/editor/state.cpp
+  src/editor/grid.cpp
 
   src/gfx/context.cpp
   src/gfx/pipeline.cpp

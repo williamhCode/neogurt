@@ -4,16 +4,16 @@
 
 // wrapper for texture to support high dpi
 struct TextureHandle {
-  wgpu::Texture texture;
+  wgpu::Texture t;
   wgpu::TextureView view;
   int width;
   int height;
 
   void CreateView() {
-    view = texture.CreateView();
+    view = t.CreateView();
   }
 
   void CreateView(const wgpu::TextureViewDescriptor& desc) {
-    view = texture.CreateView(&desc);
+    view = t.CreateView(&desc);
   }
 };

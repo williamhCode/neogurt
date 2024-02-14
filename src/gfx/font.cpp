@@ -82,7 +82,7 @@ Font::Font(const std::string& path, int _size, int ratio) : size(_size) {
   }
 
   texture = TextureHandle{
-    .texture = utils::CreateTexture(
+    .t = utils::CreateTexture(
       ctx.device,
       {static_cast<uint32_t>(bufferSize.x), static_cast<uint32_t>(bufferSize.y)},
       wgpu::TextureFormat::RGBA8Unorm, textureData.data()

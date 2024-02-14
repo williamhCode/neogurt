@@ -1,4 +1,5 @@
 #include "nvim.hpp"
+#include "parse.hpp"
 
 Nvim::Nvim(bool debug) {
   // start nvim process
@@ -41,4 +42,8 @@ void Nvim::StartUi(int width, int height) {
 
 void Nvim::Input(std::string input) {
   client.Send("nvim_input", input);
+}
+
+void Nvim::ParseEvents() {
+  ParseNotifications(client, redrawState);
 }
