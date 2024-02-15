@@ -1,5 +1,5 @@
 #include "grid.hpp"
-#include "utils/webgpu.hpp"
+#include "webgpu_utils/webgpu.hpp"
 #include "gfx/instance.hpp"
 
 using namespace wgpu;

@@ -1,7 +1,7 @@
 #include "parse.hpp"
 
-#include "util/logger.hpp"
-#include "util/timer.hpp"
+#include "utils/logger.hpp"
+#include "utils/timer.hpp"
 
 #include <string_view>
 #include <unordered_map>

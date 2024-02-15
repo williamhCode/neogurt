@@ -1,13 +1,13 @@
 #include "font.hpp"
-#include "utils/webgpu.hpp"
+#include "webgpu_utils/webgpu.hpp"
 #include "gfx/instance.hpp"
 
-#include <format>
-#include <iostream>
 #include <vector>
 
 static FT_Library library;
 static bool ftInitialized = false;
+
+using namespace wgpu;
 
 Font::Font(const std::string& path, int _size, int ratio) : size(_size) {
   if (!ftInitialized) {

@@ -1,7 +1,7 @@
 #include "context.hpp"
 #include <webgpu/webgpu_cpp.h>
 #include <webgpu/webgpu_glfw.h>
-#include "utils/webgpu.hpp"
+#include "webgpu_utils/webgpu.hpp"
 
 #include <iostream>
 

@@ -8,9 +8,9 @@
 #include "nvim/msgpack_rpc/client.hpp"
 #include "nvim/nvim.hpp"
 #include "nvim/parse.hpp"
-#include "util/logger.hpp"
-#include "util/timer.hpp"
-#include "util/variant.hpp"
+#include "utils/logger.hpp"
+#include "utils/timer.hpp"
+#include "utils/variant.hpp"
 
 using namespace wgpu;
 

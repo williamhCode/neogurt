@@ -12,8 +12,6 @@ struct Grid {
 
   int cursorRow;
   int cursorCol;
-
-
 };
 
 struct GridManager {

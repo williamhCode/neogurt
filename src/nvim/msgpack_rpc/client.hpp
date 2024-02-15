@@ -1,7 +1,7 @@
 #pragma once
 
 #include "asio.hpp"
-#include "util/logger.hpp"
+#include "utils/logger.hpp"
 #include "msgpack.hpp"
 // #include "GLFW/glfw3.h"
 

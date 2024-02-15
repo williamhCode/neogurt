@@ -6,3 +6,6 @@ xcode
 imgui.ini
 tint
 
+# CLion
+.idea
+/cmake-build*
