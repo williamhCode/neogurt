@@ -2,7 +2,9 @@
 
 #include "gfx/texture.hpp"
 #include "nvim/parse.hpp"
+#include "utils/ring_buffer.hpp"
 #include "webgpu/webgpu_cpp.h"
+#include <vector>
 
 struct Grid {
   static const int fontSize = 30;  // TODO: make this configurable
@@ -12,6 +14,9 @@ struct Grid {
 
   int cursorRow;
   int cursorCol;
+
+  using GridLine = std::vector<std::string>;
+  RingBuffer<GridLine> lines;
 };
 
 struct GridManager {

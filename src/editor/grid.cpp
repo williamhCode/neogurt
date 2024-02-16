@@ -1,6 +1,5 @@
 #include "grid.hpp"
-#include "webgpu_utils/webgpu.hpp"
-#include "gfx/instance.hpp"
+#include "utils/ring_buffer.hpp"
 
 using namespace wgpu;
 
@@ -8,6 +7,11 @@ void GridManager::Resize(GridResize& e) {
   auto& grid = grids[e.grid];
   grid.width = e.width;
   grid.height = e.height;
+
+  grid.lines = RingBuffer<Grid::GridLine>(e.height);
+  for (auto& line : grid.lines) {
+    line.resize(e.width);
+  }
 }
 
 void GridManager::Clear(GridClear& e) {
@@ -24,6 +28,7 @@ void GridManager::CursorGoto(GridCursorGoto& e) {
 void GridManager::Line(GridLine& e) {
   auto& grid = grids[e.grid];
   // draw line
+
 }
 
 void GridManager::Scroll(GridScroll& e) {
