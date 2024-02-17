@@ -11,6 +11,10 @@ private:
   size_t head = 0;
   size_t _size;
 
+  size_t wrapIndex(size_t index) {
+    return index >= _size ? index - _size : index;
+  }
+
 public:
   // Iterator class
   class Iterator {
@@ -70,22 +74,22 @@ public:
 
   T& operator[](size_t index) {
     assert(index < _size);
-    size_t realIndex = (head + index) % _size;
+    size_t realIndex = wrapIndex(head + index);
     return buffer[realIndex];
   }
 
   const T& operator[](size_t index) const {
     assert(index < _size);
-    size_t realIndex = (head + index) % _size;
+    size_t realIndex = wrapIndex(head + index);
     return buffer[realIndex];
   }
 
   void scrollUp(size_t lines) {
-    head = (head + lines) % _size;
+    head = wrapIndex(head + lines);
   }
 
   void scrollDown(size_t lines) {
-    head = (head + _size - lines) % _size;
+    head = wrapIndex(head + _size - lines);
   }
 
   size_t size() const {

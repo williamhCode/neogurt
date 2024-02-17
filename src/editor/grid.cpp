@@ -8,11 +8,11 @@ void GridManager::Resize(GridResize& e) {
   grid.width = e.width;
   grid.height = e.height;
 
-  grid.lines = RingBuffer<Grid::GridLine>(e.height);
-  auto line = grid.lines.begin();
-  do {
-    line->resize(e.width);
-  } while (++line != grid.lines.begin());
+  grid.lines = Grid::Lines(e.height);
+  for (size_t i = 0; i < grid.lines.size(); i++) {
+    auto& line = grid.lines[i];
+    line.resize(e.width);
+  }
 }
 
 void GridManager::Clear(GridClear& e) {

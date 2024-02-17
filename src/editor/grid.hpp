@@ -15,8 +15,9 @@ struct Grid {
   int cursorRow;
   int cursorCol;
 
-  using GridLine = std::vector<std::string>;
-  RingBuffer<GridLine> lines;
+  using Line = std::vector<std::string>;
+  using Lines = RingBuffer<Line>;
+  Lines lines;
 };
 
 struct GridManager {
