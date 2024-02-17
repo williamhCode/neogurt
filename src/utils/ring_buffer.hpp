@@ -14,10 +14,6 @@ private:
 public:
   // Iterator class
   class Iterator {
-  private:
-    RingBuffer* rb;
-    size_t index;
-
   public:
     using iterator_category = std::forward_iterator_tag;
     using value_type = T;
@@ -25,21 +21,22 @@ public:
     using pointer = T*;
     using reference = T&;
 
-    Iterator(RingBuffer* rb, size_t index) : rb(rb), index(index) {
+    Iterator(pointer ptr, size_t size, size_t index)
+        : ptr(ptr), size(size), index(index) {
     }
 
     reference operator*() {
-      return (*rb)[index];
+      return *(ptr + index);
     }
 
     pointer operator->() {
-      return &((*rb)[index]);
+      return ptr + index;
     }
 
     // Prefix increment
     Iterator& operator++() {
       index++;
-      if (index >= rb->_size) {
+      if (index >= size) {
         index = 0;
       }
       return *this;
@@ -59,6 +56,11 @@ public:
     friend bool operator!=(const Iterator& a, const Iterator& b) {
       return a.index != b.index;
     }
+
+  private:
+    pointer ptr;
+    size_t size;
+    size_t index;
   };
 
   RingBuffer() = default;
@@ -68,14 +70,14 @@ public:
 
   T& operator[](size_t index) {
     assert(index < _size);
-    size_t actualIndex = (head + index) % _size;
-    return buffer[actualIndex];
+    size_t realIndex = (head + index) % _size;
+    return buffer[realIndex];
   }
 
   const T& operator[](size_t index) const {
     assert(index < _size);
-    size_t actualIndex = (head + index) % _size;
-    return buffer[actualIndex];
+    size_t realIndex = (head + index) % _size;
+    return buffer[realIndex];
   }
 
   void scrollUp(size_t lines) {
@@ -93,11 +95,8 @@ public:
   void resize(size_t newCapacity) {
   }
 
+  // begin is the same as end for ring buffer
   Iterator begin() {
-    return Iterator(this, 0);
-  }
-
-  Iterator end() {
-    return Iterator(this, _size);
+    return Iterator(buffer.data(), _size, head);
   }
 };

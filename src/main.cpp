@@ -32,36 +32,33 @@ int main() {
 
     // events ------------------------------------------------
     window.PollEvents();
-    for (const auto& event : window.events) {
-      switch (event.index()) {
-        case vIndex<Window::Event, Window::KeyData>(): {
-          auto& [key, scancode, action, mods] = std::get<Window::KeyData>(event);
+    for (auto& event : window.events) {
+      std::visit(overloaded{
+        [&](Window::KeyData& e) {
+          auto& [key, scancode, action, mods] = e;
           if (action == GLFW_PRESS || action == GLFW_REPEAT) {
             auto string = ConvertKeyInput(key, mods);
             if (string != "") nvim.Input(string);
-
-            // if (key == GLFW_KEY_ESCAPE) {
-            //   threads.emplace_back(std::async(std::launch::async, [&]() mutable {
-            //     auto result = nvim.client.Call("nvim_get_current_line");
-            //     std::cout << "future result: " << result.get() << std::endl;
-            //   }));
-            // }
           }
-          break;
-        }
-        case vIndex<Window::Event, Window::CharData>(): {
-          auto& [codepoint] = std::get<Window::CharData>(event);
+
+          // if (key == GLFW_KEY_ESCAPE) {
+          //   threads.emplace_back(std::async(std::launch::async, [&]() mutable {
+          //     auto result = nvim.client.Call("nvim_get_current_line");
+          //     std::cout << "future result: " << result.get() << std::endl;
+          //   }));
+          // }
+        },
+        [&](Window::CharData& e) {
+          auto& [codepoint] = e;
           auto string = ConvertCharInput(codepoint);
           if (string != "") nvim.Input(string);
-          break;
-        }
-        case vIndex<Window::Event, Window::MouseButtonData>(): {
-          break;
-        }
-        case vIndex<Window::Event, Window::CursorPosData>(): {
-          break;
-        }
-      }
+        },
+        [&](Window::MouseButtonData& e) {
+
+        },
+        [&](Window::CursorPosData& e) {
+        },
+      }, event);
     }
 
     if (window.ShouldClose()) nvim.client.Disconnect();
@@ -104,7 +101,7 @@ int main() {
           },
           [&](GridClear& e) {
             // LOG("grid_clear");
-            gridManager.Clear(e);
+            // gridManager.Clear(e);
           },
           [&](GridCursorGoto& e) {
             // LOG("grid_cursor_goto");
@@ -112,11 +109,11 @@ int main() {
           },
           [&](GridLine& e) {
             // LOG("grid_line");
-            gridManager.Line(e);
+            // gridManager.Line(e);
           },
           [&](GridScroll& e) {
             // LOG("grid_scroll");
-            gridManager.Scroll(e);
+            // gridManager.Scroll(e);
           },
           [&](GridDestroy& e) {
             // LOG("grid_destroy");

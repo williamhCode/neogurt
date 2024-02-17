@@ -9,9 +9,10 @@ void GridManager::Resize(GridResize& e) {
   grid.height = e.height;
 
   grid.lines = RingBuffer<Grid::GridLine>(e.height);
-  for (auto& line : grid.lines) {
-    line.resize(e.width);
-  }
+  auto line = grid.lines.begin();
+  do {
+    line->resize(e.width);
+  } while (++line != grid.lines.begin());
 }
 
 void GridManager::Clear(GridClear& e) {
