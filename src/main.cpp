@@ -41,6 +41,22 @@ int main() {
             if (string != "") nvim.Input(string);
           }
 
+          if (action == GLFW_PRESS) {
+            if (key == GLFW_KEY_F2) {
+              for (auto& [id, grid] : gridManager.grids) {
+                LOG("grid: {} ----------------------------", id);
+                for (size_t i = 0; i < grid.lines.Size(); i++) {
+                  auto& line = grid.lines[i];
+                  std::string lineStr;
+                  for (auto& cell : line) {
+                    lineStr += cell + " ";
+                  }
+                  LOG("{}", lineStr);
+                }
+              }
+            }
+          }
+
           // if (key == GLFW_KEY_ESCAPE) {
           //   threads.emplace_back(std::async(std::launch::async, [&]() mutable {
           //     auto result = nvim.client.Call("nvim_get_current_line");
@@ -101,7 +117,7 @@ int main() {
           },
           [&](GridClear& e) {
             // LOG("grid_clear");
-            // gridManager.Clear(e);
+            gridManager.Clear(e);
           },
           [&](GridCursorGoto& e) {
             // LOG("grid_cursor_goto");
@@ -109,11 +125,11 @@ int main() {
           },
           [&](GridLine& e) {
             // LOG("grid_line");
-            // gridManager.Line(e);
+            gridManager.Line(e);
           },
           [&](GridScroll& e) {
             // LOG("grid_scroll");
-            // gridManager.Scroll(e);
+            gridManager.Scroll(e);
           },
           [&](GridDestroy& e) {
             // LOG("grid_destroy");

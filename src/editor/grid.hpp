@@ -7,7 +7,7 @@
 #include <vector>
 
 struct Grid {
-  static const int fontSize = 30;  // TODO: make this configurable
+  static const int fontSize = 30; // TODO: make this configurable
 
   int width;
   int height;
@@ -23,10 +23,10 @@ struct Grid {
 struct GridManager {
   std::unordered_map<int, Grid> grids;
 
-  void Resize(GridResize& e); 
-  void Clear(GridClear& e); 
-  void CursorGoto(GridCursorGoto& e); 
-  void Line(GridLine& e); 
-  void Scroll(GridScroll& e); 
-  void Destroy(GridDestroy& e); 
+  void Resize(GridResize& e);
+  void Clear(GridClear& e);
+  void CursorGoto(GridCursorGoto& e);
+  void Line(GridLine& e);
+  void Scroll(GridScroll& e);
+  void Destroy(GridDestroy& e);
 };

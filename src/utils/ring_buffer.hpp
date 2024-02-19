@@ -9,10 +9,10 @@ class RingBuffer {
 private:
   std::vector<T> buffer;
   size_t head = 0;
-  size_t _size;
+  size_t size;
 
   size_t wrapIndex(size_t index) {
-    return index >= _size ? index - _size : index;
+    return index >= size ? index - size : index;
   }
 
 public:
@@ -69,38 +69,37 @@ public:
 
   RingBuffer() = default;
 
-  RingBuffer(size_t size) : buffer(size), _size(size) {
+  RingBuffer(size_t size, const T& value) : buffer(size, value), size(size) {
   }
 
   T& operator[](size_t index) {
-    assert(index < _size);
+    assert(index < size);
     size_t realIndex = wrapIndex(head + index);
     return buffer[realIndex];
   }
 
   const T& operator[](size_t index) const {
-    assert(index < _size);
+    assert(index < size);
     size_t realIndex = wrapIndex(head + index);
     return buffer[realIndex];
   }
 
-  void scrollUp(size_t lines) {
-    head = wrapIndex(head + lines);
+  void Scroll(int lines) {
+    if (lines >= 0)
+      head = wrapIndex(head + lines);
+    else
+      head = wrapIndex(head + size + lines);
   }
 
-  void scrollDown(size_t lines) {
-    head = wrapIndex(head + _size - lines);
+  size_t Size() const {
+    return size;
   }
 
-  size_t size() const {
-    return _size;
-  }
-
-  void resize(size_t newCapacity) {
-  }
+  // void resize(size_t newCapacity) {
+  // }
 
   // begin is the same as end for ring buffer
-  Iterator begin() {
-    return Iterator(buffer.data(), _size, head);
+  Iterator Begin() {
+    return Iterator(buffer.data(), size, head);
   }
 };
