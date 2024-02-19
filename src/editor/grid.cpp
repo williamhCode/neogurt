@@ -1,5 +1,4 @@
 #include "grid.hpp"
-#include "utils/ring_buffer.hpp"
 
 using namespace wgpu;
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "GLFW/glfw3.h"
 #include "asio.hpp"
 #include "utils/logger.hpp"
 #include "msgpack.hpp"
@@ -64,7 +65,7 @@ public:
 
   void Disconnect() {
     exit = true;
-    // glfwPostEmptyEvent();
+    glfwPostEmptyEvent();
   }
 
   bool IsConnected() {
@@ -143,6 +144,8 @@ private:
       asio::buffer(unpacker.buffer(), readSize),
       [&](asio::error_code ec, std::size_t length) {
         if (!ec) {
+          glfwPostEmptyEvent();
+
           // LOG("\n\n----------------------------------");
           // LOG("Read {} bytes", length);
           unpacker.buffer_consumed(length);

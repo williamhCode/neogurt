@@ -32,7 +32,11 @@ int main() {
     ctx.device.Tick();
 
     // events ------------------------------------------------
-    window.PollEvents();
+    if (nvim.client.HasNotification())
+      window.PollEvents();
+    else
+      window.WaitEvents();
+
     for (auto& event : window.events) {
       std::visit(
         overloaded{
@@ -87,9 +91,9 @@ int main() {
     if (!nvim.client.IsConnected()) window.SetShouldClose(true);
 
     // LOG("\n -----------------------------------------------");
-    using namespace std::chrono_literals;
-    using namespace std::chrono;
-    static Timer timer{60};
+    // using namespace std::chrono_literals;
+    // using namespace std::chrono;
+    // static Timer timer{60};
     // timer.Start();
     nvim.ParseEvents();
     // timer.End();
@@ -104,7 +108,12 @@ int main() {
     // });
 
     // rendering ------------------------------------------------
-    if (nvim.redrawState.numFlushes == 0) continue;
+    // if using continue, have to lock main loop to 60 fps, or will keep looping
+    // and waste cpu cycles
+    // else just let webgpu vsync handle timing, but will spend extra power
+    // on rendering when there's no need
+    // best prob make own timer to lock main loop to 60 fps when using continue
+    // if (nvim.redrawState.numFlushes == 0) continue;
 
     // LOG_DISABLE();
     // size of queue
@@ -155,7 +164,7 @@ int main() {
     renderer.Begin();
     for (auto& [id, grid] : gridManager.grids) {
       if (grid.empty) continue;
-      LOG("render grid: {}", id);
+      // LOG("render grid: {}", id);
       renderer.RenderGrid(grid, font);
     }
     renderer.End();
