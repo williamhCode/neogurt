@@ -1,15 +1,18 @@
 #include "parse.hpp"
 
 #include "utils/logger.hpp"
+#include "utils/map_view.hpp"
 #include "utils/timer.hpp"
+#include "msgpack/v1/adaptor/cpp20/span.hpp"
 
+#include <string>
 #include <string_view>
 #include <unordered_map>
 
 static void ParseRedraw(const msgpack::object& params, RedrawState& state);
 
 void ParseNotifications(rpc::Client& client, RedrawState& state) {
-  LOG_DISABLE();
+  // LOG_DISABLE();
   state.numFlushes = 0;
   while (client.HasNotification()) {
     // static int count = 0;
@@ -25,50 +28,44 @@ void ParseNotifications(rpc::Client& client, RedrawState& state) {
 using UiEventFunc = void (*)(const msgpack::object& args, RedrawState& state);
 static std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
   // Global Events ----------------------------------------------------------
-  {"set_title", [](const msgpack::object& args, RedrawState& events) {
-    auto [title] = args.as<std::tuple<std::string>>();
-    LOG("set_title: {}", title);
+  {"set_title", [](const msgpack::object& args, RedrawState& state) {
+    state.currEvents().push_back(args.as<SetTitle>());
   }},
 
   {"set_icon", [](const msgpack::object& args, RedrawState& state) {
-    auto [icon] = args.as<std::tuple<std::string>>();
-    LOG("set_icon: {}", icon);
+    state.currEvents().push_back(args.as<SetIcon>());
   }},
 
   {"mode_info_set", [](const msgpack::object& args, RedrawState& state) {
-    auto [enabled, mode_info] =
-      args.as<std::tuple<bool, msgpack::object>>();
-    LOG("mode_info_set: {} {}", enabled, ToString(mode_info));
+    state.currEvents().push_back(args.as<ModeInfoSet>());
   }},
 
   {"option_set", [](const msgpack::object& args, RedrawState& state) {
-    auto [name, value] = args.as<std::tuple<std::string, msgpack::object>>();
-    LOG("option_set: {} {}", name, ToString(value));
+    state.currEvents().push_back(args.as<OptionSet>());
   }},
 
   {"mode_change", [](const msgpack::object& args, RedrawState& state) {
-    auto [mode, mode_idx] = args.as<std::tuple<std::string, int>>();
-    LOG("mode_change: {} {}", mode, mode_idx);
+    state.currEvents().push_back(args.as<ModeChange>());
   }},
 
   {"mouse_on", [](const msgpack::object&, RedrawState& state) {
-    LOG("mouse_on");
+    state.currEvents().push_back(MouseOn{});
   }},
 
   {"mouse_off", [](const msgpack::object&, RedrawState& state) {
-    LOG("mouse_off");
+    state.currEvents().push_back(MouseOff{});
   }},
 
   {"busy_start", [](const msgpack::object&, RedrawState& state) {
-    LOG("busy_start");
+    state.currEvents().push_back(BusyStart{});
   }},
 
   {"busy_stop", [](const msgpack::object&, RedrawState& state) {
-    LOG("busy_stop");
+    state.currEvents().push_back(BusyStop{});
   }},
 
   {"update_menu", [](const msgpack::object&, RedrawState& state) {
-    LOG("update_menu");
+    state.currEvents().push_back(UpdateMenu{});
   }},
 
   {"flush", [](const msgpack::object&, RedrawState& state) {
@@ -78,15 +75,18 @@ static std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
   }},
 
   {"default_colors_set", [](const msgpack::object& args, RedrawState& state) {
-    LOG("default_colors_set");
+    state.currEvents().push_back(args.as<DefaultColorsSet>());
   }},
 
   {"hl_attr_define", [](const msgpack::object& args, RedrawState& state) {
-    LOG("hl_attr_define");
+    // parameters = { { "Integer", "id" }, { "Dictionary", "rgb_attrs" }, { "Dictionary", "cterm_attrs" }, { "Array", "info" } },
+    auto [id, rgb_attrs, cterm_attrs, info] =
+      args.as<std::tuple<int, msgpack::object, msgpack::object, msgpack::object>>();
+    LOG("hl_attr_define:\n{} {} {} {}", id, ToString(rgb_attrs), ToString(cterm_attrs), ToString(info));
   }},
 
   {"hl_group_set", [](const msgpack::object& args, RedrawState& state) {
-    LOG("hl_group_set");
+    // LOG("hl_group_set");
   }},
 
   // Grid Events --------------------------------------------------------------
@@ -108,6 +108,8 @@ static std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
     GridLine gridLine{grid, row, col_start, {}};
 
     std::span<const msgpack::object> cellsList(cells.via.array);
+    gridLine.cells.reserve(cellsList.size());
+
     int curr_hl_id = -1;
     for (const auto& cell : cellsList) {
       switch (cell.via.array.size) {

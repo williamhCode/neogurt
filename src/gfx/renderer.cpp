@@ -46,16 +46,16 @@ void Renderer::RenderGrid(const Grid& grid, const Font& font) {
 
   size_t quadIndex = 0;
   glm::vec2 textureSize(font.texture.width, font.texture.height);
-  glm::vec2 offset(0, 0);
+  glm::vec2 currOffset(0, 0);
   for (size_t i = 0; i < grid.lines.Size(); i++) {
     auto& line = grid.lines[i];
-    offset.x = 0;
+    currOffset.x = 0;
     for (auto& cell : line) {
       char c = cell[0]; // only support char for now, add unicode support ltr
       auto glyphIndex = FT_Get_Char_Index(font.face, c);
 
       auto it = font.glyphInfoMap.find(glyphIndex);
-      if (it == font.glyphInfoMap.end()) it = font.glyphInfoMap.find(32);
+      // if (it == font.glyphInfoMap.end()) it = font.glyphInfoMap.find(32);
       auto& glyphInfo = it->second;
 
       // region to be drawn in context of the entire font texture
@@ -66,12 +66,12 @@ void Renderer::RenderGrid(const Grid& grid, const Font& font) {
         font.size,
       };
 
-      // offset to be added to the position of the quad
-      glm::vec2 offsetPos{
-        offset.x + glyphInfo.bearing.x,
-        offset.y - glyphInfo.bearing.y + font.size,
+      // position of the quad
+      glm::vec2 quadPos{
+        currOffset.x + glyphInfo.bearing.x,
+        currOffset.y - glyphInfo.bearing.y + font.size,
       };
-      offset.x += glyphInfo.advance;
+      currOffset.x += glyphInfo.advance;
 
       // winding order is clockwise starting from top left
       // region = x, y, width, height
@@ -96,10 +96,9 @@ void Renderer::RenderGrid(const Grid& grid, const Font& font) {
 
       for (size_t i = 0; i < 4; i++) {
         auto& vertex = textVertices[quadIndex][i];
-        vertex.position = {localPositions[i] + offsetPos};
+        vertex.position = {localPositions[i] + quadPos};
         vertex.uv = texCoords[i];
         vertex.foreground = {1, 1, 1, 1};
-        vertex.background = {0, 0, 0, 1};
       }
 
       auto indexCount = quadIndex * 6;
@@ -113,7 +112,7 @@ void Renderer::RenderGrid(const Grid& grid, const Font& font) {
 
       quadIndex++;
     }
-    offset.y += font.size;
+    currOffset.y += font.size * 1.2;
   }
 
   auto vertexBufferSize = quadIndex * sizeof(TextQuad);

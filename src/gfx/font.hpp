@@ -1,8 +1,7 @@
 #pragma once
 
 #include "freetype/freetype.h"
-#include "glm/ext/vector_float4.hpp"
-#include "glm/ext/vector_int2.hpp"
+#include "glm/ext/vector_float2.hpp"
 #include "gfx/texture.hpp"
 
 struct Font {
@@ -17,12 +16,13 @@ struct Font {
   int atlasHeight;
 
   struct GlyphInfo {
-    glm::ivec2 size;
-    glm::ivec2 bearing;
-    int advance;
-    glm::ivec2 pos;
+    // floats because of high dpi
+    glm::vec2 size;
+    glm::vec2 bearing;
+    float advance;
+    glm::vec2 pos;
   };
   std::unordered_map<uint32_t, GlyphInfo> glyphInfoMap;
 
-  Font(const std::string& path, int size, int ratio);
+  Font(const std::string& path, int size, float ratio);
 };

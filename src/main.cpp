@@ -23,7 +23,7 @@ int main() {
 
   Window window({1400, 800}, "Neovim GUI", PresentMode::Fifo);
 
-  Font font("/Library/Fonts/SF-Mono-Regular.otf", 18, 2);
+  Font font("/Library/Fonts/SF-Mono-Medium.otf", 15, 2);
   Renderer renderer(window.size);
   renderer.clearColor = {0.9, 0.5, 0.6, 1.0};
   GridManager gridManager;
@@ -123,6 +123,50 @@ int main() {
       for (auto& event : redrawEvents) {
         std::visit(
           overloaded{
+            [&](SetTitle& e) {
+              // LOG("set_title");
+            },
+            [&](SetIcon& e) {
+              // LOG("set_icon");
+            },
+            [&](ModeInfoSet& e) {
+              // LOG("mode_info_set");
+              for (auto& elem : e.modeInfo) {
+                for (auto& [key, value] : elem) {
+                  if (value.is_string()) {
+                    // LOG("mode_info: {} {}", key, value.as_string());
+                  } else if (value.is_uint64_t()) {
+                    // LOG("mode_info: {} {}", key, value.as_uint64_t());
+                  } else {
+                    assert(false);
+                  }
+                }
+              }
+            },
+            [&](OptionSet& e) {
+              // LOG("option_set");
+            },
+            [&](ModeChange& e) {
+              // LOG("mode_change");
+            },
+            [&](MouseOn&) {
+              // LOG("mouse_on");
+            },
+            [&](MouseOff&) {
+              // LOG("mouse_off");
+            },
+            [&](BusyStart&) {
+              // LOG("busy_start");
+            },
+            [&](BusyStop&) {
+              // LOG("busy_stop");
+            },
+            [&](UpdateMenu&) {
+              // LOG("update_menu");
+            },
+            [&](DefaultColorsSet& e) {
+              // LOG("default_colors_set");
+            },
             [&](Flush&) {
               // LOG("flush");
             },
@@ -150,6 +194,7 @@ int main() {
               // LOG("grid_destroy");
               gridManager.Destroy(e);
             },
+            [&](auto&) { LOG("unknown event"); },
           },
           event
         );
@@ -163,7 +208,7 @@ int main() {
 
     renderer.Begin();
     for (auto& [id, grid] : gridManager.grids) {
-      if (grid.empty) continue;
+      // if (grid.empty) continue;
       // LOG("render grid: {}", id);
       renderer.RenderGrid(grid, font);
     }

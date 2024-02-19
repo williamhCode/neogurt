@@ -11,7 +11,6 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
     {VertexFormat::Float32x2, offsetof(TextQuadVertex, position), 0},
     {VertexFormat::Float32x2, offsetof(TextQuadVertex, uv), 1},
     {VertexFormat::Float32x4, offsetof(TextQuadVertex, foreground), 2},
-    {VertexFormat::Float32x4, offsetof(TextQuadVertex, background), 3},
   };
   VertexBufferLayout textQuadVBL{
     .arrayStride = sizeof(TextQuadVertex),

@@ -10,7 +10,6 @@ struct TextQuadVertex {
   glm::vec2 position;
   glm::vec2 uv;
   glm::vec4 foreground;
-  glm::vec4 background;
 };
 
 struct Pipeline {

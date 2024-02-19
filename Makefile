@@ -1,6 +1,6 @@
 .PHONY: build
 
-TYPE = release
+TYPE = debug
 
 build:
 	cmake --build build/$(TYPE) --target App

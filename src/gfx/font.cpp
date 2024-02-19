@@ -10,7 +10,7 @@ static bool ftInitialized = false;
 
 using namespace wgpu;
 
-Font::Font(const std::string& path, int _size, int ratio) : size(_size) {
+Font::Font(const std::string& path, int _size, float ratio) : size(_size) {
   if (!ftInitialized) {
     if (FT_Init_FreeType(&library)) {
       throw std::runtime_error("Failed to initialize FreeType library");
@@ -27,7 +27,7 @@ Font::Font(const std::string& path, int _size, int ratio) : size(_size) {
   uint32_t numChars = 128;
   atlasHeight = numChars / atlasWidth;
 
-  glm::ivec2 textureSize((size + 2) * atlasWidth, (size + 2) * atlasHeight);
+  glm::vec2 textureSize((size + 2) * atlasWidth, (size + 2) * atlasHeight);
   auto bufferSize = textureSize * ratio;
 
   struct Color {
@@ -44,7 +44,7 @@ Font::Font(const std::string& path, int _size, int ratio) : size(_size) {
     // }
     FT_Load_Glyph(face, glyphIndex, FT_LOAD_RENDER);
 
-    glm::ivec2 pos{
+    glm::vec2 pos{
       (i % atlasWidth) * (size + 2) + 1,
       (i / atlasWidth) * (size + 2) + 1,
     };
@@ -75,7 +75,7 @@ Font::Font(const std::string& path, int _size, int ratio) : size(_size) {
             glyph.bitmap_left / ratio,
             glyph.bitmap_top / ratio,
           },
-        .advance = static_cast<int>((glyph.advance.x >> 6) / ratio),
+        .advance = (glyph.advance.x >> 6) / ratio,
         .pos = pos,
       }
     );
@@ -87,8 +87,8 @@ Font::Font(const std::string& path, int _size, int ratio) : size(_size) {
       {static_cast<uint32_t>(bufferSize.x), static_cast<uint32_t>(bufferSize.y)},
       wgpu::TextureFormat::RGBA8Unorm, textureData.data()
     ),
-    .width = textureSize.x,
-    .height = textureSize.y,
+    .width = static_cast<int>(textureSize.x),
+    .height = static_cast<int>(textureSize.y),
   };
   texture.CreateView();
 

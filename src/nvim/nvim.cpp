@@ -34,7 +34,7 @@ void Nvim::StartUi(int width, int height) {
     {"rgb", true},
     {"ext_hlstate", true},
     {"ext_linegrid", true},
-    {"ext_multigrid", true},
+    // {"ext_multigrid", true},
   };
 
   client.Send("nvim_ui_attach", width, height, options);
