@@ -30,7 +30,11 @@ struct Window {
     double xpos;
     double ypos;
   };
-  using Event = std::variant<KeyData, CharData, MouseButtonData, CursorPosData>;
+  struct WindowSizeData {
+    int width;
+    int height;
+  };
+  using Event = std::variant<KeyData, CharData, MouseButtonData, CursorPosData, WindowSizeData>;
   std::vector<Event> events;
 
   Window() = default;

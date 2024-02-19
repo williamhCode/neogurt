@@ -6,6 +6,9 @@ template <class... Ts>
 struct overloaded : Ts... {
   using Ts::operator()...;
 };
+// explicit deduction guide (not needed as of C++20)
+template <class... Ts>
+overloaded(Ts...) -> overloaded<Ts...>;
 
 template <typename VariantType, typename T, std::size_t index = 0>
 constexpr std::size_t vIndex() {

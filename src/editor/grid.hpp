@@ -8,6 +8,7 @@
 
 struct Grid {
   static const int fontSize = 30; // TODO: make this configurable
+  bool empty = true;  // temporary hack
 
   int width;
   int height;

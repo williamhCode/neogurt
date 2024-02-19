@@ -20,6 +20,7 @@ void GridManager::Resize(GridResize& e) {
 
 void GridManager::Clear(GridClear& e) {
   auto& grid = grids[e.grid];
+  grid.empty = false;
   for (size_t i = 0; i < grid.lines.Size(); i++) {
     auto& line = grid.lines[i];
     for (auto& cell : line) {
@@ -53,7 +54,22 @@ void GridManager::Scroll(GridScroll& e) {
   if (e.top == 0 && e.bot == grid.height && e.left == 0 && e.right == grid.width && e.cols == 0) {
     grid.lines.Scroll(e.rows);
   } else {
-    // scroll
+    if (e.rows > 0) {
+      // scrolling down, move lines up
+      int top = e.top;
+      int bot = e.bot - e.rows;
+      for (int i = top; i < bot; i++) {
+        grid.lines[i] = grid.lines[i + e.rows];
+      }
+    } else {
+      // scrolling up, move lines down
+      e.rows = -e.rows;
+      int top = e.top + e.rows;
+      int bot = e.bot;
+      for (int i = bot - 1; i >= top; i--) {
+        grid.lines[i] = grid.lines[i - e.rows];
+      }
+    }
   }
 }
 

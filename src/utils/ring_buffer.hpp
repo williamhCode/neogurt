@@ -11,7 +11,7 @@ private:
   size_t head = 0;
   size_t size;
 
-  size_t wrapIndex(size_t index) {
+  size_t wrapIndex(size_t index) const {
     return index >= size ? index - size : index;
   }
 

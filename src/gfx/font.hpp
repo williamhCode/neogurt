@@ -1,13 +1,17 @@
 #pragma once
 
 #include "freetype/freetype.h"
+#include "glm/ext/vector_float4.hpp"
 #include "glm/ext/vector_int2.hpp"
 #include "gfx/texture.hpp"
 
 struct Font {
+  FT_Face face;
+
   int size; // font size
 
   // texture related
+  wgpu::BindGroup fontTextureBG;
   TextureHandle texture;
   static constexpr int atlasWidth = 16;
   int atlasHeight;
@@ -16,7 +20,7 @@ struct Font {
     glm::ivec2 size;
     glm::ivec2 bearing;
     int advance;
-    glm::ivec2 position;
+    glm::ivec2 pos;
   };
   std::unordered_map<uint32_t, GlyphInfo> glyphInfoMap;
 

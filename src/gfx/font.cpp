@@ -1,4 +1,5 @@
 #include "font.hpp"
+#include "dawn/utils/WGPUHelpers.h"
 #include "webgpu_utils/webgpu.hpp"
 #include "gfx/instance.hpp"
 
@@ -17,7 +18,6 @@ Font::Font(const std::string& path, int _size, int ratio) : size(_size) {
     ftInitialized = true;
   }
 
-  FT_Face face;
   if (FT_New_Face(library, path.c_str(), 0, &face)) {
     throw std::runtime_error("Failed to load font");
   }
@@ -76,7 +76,7 @@ Font::Font(const std::string& path, int _size, int ratio) : size(_size) {
             glyph.bitmap_top / ratio,
           },
         .advance = static_cast<int>((glyph.advance.x >> 6) / ratio),
-        .position = pos,
+        .pos = pos,
       }
     );
   }
@@ -91,4 +91,22 @@ Font::Font(const std::string& path, int _size, int ratio) : size(_size) {
     .height = textureSize.y,
   };
   texture.CreateView();
+
+  // create bind group
+  Sampler sampler = ctx.device.CreateSampler( //
+    ToPtr(SamplerDescriptor{
+      .addressModeU = AddressMode::ClampToEdge,
+      .addressModeV = AddressMode::ClampToEdge,
+      .magFilter = FilterMode::Nearest,
+      .minFilter = FilterMode::Nearest,
+    })
+  );
+
+  fontTextureBG = dawn::utils::MakeBindGroup(
+    ctx.device, ctx.pipeline.fontTextureBGL,
+    {
+      {0, texture.view},
+      {1, sampler},
+    }
+  );
 }
