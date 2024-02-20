@@ -15,12 +15,16 @@ struct Font {
   static constexpr int atlasWidth = 16;
   int atlasHeight;
 
+  float charWidth;
+  float charHeight;
+
   struct GlyphInfo {
     // floats because of high dpi
     glm::vec2 size;
     glm::vec2 bearing;
     float advance;
-    glm::vec2 pos;
+    static inline std::array<glm::vec2, 4> positions;
+    std::array<glm::vec2, 4> texCoords;
   };
   std::unordered_map<uint32_t, GlyphInfo> glyphInfoMap;
 

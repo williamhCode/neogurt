@@ -22,6 +22,8 @@ struct Renderer {
 
   Renderer(glm::uvec2 size);
 
+  void Resize(glm::uvec2 size);
+
   void Begin();
   void RenderGrid(const Grid& grid, const Font& font);
   void End();

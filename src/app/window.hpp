@@ -5,6 +5,7 @@
 
 #include "gfx/context.hpp"
 
+#include <optional>
 #include <string>
 
 struct Window {
@@ -30,12 +31,13 @@ struct Window {
     double xpos;
     double ypos;
   };
+  using Event = std::variant<KeyData, CharData, MouseButtonData, CursorPosData>;
+  std::vector<Event> events;
   struct WindowSizeData {
     int width;
     int height;
   };
-  using Event = std::variant<KeyData, CharData, MouseButtonData, CursorPosData, WindowSizeData>;
-  std::vector<Event> events;
+  std::optional<WindowSizeData> windowSizeEvent;
 
   Window() = default;
   Window(glm::uvec2 size, const std::string& title, wgpu::PresentMode presentMode);

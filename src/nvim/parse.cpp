@@ -12,7 +12,7 @@
 static void ParseRedraw(const msgpack::object& params, RedrawState& state);
 
 void ParseNotifications(rpc::Client& client, RedrawState& state) {
-  // LOG_DISABLE();
+  LOG_DISABLE();
   state.numFlushes = 0;
   while (client.HasNotification()) {
     // static int count = 0;
@@ -79,14 +79,14 @@ static std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
   }},
 
   {"hl_attr_define", [](const msgpack::object& args, RedrawState& state) {
-    // parameters = { { "Integer", "id" }, { "Dictionary", "rgb_attrs" }, { "Dictionary", "cterm_attrs" }, { "Array", "info" } },
-    auto [id, rgb_attrs, cterm_attrs, info] =
-      args.as<std::tuple<int, msgpack::object, msgpack::object, msgpack::object>>();
-    LOG("hl_attr_define:\n{} {} {} {}", id, ToString(rgb_attrs), ToString(cterm_attrs), ToString(info));
+    state.currEvents().push_back(args.as<HlAttrDefine>());
+    // auto [id, rgb_attrs, cterm_attrs, info] =
+    //   args.as<std::tuple<int, msgpack::object, msgpack::object, msgpack::object>>();
+    // LOG("hl_attr_define:\n{} {} {} {}", id, ToString(rgb_attrs), ToString(cterm_attrs), ToString(info));
   }},
 
   {"hl_group_set", [](const msgpack::object& args, RedrawState& state) {
-    // LOG("hl_group_set");
+    state.currEvents().push_back(args.as<HlGroupSet>());
   }},
 
   // Grid Events --------------------------------------------------------------

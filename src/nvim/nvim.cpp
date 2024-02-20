@@ -4,7 +4,7 @@
 Nvim::Nvim(bool debug) {
   // start nvim process
   if (!debug) {
-    std::string command = "nvim --listen localhost:6666 --headless";
+    std::string command = "nvim --listen localhost:6666 --headless $HOME/.config/nvim";
     nvimProcess = std::make_unique<TinyProcessLib::Process>(command, "", nullptr);
   }
 
@@ -29,15 +29,19 @@ Nvim::~Nvim() {
   if (nvimProcess) nvimProcess->kill(true);
 }
 
-void Nvim::StartUi(int width, int height) {
+void Nvim::UiAttach(int width, int height) {
   std::map<std::string, bool> options{
     {"rgb", true},
-    {"ext_hlstate", true},
+    // {"ext_hlstate", true},
     {"ext_linegrid", true},
     // {"ext_multigrid", true},
   };
 
   client.Send("nvim_ui_attach", width, height, options);
+}
+
+void Nvim::UiTryResize(int width, int height) {
+  client.Send("nvim_ui_try_resize", width, height);
 }
 
 void Nvim::Input(std::string input) {

@@ -12,7 +12,8 @@ struct Nvim {
 
   Nvim(bool debug);
   ~Nvim();
-  void StartUi(int width, int height);
+  void UiAttach(int width, int height);
+  void UiTryResize(int width, int height);
   void Input(std::string input);
   void ParseEvents();
 };

@@ -17,16 +17,21 @@ using namespace wgpu;
 const WGPUContext& ctx = Window::_ctx;
 
 int main() {
-  Nvim nvim(true);
-  nvim.StartUi(120, 40);
   // std::vector<std::future<void>> threads;
 
   Window window({1400, 800}, "Neovim GUI", PresentMode::Fifo);
-
   Font font("/Library/Fonts/SF-Mono-Medium.otf", 15, 2);
+
+  int width = window.size.x / font.charWidth;
+  int height = window.size.y / font.charHeight;
+
+  Nvim nvim(true);
+  nvim.UiAttach(width, height);
+
   Renderer renderer(window.size);
   renderer.clearColor = {0.9, 0.5, 0.6, 1.0};
   GridManager gridManager;
+
 
   while (!window.ShouldClose()) {
     ctx.device.Tick();
@@ -75,17 +80,26 @@ int main() {
             auto string = ConvertCharInput(codepoint);
             if (string != "") nvim.Input(string);
           },
-          [&](Window::MouseButtonData& e) {
+          [&](Window::MouseButtonData&) {
 
           },
-          [&](Window::CursorPosData& e) {},
-          [&](Window::WindowSizeData& e) {
-
-          },
+          [&](Window::CursorPosData&) {},
         },
         event
       );
     }
+
+    // seperate logic for window size event, else it builds up when resizing
+    if (window.windowSizeEvent) {
+      auto [width, height] = *window.windowSizeEvent;
+      int widthChars = width / font.charWidth;
+      int heightChars = height / font.charHeight;
+      nvim.UiTryResize(widthChars, heightChars);
+      renderer.Resize({width, height});
+      LOG("resize: {} {}", width, height);
+      window.windowSizeEvent.reset();
+    }
+
 
     if (window.ShouldClose()) nvim.client.Disconnect();
     if (!nvim.client.IsConnected()) window.SetShouldClose(true);
@@ -166,6 +180,21 @@ int main() {
             },
             [&](DefaultColorsSet& e) {
               // LOG("default_colors_set");
+            },
+            [&](HlAttrDefine& e) {
+              // LOG("hl_attr_define");
+              for (auto& [key, value] : e.rgbAttrs) {
+                if (value.is_bool()) {
+                  // LOG("hl_attr_define: {} {}", key, value.as_bool());
+                } else if (value.is_uint64_t()) {
+                  // LOG("hl_attr_define: {} {}", key, value.as_uint64_t());
+                } else {
+                  assert(false);
+                }
+              }
+            },
+            [&](HlGroupSet& e) {
+              LOG("hl_group_set: {} {}", e.name, e.id);
             },
             [&](Flush&) {
               // LOG("flush");

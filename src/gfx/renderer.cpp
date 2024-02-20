@@ -34,6 +34,11 @@ Renderer::Renderer(glm::uvec2 size) {
   });
 }
 
+void Renderer::Resize(glm::uvec2 size) {
+  auto view = glm::ortho<float>(0, size.x, size.y, 0, -1, 1);
+  ctx.queue.WriteBuffer(viewProjBuffer, 0, &view, sizeof(glm::mat4));
+}
+
 void Renderer::Begin() {
   commandEncoder = ctx.device.CreateCommandEncoder();
   nextTexture = ctx.swapChain.GetCurrentTextureView();
@@ -44,7 +49,7 @@ void Renderer::RenderGrid(const Grid& grid, const Font& font) {
   std::vector<TextQuad> textVertices(grid.width * grid.height);
   std::vector<uint16_t> textIndices(grid.width * grid.height * 6);
 
-  size_t quadIndex = 0;
+  size_t quadCount = 0;
   glm::vec2 textureSize(font.texture.width, font.texture.height);
   glm::vec2 currOffset(0, 0);
   for (size_t i = 0; i < grid.lines.Size(); i++) {
@@ -58,14 +63,6 @@ void Renderer::RenderGrid(const Grid& grid, const Font& font) {
       // if (it == font.glyphInfoMap.end()) it = font.glyphInfoMap.find(32);
       auto& glyphInfo = it->second;
 
-      // region to be drawn in context of the entire font texture
-      glm::vec4 region{
-        glyphInfo.pos.x,
-        glyphInfo.pos.y,
-        font.size,
-        font.size,
-      };
-
       // position of the quad
       glm::vec2 quadPos{
         currOffset.x + glyphInfo.bearing.x,
@@ -73,36 +70,15 @@ void Renderer::RenderGrid(const Grid& grid, const Font& font) {
       };
       currOffset.x += glyphInfo.advance;
 
-      // winding order is clockwise starting from top left
-      // region = x, y, width, height
-      std::array<glm::vec2, 4> localPositions{
-        glm::vec2(0, 0),
-        glm::vec2(region.z, 0),
-        glm::vec2(region.z, region.w),
-        glm::vec2(0, region.w),
-      };
-
-      float left = region.x / textureSize.x;
-      float right = (region.x + region.z) / textureSize.x;
-      float top = region.y / textureSize.y;
-      float bottom = (region.y + region.w) / textureSize.y;
-
-      std::array<glm::vec2, 4> texCoords{
-        glm::vec2(left, top),
-        glm::vec2(right, top),
-        glm::vec2(right, bottom),
-        glm::vec2(left, bottom),
-      };
-
       for (size_t i = 0; i < 4; i++) {
-        auto& vertex = textVertices[quadIndex][i];
-        vertex.position = {localPositions[i] + quadPos};
-        vertex.uv = texCoords[i];
+        auto& vertex = textVertices[quadCount][i];
+        vertex.position = quadPos + glyphInfo.positions[i];
+        vertex.uv = glyphInfo.texCoords[i];
         vertex.foreground = {1, 1, 1, 1};
       }
 
-      auto indexCount = quadIndex * 6;
-      auto vertexCount = quadIndex * 4;
+      auto indexCount = quadCount * 6;
+      auto vertexCount = quadCount * 4;
       textIndices[indexCount + 0] = vertexCount + 0;
       textIndices[indexCount + 1] = vertexCount + 1;
       textIndices[indexCount + 2] = vertexCount + 2;
@@ -110,13 +86,13 @@ void Renderer::RenderGrid(const Grid& grid, const Font& font) {
       textIndices[indexCount + 4] = vertexCount + 2;
       textIndices[indexCount + 5] = vertexCount + 3;
 
-      quadIndex++;
+      quadCount++;
     }
-    currOffset.y += font.size * 1.2;
+    currOffset.y += font.charHeight;
   }
 
-  auto vertexBufferSize = quadIndex * sizeof(TextQuad);
-  auto indexBufferSize = quadIndex * 6 * sizeof(uint16_t);
+  auto vertexBufferSize = quadCount * sizeof(TextQuad);
+  auto indexBufferSize = quadCount * 6 * sizeof(uint16_t);
   ctx.queue.WriteBuffer(
     textVertexBuffer, 0, textVertices.data(), vertexBufferSize
   );
@@ -132,7 +108,7 @@ void Renderer::RenderGrid(const Grid& grid, const Font& font) {
   passEncoder.SetBindGroup(1, font.fontTextureBG);
   passEncoder.SetVertexBuffer(0, textVertexBuffer, 0, vertexBufferSize);
   passEncoder.SetIndexBuffer(textIndexBuffer, IndexFormat::Uint16, 0, indexBufferSize);
-  passEncoder.DrawIndexed(quadIndex * 6);
+  passEncoder.DrawIndexed(quadCount * 6);
   passEncoder.End();
 }
 

@@ -22,10 +22,21 @@ Font::Font(const std::string& path, int _size, float ratio) : size(_size) {
     throw std::runtime_error("Failed to load font");
   }
 
+  charWidth = (face->max_advance_width >> 6) / ratio;
+  charHeight = size * 1.2;
+
+  // winding order is clockwise starting from top left
+  GlyphInfo::positions = {
+    glm::vec2(0, 0),
+    glm::vec2(size, 0),
+    glm::vec2(size, size),
+    glm::vec2(0, size),
+  };
+
   FT_Set_Pixel_Sizes(face, 0, size * ratio);
 
   uint32_t numChars = 128;
-  atlasHeight = numChars / atlasWidth;
+  atlasHeight = (numChars + atlasWidth - 1) / atlasWidth;
 
   glm::vec2 textureSize((size + 2) * atlasWidth, (size + 2) * atlasHeight);
   auto bufferSize = textureSize * ratio;
@@ -62,6 +73,22 @@ Font::Font(const std::string& path, int _size, float ratio) : size(_size) {
       }
     }
 
+    // region that holds current glyph in context of the entire font texture
+    // region = x, y, width, height
+    glm::vec4 region{pos.x, pos.y, size, size};
+
+    float left = region.x / textureSize.x;
+    float right = (region.x + region.z) / textureSize.x;
+    float top = region.y / textureSize.y;
+    float bottom = (region.y + region.w) / textureSize.y;
+
+    std::array<glm::vec2, 4> texCoords{
+      glm::vec2(left, top),
+      glm::vec2(right, top),
+      glm::vec2(right, bottom),
+      glm::vec2(left, bottom),
+    };
+
     glyphInfoMap.emplace(
       glyphIndex,
       GlyphInfo{
@@ -76,7 +103,7 @@ Font::Font(const std::string& path, int _size, float ratio) : size(_size) {
             glyph.bitmap_top / ratio,
           },
         .advance = (glyph.advance.x >> 6) / ratio,
-        .pos = pos,
+        .texCoords = texCoords,
       }
     );
   }

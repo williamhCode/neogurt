@@ -42,6 +42,19 @@ struct DefaultColorsSet {
   int ctermBg;
   MSGPACK_DEFINE(rgbFg, rgbBg, rgbSp, ctermFg, ctermBg);
 };
+struct HlAttrDefine {
+  int id;
+  using HlAttrMap = std::map<std::string, msgpack::type::variant>;
+  HlAttrMap rgbAttrs;
+  HlAttrMap ctermAttrs;
+  std::vector<HlAttrMap> info;
+  MSGPACK_DEFINE(id, rgbAttrs, ctermAttrs, info);
+};
+struct HlGroupSet {
+  std::string name;
+  int id;
+  MSGPACK_DEFINE(name, id);
+};
 struct GridResize {
   int grid;
   int width;
@@ -97,6 +110,8 @@ using RedrawEvent = std::variant<
   BusyStop,
   UpdateMenu,
   DefaultColorsSet,
+  HlAttrDefine,
+  HlGroupSet,
   Flush,
   GridResize,
   GridClear,

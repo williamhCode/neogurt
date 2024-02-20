@@ -1,4 +1,5 @@
 #include "window.hpp"
+#include "utils/logger.hpp"
 
 #include <iostream>
 #include <ostream>
@@ -27,11 +28,13 @@ static void CursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
 static void WindowSizeCallback(GLFWwindow* window, int width, int height) {
   Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
   win.size = {width, height};
+  win.windowSizeEvent = Window::WindowSizeData{width, height};
 }
 
 static void FramebufferSizeCallback(GLFWwindow* window, int width, int height) {
   Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
   win._ctx.Resize({width, height});
+  // LOG("fb size: {} {}", width, height);
 }
 
 Window::Window(glm::uvec2 size, const std::string& title, wgpu::PresentMode presentMode)
