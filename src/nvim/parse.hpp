@@ -135,4 +135,4 @@ struct RedrawState {
   }
 };
 
-void ParseNotifications(rpc::Client& client, RedrawState& state);
+void ParseRedrawEvents(rpc::Client& client, RedrawState& state);

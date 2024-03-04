@@ -1,8 +1,8 @@
 #include "font.hpp"
-#include "dawn/utils/WGPUHelpers.h"
 #include "webgpu_utils/webgpu.hpp"
 #include "gfx/instance.hpp"
 
+#include <iostream>
 #include <vector>
 
 static FT_Library library;
@@ -22,9 +22,6 @@ Font::Font(const std::string& path, int _size, float ratio) : size(_size) {
     throw std::runtime_error("Failed to load font");
   }
 
-  charWidth = (face->max_advance_width >> 6) / ratio;
-  charHeight = size * 1.2;
-
   // winding order is clockwise starting from top left
   GlyphInfo::positions = {
     glm::vec2(0, 0),
@@ -34,6 +31,9 @@ Font::Font(const std::string& path, int _size, float ratio) : size(_size) {
   };
 
   FT_Set_Pixel_Sizes(face, 0, size * ratio);
+
+  charWidth = (face->max_advance_width >> 6) / ratio;
+  charHeight = (face->size->metrics.height >> 6) / ratio;
 
   uint32_t numChars = 128;
   atlasHeight = (numChars + atlasWidth - 1) / atlasWidth;
@@ -129,7 +129,7 @@ Font::Font(const std::string& path, int _size, float ratio) : size(_size) {
     })
   );
 
-  fontTextureBG = dawn::utils::MakeBindGroup(
+  fontTextureBG = utils::MakeBindGroup(
     ctx.device, ctx.pipeline.fontTextureBGL,
     {
       {0, texture.view},

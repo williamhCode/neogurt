@@ -14,6 +14,6 @@ struct Nvim {
   ~Nvim();
   void UiAttach(int width, int height);
   void UiTryResize(int width, int height);
-  void Input(std::string input);
+  void Input(const std::string &input);
   void ParseEvents();
 };

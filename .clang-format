@@ -16,6 +16,7 @@ IndentCaseLabels: true
 
 # BinPackArguments: false
 BinPackParameters: false
+AllowShortLambdasOnASingleLine: None
 AllowShortFunctionsOnASingleLine: None
 AllowShortIfStatementsOnASingleLine: WithoutElse
 # PenaltyReturnTypeOnItsOwnLine: 10000

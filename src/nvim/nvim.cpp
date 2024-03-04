@@ -44,10 +44,10 @@ void Nvim::UiTryResize(int width, int height) {
   client.Send("nvim_ui_try_resize", width, height);
 }
 
-void Nvim::Input(std::string input) {
+void Nvim::Input(const std::string &input) {
   client.Send("nvim_input", input);
 }
 
 void Nvim::ParseEvents() {
-  ParseNotifications(client, redrawState);
+  ParseRedrawEvents(client, redrawState);
 }

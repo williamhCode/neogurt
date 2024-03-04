@@ -1,6 +1,7 @@
 #pragma once
 
 #include "editor/grid.hpp"
+#include "editor/highlight.hpp"
 #include "gfx/font.hpp"
 #include "glm/ext/vector_uint2.hpp"
 #include "webgpu/webgpu_cpp.h"
@@ -25,7 +26,7 @@ struct Renderer {
   void Resize(glm::uvec2 size);
 
   void Begin();
-  void RenderGrid(const Grid& grid, const Font& font);
+  void RenderGrid(const Grid& grid, const Font& font, const HlTable& hlTable);
   void End();
   void Present();
 };

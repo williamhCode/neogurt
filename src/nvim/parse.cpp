@@ -1,9 +1,6 @@
 #include "parse.hpp"
 
 #include "utils/logger.hpp"
-#include "utils/map_view.hpp"
-#include "utils/timer.hpp"
-#include "msgpack/v1/adaptor/cpp20/span.hpp"
 
 #include <string>
 #include <string_view>
@@ -11,7 +8,7 @@
 
 static void ParseRedraw(const msgpack::object& params, RedrawState& state);
 
-void ParseNotifications(rpc::Client& client, RedrawState& state) {
+void ParseRedrawEvents(rpc::Client& client, RedrawState& state) {
   LOG_DISABLE();
   state.numFlushes = 0;
   while (client.HasNotification()) {
@@ -79,10 +76,8 @@ static std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
   }},
 
   {"hl_attr_define", [](const msgpack::object& args, RedrawState& state) {
+    LOG("hl_attr_define: {}", ToString(args));
     state.currEvents().push_back(args.as<HlAttrDefine>());
-    // auto [id, rgb_attrs, cterm_attrs, info] =
-    //   args.as<std::tuple<int, msgpack::object, msgpack::object, msgpack::object>>();
-    // LOG("hl_attr_define:\n{} {} {} {}", id, ToString(rgb_attrs), ToString(cterm_attrs), ToString(info));
   }},
 
   {"hl_group_set", [](const msgpack::object& args, RedrawState& state) {

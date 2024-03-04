@@ -7,7 +7,6 @@
 #include "nvim/input.hpp"
 #include "nvim/msgpack_rpc/client.hpp"
 #include "nvim/nvim.hpp"
-#include "nvim/parse.hpp"
 #include "utils/logger.hpp"
 #include "utils/timer.hpp"
 #include "utils/variant.hpp"
@@ -20,6 +19,7 @@ int main() {
   // std::vector<std::future<void>> threads;
 
   Window window({1400, 800}, "Neovim GUI", PresentMode::Fifo);
+  Renderer renderer(window.size);
   Font font("/Library/Fonts/SF-Mono-Medium.otf", 15, 2);
 
   int width = window.size.x / font.charWidth;
@@ -28,10 +28,7 @@ int main() {
   Nvim nvim(true);
   nvim.UiAttach(width, height);
 
-  Renderer renderer(window.size);
-  renderer.clearColor = {0.9, 0.5, 0.6, 1.0};
-  GridManager gridManager;
-
+  EditorState editorState{};
 
   while (!window.ShouldClose()) {
     ctx.device.Tick();
@@ -54,13 +51,13 @@ int main() {
 
             if (action == GLFW_PRESS) {
               if (key == GLFW_KEY_F2) {
-                for (auto& [id, grid] : gridManager.grids) {
+                for (auto& [id, grid] : editorState.gridManager.grids) {
                   LOG("grid: {} ----------------------------", id);
                   for (size_t i = 0; i < grid.lines.Size(); i++) {
                     auto& line = grid.lines[i];
                     std::string lineStr;
                     for (auto& cell : line) {
-                      lineStr += cell;
+                      lineStr += cell.text;
                     }
                     LOG("{}", lineStr);
                   }
@@ -83,15 +80,16 @@ int main() {
           [&](Window::MouseButtonData&) {
 
           },
-          [&](Window::CursorPosData&) {},
+          [&](Window::CursorPosData&) {
+          },
         },
         event
       );
     }
 
     // seperate logic for window size event, else it builds up when resizing
-    if (window.windowSizeEvent) {
-      auto [width, height] = *window.windowSizeEvent;
+    if (window.windowSizeEvent.has_value()) {
+      auto [width, height] = window.windowSizeEvent.value();
       int widthChars = width / font.charWidth;
       int heightChars = height / font.charHeight;
       nvim.UiTryResize(widthChars, heightChars);
@@ -99,7 +97,6 @@ int main() {
       LOG("resize: {} {}", width, height);
       window.windowSizeEvent.reset();
     }
-
 
     if (window.ShouldClose()) nvim.client.Disconnect();
     if (!nvim.client.IsConnected()) window.SetShouldClose(true);
@@ -121,7 +118,7 @@ int main() {
     //   return f.wait_for(std::chrono::seconds(0)) == std::future_status::ready;
     // });
 
-    // rendering ------------------------------------------------
+    // parse redraw and rendering ------------------------------------------------
     // if using continue, have to lock main loop to 60 fps, or will keep looping
     // and waste cpu cycles
     // else just let webgpu vsync handle timing, but will spend extra power
@@ -132,114 +129,22 @@ int main() {
     // LOG_DISABLE();
     // size of queue
     // timer.Start();
-    for (int i = 0; i < nvim.redrawState.numFlushes; i++) {
-      auto& redrawEvents = nvim.redrawState.eventsQueue.front();
-      for (auto& event : redrawEvents) {
-        std::visit(
-          overloaded{
-            [&](SetTitle& e) {
-              // LOG("set_title");
-            },
-            [&](SetIcon& e) {
-              // LOG("set_icon");
-            },
-            [&](ModeInfoSet& e) {
-              // LOG("mode_info_set");
-              for (auto& elem : e.modeInfo) {
-                for (auto& [key, value] : elem) {
-                  if (value.is_string()) {
-                    // LOG("mode_info: {} {}", key, value.as_string());
-                  } else if (value.is_uint64_t()) {
-                    // LOG("mode_info: {} {}", key, value.as_uint64_t());
-                  } else {
-                    assert(false);
-                  }
-                }
-              }
-            },
-            [&](OptionSet& e) {
-              // LOG("option_set");
-            },
-            [&](ModeChange& e) {
-              // LOG("mode_change");
-            },
-            [&](MouseOn&) {
-              // LOG("mouse_on");
-            },
-            [&](MouseOff&) {
-              // LOG("mouse_off");
-            },
-            [&](BusyStart&) {
-              // LOG("busy_start");
-            },
-            [&](BusyStop&) {
-              // LOG("busy_stop");
-            },
-            [&](UpdateMenu&) {
-              // LOG("update_menu");
-            },
-            [&](DefaultColorsSet& e) {
-              // LOG("default_colors_set");
-            },
-            [&](HlAttrDefine& e) {
-              // LOG("hl_attr_define");
-              for (auto& [key, value] : e.rgbAttrs) {
-                if (value.is_bool()) {
-                  // LOG("hl_attr_define: {} {}", key, value.as_bool());
-                } else if (value.is_uint64_t()) {
-                  // LOG("hl_attr_define: {} {}", key, value.as_uint64_t());
-                } else {
-                  assert(false);
-                }
-              }
-            },
-            [&](HlGroupSet& e) {
-              LOG("hl_group_set: {} {}", e.name, e.id);
-            },
-            [&](Flush&) {
-              // LOG("flush");
-            },
-            [&](GridResize& e) {
-              // LOG("grid_resize");
-              gridManager.Resize(e);
-            },
-            [&](GridClear& e) {
-              // LOG("grid_clear");
-              gridManager.Clear(e);
-            },
-            [&](GridCursorGoto& e) {
-              // LOG("grid_cursor_goto");
-              gridManager.CursorGoto(e);
-            },
-            [&](GridLine& e) {
-              // LOG("grid_line");
-              gridManager.Line(e);
-            },
-            [&](GridScroll& e) {
-              // LOG("grid_scroll");
-              gridManager.Scroll(e);
-            },
-            [&](GridDestroy& e) {
-              // LOG("grid_destroy");
-              gridManager.Destroy(e);
-            },
-            [&](auto&) { LOG("unknown event"); },
-          },
-          event
-        );
-      }
-      nvim.redrawState.eventsQueue.pop_front();
-    }
+    ProcessRedrawEvents(nvim.redrawState, editorState);
     // LOG_ENABLE();
     // timer.End();
     // auto duration = duration_cast<nanoseconds>(timer.GetAverageDuration());
     // LOG("rendering: {}", duration);
 
+    auto hlIter = editorState.hlTable.find(0);
+    if (hlIter != editorState.hlTable.end()) {
+      auto& color = hlIter->second.background.value();
+      renderer.clearColor = {color.r, color.g, color.b, color.a};
+    }
     renderer.Begin();
-    for (auto& [id, grid] : gridManager.grids) {
+    for (auto& [id, grid] : editorState.gridManager.grids) {
       // if (grid.empty) continue;
       // LOG("render grid: {}", id);
-      renderer.RenderGrid(grid, font);
+      renderer.RenderGrid(grid, font, editorState.hlTable);
     }
     renderer.End();
     renderer.Present();

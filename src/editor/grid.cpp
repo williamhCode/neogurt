@@ -1,7 +1,5 @@
 #include "grid.hpp"
 
-using namespace wgpu;
-
 void GridManager::Resize(GridResize& e) {
   auto& grid = grids[e.grid];
 
@@ -12,7 +10,7 @@ void GridManager::Resize(GridResize& e) {
   for (size_t i = 0; i < grid.lines.Size(); i++) {
     auto& line = grid.lines[i];
     for (auto& cell : line) {
-      cell = " ";
+      cell = Grid::Cell{" "};
     }
   }
 }
@@ -23,7 +21,7 @@ void GridManager::Clear(GridClear& e) {
   for (size_t i = 0; i < grid.lines.Size(); i++) {
     auto& line = grid.lines[i];
     for (auto& cell : line) {
-      cell = " ";
+      cell = Grid::Cell{" "};
     }
   }
 }
@@ -41,7 +39,9 @@ void GridManager::Line(GridLine& e) {
   int col = e.colStart;
   for (auto& cell : e.cells) {
     for (int i = 0; i < cell.repeat; i++) {
-      line[col] = cell.text;
+      auto& lineCell = line[col];
+      lineCell.text = cell.text;
+      lineCell.hlId = cell.hlId;
       col++;
     }
   }

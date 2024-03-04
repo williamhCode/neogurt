@@ -1,9 +1,7 @@
 #pragma once
 
-#include "gfx/texture.hpp"
 #include "nvim/parse.hpp"
 #include "utils/ring_buffer.hpp"
-#include "webgpu/webgpu_cpp.h"
 #include <vector>
 
 struct Grid {
@@ -16,7 +14,11 @@ struct Grid {
   int cursorRow;
   int cursorCol;
 
-  using Line = std::vector<std::string>;
+  struct Cell {
+    std::string text;
+    int hlId = 0;
+  };
+  using Line = std::vector<Cell>;
   using Lines = RingBuffer<Line>;
   Lines lines;
 };
