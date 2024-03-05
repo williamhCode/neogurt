@@ -18,6 +18,8 @@ struct Font {
   float charWidth;
   float charHeight;
 
+  uint32_t defaultGlyphIndex;
+
   struct GlyphInfo {
     // floats because of high dpi
     glm::vec2 size;
@@ -29,4 +31,6 @@ struct Font {
   std::unordered_map<uint32_t, GlyphInfo> glyphInfoMap;
 
   Font(const std::string& path, int size, float ratio);
+
+  const GlyphInfo &GetGlyphInfo(FT_ULong charcode) const;
 };

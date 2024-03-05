@@ -12,8 +12,15 @@ struct Nvim {
 
   Nvim(bool debug);
   ~Nvim();
+  void SetClientInfo(
+    const std::string& name,
+    const std::map<std::string, msgpack::type::variant>& version,
+    const std::string& type,
+    const std::map<std::string, msgpack::type::variant>& methods,
+    const std::map<std::string, std::string>& attributes
+  );
   void UiAttach(int width, int height);
   void UiTryResize(int width, int height);
-  void Input(const std::string &input);
+  void Input(const std::string& input);
   void ParseEvents();
 };

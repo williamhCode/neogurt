@@ -34,6 +34,8 @@ set(APP_SRC
   src/nvim/nvim.cpp
   src/nvim/parse.cpp
   src/nvim/input.cpp
+
+  src/utils/unicode.cpp
 )
 
 add_executable(App ${APP_SRC})

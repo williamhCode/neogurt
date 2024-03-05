@@ -25,7 +25,7 @@ int main() {
   int width = window.size.x / font.charWidth;
   int height = window.size.y / font.charHeight;
 
-  Nvim nvim(true);
+  Nvim nvim(false);
   nvim.UiAttach(width, height);
 
   EditorState editorState{};
@@ -135,12 +135,15 @@ int main() {
     // auto duration = duration_cast<nanoseconds>(timer.GetAverageDuration());
     // LOG("rendering: {}", duration);
 
-    auto color = editorState.hlTable.at(0).background.value();
-    renderer.clearColor = {color.r, color.g, color.b, color.a};
+    if (auto hlIter = editorState.hlTable.find(0); hlIter != editorState.hlTable.end()) {
+      auto color = hlIter->second.background.value();
+      renderer.clearColor = {color.r, color.g, color.b, color.a};
+    }
+
     renderer.Begin();
+    LOG("----------------------");
     for (auto& [id, grid] : editorState.gridManager.grids) {
-      // if (grid.empty) continue;
-      // LOG("render grid: {}", id);
+      LOG("render grid: {}", id);
       renderer.RenderGrid(grid, font, editorState.hlTable);
     }
     renderer.End();

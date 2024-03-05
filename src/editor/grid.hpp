@@ -5,8 +5,6 @@
 #include <vector>
 
 struct Grid {
-  bool empty = true;  // temporary hack
-
   int width;
   int height;
 

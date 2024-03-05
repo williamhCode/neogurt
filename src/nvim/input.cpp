@@ -1,17 +1,11 @@
 #include "input.hpp"
 
 #include "GLFW/glfw3.h"
-#include "utf8/unchecked.h"
 #include <unordered_map>
-
-static std::string UnicodeToUTF8(unsigned int unicode) {
-  std::string utf8String;
-  utf8::unchecked::append(unicode, std::back_inserter(utf8String));
-  return utf8String;
-}
+#include "utils/unicode.hpp"
 
 // clang-format off
-static std::unordered_map<int, std::string> specialKeys{
+std::unordered_map<int, std::string> specialKeys{
   {GLFW_KEY_SPACE, "Space"},
   {GLFW_KEY_UP, "Up"},
   {GLFW_KEY_DOWN, "Down"},

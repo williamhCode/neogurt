@@ -46,6 +46,8 @@ Font::Font(const std::string& path, int _size, float ratio) : size(_size) {
   };
   std::vector<Color> textureData(bufferSize.x * bufferSize.y, {0, 0, 0, 0});
 
+  defaultGlyphIndex = FT_Get_Char_Index(face, ' ');
+
   // start off by rendering the first 128 characters
   for (uint32_t i = 0; i < numChars; i++) {
     auto glyphIndex = FT_Get_Char_Index(face, i);
@@ -136,4 +138,13 @@ Font::Font(const std::string& path, int _size, float ratio) : size(_size) {
       {1, sampler},
     }
   );
+}
+
+const Font::GlyphInfo& Font::GetGlyphInfo(FT_ULong charcode) const {
+  auto glyphIndex = FT_Get_Char_Index(face, charcode);
+  auto it = glyphInfoMap.find(glyphIndex);
+  if (it == glyphInfoMap.end()) {
+    it = glyphInfoMap.find(defaultGlyphIndex);
+  }
+  return it->second;
 }

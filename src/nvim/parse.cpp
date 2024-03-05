@@ -9,7 +9,7 @@
 static void ParseRedraw(const msgpack::object& params, RedrawState& state);
 
 void ParseRedrawEvents(rpc::Client& client, RedrawState& state) {
-  LOG_DISABLE();
+  // LOG_DISABLE();
   state.numFlushes = 0;
   while (client.HasNotification()) {
     // static int count = 0;
@@ -39,6 +39,10 @@ static std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
 
   {"option_set", [](const msgpack::object& args, RedrawState& state) {
     state.currEvents().push_back(args.as<OptionSet>());
+  }},
+
+  {"chdir", [](const msgpack::object& args, RedrawState& state) {
+    state.currEvents().push_back(args.as<Chdir>());
   }},
 
   {"mode_change", [](const msgpack::object& args, RedrawState& state) {
@@ -76,7 +80,7 @@ static std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
   }},
 
   {"hl_attr_define", [](const msgpack::object& args, RedrawState& state) {
-    LOG("hl_attr_define: {}", ToString(args));
+    // LOG("hl_attr_define: {}", ToString(args));
     state.currEvents().push_back(args.as<HlAttrDefine>());
   }},
 
@@ -86,6 +90,7 @@ static std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
 
   // Grid Events --------------------------------------------------------------
   {"grid_resize", [](const msgpack::object& args, RedrawState& state) {
+    LOG("grid_resize: {}", ToString(args));
     state.currEvents().push_back(args.as<GridResize>());
   }},
 
@@ -147,9 +152,10 @@ static std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
   }},
 
   {"win_float_pos", [](const msgpack::object& args, RedrawState& state) {
-    auto [grid, win, anchor, anchor_grid, anchor_row, anchor_col, focusable]
-      = args.as<std::tuple<int, msgpack::object, std::string, int, float, float, bool>>();
-    LOG("win_float_pos: {} {} {} {} {} {} {}", grid, ToString(win), anchor, anchor_grid, anchor_row, anchor_col, focusable);
+    LOG("win_float_pos: {}", ToString(args));
+    // auto [grid, win, anchor, anchor_grid, anchor_row, anchor_col, focusable]
+    //   = args.as<std::tuple<int, msgpack::object, std::string, int, float, float, bool>>();
+    // LOG("win_float_pos: {} {} {} {} {} {} {}", grid, ToString(win), anchor, anchor_grid, anchor_row, anchor_col, focusable);
   }},
 
   {"win_external_pos", [](const msgpack::object& args, RedrawState& state) {
@@ -173,9 +179,10 @@ static std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
   }},
 
   {"win_viewport", [](const msgpack::object& args, RedrawState& state) {
-    auto [grid, win, topline, botline, curline, curcol, line_count, scroll_delta] =
-      args.as<std::tuple<int, msgpack::object, int, int, int, int, int, int>>();
-    LOG("win_viewport: {} {} {} {} {} {} {} {}", grid, ToString(win), topline, botline, curline, curcol, line_count, scroll_delta);
+    LOG("win_viewport: {}", ToString(args));
+    // auto [grid, win, topline, botline, curline, curcol, line_count, scroll_delta] =
+    //   args.as<std::tuple<int, msgpack::object, int, int, int, int, int, int>>();
+    // LOG("win_viewport: {} {} {} {} {} {} {} {}", grid, ToString(win), topline, botline, curline, curcol, line_count, scroll_delta);
   }},
 
   {"win_extmark", [](const msgpack::object& args, RedrawState& state) {
@@ -193,9 +200,11 @@ static void ParseRedraw(const msgpack::object& params, RedrawState &state) {
     std::string_view eventName(paramArr.ptr[0].convert());
     std::span<const msgpack::object> eventArgs(&paramArr.ptr[1], paramArr.size - 1);
 
+    // std::cout << eventName << std::endl;
     auto uiEventFunc = uiEventFuncs[eventName];
     if (uiEventFunc == nullptr) {
       LOG("Unknown event: {}", eventName);
+      throw std::runtime_error("Unknown event: " + std::string(eventName));
       continue;
     }
     for (const auto& arg : eventArgs) {

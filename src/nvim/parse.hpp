@@ -23,6 +23,10 @@ struct OptionSet {
   msgpack::type::variant value;
   MSGPACK_DEFINE(name, value);
 };
+struct Chdir {
+  std::string dir;
+  MSGPACK_DEFINE(dir);
+};
 struct ModeChange {
   std::string mode;
   int modeIdx;
@@ -103,6 +107,7 @@ using RedrawEvent = std::variant<
   SetIcon,
   ModeInfoSet,
   OptionSet,
+  Chdir,
   ModeChange,
   MouseOn,
   MouseOff,

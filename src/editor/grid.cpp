@@ -17,7 +17,6 @@ void GridManager::Resize(GridResize& e) {
 
 void GridManager::Clear(GridClear& e) {
   auto& grid = grids[e.grid];
-  grid.empty = false;
   for (size_t i = 0; i < grid.lines.Size(); i++) {
     auto& line = grid.lines[i];
     for (auto& cell : line) {

@@ -3,6 +3,7 @@
 #include "gfx/pipeline.hpp"
 #include "glm/ext/matrix_clip_space.hpp"
 #include "glm/ext/matrix_float4x4.hpp"
+#include "utils/unicode.hpp"
 
 using namespace wgpu;
 
@@ -64,7 +65,7 @@ void Renderer::RenderGrid(const Grid& grid, const Font& font, const HlTable& hlT
     textOffset.x = 0;
 
     for (auto& cell : line) {
-      char c = cell.text[0]; // only support char for now, add unicode support ltr
+      auto charcode = UTF8ToUnicode(cell.text);
       auto hl = hlTable.at(cell.hlId);
 
       // don't render background if default
@@ -87,12 +88,8 @@ void Renderer::RenderGrid(const Grid& grid, const Font& font, const HlTable& hlT
         rectData.IncrementCounts();
       }
 
-      if (c != ' ') {
-        auto glyphIndex = FT_Get_Char_Index(font.face, c);
-
-        auto it = font.glyphInfoMap.find(glyphIndex);
-        // if (it == font.glyphInfoMap.end()) it = font.glyphInfoMap.find(32);
-        auto& glyphInfo = it->second;
+      if (cell.text != " ") {
+       auto& glyphInfo = font.GetGlyphInfo(charcode);
 
         glm::vec2 textQuadPos{
           textOffset.x + glyphInfo.bearing.x,
@@ -120,6 +117,7 @@ void Renderer::RenderGrid(const Grid& grid, const Font& font, const HlTable& hlT
   textData.WriteBuffers();
   rectData.WriteBuffers();
 
+  // background
   {
     rectRenderPassDesc.cColorAttachments[0].view = nextTexture;
     rectRenderPassDesc.cColorAttachments[0].clearValue = clearColor;
@@ -136,6 +134,7 @@ void Renderer::RenderGrid(const Grid& grid, const Font& font, const HlTable& hlT
     passEncoder.DrawIndexed(rectData.indexCount);
     passEncoder.End();
   }
+  // text
   {
     textRenderPassDesc.cColorAttachments[0].view = nextTexture;
     RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textRenderPassDesc);

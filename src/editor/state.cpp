@@ -40,6 +40,9 @@ void ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
           [&](OptionSet& e) {
             // LOG("option_set");
           },
+          [&](Chdir& e) {
+            // LOG("chdir");
+          },
           [&](ModeChange& e) {
             // LOG("mode_change");
           },
