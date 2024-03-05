@@ -9,7 +9,7 @@
 static void ParseRedraw(const msgpack::object& params, RedrawState& state);
 
 void ParseRedrawEvents(rpc::Client& client, RedrawState& state) {
-  // LOG_DISABLE();
+  LOG_DISABLE();
   state.numFlushes = 0;
   while (client.HasNotification()) {
     // static int count = 0;
@@ -90,7 +90,7 @@ static std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
 
   // Grid Events --------------------------------------------------------------
   {"grid_resize", [](const msgpack::object& args, RedrawState& state) {
-    LOG("grid_resize: {}", ToString(args));
+    // LOG("grid_resize: {}", ToString(args));
     state.currEvents().push_back(args.as<GridResize>());
   }},
 
@@ -103,6 +103,7 @@ static std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
   }},
 
   {"grid_line", [](const msgpack::object& args, RedrawState& state) {
+    // LOG("grid_line: {}", ToString(args));
     auto [grid, row, col_start, cells] =
       args.as<std::tuple<int, int, int, msgpack::object>>();
     GridLine gridLine{grid, row, col_start, {}};

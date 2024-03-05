@@ -57,7 +57,9 @@ void GridManager::Scroll(GridScroll& e) {
       int top = e.top;
       int bot = e.bot - e.rows;
       for (int i = top; i < bot; i++) {
-        grid.lines[i] = grid.lines[i + e.rows];
+        auto& src = grid.lines[i + e.rows];
+        auto& dest = grid.lines[i];
+        std::copy(src.begin() + e.left, src.begin() + e.right, dest.begin() + e.left);
       }
     } else {
       // scrolling up, move lines down
@@ -65,7 +67,9 @@ void GridManager::Scroll(GridScroll& e) {
       int top = e.top + e.rows;
       int bot = e.bot;
       for (int i = bot - 1; i >= top; i--) {
-        grid.lines[i] = grid.lines[i - e.rows];
+        auto& src = grid.lines[i - e.rows];
+        auto& dest = grid.lines[i];
+        std::copy(src.begin() + e.left, src.begin() + e.right, dest.begin() + e.left);
       }
     }
   }

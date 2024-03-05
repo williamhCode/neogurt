@@ -20,7 +20,7 @@ int main() {
 
   Window window({1400, 800}, "Neovim GUI", PresentMode::Fifo);
   Renderer renderer(window.size);
-  Font font("/Library/Fonts/SF-Mono-Medium.otf", 15, 2);
+  Font font("/Library/Fonts/SF-Mono-Medium.otf", 13, 2);
 
   int width = window.size.x / font.charWidth;
   int height = window.size.y / font.charHeight;
@@ -135,15 +135,16 @@ int main() {
     // auto duration = duration_cast<nanoseconds>(timer.GetAverageDuration());
     // LOG("rendering: {}", duration);
 
-    if (auto hlIter = editorState.hlTable.find(0); hlIter != editorState.hlTable.end()) {
+    if (auto hlIter = editorState.hlTable.find(0);
+        hlIter != editorState.hlTable.end()) {
       auto color = hlIter->second.background.value();
       renderer.clearColor = {color.r, color.g, color.b, color.a};
     }
 
     renderer.Begin();
-    LOG("----------------------");
+    // LOG("----------------------");
     for (auto& [id, grid] : editorState.gridManager.grids) {
-      LOG("render grid: {}", id);
+      // LOG("render grid: {}", id);
       renderer.RenderGrid(grid, font, editorState.hlTable);
     }
     renderer.End();

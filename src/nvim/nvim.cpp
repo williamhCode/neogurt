@@ -1,7 +1,6 @@
 #include "nvim.hpp"
 #include "msgpack/v3/adaptor/boost/msgpack_variant_decl.hpp"
 #include "parse.hpp"
-#include <vector>
 
 Nvim::Nvim(bool debug) {
   // start nvim process
@@ -56,7 +55,7 @@ void Nvim::UiAttach(int width, int height) {
   std::map<std::string, bool> options{
     {"rgb", true},
     // {"ext_hlstate", true},
-    {"ext_multigrid", true},
+    // {"ext_multigrid", true},
     {"ext_linegrid", true},
   };
 

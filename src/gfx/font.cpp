@@ -32,7 +32,7 @@ Font::Font(const std::string& path, int _size, float ratio) : size(_size) {
 
   FT_Set_Pixel_Sizes(face, 0, size * ratio);
 
-  charWidth = (face->max_advance_width >> 6) / ratio;
+  charWidth = (face->size->metrics.max_advance >> 6) / ratio;
   charHeight = (face->size->metrics.height >> 6) / ratio;
 
   uint32_t numChars = 128;

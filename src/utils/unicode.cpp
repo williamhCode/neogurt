@@ -9,5 +9,6 @@ std::string UnicodeToUTF8(uint32_t unicode) {
 
 uint32_t UTF8ToUnicode(const std::string& utf8String) {
   auto it = utf8String.begin();
+  if (it == utf8String.end()) return 0;
   return utf8::next(it, utf8String.end());
 }
