@@ -5,7 +5,15 @@
 using namespace wgpu;
 
 Pipeline::Pipeline(const WGPUContext& ctx) {
-  // font vbo layout
+  // shared ------------------------------------------------
+  viewProjBGL = utils::MakeBindGroupLayout(
+    ctx.device,
+    {
+      {0, ShaderStage::Vertex, BufferBindingType::Uniform},
+    }
+  );
+
+  // text pipeline -------------------------------------------
   utils::VertexBufferLayout textQuadVBL{
     sizeof(TextQuadVertex),
     {
@@ -15,13 +23,6 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
     }
   };
 
-  viewProjBGL = utils::MakeBindGroupLayout(
-    ctx.device,
-    {
-      {0, ShaderStage::Vertex, BufferBindingType::Uniform},
-    }
-  );
-
   fontTextureBGL = utils::MakeBindGroupLayout(
     ctx.device,
     {
@@ -30,11 +31,8 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
     }
   );
 
-  ShaderModule textVert =
-    utils::LoadShaderModule(ctx.device, ROOT_DIR "/src/shaders/text.vert.wgsl");
-
-  ShaderModule textFrag =
-    utils::LoadShaderModule(ctx.device, ROOT_DIR "/src/shaders/text.frag.wgsl");
+  ShaderModule textShader =
+    utils::LoadShaderModule(ctx.device, ROOT_DIR "/src/shaders/text.wgsl");
 
   textRPL = ctx.device.CreateRenderPipeline(ToPtr(RenderPipelineDescriptor{
     .layout = utils::MakePipelineLayout(
@@ -45,19 +43,57 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
       }
     ),
     .vertex = VertexState{
-      .module = textVert,
+      .module = textShader,
       .entryPoint = "vs_main",
       .bufferCount = 1,
       .buffers = &textQuadVBL,
     },
     .fragment = ToPtr(FragmentState{
-      .module = textFrag,
+      .module = textShader,
       .entryPoint = "fs_main",
       .targetCount = 1,
       .targets = ToPtr<ColorTargetState>({
         {
           .format = TextureFormat::BGRA8Unorm,
           .blend = &utils::BlendState::AlphaBlending,
+        },
+      }),
+    }),
+  }));
+
+  // rect pipeline -------------------------------------------
+  utils::VertexBufferLayout rectQuadVBL{
+    sizeof(RectQuadVertex),
+    {
+      {VertexFormat::Float32x2, offsetof(RectQuadVertex, position), 0},
+      {VertexFormat::Float32x4, offsetof(RectQuadVertex, color), 1},
+    }
+  };
+
+  ShaderModule rectShader =
+    utils::LoadShaderModule(ctx.device, ROOT_DIR "/src/shaders/rect.wgsl");
+
+  rectRPL = ctx.device.CreateRenderPipeline(ToPtr(RenderPipelineDescriptor{
+    .layout = utils::MakePipelineLayout(
+      ctx.device,
+      {
+        viewProjBGL,
+      }
+    ),
+    .vertex = VertexState{
+      .module = rectShader,
+      .entryPoint = "vs_main",
+      .bufferCount = 1,
+      .buffers = &rectQuadVBL,
+    },
+    .fragment = ToPtr(FragmentState{
+      .module = rectShader,
+      .entryPoint = "fs_main",
+      .targetCount = 1,
+      .targets = ToPtr<ColorTargetState>({
+        {
+          .format = TextureFormat::BGRA8Unorm,
+          // .blend = &utils::BlendState::AlphaBlending,
         },
       }),
     }),

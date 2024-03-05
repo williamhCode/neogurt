@@ -12,10 +12,18 @@ struct TextQuadVertex {
   glm::vec4 foreground;
 };
 
+struct RectQuadVertex {
+  glm::vec2 position;
+  glm::vec4 color;
+};
+
 struct Pipeline {
   wgpu::BindGroupLayout viewProjBGL;
+
   wgpu::BindGroupLayout fontTextureBGL;
   wgpu::RenderPipeline textRPL;
+
+  wgpu::RenderPipeline rectRPL;
 
   Pipeline() = default;
   Pipeline(const WGPUContext& ctx);

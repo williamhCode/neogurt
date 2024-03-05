@@ -135,11 +135,8 @@ int main() {
     // auto duration = duration_cast<nanoseconds>(timer.GetAverageDuration());
     // LOG("rendering: {}", duration);
 
-    auto hlIter = editorState.hlTable.find(0);
-    if (hlIter != editorState.hlTable.end()) {
-      auto& color = hlIter->second.background.value();
-      renderer.clearColor = {color.r, color.g, color.b, color.a};
-    }
+    auto color = editorState.hlTable.at(0).background.value();
+    renderer.clearColor = {color.r, color.g, color.b, color.a};
     renderer.Begin();
     for (auto& [id, grid] : editorState.gridManager.grids) {
       // if (grid.empty) continue;

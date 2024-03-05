@@ -19,16 +19,21 @@ Renderer::Renderer(glm::uvec2 size) {
     }
   );
 
-  // text
-  auto maxTextQuads = 10000; // * 4 dont exceed 65535 + 1 cuz uint16_t
-  textVertexBuffer =
-    utils::CreateVertexBuffer(ctx.device, sizeof(TextQuadVertex) * 4 * maxTextQuads);
-  textIndexBuffer =
-    utils::CreateIndexBuffer(ctx.device, sizeof(uint16_t) * 6 * maxTextQuads);
-
-  textRenderPassDesc = utils::RenderPassDescriptor({
+  // rect
+  const size_t maxTextQuads = 10000; // * 4 dont exceed 65535 + 1 cuz uint16_t
+  rectData.CreateBuffers(maxTextQuads);
+  rectRenderPassDesc = utils::RenderPassDescriptor({
     RenderPassColorAttachment{
       .loadOp = LoadOp::Clear,
+      .storeOp = StoreOp::Store,
+    },
+  });
+
+  // text
+  textData.CreateBuffers(maxTextQuads);
+  textRenderPassDesc = utils::RenderPassDescriptor({
+    RenderPassColorAttachment{
+      .loadOp = LoadOp::Load,
       .storeOp = StoreOp::Store,
     },
   });
@@ -45,71 +50,108 @@ void Renderer::Begin() {
 }
 
 void Renderer::RenderGrid(const Grid& grid, const Font& font, const HlTable& hlTable) {
-  using TextQuad = std::array<TextQuadVertex, 4>;
-  std::vector<TextQuad> textVertices(grid.width * grid.height);
-  std::vector<uint16_t> textIndices(grid.width * grid.height * 6);
+  textData.ResetCounts();
+  textData.ResizeBuffers(grid.width * grid.height);
 
-  size_t quadCount = 0;
+  rectData.ResetCounts();
+  rectData.ResizeBuffers(grid.width * grid.height);
+
   glm::vec2 textureSize(font.texture.width, font.texture.height);
-  glm::vec2 currOffset(0, 0);
+  glm::vec2 textOffset(0, 0);
+
   for (size_t i = 0; i < grid.lines.Size(); i++) {
     auto& line = grid.lines[i];
-    currOffset.x = 0;
+    textOffset.x = 0;
+
     for (auto& cell : line) {
       char c = cell.text[0]; // only support char for now, add unicode support ltr
       auto hl = hlTable.at(cell.hlId);
-      if (c == ' ') {
-        currOffset.x += font.charWidth;
-        continue;
-      }
-      auto glyphIndex = FT_Get_Char_Index(font.face, c);
 
-      auto it = font.glyphInfoMap.find(glyphIndex);
-      // if (it == font.glyphInfoMap.end()) it = font.glyphInfoMap.find(32);
-      auto& glyphInfo = it->second;
+      // don't render background if default
+      if (cell.hlId != 0 && hl.background.has_value()) {
+        static std::array<glm::vec2, 4> rectPositions{
+          glm::vec2(0, 0),
+          glm::vec2(font.charWidth, 0),
+          glm::vec2(font.charWidth, font.charHeight),
+          glm::vec2(0, font.charHeight),
+        };
 
-      glm::vec2 quadPos{
-        currOffset.x + glyphInfo.bearing.x,
-        currOffset.y - glyphInfo.bearing.y + font.size,
-      };
-      currOffset.x += glyphInfo.advance;
+        auto background = hl.background.value();
+        for (size_t i = 0; i < 4; i++) {
+          auto& vertex = rectData.vertices[rectData.quadCount][i];
+          vertex.position = textOffset + rectPositions[i];
+          vertex.color = background;
+        }
 
-      for (size_t i = 0; i < 4; i++) {
-        auto& vertex = textVertices[quadCount][i];
-        vertex.position = quadPos + glyphInfo.positions[i];
-        vertex.uv = glyphInfo.texCoords[i];
-        vertex.foreground = GetForeground(hlTable, hl);
+        rectData.SetIndices();
+        rectData.IncrementCounts();
       }
 
-      auto indexCount = quadCount * 6;
-      auto vertexCount = quadCount * 4;
-      textIndices[indexCount + 0] = vertexCount + 0;
-      textIndices[indexCount + 1] = vertexCount + 1;
-      textIndices[indexCount + 2] = vertexCount + 2;
-      textIndices[indexCount + 3] = vertexCount + 0;
-      textIndices[indexCount + 4] = vertexCount + 2;
-      textIndices[indexCount + 5] = vertexCount + 3;
+      if (c != ' ') {
+        auto glyphIndex = FT_Get_Char_Index(font.face, c);
 
-      quadCount++;
+        auto it = font.glyphInfoMap.find(glyphIndex);
+        // if (it == font.glyphInfoMap.end()) it = font.glyphInfoMap.find(32);
+        auto& glyphInfo = it->second;
+
+        glm::vec2 textQuadPos{
+          textOffset.x + glyphInfo.bearing.x,
+          textOffset.y - glyphInfo.bearing.y + font.size,
+        };
+
+        auto foreground = GetForeground(hlTable, hl);
+        for (size_t i = 0; i < 4; i++) {
+          auto& vertex = textData.vertices[textData.quadCount][i];
+          vertex.position = textQuadPos + glyphInfo.positions[i];
+          vertex.uv = glyphInfo.texCoords[i];
+          vertex.foreground = foreground;
+        }
+
+        textData.SetIndices();
+        textData.IncrementCounts();
+      }
+
+      textOffset.x += font.charWidth;
     }
-    currOffset.y += font.charHeight;
+
+    textOffset.y += font.charHeight;
   }
 
-  auto vertexBufferSize = quadCount * sizeof(TextQuad);
-  auto indexBufferSize = quadCount * 6 * sizeof(uint16_t);
-  ctx.queue.WriteBuffer(textVertexBuffer, 0, textVertices.data(), vertexBufferSize);
-  ctx.queue.WriteBuffer(textIndexBuffer, 0, textIndices.data(), indexBufferSize);
+  textData.WriteBuffers();
+  rectData.WriteBuffers();
 
-  textRenderPassDesc.cColorAttachments[0].view = nextTexture;
-  textRenderPassDesc.cColorAttachments[0].clearValue = clearColor;
-  RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textRenderPassDesc);
-  passEncoder.SetPipeline(ctx.pipeline.textRPL);
-  passEncoder.SetBindGroup(0, viewProjBG);
-  passEncoder.SetBindGroup(1, font.fontTextureBG);
-  passEncoder.SetVertexBuffer(0, textVertexBuffer, 0, vertexBufferSize);
-  passEncoder.SetIndexBuffer(textIndexBuffer, IndexFormat::Uint16, 0, indexBufferSize);
-  passEncoder.DrawIndexed(quadCount * 6);
-  passEncoder.End();
+  {
+    rectRenderPassDesc.cColorAttachments[0].view = nextTexture;
+    rectRenderPassDesc.cColorAttachments[0].clearValue = clearColor;
+    RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&rectRenderPassDesc);
+    passEncoder.SetPipeline(ctx.pipeline.rectRPL);
+    passEncoder.SetBindGroup(0, viewProjBG);
+    passEncoder.SetVertexBuffer(
+      0, rectData.vertexBuffer, 0, rectData.vertexCount * sizeof(RectQuadVertex)
+    );
+    passEncoder.SetIndexBuffer(
+      rectData.indexBuffer, IndexFormat::Uint16, 0,
+      rectData.indexCount * sizeof(uint16_t)
+    );
+    passEncoder.DrawIndexed(rectData.indexCount);
+    passEncoder.End();
+  }
+  {
+    textRenderPassDesc.cColorAttachments[0].view = nextTexture;
+    RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textRenderPassDesc);
+    passEncoder.SetPipeline(ctx.pipeline.textRPL);
+    passEncoder.SetBindGroup(0, viewProjBG);
+    passEncoder.SetBindGroup(1, font.fontTextureBG);
+    passEncoder.SetVertexBuffer(
+      0, textData.vertexBuffer, 0, textData.vertexCount * sizeof(TextQuadVertex)
+    );
+    passEncoder.SetIndexBuffer(
+      textData.indexBuffer, IndexFormat::Uint16, 0,
+      textData.indexCount * sizeof(uint16_t)
+    );
+    passEncoder.DrawIndexed(textData.indexCount);
+    passEncoder.End();
+  }
 }
 
 void Renderer::End() {

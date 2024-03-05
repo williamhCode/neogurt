@@ -67,7 +67,6 @@ void ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
           },
           [&](HlAttrDefine& e) {
             // LOG("hl_attr_define");
-
             auto& hl = editorState.hlTable[e.id];
             for (auto& [key, value] : e.rgbAttrs) {
               if (key == "foreground") {
