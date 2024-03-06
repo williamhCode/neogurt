@@ -21,8 +21,9 @@ int main() {
 
   Window window({1400, 800}, "Neovim GUI", PresentMode::Fifo);
   Renderer renderer(window.size);
-  // Font font("/Library/Fonts/SF-Mono-Medium.otf", 15, 2);
-  Font font("/Users/williamhou/Library/Fonts/Hack Regular Nerd Font Complete Mono.ttf", 15, 2);
+  Font font("/Library/Fonts/SF-Mono-Medium.otf", 14, 2);
+  // Font font("/Users/williamhou/Library/Fonts/Hack Regular Nerd Font Complete Mono.ttf", 15, 2);
+  // Font font(ROOT_DIR "/res/NerdFontsSymbolsOnly/SymbolsNerdFontMono-Regular.ttf", 15, 2);
 
   int width = window.size.x / font.charWidth;
   int height = window.size.y / font.charHeight;

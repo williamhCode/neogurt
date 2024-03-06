@@ -5,10 +5,12 @@
 
 #include <vector>
 
-static FT_Library library;
-static bool ftInitialized = false;
-
 using namespace wgpu;
+
+FT_Library library;
+bool ftInitialized = false;
+
+FT_Face nerdFace;
 
 Font::Font(const std::string& path, int _size, float _ratio)
     : size(_size), ratio(_ratio) {
@@ -17,6 +19,13 @@ Font::Font(const std::string& path, int _size, float _ratio)
       throw std::runtime_error("Failed to initialize FreeType library");
     }
     ftInitialized = true;
+
+    std::string nerdFontPath(
+      ROOT_DIR "/res/Hack/HackNerdFont-Regular.ttf"
+    );
+    if (FT_New_Face(library, nerdFontPath.c_str(), 0, &nerdFace)) {
+      throw std::runtime_error("Failed to load nerd font");
+    }
   }
 
   if (FT_New_Face(library, path.c_str(), 0, &face)) {
@@ -38,30 +47,44 @@ Font::Font(const std::string& path, int _size, float _ratio)
 
   uint32_t numChars = 128;
 
-  defaultGlyphIndex = FT_Get_Char_Index(face, ' ');
+  // defaultGlyphIndex = FT_Get_Char_Index(face, ' ');
 
   // start off by rendering the first 128 characters
   for (uint32_t i = 0; i < numChars; i++) {
-    auto glyphIndex = FT_Get_Char_Index(face, i);
-    if (glyphInfoMap.contains(glyphIndex)) {
-      continue;
-    }
-
-    // if (glyphIndex == 0) {
-    //   throw std::runtime_error(std::format("Failed to load glyph for character {}",
-    //   i));
-    // }
-    AddGlyph(glyphIndex);
+    AddOrGetGlyphInfo(i);
   }
 
   UpdateTexture();
 }
 
-Font::GlyphInfoMap::iterator Font::AddGlyph(FT_UInt glyphIndex) {
+Font::GlyphInfoMap::iterator Font::AddOrGetGlyphInfo(FT_ULong charcode) {
+  auto glyphIndex = FT_Get_Char_Index(face, charcode);
+
+  FT_Face currFace = face;
+  GlyphInfoMap* currMap = &glyphInfoMap;
+  // is nerd font or undefined
+  if (glyphIndex == 0) {
+    glyphIndex = FT_Get_Char_Index(nerdFace, charcode);
+    auto it = nerdGlyphInfoMap.find(glyphIndex);
+    if (it != nerdGlyphInfoMap.end()) {
+      return it;
+    }
+
+    currFace = nerdFace;
+    currMap = &nerdGlyphInfoMap;
+
+    FT_Set_Pixel_Sizes(nerdFace, 0, size * ratio);
+  } else {
+    auto it = glyphInfoMap.find(glyphIndex);
+    if (it != glyphInfoMap.end()) {
+      return it;
+    }
+  }
+
   // LOG("adding new glyph: {}", glyphIndex);
   dirty = true;
 
-  auto numGlyphs = glyphInfoMap.size() + 1;
+  auto numGlyphs = glyphInfoMap.size() + nerdGlyphInfoMap.size() + 1;
   atlasHeight = (numGlyphs + atlasWidth - 1) / atlasWidth;
 
   textureSize = {(size + 2) * atlasWidth, (size + 2) * atlasHeight};
@@ -71,7 +94,9 @@ Font::GlyphInfoMap::iterator Font::AddGlyph(FT_UInt glyphIndex) {
 
   auto index = numGlyphs - 1;
 
-  FT_Load_Glyph(face, glyphIndex, FT_LOAD_RENDER);
+  FT_Load_Glyph(currFace, glyphIndex, FT_LOAD_RENDER);
+  auto& glyph = *(currFace->glyph);
+  auto& bitmap = glyph.bitmap;
 
   glm::vec2 pos{
     (index % atlasWidth) * (size + 2) + 1,
@@ -79,8 +104,6 @@ Font::GlyphInfoMap::iterator Font::AddGlyph(FT_UInt glyphIndex) {
   };
   auto truePos = pos * ratio;
 
-  auto& glyph = *(face->glyph);
-  auto& bitmap = glyph.bitmap;
   for (size_t yy = 0; yy < bitmap.rows; yy++) {
     for (size_t xx = 0; xx < bitmap.width; xx++) {
       auto index = truePos.x + xx + (truePos.y + yy) * bufferSize.x;
@@ -91,7 +114,7 @@ Font::GlyphInfoMap::iterator Font::AddGlyph(FT_UInt glyphIndex) {
     }
   }
 
-  auto pair = glyphInfoMap.emplace(
+  auto pair = currMap->emplace(
     glyphIndex,
     GlyphInfo{
       .size =
@@ -113,12 +136,7 @@ Font::GlyphInfoMap::iterator Font::AddGlyph(FT_UInt glyphIndex) {
 }
 
 const Font::GlyphInfo& Font::GetGlyphInfo(FT_ULong charcode) {
-  auto glyphIndex = FT_Get_Char_Index(face, charcode);
-  auto it = glyphInfoMap.find(glyphIndex);
-  if (it == glyphInfoMap.end()) {
-    it = AddGlyph(glyphIndex);
-  }
-  return it->second;
+  return AddOrGetGlyphInfo(charcode)->second;
 }
 
 void Font::UpdateTexture() {

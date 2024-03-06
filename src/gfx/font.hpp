@@ -41,9 +41,10 @@ struct Font {
   };
   using GlyphInfoMap = std::unordered_map<uint32_t, GlyphInfo>;
   GlyphInfoMap glyphInfoMap;
+  GlyphInfoMap nerdGlyphInfoMap;
     
   Font(const std::string& path, int size, float ratio);
-  GlyphInfoMap::iterator AddGlyph(FT_UInt glyphIndex);
+  GlyphInfoMap::iterator AddOrGetGlyphInfo(FT_ULong charcode);
   const GlyphInfo& GetGlyphInfo(FT_ULong charcode);
   void UpdateTexture();
 };
