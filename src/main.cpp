@@ -9,6 +9,7 @@
 #include "nvim/nvim.hpp"
 #include "utils/logger.hpp"
 #include "utils/timer.hpp"
+#include "utils/unicode.hpp"
 #include "utils/variant.hpp"
 
 using namespace wgpu;
@@ -16,11 +17,12 @@ using namespace wgpu;
 const WGPUContext& ctx = Window::_ctx;
 
 int main() {
-  // std::vector<std::future<void>> threads;
+  // LOG("{}", UTF8ToUnicode("│"));
 
   Window window({1400, 800}, "Neovim GUI", PresentMode::Fifo);
   Renderer renderer(window.size);
-  Font font("/Library/Fonts/SF-Mono-Medium.otf", 13, 2);
+  // Font font("/Library/Fonts/SF-Mono-Medium.otf", 15, 2);
+  Font font("/Users/williamhou/Library/Fonts/Hack Regular Nerd Font Complete Mono.ttf", 15, 2);
 
   int width = window.size.x / font.charWidth;
   int height = window.size.y / font.charHeight;
@@ -64,13 +66,6 @@ int main() {
                 }
               }
             }
-
-            // if (key == GLFW_KEY_ESCAPE) {
-            //   threads.emplace_back(std::async(std::launch::async, [&]() mutable {
-            //     auto result = nvim.client.Call("nvim_get_current_line");
-            //     std::cout << "future result: " << result.get() << std::endl;
-            //   }));
-            // }
           },
           [&](Window::CharData& e) {
             auto& [codepoint] = e;
@@ -114,16 +109,12 @@ int main() {
     // LOG("parse_notifications: {}", duration);
     // }
 
-    // std::erase_if(threads, [](const std::future<void>& f) {
-    //   return f.wait_for(std::chrono::seconds(0)) == std::future_status::ready;
-    // });
-
     // parse redraw and rendering ------------------------------------------------
-    // if using continue, have to lock main loop to 60 fps, or will keep looping
-    // and waste cpu cycles
-    // else just let webgpu vsync handle timing, but will spend extra power
-    // on rendering when there's no need
-    // best prob make own timer to lock main loop to 60 fps when using continue
+    // clang-format off
+      // if using continue, have to lock main loop to 60 fps, or will keep looping and waste cpu cycles
+      // else just let webgpu vsync handle timing, but will spend extra power on rendering when there's no need
+      // best prob make own timer to lock main loop to 60 fps when using continue
+    // clang-format on
     // if (nvim.redrawState.numFlushes == 0) continue;
 
     // LOG_DISABLE();

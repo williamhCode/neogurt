@@ -50,7 +50,7 @@ void Renderer::Begin() {
   nextTexture = ctx.swapChain.GetCurrentTextureView();
 }
 
-void Renderer::RenderGrid(const Grid& grid, const Font& font, const HlTable& hlTable) {
+void Renderer::RenderGrid(const Grid& grid, Font& font, const HlTable& hlTable) {
   textData.ResetCounts();
   textData.ResizeBuffers(grid.width * grid.height);
 
@@ -89,18 +89,34 @@ void Renderer::RenderGrid(const Grid& grid, const Font& font, const HlTable& hlT
       }
 
       if (cell.text != " ") {
-       auto& glyphInfo = font.GetGlyphInfo(charcode);
+        auto& glyphInfo = font.GetGlyphInfo(charcode);
 
         glm::vec2 textQuadPos{
           textOffset.x + glyphInfo.bearing.x,
           textOffset.y - glyphInfo.bearing.y + font.size,
         };
 
+        // region that holds current glyph in context of the entire font texture
+        // region = x, y, width, height
+        glm::vec4 region{glyphInfo.pos.x, glyphInfo.pos.y, font.size, font.size};
+
+        float left = region.x / textureSize.x;
+        float right = (region.x + region.z) / textureSize.x;
+        float top = region.y / textureSize.y;
+        float bottom = (region.y + region.w) / textureSize.y;
+
+        std::array<glm::vec2, 4> texCoords{
+          glm::vec2(left, top),
+          glm::vec2(right, top),
+          glm::vec2(right, bottom),
+          glm::vec2(left, bottom),
+        };
+
         auto foreground = GetForeground(hlTable, hl);
         for (size_t i = 0; i < 4; i++) {
           auto& vertex = textData.vertices[textData.quadCount][i];
           vertex.position = textQuadPos + glyphInfo.positions[i];
-          vertex.uv = glyphInfo.texCoords[i];
+          vertex.uv = texCoords[i];
           vertex.foreground = foreground;
         }
 
@@ -114,6 +130,7 @@ void Renderer::RenderGrid(const Grid& grid, const Font& font, const HlTable& hlT
     textOffset.y += font.charHeight;
   }
 
+  font.UpdateTexture();
   textData.WriteBuffers();
   rectData.WriteBuffers();
 

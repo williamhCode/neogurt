@@ -58,7 +58,9 @@ public:
 
     unpacker.reserve_buffer(readSize);
     GetData();
-    contextThr = std::thread([this]() { context.run(); });
+    contextThr = std::thread([this]() {
+      context.run();
+    });
 
     return true;
   }
@@ -146,47 +148,37 @@ private:
         if (!ec) {
           glfwPostEmptyEvent();
 
-          // LOG("\n\n----------------------------------");
-          // LOG("Read {} bytes", length);
           unpacker.buffer_consumed(length);
-
-          static int count = 0;
 
           msgpack::object_handle handle;
           while (unpacker.next(handle)) {
             auto& obj = handle.get();
-            // sometimes doesn't get array for some reason probably nvim issue
             if (obj.type != msgpack::type::ARRAY) {
               std::cout << "Not an array" << std::endl;
               continue;
             }
-            // std::cout << "----------------------------------\n";
-            int type = obj.via.array.ptr[0].convert();
 
+            int type = obj.via.array.ptr[0].convert();
             if (type == MessageType::Response) {
               Response msg(obj.convert());
 
-              // std::cout << "\n\n--------------------------------- " << count <<
-              // std::endl; std::cout << "msgid: " << msg.msgid << std::endl; std::cout
-              // << "error: " << msg.error << std::endl; std::cout << "result: " <<
-              // msg.result << std::endl;
-
               auto it = responses.find(msg.msgid);
               if (it != responses.end()) {
+                auto& promise = it->second;
                 if (msg.error.is_nil()) {
-                  it->second.set_value(
+                  promise.set_value(
                     msgpack::object_handle(msg.result, std::move(handle.zone()))
                   );
 
                 } else {
                   // TODO: do something with error
-                  // it->second.set_exception(std::make_exception_ptr(
+                  // promise.set_exception(std::make_exception_ptr(
                   //   std::runtime_error(msg.error.via.array.ptr[1].as<std::string>())
                   // ));
-                  // std::cout << "ERROR_TYPE: " << msg.error.via.array.ptr[0] <<
-                  // "\n"; std::cout << "ERROR: " << msg.error.via.array.ptr[1] <<
-                  // "\n";
+                  std::cout << "ERROR_TYPE: " << msg.error.via.array.ptr[0] << "\n";
+                  std::cout << "ERROR: " << msg.error.via.array.ptr[1] << "\n";
                 }
+
                 {
                   std::scoped_lock lock(responsesMutex);
                   responses.erase(it);
@@ -207,13 +199,11 @@ private:
             } else {
               std::cout << "Unknown type: " << type << "\n";
             }
-
-            count++;
           }
 
           if (unpacker.buffer_capacity() < readSize) {
-              LOG("Reserving extra buffer: {}", readSize);
-              unpacker.reserve_buffer(readSize);
+            LOG("Reserving extra buffer: {}", readSize);
+            unpacker.reserve_buffer(readSize);
           }
           GetData();
 
@@ -240,13 +230,17 @@ private:
   void DoWrite() {
     if (!IsConnected()) return;
 
-    if (msgsOut.Size() == 0 || exit) return;
+    if (msgsOut.Empty() || exit) return;
     auto& buffer = msgsOut.Front();
     asio::async_write(
       socket, asio::buffer(buffer.data(), buffer.size()),
       [&](const asio::error_code& ec, size_t length) {
         (void)length;
         if (!ec) {
+          if (msgsOut.Empty()) {
+            LOG("Unexpected empty msgsOut queue");
+            return;
+          }
           msgsOut.Pop();
           DoWrite();
 

@@ -12,9 +12,7 @@ void ParseRedrawEvents(rpc::Client& client, RedrawState& state) {
   LOG_DISABLE();
   state.numFlushes = 0;
   while (client.HasNotification()) {
-    // static int count = 0;
     auto notification = client.PopNotification();
-    // LOG("\n\n--------------------------------- {}", count++);
     if (notification.method == "redraw") {
       ParseRedraw(notification.params, state);
     }
@@ -80,7 +78,6 @@ static std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
   }},
 
   {"hl_attr_define", [](const msgpack::object& args, RedrawState& state) {
-    // LOG("hl_attr_define: {}", ToString(args));
     state.currEvents().push_back(args.as<HlAttrDefine>());
   }},
 

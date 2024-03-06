@@ -11,7 +11,7 @@ private:
 
 public:
   T& Front() {
-    std::scoped_lock<std::mutex> lock(mutex);
+    std::scoped_lock lock(mutex);
     if (queue.empty()) {
       throw std::runtime_error("Cannot get front of empty queue");
     }
@@ -19,7 +19,7 @@ public:
   }
 
   T& Back() {
-    std::scoped_lock<std::mutex> lock(mutex);
+    std::scoped_lock lock(mutex);
     if (queue.empty()) {
       throw std::runtime_error("Cannot get back of empty queue");
     }
@@ -27,7 +27,7 @@ public:
   }
 
   T Pop() {
-    std::scoped_lock<std::mutex> lock(mutex);
+    std::scoped_lock lock(mutex);
     if (queue.empty()) {
       throw std::runtime_error("Cannot pop empty queue");
     }
@@ -37,12 +37,12 @@ public:
   }
 
   void Push(const T& item) {
-    std::scoped_lock<std::mutex> lock(mutex);
+    std::scoped_lock lock(mutex);
     queue.push(item);
   }
 
   void Push(T&& item) {
-    std::scoped_lock<std::mutex> lock(mutex);
+    std::scoped_lock lock(mutex);
     queue.push(std::move(item));
   }
 

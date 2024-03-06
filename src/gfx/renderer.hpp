@@ -82,7 +82,7 @@ struct Renderer {
   void Resize(glm::uvec2 size);
 
   void Begin();
-  void RenderGrid(const Grid& grid, const Font& font, const HlTable& hlTable);
+  void RenderGrid(const Grid& grid, Font& font, const HlTable& hlTable);
   void End();
   void Present();
 };

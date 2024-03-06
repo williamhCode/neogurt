@@ -7,13 +7,23 @@
 struct Font {
   FT_Face face;
 
-  int size; // font size
+  int size;    // font size
+  float ratio; // high dpi
 
   // texture related
-  wgpu::BindGroup fontTextureBG;
+  struct Color {
+    uint8_t r, g, b, a;
+  };
+  std::vector<Color> textureData; // cpu side texture data
   TextureHandle texture;
+  wgpu::BindGroup fontTextureBG;
+  bool dirty = true;
+
+  // dimension
   static constexpr int atlasWidth = 16;
   int atlasHeight;
+  glm::vec2 textureSize;
+  glm::vec2 bufferSize;
 
   float charWidth;
   float charHeight;
@@ -25,12 +35,15 @@ struct Font {
     glm::vec2 size;
     glm::vec2 bearing;
     float advance;
+    glm::vec2 pos;
     static inline std::array<glm::vec2, 4> positions;
-    std::array<glm::vec2, 4> texCoords;
+    // std::array<glm::vec2, 4> texCoords;
   };
-  std::unordered_map<uint32_t, GlyphInfo> glyphInfoMap;
-
+  using GlyphInfoMap = std::unordered_map<uint32_t, GlyphInfo>;
+  GlyphInfoMap glyphInfoMap;
+    
   Font(const std::string& path, int size, float ratio);
-
-  const GlyphInfo &GetGlyphInfo(FT_ULong charcode) const;
+  GlyphInfoMap::iterator AddGlyph(FT_UInt glyphIndex);
+  const GlyphInfo& GetGlyphInfo(FT_ULong charcode);
+  void UpdateTexture();
 };
