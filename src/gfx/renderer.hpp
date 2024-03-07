@@ -16,14 +16,14 @@ struct QuadRenderData {
   size_t vertexCount;
   size_t indexCount;
   std::vector<Quad> vertices;
-  std::vector<uint16_t> indices;
+  std::vector<uint32_t> indices;
   wgpu::Buffer vertexBuffer;
   wgpu::Buffer indexBuffer;
 
   void CreateBuffers(size_t size) {
     vertexBuffer = wgpu::utils::CreateVertexBuffer(ctx.device, sizeof(VertexType) * 4 * size);
     indexBuffer =
-      wgpu::utils::CreateIndexBuffer(ctx.device, sizeof(uint16_t) * 6 * size);
+      wgpu::utils::CreateIndexBuffer(ctx.device, sizeof(uint32_t) * 6 * size);
   }
 
   void ResetCounts() {
@@ -55,7 +55,7 @@ struct QuadRenderData {
   void WriteBuffers() {
     ctx.queue.WriteBuffer(vertexBuffer, 0, vertices.data(), sizeof(VertexType) * vertexCount);
     ctx.queue.WriteBuffer(
-      indexBuffer, 0, indices.data(), sizeof(uint16_t) * indexCount
+      indexBuffer, 0, indices.data(), sizeof(uint32_t) * indexCount
     );
   }
 };

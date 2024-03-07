@@ -37,7 +37,15 @@ struct Window {
     int width;
     int height;
   };
-  std::optional<WindowSizeData> windowSizeEvent;
+  // std::optional<WindowSizeData> windowSizeEvent;
+
+  void (*keyCallback)(int, int, int, int) = nullptr;
+  void (*charCallback)(unsigned int) = nullptr;
+  void (*mouseButtonCallback)(int, int, int) = nullptr;
+  void (*cursorPosCallback)(double, double) = nullptr;
+  void (*windowSizeCallback)(int, int) = nullptr;
+
+  std::mutex renderMutex;
 
   Window() = default;
   Window(glm::uvec2 size, const std::string& title, wgpu::PresentMode presentMode);

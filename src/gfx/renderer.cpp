@@ -21,7 +21,8 @@ Renderer::Renderer(glm::uvec2 size) {
   );
 
   // rect
-  const size_t maxTextQuads = 10000; // * 4 dont exceed 65535 + 1 cuz uint16_t
+  // Todo: make maxTextQuads resize to best fit
+  const size_t maxTextQuads = 30000;
   rectData.CreateBuffers(maxTextQuads);
   rectRenderPassDesc = utils::RenderPassDescriptor({
     RenderPassColorAttachment{
@@ -145,8 +146,8 @@ void Renderer::RenderGrid(const Grid& grid, Font& font, const HlTable& hlTable) 
       0, rectData.vertexBuffer, 0, rectData.vertexCount * sizeof(RectQuadVertex)
     );
     passEncoder.SetIndexBuffer(
-      rectData.indexBuffer, IndexFormat::Uint16, 0,
-      rectData.indexCount * sizeof(uint16_t)
+      rectData.indexBuffer, IndexFormat::Uint32, 0,
+      rectData.indexCount * sizeof(uint32_t)
     );
     passEncoder.DrawIndexed(rectData.indexCount);
     passEncoder.End();
@@ -162,8 +163,8 @@ void Renderer::RenderGrid(const Grid& grid, Font& font, const HlTable& hlTable) 
       0, textData.vertexBuffer, 0, textData.vertexCount * sizeof(TextQuadVertex)
     );
     passEncoder.SetIndexBuffer(
-      textData.indexBuffer, IndexFormat::Uint16, 0,
-      textData.indexCount * sizeof(uint16_t)
+      textData.indexBuffer, IndexFormat::Uint32, 0,
+      textData.indexCount * sizeof(uint32_t)
     );
     passEncoder.DrawIndexed(textData.indexCount);
     passEncoder.End();

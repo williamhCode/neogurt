@@ -229,7 +229,6 @@ private:
 
   void DoWrite() {
     if (!IsConnected()) return;
-
     if (msgsOut.Empty() || exit) return;
     auto& buffer = msgsOut.Front();
     asio::async_write(

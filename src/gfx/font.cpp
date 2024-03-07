@@ -22,6 +22,7 @@ Font::Font(const std::string& path, int _size, float _ratio)
 
     std::string nerdFontPath(
       ROOT_DIR "/res/Hack/HackNerdFont-Regular.ttf"
+      // ROOT_DIR "/res/Hack/HackNerdFontMono-Regular.ttf"
     );
     if (FT_New_Face(library, nerdFontPath.c_str(), 0, &nerdFace)) {
       throw std::runtime_error("Failed to load nerd font");

@@ -7,34 +7,37 @@
 static void
 KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
   Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
-  win.events.push_back(Window::KeyData{key, scancode, action, mods});
+  if (win.keyCallback) win.keyCallback(key, scancode, action, mods);
 }
 
 static void CharCallback(GLFWwindow* window, unsigned int codepoint) {
   Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
-  win.events.push_back(Window::CharData{codepoint});
+  if (win.charCallback) win.charCallback(codepoint);
 }
 
 static void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
   Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
-  win.events.push_back({Window::MouseButtonData{button, action, mods}});
+  if (win.mouseButtonCallback) win.mouseButtonCallback(button, action, mods);
 }
 
 static void CursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
   Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
-  win.events.push_back({Window::CursorPosData{xpos, ypos}});
+  if (win.cursorPosCallback) win.cursorPosCallback(xpos, ypos);
 }
 
 static void WindowSizeCallback(GLFWwindow* window, int width, int height) {
   Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
   win.size = {width, height};
-  win.windowSizeEvent = Window::WindowSizeData{width, height};
+  if (win.windowSizeCallback) win.windowSizeCallback(width, height);
 }
 
 static void FramebufferSizeCallback(GLFWwindow* window, int width, int height) {
   Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
-  win._ctx.Resize({width, height});
   // LOG("fb size: {} {}", width, height);
+  {
+    std::scoped_lock lock(win.renderMutex);
+    win._ctx.Resize({width, height});
+  }
 }
 
 Window::Window(glm::uvec2 size, const std::string& title, wgpu::PresentMode presentMode)
