@@ -83,9 +83,10 @@ struct Renderer {
   wgpu::BindGroup maskBG;
   wgpu::utils::RenderPassDescriptor cursorRenderPassDesc;
 
-  Renderer(glm::uvec2 size);
+  Renderer(glm::uvec2 size, glm::uvec2 fbSize);
 
   void Resize(glm::uvec2 size);
+  void FbResize(glm::uvec2 fbSize);
 
   void Begin();
   void RenderGrid(const Grid& grid, Font& font, const HlTable& hlTable);

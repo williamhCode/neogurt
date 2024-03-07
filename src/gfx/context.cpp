@@ -8,7 +8,7 @@
 using namespace wgpu;
 
 WGPUContext::WGPUContext(GLFWwindow* window, glm::uvec2 size, PresentMode presentMode)
-    : size(size), presentMode(presentMode) {
+    : presentMode(presentMode) {
   instance = CreateInstance();
   if (!instance) {
     std::cerr << "Could not initialize WebGPU!" << std::endl;
@@ -54,8 +54,6 @@ WGPUContext::WGPUContext(GLFWwindow* window, glm::uvec2 size, PresentMode presen
 }
 
 void WGPUContext::Resize(glm::uvec2 size) {
-  this->size = size;
-
   SwapChainDescriptor swapChainDesc{
     .usage = TextureUsage::RenderAttachment,
     .format = swapChainFormat,

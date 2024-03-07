@@ -15,7 +15,6 @@ struct WGPUContext {
   wgpu::SwapChain swapChain;
 
   wgpu::TextureFormat swapChainFormat;
-  glm::uvec2 size;
   wgpu::PresentMode presentMode;
 
   Pipeline pipeline;

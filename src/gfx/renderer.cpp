@@ -7,7 +7,7 @@
 
 using namespace wgpu;
 
-Renderer::Renderer(glm::uvec2 size) {
+Renderer::Renderer(glm::uvec2 size, glm::uvec2 fbSize) {
   clearColor = {0.0, 0.0, 0.0, 1.0};
 
   // shared
@@ -21,7 +21,7 @@ Renderer::Renderer(glm::uvec2 size) {
   );
 
   maskTextureView =
-    utils::CreateRenderTexture(ctx.device, {ctx.size.x, ctx.size.y}, TextureFormat::R8Unorm)
+    utils::CreateRenderTexture(ctx.device, {fbSize.x, fbSize.y}, TextureFormat::R8Unorm)
       .CreateView();
 
   // rect
@@ -71,6 +71,21 @@ Renderer::Renderer(glm::uvec2 size) {
 void Renderer::Resize(glm::uvec2 size) {
   auto view = glm::ortho<float>(0, size.x, size.y, 0, -1, 1);
   ctx.queue.WriteBuffer(viewProjBuffer, 0, &view, sizeof(glm::mat4));
+}
+
+void Renderer::FbResize(glm::uvec2 fbSize) {
+  maskTextureView =
+    utils::CreateRenderTexture(ctx.device, {fbSize.x, fbSize.y}, TextureFormat::R8Unorm)
+      .CreateView();
+
+  maskBG = utils::MakeBindGroup(
+    ctx.device, ctx.pipeline.maskBGL,
+    {
+      {0, maskTextureView},
+    }
+  );
+
+  textRenderPassDesc.cColorAttachments[1].view = maskTextureView;
 }
 
 void Renderer::Begin() {

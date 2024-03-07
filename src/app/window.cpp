@@ -4,40 +4,41 @@
 #include <iostream>
 #include <ostream>
 
-static void
-KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
   Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
   if (win.keyCallback) win.keyCallback(key, scancode, action, mods);
 }
 
-static void CharCallback(GLFWwindow* window, unsigned int codepoint) {
+void CharCallback(GLFWwindow* window, unsigned int codepoint) {
   Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
   if (win.charCallback) win.charCallback(codepoint);
 }
 
-static void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
+void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
   Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
   if (win.mouseButtonCallback) win.mouseButtonCallback(button, action, mods);
 }
 
-static void CursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
+void CursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
   Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
   if (win.cursorPosCallback) win.cursorPosCallback(xpos, ypos);
 }
 
-static void WindowSizeCallback(GLFWwindow* window, int width, int height) {
+void WindowSizeCallback(GLFWwindow* window, int width, int height) {
   Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
   win.size = {width, height};
   if (win.windowSizeCallback) win.windowSizeCallback(width, height);
 }
 
-static void FramebufferSizeCallback(GLFWwindow* window, int width, int height) {
+void FramebufferSizeCallback(GLFWwindow* window, int width, int height) {
   Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
-  // LOG("fb size: {} {}", width, height);
-  {
-    std::scoped_lock lock(win.renderMutex);
-    win._ctx.Resize({width, height});
-  }
+  win.fbSize = {width, height};
+  if (win.framebufferSizeCallback) win.framebufferSizeCallback(width, height);
+}
+
+void WindowRefreshCallback(GLFWwindow* window) {
+  Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
+  if (win.windowRefreshCallback) win.windowRefreshCallback();
 }
 
 Window::Window(glm::uvec2 size, const std::string& title, wgpu::PresentMode presentMode)
@@ -62,11 +63,13 @@ Window::Window(glm::uvec2 size, const std::string& title, wgpu::PresentMode pres
   glfwSetCursorPosCallback(window, CursorPosCallback);
   glfwSetWindowSizeCallback(window, WindowSizeCallback);
   glfwSetFramebufferSizeCallback(window, FramebufferSizeCallback);
+  glfwSetWindowRefreshCallback(window, WindowRefreshCallback);
 
   // webgpu ------------------------------------
   int width, height;
   glfwGetFramebufferSize(window, &width, &height);
-  _ctx = WGPUContext(window, {width, height}, presentMode);
+  fbSize = {width, height};
+  _ctx = WGPUContext(window, fbSize, presentMode);
   std::cout << "WGPUContext created" << std::endl;
 }
 

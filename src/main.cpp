@@ -11,6 +11,7 @@
 #include "utils/timer.hpp"
 #include "utils/unicode.hpp"
 #include "utils/variant.hpp"
+#include <atomic>
 
 using namespace wgpu;
 
@@ -18,11 +19,12 @@ const WGPUContext& ctx = Window::_ctx;
 
 int main() {
   // Window window({1400, 800}, "Neovim GUI", PresentMode::Fifo);
-  Window window({1600, 1000}, "Neovim GUI", PresentMode::Fifo);
-  Renderer renderer(window.size);
+  Window window({1600, 1000}, "Neovim GUI", PresentMode::Immediate);
+  Renderer renderer(window.size, window.fbSize);
   Font font("/Library/Fonts/SF-Mono-Medium.otf", 13, 2);
-  // Font font("/Users/williamhou/Library/Fonts/Hack Regular Nerd Font Complete Mono.ttf", 15, 2);
-  // Font font(ROOT_DIR "/res/NerdFontsSymbolsOnly/SymbolsNerdFontMono-Regular.ttf", 15, 2);
+  // Font font("/Users/williamhou/Library/Fonts/Hack Regular Nerd Font Complete
+  // Mono.ttf", 15, 2); Font font(ROOT_DIR
+  // "/res/NerdFontsSymbolsOnly/SymbolsNerdFontMono-Regular.ttf", 15, 2);
 
   int width = window.size.x / font.charWidth;
   int height = window.size.y / font.charHeight;
@@ -32,26 +34,13 @@ int main() {
 
   EditorState editorState{};
 
+  std::atomic_bool rendered = true;
+  std::mutex renderMutex;
+
   window.keyCallback = [&](int key, int scancode, int action, int mods) {
     if (action == GLFW_PRESS || action == GLFW_REPEAT) {
       auto string = ConvertKeyInput(key, mods);
       if (string != "") nvim.Input(string);
-    }
-
-    if (action == GLFW_PRESS) {
-      if (key == GLFW_KEY_F2) {
-        for (auto& [id, grid] : editorState.gridManager.grids) {
-          LOG("grid: {} ----------------------------", id);
-          for (size_t i = 0; i < grid.lines.Size(); i++) {
-            auto& line = grid.lines[i];
-            std::string lineStr;
-            for (auto& cell : line) {
-              lineStr += cell.text;
-            }
-            LOG("{}", lineStr);
-          }
-        }
-      }
     }
   };
 
@@ -61,24 +50,45 @@ int main() {
   };
 
   window.windowSizeCallback = [&](int width, int height) {
-    int widthChars = width / font.charWidth;
-    int heightChars = height / font.charHeight;
+    glm::uvec2 size(width, height);
+    int widthChars = size.x / font.charWidth;
+    int heightChars = size.y / font.charHeight;
     nvim.UiTryResize(widthChars, heightChars);
-    renderer.Resize({width, height});
-    // LOG("resize: {} {}", width, height);
+    {
+      std::scoped_lock lock(renderMutex);
+      renderer.Resize(size);
+    }
+
+    using namespace std::chrono_literals;
+    rendered = false;
+    while (!rendered) {
+      std::this_thread::sleep_for(1ms);
+    }
+  };
+
+  window.framebufferSizeCallback = [&](int width, int height) {
+    glm::uvec2 fbSize(width, height);
+    {
+      std::scoped_lock lock(renderMutex);
+      window._ctx.Resize(fbSize);
+      renderer.FbResize(fbSize);
+    }
   };
 
   using namespace std::chrono_literals;
   using namespace std::chrono;
 
-  bool running = true;
+  std::atomic_bool running = true;
 
   std::thread nvimThread([&] {
     while (!window.ShouldClose()) {
-      static Timer timer{60};
-      timer.Start();
+      // static Timer timer{60};
+      // timer.Start();
 
-      ctx.device.Tick();
+      {
+        std::scoped_lock lock(renderMutex);
+        ctx.device.Tick();
+      }
 
       // events ------------------------------------------------
       if (window.ShouldClose()) nvim.client.Disconnect();
@@ -104,11 +114,11 @@ int main() {
       // auto duration = duration_cast<nanoseconds>(timer.GetAverageDuration());
       // LOG("rendering: {}", duration);
 
-      timer.End();
-      auto duration = duration_cast<milliseconds>(timer.GetAverageDuration());
-      if (duration > 1us) {
-        LOG("frame time: {}", duration);
-      }
+      // timer.End();
+      // auto duration = duration_cast<milliseconds>(timer.GetAverageDuration());
+      // if (duration > 1us) {
+      //   LOG("frame time: {}", duration);
+      // }
 
       if (auto hlIter = editorState.hlTable.find(0);
           hlIter != editorState.hlTable.end()) {
@@ -117,19 +127,20 @@ int main() {
       }
 
       {
-        std::scoped_lock lock(window.renderMutex);
+        std::scoped_lock lock(renderMutex);
         renderer.Begin();
         // LOG("----------------------");
         for (auto& [id, grid] : editorState.gridManager.grids) {
           // LOG("render grid: {}", id);
           renderer.RenderGrid(grid, font, editorState.hlTable);
-          glm::vec2 cursorPos(grid.cursorCol * font.charWidth,
-                              grid.cursorRow * font.charHeight);
+          glm::vec2 cursorPos(
+            grid.cursorCol * font.charWidth, grid.cursorRow * font.charHeight
+          );
           renderer.RenderCursor(cursorPos, {font.charWidth, font.charHeight});
-          // LOG("cursor: {} {}", cursorPos.x, cursorPos.y);
         }
         renderer.End();
         renderer.Present();
+        rendered = true;
       }
     }
 
