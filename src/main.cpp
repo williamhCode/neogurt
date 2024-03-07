@@ -16,11 +16,6 @@ using namespace wgpu;
 
 const WGPUContext& ctx = Window::_ctx;
 
-Font* fontPtr;
-Nvim* nvimPtr;
-Renderer* rendererPtr;
-EditorState* editorStatePtr;
-
 int main() {
   Window window({1400, 800}, "Neovim GUI", PresentMode::Fifo);
   Renderer renderer(window.size);
@@ -37,20 +32,15 @@ int main() {
 
   EditorState editorState{};
 
-  fontPtr = &font;
-  nvimPtr = &nvim;
-  rendererPtr = &renderer;
-  editorStatePtr = &editorState;
-
-  window.keyCallback = [](int key, int scancode, int action, int mods) {
+  window.keyCallback = [&](int key, int scancode, int action, int mods) {
     if (action == GLFW_PRESS || action == GLFW_REPEAT) {
       auto string = ConvertKeyInput(key, mods);
-      if (string != "") nvimPtr->Input(string);
+      if (string != "") nvim.Input(string);
     }
 
     if (action == GLFW_PRESS) {
       if (key == GLFW_KEY_F2) {
-        for (auto& [id, grid] : editorStatePtr->gridManager.grids) {
+        for (auto& [id, grid] : editorState.gridManager.grids) {
           LOG("grid: {} ----------------------------", id);
           for (size_t i = 0; i < grid.lines.Size(); i++) {
             auto& line = grid.lines[i];
@@ -65,16 +55,16 @@ int main() {
     }
   };
 
-  window.charCallback = [](unsigned int codepoint) {
+  window.charCallback = [&](unsigned int codepoint) {
     auto string = ConvertCharInput(codepoint);
-    if (string != "") nvimPtr->Input(string);
+    if (string != "") nvim.Input(string);
   };
 
-  window.windowSizeCallback = [](int width, int height) {
-    int widthChars = width / fontPtr->charWidth;
-    int heightChars = height / fontPtr->charHeight;
-    nvimPtr->UiTryResize(widthChars, heightChars);
-    rendererPtr->Resize({width, height});
+  window.windowSizeCallback = [&](int width, int height) {
+    int widthChars = width / font.charWidth;
+    int heightChars = height / font.charHeight;
+    nvim.UiTryResize(widthChars, heightChars);
+    renderer.Resize({width, height});
     LOG("resize: {} {}", width, height);
   };
 

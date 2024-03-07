@@ -5,6 +5,7 @@
 
 #include "gfx/context.hpp"
 
+#include <functional>
 #include <optional>
 #include <string>
 
@@ -39,11 +40,16 @@ struct Window {
   };
   // std::optional<WindowSizeData> windowSizeEvent;
 
-  void (*keyCallback)(int, int, int, int) = nullptr;
-  void (*charCallback)(unsigned int) = nullptr;
-  void (*mouseButtonCallback)(int, int, int) = nullptr;
-  void (*cursorPosCallback)(double, double) = nullptr;
-  void (*windowSizeCallback)(int, int) = nullptr;
+  // void (*keyCallback)(int, int, int, int) = nullptr;
+  // void (*charCallback)(unsigned int) = nullptr;
+  // void (*mouseButtonCallback)(int, int, int) = nullptr;
+  // void (*cursorPosCallback)(double, double) = nullptr;
+  // void (*windowSizeCallback)(int, int) = nullptr;
+  std::function<void(int, int, int, int)> keyCallback = nullptr;
+  std::function<void(unsigned int)> charCallback = nullptr;
+  std::function<void(int, int, int)> mouseButtonCallback = nullptr;
+  std::function<void(double, double)> cursorPosCallback = nullptr;
+  std::function<void(int, int)> windowSizeCallback = nullptr;
 
   std::mutex renderMutex;
 
