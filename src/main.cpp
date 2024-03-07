@@ -17,12 +17,12 @@ using namespace wgpu;
 const WGPUContext& ctx = Window::_ctx;
 
 int main() {
-  Window window({1400, 800}, "Neovim GUI", PresentMode::Fifo);
+  // Window window({1400, 800}, "Neovim GUI", PresentMode::Fifo);
+  Window window({1600, 1000}, "Neovim GUI", PresentMode::Fifo);
   Renderer renderer(window.size);
   Font font("/Library/Fonts/SF-Mono-Medium.otf", 13, 2);
-  // Font font("/Users/williamhou/Library/Fonts/Hack Regular Nerd Font Complete
-  // Mono.ttf", 15, 2); Font font(ROOT_DIR
-  // "/res/NerdFontsSymbolsOnly/SymbolsNerdFontMono-Regular.ttf", 15, 2);
+  // Font font("/Users/williamhou/Library/Fonts/Hack Regular Nerd Font Complete Mono.ttf", 15, 2);
+  // Font font(ROOT_DIR "/res/NerdFontsSymbolsOnly/SymbolsNerdFontMono-Regular.ttf", 15, 2);
 
   int width = window.size.x / font.charWidth;
   int height = window.size.y / font.charHeight;
@@ -65,7 +65,7 @@ int main() {
     int heightChars = height / font.charHeight;
     nvim.UiTryResize(widthChars, heightChars);
     renderer.Resize({width, height});
-    LOG("resize: {} {}", width, height);
+    // LOG("resize: {} {}", width, height);
   };
 
   using namespace std::chrono_literals;
@@ -123,6 +123,10 @@ int main() {
         for (auto& [id, grid] : editorState.gridManager.grids) {
           // LOG("render grid: {}", id);
           renderer.RenderGrid(grid, font, editorState.hlTable);
+          glm::vec2 cursorPos(grid.cursorCol * font.charWidth,
+                              grid.cursorRow * font.charHeight);
+          renderer.RenderCursor(cursorPos, {font.charWidth, font.charHeight});
+          // LOG("cursor: {} {}", cursorPos.x, cursorPos.y);
         }
         renderer.End();
         renderer.Present();
@@ -130,12 +134,10 @@ int main() {
     }
 
     running = false;
+    glfwPostEmptyEvent();
   });
 
   while (running) {
-    // if (nvim.client.HasNotification())
-    // window.PollEvents();
-    // else
     window.WaitEvents();
     std::this_thread::sleep_for(1ms);
   }

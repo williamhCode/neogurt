@@ -20,10 +20,13 @@ struct RectQuadVertex {
 struct Pipeline {
   wgpu::BindGroupLayout viewProjBGL;
 
+  wgpu::RenderPipeline rectRPL;
+
   wgpu::BindGroupLayout fontTextureBGL;
   wgpu::RenderPipeline textRPL;
 
-  wgpu::RenderPipeline rectRPL;
+  wgpu::BindGroupLayout maskBGL;
+  wgpu::RenderPipeline cursorRPL;
 
   Pipeline() = default;
   Pipeline(const WGPUContext& ctx);

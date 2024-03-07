@@ -25,10 +25,26 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 @group(1) @binding(0) var fontTexture : texture_2d<f32>;
 @group(1) @binding(1) var fontSampler : sampler;
 
-@fragment
-fn fs_main(in: VertexOutput) -> @location(0) vec4f {
-  var color = textureSample(fontTexture, fontSampler, in.uv);
-  color = in.foreground * color;
+struct FragmentInput {
+  @location(0) uv: vec2f,
+  @location(1) foreground: vec4f,
+}
 
-  return color;
+struct FragmentOutput {
+  @location(0) color: vec4f,
+  @location(1) mask: f32,
+}
+
+@fragment
+fn fs_main(in: FragmentInput) -> FragmentOutput {
+  var out: FragmentOutput;
+
+  var color = textureSample(fontTexture, fontSampler, in.uv);
+  out.color = in.foreground * color;
+
+  if (out.color.a > 0.0) {
+    out.mask = out.color.a;
+  }
+
+  return out;
 }

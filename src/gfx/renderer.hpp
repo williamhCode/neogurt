@@ -15,7 +15,7 @@ struct QuadRenderData {
   size_t quadCount;
   size_t vertexCount;
   size_t indexCount;
-  std::vector<Quad> vertices;
+  std::vector<Quad> quads;
   std::vector<uint32_t> indices;
   wgpu::Buffer vertexBuffer;
   wgpu::Buffer indexBuffer;
@@ -33,7 +33,7 @@ struct QuadRenderData {
   }
 
   void ResizeBuffers(size_t size) {
-    vertices.reserve(size);
+    quads.reserve(size);
     indices.reserve(size * 6);
   }
 
@@ -53,7 +53,7 @@ struct QuadRenderData {
   }
 
   void WriteBuffers() {
-    ctx.queue.WriteBuffer(vertexBuffer, 0, vertices.data(), sizeof(VertexType) * vertexCount);
+    ctx.queue.WriteBuffer(vertexBuffer, 0, quads.data(), sizeof(VertexType) * vertexCount);
     ctx.queue.WriteBuffer(
       indexBuffer, 0, indices.data(), sizeof(uint32_t) * indexCount
     );
@@ -68,6 +68,7 @@ struct Renderer {
   // shared
   wgpu::Buffer viewProjBuffer;
   wgpu::BindGroup viewProjBG;
+  wgpu::TextureView maskTextureView;
 
   // text
   QuadRenderData<TextQuadVertex> textData;
@@ -77,12 +78,18 @@ struct Renderer {
   QuadRenderData<RectQuadVertex> rectData;
   wgpu::utils::RenderPassDescriptor rectRenderPassDesc;
 
+  // cursor
+  QuadRenderData<RectQuadVertex> cursorData;
+  wgpu::BindGroup maskBG;
+  wgpu::utils::RenderPassDescriptor cursorRenderPassDesc;
+
   Renderer(glm::uvec2 size);
 
   void Resize(glm::uvec2 size);
 
   void Begin();
   void RenderGrid(const Grid& grid, Font& font, const HlTable& hlTable);
+  void RenderCursor(glm::vec2 pos, glm::vec2 size);
   void End();
   void Present();
 };

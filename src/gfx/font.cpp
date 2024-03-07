@@ -20,9 +20,8 @@ Font::Font(const std::string& path, int _size, float _ratio)
     }
     ftInitialized = true;
 
-    std::string nerdFontPath(
-      ROOT_DIR "/res/Hack/HackNerdFont-Regular.ttf"
-      // ROOT_DIR "/res/Hack/HackNerdFontMono-Regular.ttf"
+    std::string nerdFontPath(ROOT_DIR "/res/Hack/HackNerdFont-Regular.ttf"
+                             // ROOT_DIR "/res/Hack/HackNerdFontMono-Regular.ttf"
     );
     if (FT_New_Face(library, nerdFontPath.c_str(), 0, &nerdFace)) {
       throw std::runtime_error("Failed to load nerd font");
@@ -52,34 +51,38 @@ Font::Font(const std::string& path, int _size, float _ratio)
 
   // start off by rendering the first 128 characters
   for (uint32_t i = 0; i < numChars; i++) {
-    AddOrGetGlyphInfo(i);
+    GetGlyphInfoOrAdd(i);
   }
 
   UpdateTexture();
 }
 
-Font::GlyphInfoMap::iterator Font::AddOrGetGlyphInfo(FT_ULong charcode) {
+const Font::GlyphInfo& Font::GetGlyphInfoOrAdd(FT_ULong charcode) {
   auto glyphIndex = FT_Get_Char_Index(face, charcode);
 
-  FT_Face currFace = face;
-  GlyphInfoMap* currMap = &glyphInfoMap;
-  // is nerd font or undefined
-  if (glyphIndex == 0) {
+  FT_Face currFace;
+  GlyphInfoMap* currMap;
+  if (glyphIndex != 0) {
+    auto it = glyphInfoMap.find(glyphIndex);
+    if (it != glyphInfoMap.end()) {
+      return it->second;
+    }
+
+    currFace = face;
+    currMap = &glyphInfoMap;
+
+  } else {
+    // is nerd font
     glyphIndex = FT_Get_Char_Index(nerdFace, charcode);
     auto it = nerdGlyphInfoMap.find(glyphIndex);
     if (it != nerdGlyphInfoMap.end()) {
-      return it;
+      return it->second;
     }
 
     currFace = nerdFace;
     currMap = &nerdGlyphInfoMap;
 
     FT_Set_Pixel_Sizes(nerdFace, 0, size * ratio);
-  } else {
-    auto it = glyphInfoMap.find(glyphIndex);
-    if (it != glyphInfoMap.end()) {
-      return it;
-    }
   }
 
   // LOG("adding new glyph: {}", glyphIndex);
@@ -133,11 +136,7 @@ Font::GlyphInfoMap::iterator Font::AddOrGetGlyphInfo(FT_ULong charcode) {
     }
   );
 
-  return pair.first;
-}
-
-const Font::GlyphInfo& Font::GetGlyphInfo(FT_ULong charcode) {
-  return AddOrGetGlyphInfo(charcode)->second;
+  return pair.first->second;
 }
 
 void Font::UpdateTexture() {

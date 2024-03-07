@@ -44,7 +44,6 @@ struct Font {
   GlyphInfoMap nerdGlyphInfoMap;
     
   Font(const std::string& path, int size, float ratio);
-  GlyphInfoMap::iterator AddOrGetGlyphInfo(FT_ULong charcode);
-  const GlyphInfo& GetGlyphInfo(FT_ULong charcode);
+  const GlyphInfo& GetGlyphInfoOrAdd(FT_ULong charcode);
   void UpdateTexture();
 };

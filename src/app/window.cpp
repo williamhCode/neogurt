@@ -84,12 +84,10 @@ bool Window::ShouldClose() {
 }
 
 void Window::PollEvents() {
-  events.clear();
   glfwPollEvents();
 }
 
 void Window::WaitEvents() {
-  events.clear();
   glfwWaitEvents();
 }
 
