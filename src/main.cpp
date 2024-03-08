@@ -7,19 +7,21 @@
 #include "nvim/input.hpp"
 #include "nvim/msgpack_rpc/client.hpp"
 #include "nvim/nvim.hpp"
+#include "utils/clock.hpp"
 #include "utils/logger.hpp"
 #include "utils/timer.hpp"
-#include "utils/unicode.hpp"
-#include "utils/variant.hpp"
 #include <atomic>
+#include <iostream>
 
 using namespace wgpu;
+using namespace std::chrono_literals;
+using namespace std::chrono;
 
 const WGPUContext& ctx = Window::_ctx;
 
 int main() {
-  // Window window({1400, 800}, "Neovim GUI", PresentMode::Fifo);
-  Window window({1600, 1000}, "Neovim GUI", PresentMode::Immediate);
+  Window window({1400, 800}, "Neovim GUI", PresentMode::Fifo);
+  // Window window({1600, 1000}, "Neovim GUI", PresentMode::Immediate);
   Renderer renderer(window.size, window.fbSize);
   Font font("/Library/Fonts/SF-Mono-Medium.otf", 13, 2);
   // Font font("/Users/williamhou/Library/Fonts/Hack Regular Nerd Font Complete
@@ -35,7 +37,8 @@ int main() {
   EditorState editorState{};
 
   std::atomic_bool rendered = true;
-  std::mutex renderMutex;
+  std::mutex ctxMutex;
+  // std::mutex windowMutex;
 
   window.keyCallback = [&](int key, int scancode, int action, int mods) {
     if (action == GLFW_PRESS || action == GLFW_REPEAT) {
@@ -55,11 +58,10 @@ int main() {
     int heightChars = size.y / font.charHeight;
     nvim.UiTryResize(widthChars, heightChars);
     {
-      std::scoped_lock lock(renderMutex);
+      std::scoped_lock lock(ctxMutex);
       renderer.Resize(size);
     }
 
-    using namespace std::chrono_literals;
     rendered = false;
     while (!rendered) {
       std::this_thread::sleep_for(1ms);
@@ -69,41 +71,38 @@ int main() {
   window.framebufferSizeCallback = [&](int width, int height) {
     glm::uvec2 fbSize(width, height);
     {
-      std::scoped_lock lock(renderMutex);
+      std::scoped_lock lock(ctxMutex);
       window._ctx.Resize(fbSize);
       renderer.FbResize(fbSize);
     }
   };
 
-  using namespace std::chrono_literals;
-  using namespace std::chrono;
-
   std::atomic_bool running = true;
 
-  std::thread nvimThread([&] {
+  std::thread renderThread([&] {
+    Clock clock;
+
     while (!window.ShouldClose()) {
+      auto dt = clock.Tick(30);
+      // LOG("dt: {}", dt);
+      auto fps = clock.GetFps();
+
       // static Timer timer{60};
       // timer.Start();
 
       {
-        std::scoped_lock lock(renderMutex);
+        std::scoped_lock lock(ctxMutex);
         ctx.device.Tick();
       }
 
       // events ------------------------------------------------
-      if (window.ShouldClose()) nvim.client.Disconnect();
       if (!nvim.client.IsConnected()) window.SetShouldClose(true);
 
       // LOG("\n -----------------------------------------------");
       nvim.ParseEvents();
 
       // parse redraw and rendering ------------------------------------------------
-      // clang-format off
-      // if using continue, have to lock main loop to 60 fps, or will keep looping and waste cpu cycles
-      // else just let webgpu vsync handle timing, but will spend extra power on rendering when there's no need
-      // best prob make own timer to lock main loop to 60 fps when using continue
-      // clang-format on
-      // if (nvim.redrawState.numFlushes == 0) continue;
+      if (nvim.redrawState.numFlushes == 0) continue;
 
       // LOG_DISABLE();
       // size of queue
@@ -120,6 +119,9 @@ int main() {
       //   LOG("frame time: {}", duration);
       // }
 
+      // update -----------------------------------
+      // editorState.cursor.Update(
+
       if (auto hlIter = editorState.hlTable.find(0);
           hlIter != editorState.hlTable.end()) {
         auto color = hlIter->second.background.value();
@@ -127,7 +129,7 @@ int main() {
       }
 
       {
-        std::scoped_lock lock(renderMutex);
+        std::scoped_lock lock(ctxMutex);
         renderer.Begin();
         // LOG("----------------------");
         for (auto& [id, grid] : editorState.gridManager.grids) {
@@ -152,6 +154,7 @@ int main() {
     window.WaitEvents();
     std::this_thread::sleep_for(1ms);
   }
+  renderThread.join();
 
-  nvimThread.join();
+  nvim.client.Disconnect();
 }

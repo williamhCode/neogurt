@@ -36,6 +36,7 @@ set(APP_SRC
   src/nvim/input.cpp
 
   src/utils/unicode.cpp
+  src/utils/clock.cpp
 )
 
 add_executable(App ${APP_SRC})

@@ -1,14 +1,14 @@
 .PHONY: build
 
-TYPE = debug
+TYPE = release
 
 build:
 	cmake --build build/$(TYPE) --target App
 	cp build/$(TYPE)/compile_commands.json .
 
 build-tint:
-	cmake --build build/$(TYPE) --target tint
-	cp build/$(TYPE)/_deps/dawn-build/tint .
+	cmake --build build/release --target tint
+	cp build/release/_deps/dawn-build/tint .
 
 build-setup:
 	cmake . -B build/debug -DCMAKE_BUILD_TYPE=RelWithDebInfo -GNinja -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
