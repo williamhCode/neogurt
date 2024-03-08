@@ -86,6 +86,10 @@ bool Window::ShouldClose() {
   return glfwWindowShouldClose(window);
 }
 
+void Window::SetTitle(const std::string& title) {
+  glfwSetWindowTitle(window, title.c_str());
+}
+
 void Window::PollEvents() {
   glfwPollEvents();
 }

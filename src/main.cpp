@@ -20,8 +20,7 @@ using namespace std::chrono;
 const WGPUContext& ctx = Window::_ctx;
 
 int main() {
-  Window window({1400, 800}, "Neovim GUI", PresentMode::Fifo);
-  // Window window({1600, 1000}, "Neovim GUI", PresentMode::Immediate);
+  Window window({1400, 800}, "Neovim GUI", PresentMode::Immediate);
   Renderer renderer(window.size, window.fbSize);
   Font font("/Library/Fonts/SF-Mono-Medium.otf", 13, 2);
   // Font font("/Users/williamhou/Library/Fonts/Hack Regular Nerd Font Complete
@@ -37,7 +36,7 @@ int main() {
   EditorState editorState{};
 
   std::atomic_bool rendered = true;
-  std::mutex ctxMutex;
+  std::mutex resizeMutex;
   // std::mutex windowMutex;
 
   window.keyCallback = [&](int key, int scancode, int action, int mods) {
@@ -53,28 +52,20 @@ int main() {
   };
 
   window.windowSizeCallback = [&](int width, int height) {
-    glm::uvec2 size(width, height);
-    int widthChars = size.x / font.charWidth;
-    int heightChars = size.y / font.charHeight;
-    nvim.UiTryResize(widthChars, heightChars);
-    {
-      std::scoped_lock lock(ctxMutex);
-      renderer.Resize(size);
-    }
-
-    rendered = false;
-    while (!rendered) {
-      std::this_thread::sleep_for(1ms);
-    }
   };
 
   window.framebufferSizeCallback = [&](int width, int height) {
+    std::scoped_lock lock(resizeMutex);
+
     glm::uvec2 fbSize(width, height);
-    {
-      std::scoped_lock lock(ctxMutex);
-      window._ctx.Resize(fbSize);
-      renderer.FbResize(fbSize);
-    }
+    window._ctx.Resize(fbSize);
+    renderer.FbResize(fbSize);
+
+    glm::uvec2 size(width / 2, height / 2);
+    int widthChars = size.x / font.charWidth;
+    int heightChars = size.y / font.charHeight;
+    nvim.UiTryResize(widthChars, heightChars);
+    renderer.Resize(size);
   };
 
   std::atomic_bool running = true;
@@ -83,15 +74,14 @@ int main() {
     Clock clock;
 
     while (!window.ShouldClose()) {
-      auto dt = clock.Tick(30);
-      // LOG("dt: {}", dt);
-      auto fps = clock.GetFps();
+      auto dt = clock.Tick(60);
 
-      // static Timer timer{60};
-      // timer.Start();
+      auto fps = clock.GetFps();
+      // std::cout << std::fixed << std::setprecision(2);
+      // std::cout << '\r' << "fps: " << fps << std::flush;
 
       {
-        std::scoped_lock lock(ctxMutex);
+        std::scoped_lock lock(resizeMutex);
         ctx.device.Tick();
       }
 
@@ -102,22 +92,9 @@ int main() {
       nvim.ParseEvents();
 
       // parse redraw and rendering ------------------------------------------------
-      if (nvim.redrawState.numFlushes == 0) continue;
+      // if (nvim.redrawState.numFlushes == 0) continue;
 
-      // LOG_DISABLE();
-      // size of queue
-      // timer.Start();
       ProcessRedrawEvents(nvim.redrawState, editorState);
-      // LOG_ENABLE();
-      // timer.End();
-      // auto duration = duration_cast<nanoseconds>(timer.GetAverageDuration());
-      // LOG("rendering: {}", duration);
-
-      // timer.End();
-      // auto duration = duration_cast<milliseconds>(timer.GetAverageDuration());
-      // if (duration > 1us) {
-      //   LOG("frame time: {}", duration);
-      // }
 
       // update -----------------------------------
       // editorState.cursor.Update(
@@ -129,7 +106,7 @@ int main() {
       }
 
       {
-        std::scoped_lock lock(ctxMutex);
+        std::scoped_lock lock(resizeMutex);
         renderer.Begin();
         // LOG("----------------------");
         for (auto& [id, grid] : editorState.gridManager.grids) {
@@ -142,7 +119,6 @@ int main() {
         }
         renderer.End();
         renderer.Present();
-        rendered = true;
       }
     }
 

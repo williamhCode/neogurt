@@ -29,6 +29,7 @@ struct Window {
 
   void SetShouldClose(bool value);
   bool ShouldClose();
+  void SetTitle(const std::string& title);
 
   void PollEvents();
   void WaitEvents();

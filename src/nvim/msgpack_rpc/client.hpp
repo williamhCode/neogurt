@@ -202,7 +202,7 @@ private:
           }
 
           if (unpacker.buffer_capacity() < readSize) {
-            LOG("Reserving extra buffer: {}", readSize);
+            // LOG("Reserving extra buffer: {}", readSize);
             unpacker.reserve_buffer(readSize);
           }
           GetData();

@@ -192,6 +192,10 @@ static std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
 
 static void ParseRedraw(const msgpack::object& params, RedrawState &state) {
   std::span<const msgpack::object> paramList(params.via.array);
+  static int count = 0;
+  // LOG("------------------------------------- {}", count);
+  // LOG("ParseRedraw: {}", ToString(params));
+  count++;
 
   for (const auto& param : paramList) {
     auto paramArr = param.via.array;
