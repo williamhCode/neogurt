@@ -12,7 +12,7 @@ struct Clock {
   // calc delta and fps
   std::chrono::steady_clock::time_point prevTime;
   std::deque<std::chrono::nanoseconds> durations;
-  size_t bufferSize = 20;
+  size_t bufferSize = 500;
 
   Clock();
   double Tick(std::optional<int> fps = std::nullopt);

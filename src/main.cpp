@@ -12,6 +12,7 @@
 #include "utils/timer.hpp"
 #include <atomic>
 #include <iostream>
+#include "glm/gtx/string_cast.hpp"
 
 using namespace wgpu;
 using namespace std::chrono_literals;
@@ -35,9 +36,7 @@ int main() {
 
   EditorState editorState{};
 
-  std::atomic_bool rendered = true;
   std::mutex resizeMutex;
-  // std::mutex windowMutex;
 
   window.keyCallback = [&](int key, int scancode, int action, int mods) {
     if (action == GLFW_PRESS || action == GLFW_REPEAT) {
@@ -52,20 +51,25 @@ int main() {
   };
 
   window.windowSizeCallback = [&](int width, int height) {
+    window.size = {width, height};
   };
 
   window.framebufferSizeCallback = [&](int width, int height) {
-    std::scoped_lock lock(resizeMutex);
+    window.fbSize = {width, height};
 
-    glm::uvec2 fbSize(width, height);
-    window._ctx.Resize(fbSize);
-    renderer.FbResize(fbSize);
+    {
+      std::scoped_lock lock(resizeMutex);
 
-    glm::uvec2 size(width / 2, height / 2);
-    int widthChars = size.x / font.charWidth;
-    int heightChars = size.y / font.charHeight;
-    nvim.UiTryResize(widthChars, heightChars);
-    renderer.Resize(size);
+      glm::uvec2 fbSize(width, height);
+      window._ctx.Resize(fbSize);
+      renderer.FbResize(fbSize);
+
+      glm::uvec2 size(width / 2, height / 2);
+      int widthChars = size.x / font.charWidth;
+      int heightChars = size.y / font.charHeight;
+      nvim.UiTryResize(widthChars, heightChars);
+      renderer.Resize(size);
+    }
   };
 
   std::atomic_bool running = true;
@@ -75,6 +79,7 @@ int main() {
 
     while (!window.ShouldClose()) {
       auto dt = clock.Tick(60);
+      // LOG("dt: {}", dt);
 
       auto fps = clock.GetFps();
       // std::cout << std::fixed << std::setprecision(2);
@@ -97,7 +102,12 @@ int main() {
       ProcessRedrawEvents(nvim.redrawState, editorState);
 
       // update -----------------------------------
-      // editorState.cursor.Update(
+      for (auto& [id, grid] : editorState.gridManager.grids) {
+        editorState.cursor.SetDestPos(
+          glm::vec2(grid.cursorCol * font.charWidth, grid.cursorRow * font.charHeight)
+        );
+      }
+      editorState.cursor.Update(dt);
 
       if (auto hlIter = editorState.hlTable.find(0);
           hlIter != editorState.hlTable.end()) {
@@ -112,10 +122,9 @@ int main() {
         for (auto& [id, grid] : editorState.gridManager.grids) {
           // LOG("render grid: {}", id);
           renderer.RenderGrid(grid, font, editorState.hlTable);
-          glm::vec2 cursorPos(
-            grid.cursorCol * font.charWidth, grid.cursorRow * font.charHeight
+          renderer.RenderCursor(
+            editorState.cursor.pos, {font.charWidth, font.charHeight}
           );
-          renderer.RenderCursor(cursorPos, {font.charWidth, font.charHeight});
         }
         renderer.End();
         renderer.Present();

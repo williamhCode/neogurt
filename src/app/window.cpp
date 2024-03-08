@@ -26,13 +26,11 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
 
 void WindowSizeCallback(GLFWwindow* window, int width, int height) {
   Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
-  win.size = {width, height};
   if (win.windowSizeCallback) win.windowSizeCallback(width, height);
 }
 
 void FramebufferSizeCallback(GLFWwindow* window, int width, int height) {
   Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
-  win.fbSize = {width, height};
   if (win.framebufferSizeCallback) win.framebufferSizeCallback(width, height);
 }
 

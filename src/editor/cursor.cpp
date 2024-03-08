@@ -1,18 +1,25 @@
 #include "cursor.hpp"
+#include "glm/exponential.hpp"
 #include "glm/geometric.hpp"
 
-void Cursor::Update(float dt) {
-  if (first) {
-    pos = destPos;
-    first = false;
-    return;
-  }
+void Cursor::SetDestPos(glm::vec2 _destPos) {
+  if (destPos == _destPos) return;
 
-  auto dir = glm::normalize(destPos - pos);
-  auto delta = dir * speed * dt;
-  if (glm::length(delta) > glm::length(destPos - pos)) {
+  destPos = _destPos;
+  startPos = pos;
+  elasped = 0.0f;
+}
+
+void Cursor::Update(float dt) {
+  if (pos == destPos) return;
+
+  elasped += dt;
+  if (elasped >= jumpTime) {
     pos = destPos;
+    elasped = 0.0f;
   } else {
-    pos += delta;
+    // use smoothstep
+    float t = elasped / jumpTime;
+    pos = glm::mix(startPos, destPos, glm::pow(t, 1 / 2.8));
   }
 }
