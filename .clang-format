@@ -16,11 +16,12 @@ IndentCaseLabels: true
 
 # BinPackArguments: false
 BinPackParameters: false
-AllowShortLambdasOnASingleLine: None
+AllowShortLambdasOnASingleLine: Inline
 AllowShortFunctionsOnASingleLine: None
 AllowShortIfStatementsOnASingleLine: WithoutElse
 # PenaltyReturnTypeOnItsOwnLine: 10000
 AlwaysBreakTemplateDeclarations: Yes
+AllowShortCaseLabelsOnASingleLine: true
 ...
 
 

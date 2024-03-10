@@ -4,7 +4,8 @@
 #include <deque>
 #include <optional>
 
-struct Clock {
+class Clock {
+private:
   // clock sleep
   std::chrono::steady_clock::time_point lastFrame;
   std::chrono::steady_clock::time_point nextFrame;
@@ -12,6 +13,8 @@ struct Clock {
   // calc delta and fps
   std::chrono::steady_clock::time_point prevTime;
   std::deque<std::chrono::nanoseconds> durations;
+
+public:
   size_t bufferSize = 500;
 
   Clock();

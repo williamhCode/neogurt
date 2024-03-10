@@ -1,24 +1,29 @@
+#include "app/options.hpp"
 #include "app/window.hpp"
 #include "editor/grid.hpp"
 #include "editor/state.hpp"
 #include "gfx/font.hpp"
 #include "gfx/instance.hpp"
 #include "gfx/renderer.hpp"
-#include "nvim/input.hpp"
+#include "app/input.hpp"
 #include "nvim/msgpack_rpc/client.hpp"
 #include "nvim/nvim.hpp"
 #include "utils/clock.hpp"
 #include "utils/logger.hpp"
 #include "utils/timer.hpp"
-#include <atomic>
-#include <iostream>
+
 #include "glm/gtx/string_cast.hpp"
+
+#include <iostream>
+#include <atomic>
+#include <algorithm>
 
 using namespace wgpu;
 using namespace std::chrono_literals;
 using namespace std::chrono;
 
 const WGPUContext& ctx = Window::_ctx;
+AppOptions options;
 
 int main() {
   Window window({1400, 800}, "Neovim GUI", PresentMode::Immediate);
@@ -38,40 +43,78 @@ int main() {
 
   std::mutex resizeMutex;
 
+  // input -----------------------------------------------------------
+  InputHandler input(nvim, window.GetCursorPos(), {font.charWidth, font.charHeight});
+
   window.keyCallback = [&](int key, int scancode, int action, int mods) {
-    if (action == GLFW_PRESS || action == GLFW_REPEAT) {
-      auto string = ConvertKeyInput(key, mods);
-      if (string != "") nvim.Input(string);
-    }
+    input.HandleKey(key, scancode, action, mods);
   };
 
   window.charCallback = [&](unsigned int codepoint) {
-    auto string = ConvertCharInput(codepoint);
-    if (string != "") nvim.Input(string);
+    input.HandleChar(codepoint);
   };
 
-  window.windowSizeCallback = [&](int width, int height) {
-    window.size = {width, height};
+  window.mouseButtonCallback = [&](int button, int action, int mods) {
+    input.HandleMouseButton(button, action, mods);
   };
 
+  window.cursorPosCallback = [&](double xpos, double ypos) {
+    input.HandleCursorPos(xpos, ypos);
+  };
+
+  double yAccum = 0;
+  int scrollDir = 0;
+  window.scrollCallback = [&](double xoffset, double yoffset) {
+    // if (yoffset == 0) {
+    //   yAccum = 0;
+    //   return;
+    // }
+    // else if (yoffset > 0) {
+    //   if (scrollDir == -1) yAccum = 0;
+    //   scrollDir = 1;
+    // } else {
+    //   if (scrollDir == 1) yAccum = 0;
+    //   scrollDir = -1;
+    // }
+
+    // yAccum += std::abs(yoffset);
+
+    // int row = window.cursorPos.y / font.charHeight;
+    // int col = window.cursorPos.x / font.charWidth;
+
+    // int mods = window.mods;
+    // std::string modStr = "";
+    // if (mods & GLFW_MOD_CONTROL) modStr += "C-";
+    // if (mods & GLFW_MOD_ALT) modStr += "M-";
+    // if (mods & GLFW_MOD_SUPER) modStr += "D-";
+    // if (mods & GLFW_MOD_SHIFT) modStr += "S-";
+
+    // double scrollSpeed = 1;
+    // double scrollUnit = 1 / scrollSpeed;
+    // yAccum = std::min(yAccum, 100.0);
+    // LOG("scroll: {}", yAccum);
+    // while(yAccum >= scrollUnit) {
+    //   nvim.InputMouse("wheel", yoffset > 0 ? "up" : "down", modStr, 0, row, col);
+    //   yAccum -= scrollUnit;
+    // }
+  };
+
+  // resizing -------------------------------------
   window.framebufferSizeCallback = [&](int width, int height) {
-    window.fbSize = {width, height};
+    std::scoped_lock lock(resizeMutex);
 
-    {
-      std::scoped_lock lock(resizeMutex);
+    glm::uvec2 fbSize(width, height);
+    window._ctx.Resize(fbSize);
+    renderer.FbResize(fbSize);
 
-      glm::uvec2 fbSize(width, height);
-      window._ctx.Resize(fbSize);
-      renderer.FbResize(fbSize);
-
-      glm::uvec2 size(width / 2, height / 2);
-      int widthChars = size.x / font.charWidth;
-      int heightChars = size.y / font.charHeight;
-      nvim.UiTryResize(widthChars, heightChars);
-      renderer.Resize(size);
-    }
+    glm::uvec2 size(fbSize / 2u);
+    int widthChars = size.x / font.charWidth;
+    int heightChars = size.y / font.charHeight;
+    nvim.UiTryResize(widthChars, heightChars);
+    renderer.Resize(size);
   };
 
+  // main loop -------------------------------------
   std::atomic_bool running = true;
 
   std::thread renderThread([&] {
@@ -90,18 +133,16 @@ int main() {
         ctx.device.Tick();
       }
 
-      // events ------------------------------------------------
+      // nvim events -------------------------------------------
       if (!nvim.client.IsConnected()) window.SetShouldClose(true);
 
-      // LOG("\n -----------------------------------------------");
       nvim.ParseEvents();
 
-      // parse redraw and rendering ------------------------------------------------
+      // process events ---------------------------------------
       // if (nvim.redrawState.numFlushes == 0) continue;
-
       ProcessRedrawEvents(nvim.redrawState, editorState);
 
-      // update -----------------------------------
+      // update ----------------------------------------------
       for (auto& [id, grid] : editorState.gridManager.grids) {
         editorState.cursor.SetDestPos(
           glm::vec2(grid.cursorCol * font.charWidth, grid.cursorRow * font.charHeight)
@@ -109,6 +150,7 @@ int main() {
       }
       editorState.cursor.Update(dt);
 
+      // render ----------------------------------------------
       if (auto hlIter = editorState.hlTable.find(0);
           hlIter != editorState.hlTable.end()) {
         auto color = hlIter->second.background.value();

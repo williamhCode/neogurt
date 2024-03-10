@@ -70,6 +70,17 @@ void Nvim::Input(const std::string& input) {
   client.Send("nvim_input", input);
 }
 
+void Nvim::InputMouse(
+  const std::string& button,
+  const std::string& action,
+  const std::string& modifier,
+  int grid,
+  int row,
+  int col
+) {
+  client.Send("nvim_input_mouse", button, action, modifier, grid, row, col);
+}
+
 void Nvim::ParseEvents() {
   ParseRedrawEvents(client, redrawState);
 }

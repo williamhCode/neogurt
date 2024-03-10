@@ -24,19 +24,21 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
   if (win.cursorPosCallback) win.cursorPosCallback(xpos, ypos);
 }
 
+void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
+  Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
+  if (win.scrollCallback) win.scrollCallback(xoffset, yoffset);
+}
+
 void WindowSizeCallback(GLFWwindow* window, int width, int height) {
   Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
+  win.size = {width, height};
   if (win.windowSizeCallback) win.windowSizeCallback(width, height);
 }
 
 void FramebufferSizeCallback(GLFWwindow* window, int width, int height) {
   Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
+  win.fbSize = {width, height};
   if (win.framebufferSizeCallback) win.framebufferSizeCallback(width, height);
-}
-
-void WindowRefreshCallback(GLFWwindow* window) {
-  Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
-  if (win.windowRefreshCallback) win.windowRefreshCallback();
 }
 
 Window::Window(glm::uvec2 size, const std::string& title, wgpu::PresentMode presentMode)
@@ -59,14 +61,15 @@ Window::Window(glm::uvec2 size, const std::string& title, wgpu::PresentMode pres
   glfwSetCharCallback(window, CharCallback);
   glfwSetMouseButtonCallback(window, MouseButtonCallback);
   glfwSetCursorPosCallback(window, CursorPosCallback);
+  glfwSetScrollCallback(window, ScrollCallback);
   glfwSetWindowSizeCallback(window, WindowSizeCallback);
   glfwSetFramebufferSizeCallback(window, FramebufferSizeCallback);
-  glfwSetWindowRefreshCallback(window, WindowRefreshCallback);
 
-  // webgpu ------------------------------------
   int width, height;
   glfwGetFramebufferSize(window, &width, &height);
   fbSize = {width, height};
+
+  // webgpu ------------------------------------
   _ctx = WGPUContext(window, fbSize, presentMode);
   std::cout << "WGPUContext created" << std::endl;
 }
@@ -102,4 +105,18 @@ bool Window::KeyPressed(int key) {
 
 bool Window::KeyReleased(int key) {
   return glfwGetKey(window, key) == GLFW_RELEASE;
+}
+
+bool Window::MouseButtonPressed(int button) {
+  return glfwGetMouseButton(window, button) == GLFW_PRESS;
+}
+
+bool Window::MouseButtonReleased(int button) {
+  return glfwGetMouseButton(window, button) == GLFW_RELEASE;
+}
+
+glm::vec2 Window::GetCursorPos() {
+  double xpos, ypos;
+  glfwGetCursorPos(window, &xpos, &ypos);
+  return {xpos, ypos};
 }

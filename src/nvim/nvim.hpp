@@ -22,5 +22,13 @@ struct Nvim {
   void UiAttach(int width, int height);
   void UiTryResize(int width, int height);
   void Input(const std::string& input);
+  void InputMouse(
+    const std::string& button,
+    const std::string& action,
+    const std::string& modifier,
+    int grid,
+    int row,
+    int col
+  );
   void ParseEvents();
 };

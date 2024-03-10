@@ -1,13 +1,13 @@
 #include "cursor.hpp"
+#include "glm/common.hpp"
 #include "glm/exponential.hpp"
-#include "glm/geometric.hpp"
 
 void Cursor::SetDestPos(glm::vec2 _destPos) {
   if (destPos == _destPos) return;
 
   destPos = _destPos;
   startPos = pos;
-  elasped = 0.0f;
+  elasped = 0.0;
 }
 
 void Cursor::Update(float dt) {
@@ -16,7 +16,7 @@ void Cursor::Update(float dt) {
   elasped += dt;
   if (elasped >= jumpTime) {
     pos = destPos;
-    elasped = 0.0f;
+    elasped = 0.0;
   } else {
     // use smoothstep
     float t = elasped / jumpTime;

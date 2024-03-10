@@ -22,6 +22,7 @@ set(APP_SRC
 	src/main.cpp
 
   src/app/window.cpp
+  src/app/input.cpp
 
   src/editor/state.cpp
   src/editor/grid.cpp
@@ -34,7 +35,6 @@ set(APP_SRC
 
   src/nvim/nvim.cpp
   src/nvim/parse.cpp
-  src/nvim/input.cpp
 
   src/utils/unicode.cpp
   src/utils/clock.cpp
