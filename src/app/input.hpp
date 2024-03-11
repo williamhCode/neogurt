@@ -12,6 +12,10 @@ struct InputHandler {
   glm::vec2 cursorPos;
   glm::vec2 charSize;
 
+  double yAccum = 0;
+  double xAccum = 0;
+  int scrollDir = 0;
+
   InputHandler(Nvim& nvim, glm::vec2 cursorPos, glm::vec2 charSize);
 
   void HandleKey(int key, int scancode, int action, int mods);

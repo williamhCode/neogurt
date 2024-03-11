@@ -62,41 +62,8 @@ int main() {
     input.HandleCursorPos(xpos, ypos);
   };
 
-  double yAccum = 0;
-  int scrollDir = 0;
   window.scrollCallback = [&](double xoffset, double yoffset) {
-    // if (yoffset == 0) {
-    //   yAccum = 0;
-    //   return;
-    // }
-    // else if (yoffset > 0) {
-    //   if (scrollDir == -1) yAccum = 0;
-    //   scrollDir = 1;
-    // } else {
-    //   if (scrollDir == 1) yAccum = 0;
-    //   scrollDir = -1;
-    // }
-
-    // yAccum += std::abs(yoffset);
-
-    // int row = window.cursorPos.y / font.charHeight;
-    // int col = window.cursorPos.x / font.charWidth;
-
-    // int mods = window.mods;
-    // std::string modStr = "";
-    // if (mods & GLFW_MOD_CONTROL) modStr += "C-";
-    // if (mods & GLFW_MOD_ALT) modStr += "M-";
-    // if (mods & GLFW_MOD_SUPER) modStr += "D-";
-    // if (mods & GLFW_MOD_SHIFT) modStr += "S-";
-
-    // double scrollSpeed = 1;
-    // double scrollUnit = 1 / scrollSpeed;
-    // yAccum = std::min(yAccum, 100.0);
-    // LOG("scroll: {}", yAccum);
-    // while(yAccum >= scrollUnit) {
-    //   nvim.InputMouse("wheel", yoffset > 0 ? "up" : "down", modStr, 0, row, col);
-    //   yAccum -= scrollUnit;
-    // }
+    input.HandleScroll(xoffset, yoffset);
   };
 
   // resizing -------------------------------------
