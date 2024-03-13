@@ -23,15 +23,30 @@ void ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
           // LOG("set_icon");
         },
         [&](ModeInfoSet& e) {
-          // LOG("mode_info_set");
           for (auto& elem : e.modeInfo) {
+            auto& modeInfo = editorState.cursorModes.emplace_back();
             for (auto& [key, value] : elem) {
-              if (value.is_string()) {
-                // LOG("mode_info: {} {}", key, value.as_string());
-              } else if (value.is_uint64_t()) {
-                // LOG("mode_info: {} {}", key, value.as_uint64_t());
-              } else {
-                assert(false);
+              if (key == "cursor_shape") {
+                auto shape = value.as_string();
+                if (shape == "block") {
+                  modeInfo.cursorShape = CursorShape::Block;
+                } else if (shape == "horizontal") {
+                  modeInfo.cursorShape = CursorShape::Horizontal;
+                } else if (shape == "vertical") {
+                  modeInfo.cursorShape = CursorShape::Vertical;
+                } else {
+                  assert(false);
+                }
+              } else if (key == "cell_percentage") {
+                modeInfo.cellPercentage = value.as_uint64_t();
+              } else if (key == "blinkwait") {
+                modeInfo.blinkwait = value.as_uint64_t();
+              } else if (key == "blinkon") {
+                modeInfo.blinkon = value.as_uint64_t();
+              } else if (key == "blinkoff") {
+                modeInfo.blinkoff = value.as_uint64_t();
+              } else if (key == "attr_id") {
+                modeInfo.attrId = value.as_uint64_t();
               }
             }
           }
@@ -43,7 +58,7 @@ void ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
           // LOG("chdir");
         },
         [&](ModeChange& e) {
-          // LOG("mode_change");
+          editorState.modeIdx = e.modeIdx;
         },
         [&](MouseOn&) {
           // LOG("mouse_on");

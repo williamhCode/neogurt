@@ -7,11 +7,15 @@
 struct InputHandler {
   Nvim& nvim;
 
-  int mods = 0;
-  std::optional<int> mouseButton;
+  // shared
   glm::vec2 cursorPos;
   glm::vec2 charSize;
+  int mods = 0;
 
+  // mouse button
+  std::optional<int> mouseButton;
+
+  // scroll related
   double yAccum = 0;
   double xAccum = 0;
   int scrollDir = 0;

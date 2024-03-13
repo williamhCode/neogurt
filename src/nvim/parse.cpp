@@ -24,6 +24,7 @@ using UiEventFunc = void (*)(const msgpack::object& args, RedrawState& state);
 static std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
   // Global Events ----------------------------------------------------------
   {"set_title", [](const msgpack::object& args, RedrawState& state) {
+    LOG("set_title: {}", ToString(args));
     state.currEvents().push_back(args.as<SetTitle>());
   }},
 

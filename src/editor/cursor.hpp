@@ -1,5 +1,21 @@
 #pragma once
 #include "glm/ext/vector_float2.hpp"
+#include <optional>
+
+enum class CursorShape {
+  Block,
+  Horizontal,
+  Vertical,
+};
+
+struct CursorMode {
+  std::optional<CursorShape> cursorShape;
+  std::optional<int> cellPercentage;
+  std::optional<int> blinkwait;
+  std::optional<int> blinkon;
+  std::optional<int> blinkoff;
+  std::optional<int> attrId;
+};
 
 struct Cursor {
   glm::vec2 pos = {0, 0};
