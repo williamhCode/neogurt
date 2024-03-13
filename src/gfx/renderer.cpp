@@ -232,7 +232,7 @@ void Renderer::RenderCursor(const Cursor& cursor, const HlTable& hlTable) {
 
   for (size_t i = 0; i < 4; i++) {
     auto& vertex = cursorData.quads[cursorData.quadCount][i];
-    vertex.position = cursor.pos + cursor.positions[i];
+    vertex.position = cursor.pos + cursor.corners[i];
     vertex.foreground = foreground;
     vertex.background = background;
   }

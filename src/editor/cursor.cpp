@@ -4,7 +4,7 @@
 #include "utils/logger.hpp"
 
 void Cursor::SetDestPos(glm::vec2 _destPos) {
-  if (destPos == _destPos) return;
+  if (_destPos == destPos) return;
 
   destPos = _destPos;
   startPos = pos;
@@ -21,38 +21,33 @@ void Cursor::SetMode(ModeInfo* _modeInfo) {
   // LOG("SetMode: {}", modeInfo->ToString());
 
   float ratio = modeInfo->cellPercentage / 100.0;
-  float width;
-  float height;
-  glm::vec2 offset;
+  glm::vec2 size = fullSize;
+  glm::vec2 offset(0);
   switch (modeInfo->cursorShape) {
     case CursorShape::Block:
-      width = size.x;
-      height = size.y;
-      offset = glm::vec2(0, 0);
       break;
     case CursorShape::Horizontal:
-      width = size.x;
-      height = size.y * ratio;
-      offset = glm::vec2(0, size.y * (1 - ratio));
+      size.y *= ratio;
+      offset.y = fullSize.y * (1 - ratio);
       break;
     case CursorShape::Vertical:
-      width = size.x * ratio;
-      height = size.y;
-      offset = glm::vec2(0, 0);
+      size.x *= ratio;
       break;
     case CursorShape::None:
       assert(false);
       break;
   }
-  positions = {
+  destCorners = {
     glm::vec2(0, 0),
-    glm::vec2(width, 0),
-    glm::vec2(width, height),
-    glm::vec2(0, height),
+    glm::vec2(size.x, 0),
+    glm::vec2(size.x, size.y),
+    glm::vec2(0, size.y),
   };
-  for (auto& pos : positions) {
-    pos += offset;
+  for (auto& corner : destCorners) {
+    corner += offset;
   }
+  startCorners = corners;
+  cornerElasped = 0.0;
 
   if (blink) {
     blinkState = BlinkState::Wait;
@@ -71,7 +66,23 @@ void Cursor::Update(float dt) {
     } else {
       // use smoothstep
       float t = jumpElasped / jumpTime;
-      pos = glm::mix(startPos, destPos, glm::pow(t, 1 / 2.8));
+      float x = glm::pow(t, 1 / 2.8);
+      pos = glm::mix(startPos, destPos, x);
+    }
+  }
+
+  // Shape transition
+  if (corners != destCorners) {
+    cornerElasped += dt;
+    if (cornerElasped >= cornerTime) {
+      corners = destCorners;
+      cornerElasped = 0.0;
+    } else {
+      float t = cornerElasped / cornerTime;
+      for (size_t i = 0; i < 4; i++) {
+        float x = glm::pow(t, 1 / 2.8);
+        corners[i] = glm::mix(startCorners[i], destCorners[i], x);
+      }
     }
   }
 

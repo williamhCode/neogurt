@@ -41,7 +41,7 @@ int main() {
   nvim.UiAttach(width, height);
 
   EditorState editorState{};
-  editorState.cursor.size = {font.charWidth, font.charHeight};
+  editorState.cursor.fullSize = {font.charWidth, font.charHeight};
 
   std::mutex resizeMutex;
 

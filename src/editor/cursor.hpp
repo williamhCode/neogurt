@@ -33,19 +33,25 @@ struct ModeInfo {
 enum class BlinkState { Wait, On, Off };
 
 struct Cursor {
-  glm::vec2 size;
-  std::array<glm::vec2, 4> positions;
-
-  ModeInfo* modeInfo = nullptr;
-  bool blink = false;
-  float blinkElasped;
-  BlinkState blinkState;
-
   glm::vec2 startPos;
   glm::vec2 destPos;
   glm::vec2 pos;
   float jumpTime = 0.06;
   float jumpElasped;
+
+  ModeInfo* modeInfo = nullptr;
+
+  glm::vec2 fullSize;
+  using Corners = std::array<glm::vec2, 4>;
+  Corners startCorners;
+  Corners destCorners;
+  Corners corners;
+  float cornerTime = 0.06;
+  float cornerElasped;
+
+  bool blink = false;
+  float blinkElasped;
+  BlinkState blinkState;
 
   void SetDestPos(glm::vec2 destPos);
   void SetMode(ModeInfo* modeInfo);
