@@ -101,6 +101,15 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
   }));
 
   // cursor pipeline ------------------------------------------------
+  utils::VertexBufferLayout cursorQuadVBL{
+    sizeof(CursorQuadVertex),
+    {
+      {VertexFormat::Float32x2, offsetof(CursorQuadVertex, position), 0},
+      {VertexFormat::Float32x4, offsetof(CursorQuadVertex, foreground), 1},
+      {VertexFormat::Float32x4, offsetof(CursorQuadVertex, background), 2},
+    }
+  };
+
   ShaderModule cursorShader =
     utils::LoadShaderModule(ctx.device, ROOT_DIR "/src/shaders/cursor.wgsl");
 
@@ -123,7 +132,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
       .module = cursorShader,
       .entryPoint = "vs_main",
       .bufferCount = 1,
-      .buffers = &rectQuadVBL,
+      .buffers = &cursorQuadVBL,
     },
     .fragment = ToPtr(FragmentState{
       .module = cursorShader,

@@ -40,6 +40,7 @@ int main() {
   nvim.UiAttach(width, height);
 
   EditorState editorState{};
+  editorState.cursor.size = {font.charWidth, font.charHeight};
 
   std::mutex resizeMutex;
 
@@ -131,9 +132,9 @@ int main() {
         for (auto& [id, grid] : editorState.gridManager.grids) {
           // LOG("render grid: {}", id);
           renderer.RenderGrid(grid, font, editorState.hlTable);
-          renderer.RenderCursor(
-            editorState.cursor.pos, {font.charWidth, font.charHeight}
-          );
+          if (editorState.cursor.blinkState != BlinkState::Off) {
+            renderer.RenderCursor(editorState.cursor, editorState.hlTable);
+          }
         }
         renderer.End();
         renderer.Present();

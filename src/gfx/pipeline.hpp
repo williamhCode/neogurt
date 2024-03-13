@@ -17,6 +17,12 @@ struct RectQuadVertex {
   glm::vec4 color;
 };
 
+struct CursorQuadVertex {
+  glm::vec2 position;
+  glm::vec4 foreground;
+  glm::vec4 background;
+};
+
 struct Pipeline {
   wgpu::BindGroupLayout viewProjBGL;
 

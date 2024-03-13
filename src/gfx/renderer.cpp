@@ -4,6 +4,7 @@
 #include "glm/ext/matrix_clip_space.hpp"
 #include "glm/ext/matrix_float4x4.hpp"
 #include "utils/unicode.hpp"
+#include <utility>
 
 using namespace wgpu;
 
@@ -120,7 +121,7 @@ void Renderer::RenderGrid(const Grid& grid, Font& font, const HlTable& hlTable) 
           glm::vec2(0, font.charHeight),
         };
 
-        auto background = hl.background.value();
+        auto background = *hl.background;
         for (size_t i = 0; i < 4; i++) {
           auto& vertex = rectData.quads[rectData.quadCount][i];
           vertex.position = textOffset + rectPositions[i];
@@ -215,21 +216,32 @@ void Renderer::RenderGrid(const Grid& grid, Font& font, const HlTable& hlTable) 
   font.UpdateTexture();
 }
 
-void Renderer::RenderCursor(glm::vec2 pos, glm::vec2 size) {
+void Renderer::RenderCursor(const Cursor& cursor, const HlTable& hlTable) {
+  if (cursor.modeInfo == nullptr) return;
+
   cursorData.ResetCounts();
   cursorData.ResizeBuffers(1);
 
   std::array<glm::vec2, 4> positions{
     glm::vec2(0, 0),
-    glm::vec2(size.x, 0),
-    glm::vec2(size.x, size.y),
-    glm::vec2(0, size.y),
+    glm::vec2(cursor.size.x, 0),
+    glm::vec2(cursor.size.x, cursor.size.y),
+    glm::vec2(0, cursor.size.y),
   };
+
+  auto attrId = cursor.modeInfo->attrId.value();
+  auto& hl = hlTable.at(attrId);
+  auto foreground = GetForeground(hlTable, hl);
+  auto background = GetBackground(hlTable, hl);
+  if (attrId == 0) {
+    std::swap(foreground, background);
+  }
 
   for (size_t i = 0; i < 4; i++) {
     auto& vertex = cursorData.quads[cursorData.quadCount][i];
-    vertex.position = pos + positions[i];
-    vertex.color = {1.0, 1.0, 1.0, 1.0};
+    vertex.position = cursor.pos + positions[i];
+    vertex.foreground = foreground;
+    vertex.background = background;
   }
 
   cursorData.SetIndices();

@@ -32,6 +32,10 @@ inline glm::vec4 GetForeground(const HlTable& table, const Highlight& hl) {
   return hl.foreground.value_or(table.at(0).foreground.value());
 }
 
+inline glm::vec4 GetBackground(const HlTable& table, const Highlight& hl) {
+  return hl.background.value_or(table.at(0).background.value());
+}
+
 inline glm::vec4 GetSpecial(const HlTable& table, const Highlight& hl) {
   return hl.special.value_or(table.at(0).special.value());
 }

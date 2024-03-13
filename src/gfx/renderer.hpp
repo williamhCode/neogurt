@@ -1,5 +1,6 @@
 #pragma once
 
+#include "editor/cursor.hpp"
 #include "editor/grid.hpp"
 #include "editor/highlight.hpp"
 #include "gfx/font.hpp"
@@ -79,7 +80,7 @@ struct Renderer {
   wgpu::utils::RenderPassDescriptor rectRenderPassDesc;
 
   // cursor
-  QuadRenderData<RectQuadVertex> cursorData;
+  QuadRenderData<CursorQuadVertex> cursorData;
   wgpu::BindGroup maskBG;
   wgpu::utils::RenderPassDescriptor cursorRenderPassDesc;
 
@@ -90,7 +91,7 @@ struct Renderer {
 
   void Begin();
   void RenderGrid(const Grid& grid, Font& font, const HlTable& hlTable);
-  void RenderCursor(glm::vec2 pos, glm::vec2 size);
+  void RenderCursor(const Cursor& cursor, const HlTable& hlTable);
   void End();
   void Present();
 };

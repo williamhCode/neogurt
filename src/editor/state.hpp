@@ -9,8 +9,8 @@ struct EditorState {
   GridManager gridManager;
   HlTable hlTable;
   Cursor cursor;
-  std::vector<CursorMode> cursorModes;
-  int modeIdx = 0;
+  std::vector<ModeInfo> modeInfoList;
+  int modeIdx;
 };
 
 inline EditorState editorState;

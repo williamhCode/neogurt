@@ -1,11 +1,13 @@
 struct VertexInput {
   @location(0) position: vec2f,
-  @location(1) color: vec4f,
+  @location(1) foreground: vec4f,
+  @location(2) background: vec4f,
 }
 
 struct VertexOutput {
   @builtin(position) position: vec4f,
-  @location(0) color: vec4f,
+  @location(0) foreground: vec4f,
+  @location(1) background: vec4f,
 }
 
 @group(0) @binding(0) var<uniform> viewProj: mat4x4f;
@@ -14,7 +16,8 @@ struct VertexOutput {
 fn vs_main(in: VertexInput) -> VertexOutput {
   let out = VertexOutput(
     viewProj * vec4f(in.position, 0.0, 1.0),
-    in.color,
+    in.foreground,
+    in.background,
   );
 
   return out;
@@ -22,7 +25,8 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 
 struct FragmentInput {
   @builtin(position) position: vec4f,
-  @location(0) color: vec4f,
+  @location(0) foreground: vec4f,
+  @location(1) background: vec4f,
 }
 
 @group(1) @binding(0) var maskTexture: texture_2d<f32>;
@@ -31,9 +35,9 @@ struct FragmentInput {
 fn fs_main(in: FragmentInput) -> @location(0) vec4f {
   let mask = textureLoad(maskTexture, vec2u(in.position.xy), 0).r;
 
-  var color = in.color;
+  var color = in.background;
   color.a = 1.0 - mask;
-  color = Blend(color, vec4f(0, 0, 0, 1));
+  color = Blend(color, in.foreground);
 
   return color;
 }

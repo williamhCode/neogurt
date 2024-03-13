@@ -24,7 +24,7 @@ void ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
         },
         [&](ModeInfoSet& e) {
           for (auto& elem : e.modeInfo) {
-            auto& modeInfo = editorState.cursorModes.emplace_back();
+            auto& modeInfo = editorState.modeInfoList.emplace_back();
             for (auto& [key, value] : elem) {
               if (key == "cursor_shape") {
                 auto shape = value.as_string();
@@ -59,6 +59,7 @@ void ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
         },
         [&](ModeChange& e) {
           editorState.modeIdx = e.modeIdx;
+          editorState.cursor.SetMode(&editorState.modeInfoList[e.modeIdx]);
         },
         [&](MouseOn&) {
           // LOG("mouse_on");
