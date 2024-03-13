@@ -143,16 +143,13 @@ const Font::GlyphInfo& Font::GetGlyphInfoOrAdd(FT_ULong charcode) {
 void Font::UpdateTexture() {
   if (!dirty) return;
 
-  texture = TextureHandle{
-    .t = utils::CreateTexture(
+  textureView =
+    utils::CreateTexture(
       ctx.device,
       {static_cast<uint32_t>(bufferSize.x), static_cast<uint32_t>(bufferSize.y)},
       wgpu::TextureFormat::RGBA8Unorm, textureData.data()
-    ),
-    .width = static_cast<int>(textureSize.x),
-    .height = static_cast<int>(textureSize.y),
-  };
-  texture.CreateView();
+    )
+      .CreateView();
 
   Sampler sampler = ctx.device.CreateSampler( //
     ToPtr(SamplerDescriptor{
@@ -166,7 +163,7 @@ void Font::UpdateTexture() {
   fontTextureBG = utils::MakeBindGroup(
     ctx.device, ctx.pipeline.fontTextureBGL,
     {
-      {0, texture.view},
+      {0, textureView},
       {1, sampler},
     }
   );

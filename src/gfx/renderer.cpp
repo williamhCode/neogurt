@@ -101,7 +101,7 @@ void Renderer::RenderGrid(const Grid& grid, Font& font, const HlTable& hlTable) 
   rectData.ResetCounts();
   rectData.ResizeBuffers(grid.width * grid.height);
 
-  glm::vec2 textureSize(font.texture.width, font.texture.height);
+  glm::vec2 textureSize(font.textureSize);
   glm::vec2 textOffset(0, 0);
 
   for (size_t i = 0; i < grid.lines.Size(); i++) {

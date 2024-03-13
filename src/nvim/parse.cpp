@@ -33,7 +33,6 @@ static std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
   }},
 
   {"mode_info_set", [](const msgpack::object& args, RedrawState& state) {
-    // LOG("mode_info_set: {}", ToString(args));
     state.currEvents().push_back(args.as<ModeInfoSet>());
   }},
 

@@ -1,22 +1,20 @@
 #include "app/options.hpp"
 #include "app/window.hpp"
+#include "app/input.hpp"
 #include "editor/grid.hpp"
 #include "editor/state.hpp"
 #include "gfx/font.hpp"
 #include "gfx/instance.hpp"
 #include "gfx/renderer.hpp"
-#include "app/input.hpp"
 #include "nvim/msgpack_rpc/client.hpp"
 #include "nvim/nvim.hpp"
 #include "utils/clock.hpp"
 #include "utils/logger.hpp"
 #include "utils/timer.hpp"
 
-#include "glm/gtx/string_cast.hpp"
-
+#include <format>
 #include <iostream>
 #include <atomic>
-#include <algorithm>
 
 using namespace wgpu;
 using namespace std::chrono_literals;
@@ -90,12 +88,12 @@ int main() {
     Clock clock;
 
     while (!window.ShouldClose()) {
-      auto dt = clock.Tick(60);
+      auto dt = clock.Tick();
       // LOG("dt: {}", dt);
 
       auto fps = clock.GetFps();
-      // std::cout << std::fixed << std::setprecision(2);
-      // std::cout << '\r' << "fps: " << fps << std::flush;
+      auto fpsStr = std::format("fps: {:.2f}", fps);
+      std::cout << '\r' << fpsStr << std::string(10, ' ') << std::flush;
 
       {
         std::scoped_lock lock(resizeMutex);

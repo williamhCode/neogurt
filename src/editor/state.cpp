@@ -119,7 +119,8 @@ void ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
           }
         },
         [&](HlGroupSet& e) {
-          // LOG("hl_group_set: {} {}", e.name, e.id);
+          // not needed to render grids, but used for rendering
+          // own elements with consistent highlighting
         },
         [&](Flush&) {
         },

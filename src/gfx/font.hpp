@@ -14,21 +14,18 @@ struct Font {
   struct Color {
     uint8_t r, g, b, a;
   };
-  std::vector<Color> textureData; // cpu side texture data
-  TextureHandle texture;
+  std::vector<Color> textureData;
+  wgpu::TextureView textureView;
   wgpu::BindGroup fontTextureBG;
   bool dirty = true;
 
-  // dimension
+  // dimensions
   static constexpr int atlasWidth = 16;
   int atlasHeight;
   glm::vec2 textureSize;
   glm::vec2 bufferSize;
-
   float charWidth;
   float charHeight;
-
-  uint32_t defaultGlyphIndex;
 
   struct GlyphInfo {
     // floats because of high dpi
@@ -37,7 +34,6 @@ struct Font {
     float advance;
     glm::vec2 pos;
     static inline std::array<glm::vec2, 4> positions;
-    // std::array<glm::vec2, 4> texCoords;
   };
   using GlyphInfoMap = std::unordered_map<uint32_t, GlyphInfo>;
   GlyphInfoMap glyphInfoMap;
