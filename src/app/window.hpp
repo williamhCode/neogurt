@@ -14,6 +14,7 @@ struct Window {
 
   glm::uvec2 size;
   glm::uvec2 fbSize;
+  float dpiRatio;
 
   std::function<void(int, int, int, int)> keyCallback = nullptr;
   std::function<void(unsigned int)> charCallback = nullptr;
@@ -22,6 +23,7 @@ struct Window {
   std::function<void(double, double)> scrollCallback = nullptr;
   std::function<void(int, int)> windowSizeCallback = nullptr;
   std::function<void(int, int)> framebufferSizeCallback = nullptr;
+  std::function<void(float, float)> windowContentScaleCallback = nullptr;
 
   Window() = default;
   Window(glm::uvec2 size, const std::string& title, wgpu::PresentMode presentMode);

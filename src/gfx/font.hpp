@@ -42,4 +42,5 @@ struct Font {
   Font(const std::string& path, int size, float ratio);
   const GlyphInfo& GetGlyphInfoOrAdd(FT_ULong charcode);
   void UpdateTexture();
+  void DpiChanged(float ratio);
 };

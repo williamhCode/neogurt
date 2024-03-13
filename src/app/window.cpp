@@ -41,6 +41,12 @@ void FramebufferSizeCallback(GLFWwindow* window, int width, int height) {
   if (win.framebufferSizeCallback) win.framebufferSizeCallback(width, height);
 }
 
+void WindowContentScaleCallback(GLFWwindow* window, float xscale, float yscale) {
+  Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
+  win.dpiRatio = xscale;
+  if (win.windowContentScaleCallback) win.windowContentScaleCallback(xscale, yscale);
+}
+
 Window::Window(glm::uvec2 size, const std::string& title, wgpu::PresentMode presentMode)
     : size(size) {
   if (!glfwInit()) {
@@ -64,10 +70,15 @@ Window::Window(glm::uvec2 size, const std::string& title, wgpu::PresentMode pres
   glfwSetScrollCallback(window, ScrollCallback);
   glfwSetWindowSizeCallback(window, WindowSizeCallback);
   glfwSetFramebufferSizeCallback(window, FramebufferSizeCallback);
+  glfwSetWindowContentScaleCallback(window, WindowContentScaleCallback);
 
   int width, height;
   glfwGetFramebufferSize(window, &width, &height);
   fbSize = {width, height};
+
+  float xscale, yscale;
+  glfwGetWindowContentScale(window, &xscale, &yscale);
+  dpiRatio = xscale;
 
   // webgpu ------------------------------------
   _ctx = WGPUContext(window, fbSize, presentMode);

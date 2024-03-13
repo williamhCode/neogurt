@@ -12,6 +12,7 @@
 #include "utils/logger.hpp"
 #include "utils/timer.hpp"
 
+#include <chrono>
 #include <format>
 #include <iostream>
 #include <atomic>
@@ -27,21 +28,21 @@ int main() {
   // Window window({1400, 800}, "Neovim GUI", PresentMode::Immediate);
   Window window({1600, 1000}, "Neovim GUI", PresentMode::Immediate);
   Renderer renderer(window.size, window.fbSize);
-  Font font("/Library/Fonts/SF-Mono-Medium.otf", 15, 2);
+  Font font("/Library/Fonts/SF-Mono-Medium.otf", 15, window.dpiRatio);
   // Font font("/Users/williamhou/Library/Fonts/Hack Regular Nerd Font Complete
   // Mono.ttf", 15, 2); Font font(ROOT_DIR
   // "/res/NerdFontsSymbolsOnly/SymbolsNerdFontMono-Regular.ttf", 15, 2);
 
-  int width = window.size.x / font.charWidth;
-  int height = window.size.y / font.charHeight;
+  int gridWidth = window.size.x / font.charWidth;
+  int gridHeight = window.size.y / font.charHeight;
 
   Nvim nvim(false);
-  nvim.UiAttach(width, height);
+  nvim.UiAttach(gridWidth, gridHeight);
 
   EditorState editorState{};
   editorState.cursor.fullSize = {font.charWidth, font.charHeight};
 
-  std::mutex resizeMutex;
+  std::mutex ctxDeviceMutex;
 
   // input -----------------------------------------------------------
   InputHandler input(nvim, window.GetCursorPos(), {font.charWidth, font.charHeight});
@@ -68,17 +69,22 @@ int main() {
 
   // resizing -------------------------------------
   window.framebufferSizeCallback = [&](int width, int height) {
-    std::scoped_lock lock(resizeMutex);
+    std::scoped_lock lock(ctxDeviceMutex);
 
-    glm::uvec2 fbSize(width, height);
-    window._ctx.Resize(fbSize);
-    renderer.FbResize(fbSize);
+    window._ctx.Resize(window.fbSize);
+    renderer.FbResize(window.fbSize);
 
-    glm::uvec2 size(fbSize / 2u);
+    glm::vec2 size(window.fbSize / (unsigned int)window.dpiRatio);
     int widthChars = size.x / font.charWidth;
     int heightChars = size.y / font.charHeight;
     nvim.UiTryResize(widthChars, heightChars);
     renderer.Resize(size);
+  };
+
+  window.windowContentScaleCallback = [&](float xscale, float yscale) {
+    std::scoped_lock lock(ctxDeviceMutex);
+
+    font = Font("/Library/Fonts/SF-Mono-Medium.otf", 15, window.dpiRatio);
   };
 
   // main loop -------------------------------------
@@ -88,15 +94,15 @@ int main() {
     Clock clock;
 
     while (!window.ShouldClose()) {
-      auto dt = clock.Tick();
+      auto dt = clock.Tick(60);
       // LOG("dt: {}", dt);
 
       auto fps = clock.GetFps();
       auto fpsStr = std::format("fps: {:.2f}", fps);
-      std::cout << '\r' << fpsStr << std::string(10, ' ') << std::flush;
+      // std::cout << '\r' << fpsStr << std::string(10, ' ') << std::flush;
 
       {
-        std::scoped_lock lock(resizeMutex);
+        std::scoped_lock lock(ctxDeviceMutex);
         ctx.device.Tick();
       }
 
@@ -125,7 +131,7 @@ int main() {
       }
 
       {
-        std::scoped_lock lock(resizeMutex);
+        std::scoped_lock lock(ctxDeviceMutex);
         renderer.Begin();
         // LOG("----------------------");
         for (auto& [id, grid] : editorState.gridManager.grids) {
