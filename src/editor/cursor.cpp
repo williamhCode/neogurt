@@ -18,6 +18,41 @@ void Cursor::SetDestPos(glm::vec2 _destPos) {
 
 void Cursor::SetMode(ModeInfo* _modeInfo) {
   modeInfo = _modeInfo;
+  // LOG("SetMode: {}", modeInfo->ToString());
+
+  float ratio = modeInfo->cellPercentage / 100.0;
+  float width;
+  float height;
+  glm::vec2 offset;
+  switch (modeInfo->cursorShape) {
+    case CursorShape::Block:
+      width = size.x;
+      height = size.y;
+      offset = glm::vec2(0, 0);
+      break;
+    case CursorShape::Horizontal:
+      width = size.x;
+      height = size.y * ratio;
+      offset = glm::vec2(0, size.y * (1 - ratio));
+      break;
+    case CursorShape::Vertical:
+      width = size.x * ratio;
+      height = size.y;
+      offset = glm::vec2(0, 0);
+      break;
+    case CursorShape::None:
+      assert(false);
+      break;
+  }
+  positions = {
+    glm::vec2(0, 0),
+    glm::vec2(width, 0),
+    glm::vec2(width, height),
+    glm::vec2(0, height),
+  };
+  for (auto& pos : positions) {
+    pos += offset;
+  }
 
   if (blink) {
     blinkState = BlinkState::Wait;

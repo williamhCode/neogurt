@@ -222,14 +222,7 @@ void Renderer::RenderCursor(const Cursor& cursor, const HlTable& hlTable) {
   cursorData.ResetCounts();
   cursorData.ResizeBuffers(1);
 
-  std::array<glm::vec2, 4> positions{
-    glm::vec2(0, 0),
-    glm::vec2(cursor.size.x, 0),
-    glm::vec2(cursor.size.x, cursor.size.y),
-    glm::vec2(0, cursor.size.y),
-  };
-
-  auto attrId = cursor.modeInfo->attrId.value();
+  auto attrId = cursor.modeInfo->attrId;
   auto& hl = hlTable.at(attrId);
   auto foreground = GetForeground(hlTable, hl);
   auto background = GetBackground(hlTable, hl);
@@ -239,7 +232,7 @@ void Renderer::RenderCursor(const Cursor& cursor, const HlTable& hlTable) {
 
   for (size_t i = 0; i < 4; i++) {
     auto& vertex = cursorData.quads[cursorData.quadCount][i];
-    vertex.position = cursor.pos + positions[i];
+    vertex.position = cursor.pos + cursor.positions[i];
     vertex.foreground = foreground;
     vertex.background = background;
   }

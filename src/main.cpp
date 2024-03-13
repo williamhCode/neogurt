@@ -26,9 +26,10 @@ const WGPUContext& ctx = Window::_ctx;
 AppOptions options;
 
 int main() {
-  Window window({1400, 800}, "Neovim GUI", PresentMode::Immediate);
+  // Window window({1400, 800}, "Neovim GUI", PresentMode::Immediate);
+  Window window({1600, 1000}, "Neovim GUI", PresentMode::Immediate);
   Renderer renderer(window.size, window.fbSize);
-  Font font("/Library/Fonts/SF-Mono-Medium.otf", 13, 2);
+  Font font("/Library/Fonts/SF-Mono-Medium.otf", 15, 2);
   // Font font("/Users/williamhou/Library/Fonts/Hack Regular Nerd Font Complete
   // Mono.ttf", 15, 2); Font font(ROOT_DIR
   // "/res/NerdFontsSymbolsOnly/SymbolsNerdFontMono-Regular.ttf", 15, 2);
