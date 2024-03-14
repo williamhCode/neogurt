@@ -28,7 +28,7 @@ int main() {
   // Window window({1400, 800}, "Neovim GUI", PresentMode::Immediate);
   Window window({1600, 1000}, "Neovim GUI", PresentMode::Immediate);
   Renderer renderer(window.size, window.fbSize);
-  Font font("/Library/Fonts/SF-Mono-Medium.otf", 15, window.dpiRatio);
+  Font font("/Library/Fonts/SF-Mono-Medium.otf", 15, window.dpiScale);
   // Font font("/Users/williamhou/Library/Fonts/Hack Regular Nerd Font Complete
   // Mono.ttf", 15, 2); Font font(ROOT_DIR
   // "/res/NerdFontsSymbolsOnly/SymbolsNerdFontMono-Regular.ttf", 15, 2);
@@ -42,7 +42,8 @@ int main() {
   EditorState editorState{};
   editorState.cursor.fullSize = {font.charWidth, font.charHeight};
 
-  std::mutex ctxDeviceMutex;
+  // lock whenever ctx.device is used
+  std::mutex wgpuDeviceMutex;
 
   // input -----------------------------------------------------------
   InputHandler input(nvim, window.GetCursorPos(), {font.charWidth, font.charHeight});
@@ -69,12 +70,11 @@ int main() {
 
   // resizing -------------------------------------
   window.framebufferSizeCallback = [&](int width, int height) {
-    std::scoped_lock lock(ctxDeviceMutex);
-
+    std::scoped_lock lock(wgpuDeviceMutex);
     window._ctx.Resize(window.fbSize);
     renderer.FbResize(window.fbSize);
 
-    glm::vec2 size(window.fbSize / (unsigned int)window.dpiRatio);
+    glm::vec2 size(window.fbSize / (unsigned int)window.dpiScale);
     int widthChars = size.x / font.charWidth;
     int heightChars = size.y / font.charHeight;
     nvim.UiTryResize(widthChars, heightChars);
@@ -82,18 +82,21 @@ int main() {
   };
 
   window.windowContentScaleCallback = [&](float xscale, float yscale) {
-    std::scoped_lock lock(ctxDeviceMutex);
-
-    font = Font("/Library/Fonts/SF-Mono-Medium.otf", 15, window.dpiRatio);
+    std::scoped_lock lock(wgpuDeviceMutex);
+    font = Font("/Library/Fonts/SF-Mono-Medium.otf", 15, window.dpiScale);
   };
 
-  // main loop -------------------------------------
-  std::atomic_bool running = true;
+  // main thread -----------------------------------
+  std::atomic_bool windowShouldClose = false;
+
+  window.windowCloseCallback = [&] {
+    windowShouldClose = true;
+  };
 
   std::thread renderThread([&] {
     Clock clock;
 
-    while (!window.ShouldClose()) {
+    while (!windowShouldClose) {
       auto dt = clock.Tick(60);
       // LOG("dt: {}", dt);
 
@@ -102,12 +105,15 @@ int main() {
       // std::cout << '\r' << fpsStr << std::string(10, ' ') << std::flush;
 
       {
-        std::scoped_lock lock(ctxDeviceMutex);
+        std::scoped_lock lock(wgpuDeviceMutex);
         ctx.device.Tick();
       }
 
       // nvim events -------------------------------------------
-      if (!nvim.client.IsConnected()) window.SetShouldClose(true);
+      if (!nvim.client.IsConnected()) {
+        windowShouldClose = true;
+        glfwPostEmptyEvent();
+      };
 
       nvim.ParseEvents();
 
@@ -131,7 +137,7 @@ int main() {
       }
 
       {
-        std::scoped_lock lock(ctxDeviceMutex);
+        std::scoped_lock lock(wgpuDeviceMutex);
         renderer.Begin();
         // LOG("----------------------");
         for (auto& [id, grid] : editorState.gridManager.grids) {
@@ -146,11 +152,9 @@ int main() {
       }
     }
 
-    running = false;
-    glfwPostEmptyEvent();
   });
 
-  while (running) {
+  while (!windowShouldClose) {
     window.WaitEvents();
     std::this_thread::sleep_for(1ms);
   }

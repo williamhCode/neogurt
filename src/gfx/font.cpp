@@ -1,5 +1,4 @@
 #include "font.hpp"
-#include "utils/logger.hpp"
 #include "webgpu_utils/webgpu.hpp"
 #include "gfx/instance.hpp"
 
@@ -12,8 +11,8 @@ bool ftInitialized = false;
 
 FT_Face nerdFace;
 
-Font::Font(const std::string& path, int _size, float _ratio)
-    : size(_size), ratio(_ratio) {
+Font::Font(const std::string& path, int _size, float _dpiScale)
+    : size(_size), dpiScale(_dpiScale) {
   if (!ftInitialized) {
     if (FT_Init_FreeType(&library)) {
       throw std::runtime_error("Failed to initialize FreeType library");
@@ -41,10 +40,10 @@ Font::Font(const std::string& path, int _size, float _ratio)
     glm::vec2(0, size),
   };
 
-  FT_Set_Pixel_Sizes(face, 0, size * ratio);
+  FT_Set_Pixel_Sizes(face, 0, size * dpiScale);
 
-  charWidth = (face->size->metrics.max_advance >> 6) / ratio;
-  charHeight = (face->size->metrics.height >> 6) / ratio;
+  charWidth = (face->size->metrics.max_advance >> 6) / dpiScale;
+  charHeight = (face->size->metrics.height >> 6) / dpiScale;
 
   uint32_t numChars = 128;
 
@@ -83,17 +82,16 @@ const Font::GlyphInfo& Font::GetGlyphInfoOrAdd(FT_ULong charcode) {
     currFace = nerdFace;
     currMap = &nerdGlyphInfoMap;
 
-    FT_Set_Pixel_Sizes(nerdFace, 0, size * ratio);
+    FT_Set_Pixel_Sizes(nerdFace, 0, size * dpiScale);
   }
 
-  // LOG("adding new glyph: {}", glyphIndex);
   dirty = true;
 
   auto numGlyphs = glyphInfoMap.size() + nerdGlyphInfoMap.size() + 1;
   atlasHeight = (numGlyphs + atlasWidth - 1) / atlasWidth;
 
   textureSize = {(size + 2) * atlasWidth, (size + 2) * atlasHeight};
-  bufferSize = textureSize * ratio;
+  bufferSize = textureSize * dpiScale;
 
   textureData.resize(bufferSize.x * bufferSize.y, {0, 0, 0, 0});
 
@@ -107,7 +105,7 @@ const Font::GlyphInfo& Font::GetGlyphInfoOrAdd(FT_ULong charcode) {
     (index % atlasWidth) * (size + 2) + 1,
     (index / atlasWidth) * (size + 2) + 1,
   };
-  auto truePos = pos * ratio;
+  auto truePos = pos * dpiScale;
 
   for (size_t yy = 0; yy < bitmap.rows; yy++) {
     for (size_t xx = 0; xx < bitmap.width; xx++) {
@@ -124,15 +122,15 @@ const Font::GlyphInfo& Font::GetGlyphInfoOrAdd(FT_ULong charcode) {
     GlyphInfo{
       .size =
         {
-          bitmap.width / ratio,
-          bitmap.rows / ratio,
+          bitmap.width / dpiScale,
+          bitmap.rows / dpiScale,
         },
       .bearing =
         {
-          glyph.bitmap_left / ratio,
-          glyph.bitmap_top / ratio,
+          glyph.bitmap_left / dpiScale,
+          glyph.bitmap_top / dpiScale,
         },
-      .advance = (glyph.advance.x >> 6) / ratio,
+      .advance = (glyph.advance.x >> 6) / dpiScale,
       .pos = pos,
     }
   );

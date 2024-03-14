@@ -2,13 +2,14 @@
 
 #include "freetype/freetype.h"
 #include "glm/ext/vector_float2.hpp"
-#include "gfx/texture.hpp"
+#include "webgpu/webgpu_cpp.h"
+#include <vector>
 
 struct Font {
   FT_Face face;
 
-  int size;    // font size
-  float ratio; // high dpi
+  int size; // font size
+  float dpiScale;
 
   // texture related
   struct Color {
@@ -38,8 +39,8 @@ struct Font {
   using GlyphInfoMap = std::unordered_map<uint32_t, GlyphInfo>;
   GlyphInfoMap glyphInfoMap;
   GlyphInfoMap nerdGlyphInfoMap;
-    
-  Font(const std::string& path, int size, float ratio);
+
+  Font(const std::string& path, int size, float dpiScale);
   const GlyphInfo& GetGlyphInfoOrAdd(FT_ULong charcode);
   void UpdateTexture();
   void DpiChanged(float ratio);

@@ -1,10 +1,8 @@
 #pragma once
 
-#include "GLFW/glfw3.h"
 #include "asio.hpp"
 #include "utils/logger.hpp"
 #include "msgpack.hpp"
-// #include "GLFW/glfw3.h"
 
 #include "tsqueue.hpp"
 #include "messages.hpp"
@@ -67,7 +65,6 @@ public:
 
   void Disconnect() {
     exit = true;
-    glfwPostEmptyEvent();
   }
 
   bool IsConnected() {
@@ -146,8 +143,6 @@ private:
       asio::buffer(unpacker.buffer(), readSize),
       [&](asio::error_code ec, std::size_t length) {
         if (!ec) {
-          glfwPostEmptyEvent();
-
           unpacker.buffer_consumed(length);
 
           msgpack::object_handle handle;
