@@ -142,6 +142,22 @@ void ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
         [&](GridDestroy& e) {
           editorState.gridManager.Destroy(e);
         },
+        [&](WinPos& e) {
+        },
+        [&](WinFloatPos& e) {
+        },
+        [&](WinExternalPos& e) {
+        },
+        [&](WinHide& e) {
+        },
+        [&](WinClose& e) {
+        },
+        [&](MsgSetPos& e) {
+        },
+        [&](WinViewport& e) {
+        },
+        [&](WinExtmark& e) {
+        },
         [&](auto&) {
           LOG("unknown event");
         },

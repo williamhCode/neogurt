@@ -2,12 +2,11 @@
 
 #include "GLFW/glfw3.h"
 #include "glm/ext/vector_uint2.hpp"
-
 #include "gfx/context.hpp"
 
 #include <string>
 
-struct Window {
+struct AppWindow {
   static inline WGPUContext _ctx;
   GLFWwindow* window;
 
@@ -25,9 +24,9 @@ struct Window {
   std::function<void(float, float)> windowContentScaleCallback = nullptr;
   std::function<void()> windowCloseCallback = nullptr;
 
-  Window() = default;
-  Window(glm::uvec2 size, const std::string& title, wgpu::PresentMode presentMode);
-  ~Window();
+  AppWindow() = default;
+  AppWindow(glm::uvec2 size, const std::string& title, wgpu::PresentMode presentMode);
+  ~AppWindow();
 
   void SetShouldClose(bool value);
   bool ShouldClose();

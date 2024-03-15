@@ -100,6 +100,66 @@ struct GridDestroy {
   int grid;
   MSGPACK_DEFINE(grid);
 };
+struct WinPos {
+  int grid;
+  msgpack::type::ext win;
+  int startRow;
+  int startCol;
+  int width;
+  int height;
+  MSGPACK_DEFINE(grid, win, startRow, startCol, width, height);
+};
+struct WinFloatPos {
+  int grid;
+  msgpack::type::ext win;
+  std::string anchor;
+  int anchorGrid;
+  float anchorRow;
+  float anchorCol;
+  bool focusable;
+  int zindex;
+  MSGPACK_DEFINE(grid, win, anchor, anchorGrid, anchorRow, anchorCol, focusable, zindex);
+};
+struct WinExternalPos {
+  int grid;
+  msgpack::type::ext win;
+  MSGPACK_DEFINE(grid, win);
+};
+struct WinHide {
+  int grid;
+  MSGPACK_DEFINE(grid);
+};
+struct WinClose {
+  int grid;
+  MSGPACK_DEFINE(grid);
+};
+struct MsgSetPos {
+  int grid;
+  int row;
+  bool scrolled;
+  std::string sepChar;
+  MSGPACK_DEFINE(grid, row, scrolled, sepChar);
+};
+struct WinViewport {
+  int grid;
+  msgpack::type::ext win;
+  int topline;
+  int botline;
+  int curline;
+  int curcol;
+  int lineCount;
+  int scrollDelta;
+  MSGPACK_DEFINE(grid, win, topline, botline, curline, curcol, lineCount, scrollDelta);
+};
+struct WinExtmark {
+  int grid;
+  msgpack::type::ext win;
+  int nsId;
+  int markId;
+  int row;
+  int col;
+  MSGPACK_DEFINE(grid, win, nsId, markId, row, col);
+};
 
 // clang-format off
 using RedrawEvent = std::variant<
@@ -123,7 +183,15 @@ using RedrawEvent = std::variant<
   GridCursorGoto,
   GridLine,
   GridScroll,
-  GridDestroy
+  GridDestroy,
+  WinPos,
+  WinFloatPos,
+  WinExternalPos,
+  WinHide,
+  WinClose,
+  MsgSetPos,
+  WinViewport,
+  WinExtmark
 >;
 // clang-format on
 

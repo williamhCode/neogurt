@@ -9,7 +9,7 @@
 static void ParseRedraw(const msgpack::object& params, RedrawState& state);
 
 void ParseRedrawEvents(rpc::Client& client, RedrawState& state) {
-  LOG_DISABLE();
+  // LOG_DISABLE();
   state.numFlushes = 0;
   while (client.HasNotification()) {
     auto notification = client.PopNotification();
@@ -24,7 +24,7 @@ using UiEventFunc = void (*)(const msgpack::object& args, RedrawState& state);
 static std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
   // Global Events ----------------------------------------------------------
   {"set_title", [](const msgpack::object& args, RedrawState& state) {
-    LOG("set_title: {}", ToString(args));
+    // LOG("set_title: {}", ToString(args));
     state.currEvents().push_back(args.as<SetTitle>());
   }},
 
@@ -144,49 +144,35 @@ static std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
 
   // Multigrid Events ------------------------------------------------------------
   {"win_pos", [](const msgpack::object& args, RedrawState& state) {
-    auto [grid, win, start_row, start_col, width, height] =
-      args.as<std::tuple<int, msgpack::object, int, int, int, int>>();  
-    LOG("win_pos: {} {} {} {} {} {}", grid, ToString(win), start_row, start_col, width, height);
+    state.currEvents().push_back(args.as<WinPos>());
   }},
 
   {"win_float_pos", [](const msgpack::object& args, RedrawState& state) {
-    LOG("win_float_pos: {}", ToString(args));
-    // auto [grid, win, anchor, anchor_grid, anchor_row, anchor_col, focusable]
-    //   = args.as<std::tuple<int, msgpack::object, std::string, int, float, float, bool>>();
-    // LOG("win_float_pos: {} {} {} {} {} {} {}", grid, ToString(win), anchor, anchor_grid, anchor_row, anchor_col, focusable);
+    state.currEvents().push_back(args.as<WinFloatPos>());
   }},
 
   {"win_external_pos", [](const msgpack::object& args, RedrawState& state) {
-    auto [grid, pos] = args.as<std::tuple<int, msgpack::object>>();
-    LOG("win_external_pos: {} {}", grid, ToString(pos));
+    state.currEvents().push_back(args.as<WinExternalPos>());
   }},
 
   {"win_hide", [](const msgpack::object& args, RedrawState& state) {
-    auto [grid] = args.as<std::tuple<int>>();
-    LOG("win_hide: {}", grid);
+    state.currEvents().push_back(args.as<WinHide>());
   }},
 
   {"win_close", [](const msgpack::object& args, RedrawState& state) {
-    auto [grid] = args.as<std::tuple<int>>();
-    LOG("win_close: {}", grid);
+    state.currEvents().push_back(args.as<WinClose>());
   }},
 
   {"msg_set_pos", [](const msgpack::object& args, RedrawState& state) {
-    auto [grid, row, scrolled, sep_char] = args.as<std::tuple<int, int, bool, std::string>>();
-    LOG("msg_set_pos: {} {} {} {}", grid, row, scrolled, sep_char);
+    state.currEvents().push_back(args.as<MsgSetPos>());
   }},
 
   {"win_viewport", [](const msgpack::object& args, RedrawState& state) {
-    LOG("win_viewport: {}", ToString(args));
-    // auto [grid, win, topline, botline, curline, curcol, line_count, scroll_delta] =
-    //   args.as<std::tuple<int, msgpack::object, int, int, int, int, int, int>>();
-    // LOG("win_viewport: {} {} {} {} {} {} {} {}", grid, ToString(win), topline, botline, curline, curcol, line_count, scroll_delta);
+    state.currEvents().push_back(args.as<WinViewport>());
   }},
 
   {"win_extmark", [](const msgpack::object& args, RedrawState& state) {
-    auto [grid, win, ns_id, mark_id, row, col]
-      = args.as<std::tuple<int, msgpack::object, int, int, int, int>>();
-    LOG("win_extmark: {} {} {} {} {} {}", grid, ToString(win), ns_id, mark_id, row, col);
+    state.currEvents().push_back(args.as<WinExtmark>());
   }},
 };
 

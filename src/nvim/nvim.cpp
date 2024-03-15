@@ -4,6 +4,8 @@
 Nvim::Nvim(bool debug) {
   // start nvim process
   if (!debug) {
+    // std::string command = "nvim --listen localhost:6666 --headless "
+    //                       "--cmd \"let g:neovim_gui = 1\"";
     std::string command = "nvim --listen localhost:6666 --headless "
                           "--cmd \"let g:neovim_gui = 1\" $HOME/.config/nvim";
     nvimProcess = std::make_unique<TinyProcessLib::Process>(command, "", nullptr);

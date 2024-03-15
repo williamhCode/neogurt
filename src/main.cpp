@@ -1,4 +1,3 @@
-#include "GLFW/glfw3.h"
 #include "app/options.hpp"
 #include "app/window.hpp"
 #include "app/input.hpp"
@@ -13,21 +12,21 @@
 #include "utils/logger.hpp"
 #include "utils/timer.hpp"
 
-#include <chrono>
-#include <format>
 #include <iostream>
+#include <format>
 #include <atomic>
+#include <chrono>
 
 using namespace wgpu;
 using namespace std::chrono_literals;
 using namespace std::chrono;
 
-const WGPUContext& ctx = Window::_ctx;
+const WGPUContext& ctx = AppWindow::_ctx;
 AppOptions options;
 
 int main() {
   // Window window({1400, 800}, "Neovim GUI", PresentMode::Immediate);
-  Window window({1600, 1000}, "Neovim GUI", PresentMode::Immediate);
+  AppWindow window({1600, 1000}, "Neovim GUI", PresentMode::Immediate);
   Renderer renderer(window.size, window.fbSize);
   Font font("/Library/Fonts/SF-Mono-Medium.otf", 15, window.dpiScale);
   // Font font("/Users/williamhou/Library/Fonts/Hack Regular Nerd Font Complete
@@ -42,8 +41,7 @@ int main() {
     gridWidth, gridHeight,
     {
       {"rgb", true},
-      // {"ext_hlstate", true},
-      // {"ext_multigrid", true},
+      {"ext_multigrid", true},
       {"ext_linegrid", true},
     }
   );
