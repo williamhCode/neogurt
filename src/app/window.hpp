@@ -6,7 +6,6 @@
 #include "gfx/context.hpp"
 
 #include <string>
-#include <optional>
 
 struct Window {
   static inline WGPUContext _ctx;

@@ -18,6 +18,6 @@ public:
   size_t bufferSize = 500;
 
   Clock();
-  double Tick(std::optional<int> fps = std::nullopt);
+  double Tick(std::optional<double> fps = std::nullopt);
   double GetFps();
 };

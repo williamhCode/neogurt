@@ -1,12 +1,11 @@
 #include "nvim.hpp"
-#include "msgpack/v3/adaptor/boost/msgpack_variant_decl.hpp"
 #include "parse.hpp"
 
 Nvim::Nvim(bool debug) {
   // start nvim process
   if (!debug) {
-    std::string command = "nvim --listen localhost:6666 --headless $HOME/.config/nvim";
-    // std::string command = "nvim --listen localhost:6666 --headless";
+    std::string command = "nvim --listen localhost:6666 --headless "
+                          "--cmd \"let g:neovim_gui = 1\" $HOME/.config/nvim";
     nvimProcess = std::make_unique<TinyProcessLib::Process>(command, "", nullptr);
   }
 
@@ -43,22 +42,21 @@ Nvim::~Nvim() {
 
 void Nvim::SetClientInfo(
   const std::string& name,
-  const std::map<std::string, msgpack::type::variant>& version,
+  const std::map<std::string, variant>& version,
   const std::string& type,
-  const std::map<std::string, msgpack::type::variant>& methods,
+  const std::map<std::string, variant>& methods,
   const std::map<std::string, std::string>& attributes
 ) {
   client.Send("nvim_set_client_info", name, version, type, methods, attributes);
 }
 
-void Nvim::UiAttach(int width, int height) {
-  std::map<std::string, bool> options{
-    {"rgb", true},
-    // {"ext_hlstate", true},
-    // {"ext_multigrid", true},
-    {"ext_linegrid", true},
-  };
+void Nvim::SetVar(const std::string& name, const variant& value) {
+  client.Send("nvim_set_var", name, value);
+}
 
+void Nvim::UiAttach(
+  int width, int height, const std::map<std::string, variant>& options
+) {
   client.Send("nvim_ui_attach", width, height, options);
 }
 

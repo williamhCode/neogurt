@@ -37,7 +37,15 @@ int main() {
   int gridHeight = window.size.y / font.charHeight;
 
   Nvim nvim(false);
-  nvim.UiAttach(gridWidth, gridHeight);
+  nvim.UiAttach(
+    gridWidth, gridHeight,
+    {
+      {"rgb", true},
+      // {"ext_hlstate", true},
+      // {"ext_multigrid", true},
+      {"ext_linegrid", true},
+    }
+  );
 
   EditorState editorState{};
   editorState.cursor.fullSize = {font.charWidth, font.charHeight};
@@ -68,7 +76,7 @@ int main() {
     input.HandleScroll(xoffset, yoffset);
   };
 
-  // resizing -------------------------------------
+  // resizing and dpi changed -------------------------------------
   window.framebufferSizeCallback = [&](int width, int height) {
     std::scoped_lock lock(wgpuDeviceMutex);
     window._ctx.Resize(window.fbSize);
@@ -151,14 +159,13 @@ int main() {
         renderer.Present();
       }
     }
-
   });
 
   while (!windowShouldClose) {
     window.WaitEvents();
     std::this_thread::sleep_for(1ms);
   }
-  renderThread.join();
 
+  renderThread.join();
   nvim.client.Disconnect();
 }

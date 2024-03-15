@@ -1,10 +1,12 @@
 #pragma once
 
-#include "nvim/msgpack_rpc/client.hpp"
 #include "nvim/parse.hpp"
 #include "process.hpp"
+#include "msgpack/v3/adaptor/boost/msgpack_variant_decl.hpp"
 
 struct Nvim {
+  using variant = msgpack::type::variant;
+
   rpc::Client client;
   std::unique_ptr<TinyProcessLib::Process> nvimProcess;
 
@@ -14,13 +16,12 @@ struct Nvim {
   ~Nvim();
   void SetClientInfo(
     const std::string& name,
-    const std::map<std::string, msgpack::type::variant>& version,
+    const std::map<std::string, variant>& version,
     const std::string& type,
-    const std::map<std::string, msgpack::type::variant>& methods,
+    const std::map<std::string, variant>& methods,
     const std::map<std::string, std::string>& attributes
   );
-  void UiAttach(int width, int height);
-  void UiTryResize(int width, int height);
+  void SetVar(const std::string& name, const variant& value);
   void Input(const std::string& input);
   void InputMouse(
     const std::string& button,
@@ -30,5 +31,7 @@ struct Nvim {
     int row,
     int col
   );
+  void UiAttach(int width, int height, const std::map<std::string, variant>& options);
+  void UiTryResize(int width, int height);
   void ParseEvents();
 };

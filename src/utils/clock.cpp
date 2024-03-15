@@ -11,7 +11,7 @@ Clock::Clock() {
   prevTime = steady_clock::now();
 }
 
-double Clock::Tick(std::optional<int> fps) {
+double Clock::Tick(std::optional<double> fps) {
   if (fps) {
     std::this_thread::sleep_until(nextFrame);
     lastFrame = nextFrame;
