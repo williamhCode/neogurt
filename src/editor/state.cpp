@@ -2,7 +2,7 @@
 #include "glm/ext/vector_float4.hpp"
 #include "utils/variant.hpp"
 
-auto IntToColor(uint32_t color) {
+static auto IntToColor(uint32_t color) {
   return glm::vec4(
     ((color >> 16) & 0xff) / 255.0f,
     ((color >> 8) & 0xff) / 255.0f,

@@ -1,53 +1,52 @@
 #include "window.hpp"
-#include "utils/logger.hpp"
 
 #include <iostream>
 #include <ostream>
 
-void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
   Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
   if (win.keyCallback) win.keyCallback(key, scancode, action, mods);
 }
 
-void CharCallback(GLFWwindow* window, unsigned int codepoint) {
+static void CharCallback(GLFWwindow* window, unsigned int codepoint) {
   Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
   if (win.charCallback) win.charCallback(codepoint);
 }
 
-void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
+static void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
   Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
   if (win.mouseButtonCallback) win.mouseButtonCallback(button, action, mods);
 }
 
-void CursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
+static void CursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
   Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
   if (win.cursorPosCallback) win.cursorPosCallback(xpos, ypos);
 }
 
-void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
+static void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
   Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
   if (win.scrollCallback) win.scrollCallback(xoffset, yoffset);
 }
 
-void WindowSizeCallback(GLFWwindow* window, int width, int height) {
+static void WindowSizeCallback(GLFWwindow* window, int width, int height) {
   Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
   win.size = {width, height};
   if (win.windowSizeCallback) win.windowSizeCallback(width, height);
 }
 
-void FramebufferSizeCallback(GLFWwindow* window, int width, int height) {
+static void FramebufferSizeCallback(GLFWwindow* window, int width, int height) {
   Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
   win.fbSize = {width, height};
   if (win.framebufferSizeCallback) win.framebufferSizeCallback(width, height);
 }
 
-void WindowContentScaleCallback(GLFWwindow* window, float xscale, float yscale) {
+static void WindowContentScaleCallback(GLFWwindow* window, float xscale, float yscale) {
   Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
   win.dpiScale = xscale;
   if (win.windowContentScaleCallback) win.windowContentScaleCallback(xscale, yscale);
 }
 
-void WindowCloseCallback(GLFWwindow* window) {
+static void WindowCloseCallback(GLFWwindow* window) {
   Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
   if (win.windowCloseCallback) win.windowCloseCallback();
 }

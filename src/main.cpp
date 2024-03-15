@@ -1,3 +1,4 @@
+#include "GLFW/glfw3.h"
 #include "app/options.hpp"
 #include "app/window.hpp"
 #include "app/input.hpp"
@@ -65,6 +66,15 @@ int main() {
   };
 
   window.mouseButtonCallback = [&](int button, int action, int mods) {
+    // if (action == GLFW_PRESS && button == GLFW_MOUSE_BUTTON_LEFT) {
+    //   auto cursorPos = window.GetCursorPos();
+    //   auto charSize = glm::vec2(font.charWidth, font.charHeight);
+    //   int row = cursorPos.y / charSize.y;
+    //   int col = cursorPos.x / charSize.x;
+    //   auto& grid = editorState.gridManager.grids.at(1);
+    //   auto& cell = grid.lines[row][col];
+    //   LOG("hlId: {}", cell.hlId);
+    // }
     input.HandleMouseButton(button, action, mods);
   };
 

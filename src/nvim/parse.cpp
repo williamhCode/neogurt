@@ -101,32 +101,31 @@ static std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
   }},
 
   {"grid_line", [](const msgpack::object& args, RedrawState& state) {
-    // LOG("grid_line: {}", ToString(args));
-    auto [grid, row, col_start, cells] =
-      args.as<std::tuple<int, int, int, msgpack::object>>();
+    auto [grid, row, col_start, cells, wrap] =
+      args.as<std::tuple<int, int, int, msgpack::object, bool>>();
     GridLine gridLine{grid, row, col_start, {}};
 
     std::span<const msgpack::object> cellsList(cells.via.array);
     gridLine.cells.reserve(cellsList.size());
 
-    int curr_hl_id = -1;
+    int recent_hl_id;
     for (const auto& cell : cellsList) {
       switch (cell.via.array.size) {
         case 3: {
           auto [text, hl_id, repeat] = cell.as<std::tuple<std::string, int, int>>();
-          curr_hl_id = hl_id;
           gridLine.cells.push_back({text, hl_id, repeat});
+          recent_hl_id = hl_id;
           break;
         }
         case 2: {
           auto [text, hl_id] = cell.as<std::tuple<std::string, int>>();
-          curr_hl_id = hl_id;
           gridLine.cells.push_back({text, hl_id});
+          recent_hl_id = hl_id;
           break;
         }
         case 1: {
           auto [text] = cell.as<std::tuple<std::string>>();
-          gridLine.cells.push_back({text, curr_hl_id});
+          gridLine.cells.push_back({text, recent_hl_id});
           break;
         }
       }

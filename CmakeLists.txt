@@ -38,6 +38,7 @@ set(APP_SRC
 
   src/utils/unicode.cpp
   src/utils/clock.cpp
+  src/utils/logger.cpp
 )
 
 add_executable(App ${APP_SRC})

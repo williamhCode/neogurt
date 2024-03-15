@@ -1,23 +1,16 @@
 #pragma once
 
-#include "msgpack/object.hpp"
+#include "msgpack/v3/object_fwd_decl.hpp"
 #include <format>
-#include <sstream>
 #include <string>
-#include <iostream>
 
 struct Logger {
   bool enabled = true;
 
-  void Log(const std::string& message) {
-    if (!enabled) return;
-    std::cout << message << std::endl;
-  }
+  void Log(const std::string& message);
 };
 
-inline std::string ToString(const msgpack::object& obj) {
-  return (std::ostringstream() << obj).str();
-}
+std::string ToString(const msgpack::object& obj);
 
 inline Logger logger;
 
