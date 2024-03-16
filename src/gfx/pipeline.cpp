@@ -56,7 +56,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
     sizeof(TextQuadVertex),
     {
       {VertexFormat::Float32x2, offsetof(TextQuadVertex, position), 0},
-      {VertexFormat::Float32x2, offsetof(TextQuadVertex, uv), 1},
+      {VertexFormat::Float32x2, offsetof(TextQuadVertex, region), 1},
       {VertexFormat::Float32x4, offsetof(TextQuadVertex, foreground), 2},
     }
   };
@@ -64,8 +64,9 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
   fontTextureBGL = utils::MakeBindGroupLayout(
     ctx.device,
     {
-      {0, ShaderStage::Fragment, TextureSampleType::Float},
-      {1, ShaderStage::Fragment, SamplerBindingType::Filtering},
+      {0, ShaderStage::Vertex, BufferBindingType::Uniform},
+      {1, ShaderStage::Fragment, TextureSampleType::Float},
+      {2, ShaderStage::Fragment, SamplerBindingType::Filtering},
     }
   );
 
@@ -89,13 +90,60 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
     .fragment = ToPtr(FragmentState{
       .module = textShader,
       .entryPoint = "fs_main",
-      .targetCount = 2,
+      .targetCount = 1,
       .targets = ToPtr<ColorTargetState>({
         {
           .format = TextureFormat::BGRA8Unorm,
           .blend = &utils::BlendState::AlphaBlending,
         },
-        {.format = TextureFormat::R8Unorm},
+        // {.format = TextureFormat::R8Unorm},
+      }),
+    }),
+  }));
+  
+  // texture pipeline ------------------------------------------------
+  utils::VertexBufferLayout textureQuadVBL{
+    sizeof(TextureQuadVertex),
+    {
+      {VertexFormat::Float32x2, offsetof(TextureQuadVertex, position), 0},
+      {VertexFormat::Float32x2, offsetof(TextureQuadVertex, uv), 1},
+    }
+  };
+
+  ShaderModule textureShader =
+    utils::LoadShaderModule(ctx.device, ROOT_DIR "/src/shaders/texture.wgsl");
+
+  textureBGL = utils::MakeBindGroupLayout(
+    ctx.device,
+    {
+      {0, ShaderStage::Fragment, TextureSampleType::UnfilterableFloat},
+      {1, ShaderStage::Fragment, SamplerBindingType::NonFiltering},
+    }
+  );
+
+  textureRPL = ctx.device.CreateRenderPipeline(ToPtr(RenderPipelineDescriptor{
+    .layout = utils::MakePipelineLayout(
+      ctx.device,
+      {
+        viewProjBGL,
+        textureBGL,
+      }
+    ),
+    .vertex = VertexState{
+      .module = textureShader,
+      .entryPoint = "vs_main",
+      .bufferCount = 1,
+      .buffers = &textureQuadVBL,
+    },
+    .fragment = ToPtr(FragmentState{
+      .module = textureShader,
+      .entryPoint = "fs_main",
+      .targetCount = 1,
+      .targets = ToPtr<ColorTargetState>({
+        {
+          .format = TextureFormat::BGRA8Unorm,
+          .blend = &utils::BlendState::AlphaBlending,
+        },
       }),
     }),
   }));

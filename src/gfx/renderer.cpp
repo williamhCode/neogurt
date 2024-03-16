@@ -1,4 +1,6 @@
 #include "renderer.hpp"
+#include "editor/grid.hpp"
+#include "editor/window.hpp"
 #include "gfx/instance.hpp"
 #include "gfx/pipeline.hpp"
 #include "glm/ext/matrix_clip_space.hpp"
@@ -26,9 +28,6 @@ Renderer::Renderer(glm::uvec2 size, glm::uvec2 fbSize) {
       .CreateView();
 
   // rect
-  // Todo: make maxTextQuads resize to best fit
-  const size_t maxTextQuads = 30000;
-  rectData.CreateBuffers(maxTextQuads);
   rectRenderPassDesc = utils::RenderPassDescriptor({
     RenderPassColorAttachment{
       .loadOp = LoadOp::Clear,
@@ -37,22 +36,30 @@ Renderer::Renderer(glm::uvec2 size, glm::uvec2 fbSize) {
   });
 
   // text
-  textData.CreateBuffers(maxTextQuads);
   textRenderPassDesc = utils::RenderPassDescriptor({
     RenderPassColorAttachment{
       .loadOp = LoadOp::Load,
       .storeOp = StoreOp::Store,
     },
+    // RenderPassColorAttachment{
+    //   .view = maskTextureView,
+    //   .loadOp = LoadOp::Clear,
+    //   .storeOp = StoreOp::Store,
+    //   .clearValue = {0.0, 0.0, 0.0, 0.0},
+    // },
+  });
+
+  // texture
+  textureRenderPassDesc = utils::RenderPassDescriptor({
     RenderPassColorAttachment{
-      .view = maskTextureView,
       .loadOp = LoadOp::Clear,
       .storeOp = StoreOp::Store,
-      .clearValue = {0.0, 0.0, 0.0, 0.0},
     },
   });
 
   // cursor
   cursorData.CreateBuffers(1);
+  cursorData.ReserveVectors(1);
 
   maskBG = utils::MakeBindGroup(
     ctx.device, ctx.pipeline.maskBGL,
@@ -94,12 +101,14 @@ void Renderer::Begin() {
   nextTexture = ctx.swapChain.GetCurrentTextureView();
 }
 
-void Renderer::RenderGrid(const Grid& grid, Font& font, const HlTable& hlTable) {
-  textData.ResetCounts();
-  textData.ResizeBuffers(grid.width * grid.height);
+void Renderer::RenderGrid(
+  Grid& grid, Font& font, const HlTable& hlTable
+) {
+  auto& textData = grid.textData;
+  auto& rectData = grid.rectData;
 
+  textData.ResetCounts();
   rectData.ResetCounts();
-  rectData.ResizeBuffers(grid.width * grid.height);
 
   glm::vec2 textureSize(font.textureSize);
   glm::vec2 textOffset(0, 0);
@@ -116,9 +125,9 @@ void Renderer::RenderGrid(const Grid& grid, Font& font, const HlTable& hlTable) 
       if (cell.hlId != 0 && hl.background.has_value()) {
         static std::array<glm::vec2, 4> rectPositions{
           glm::vec2(0, 0),
-          glm::vec2(font.charWidth, 0),
-          glm::vec2(font.charWidth, font.charHeight),
-          glm::vec2(0, font.charHeight),
+          glm::vec2(font.charSize.x, 0),
+          glm::vec2(font.charSize.x, font.charSize.y),
+          glm::vec2(0, font.charSize.y),
         };
 
         auto background = *hl.background;
@@ -144,12 +153,12 @@ void Renderer::RenderGrid(const Grid& grid, Font& font, const HlTable& hlTable) 
         // region = x, y, width, height
         glm::vec4 region{glyphInfo.pos.x, glyphInfo.pos.y, font.size, font.size};
 
-        float left = region.x / textureSize.x;
-        float right = (region.x + region.z) / textureSize.x;
-        float top = region.y / textureSize.y;
-        float bottom = (region.y + region.w) / textureSize.y;
+        float left = region.x;
+        float right = region.x + region.z;
+        float top = region.y;
+        float bottom = region.y + region.w;
 
-        std::array<glm::vec2, 4> texCoords{
+        std::array<glm::vec2, 4> regionCorners{
           glm::vec2(left, top),
           glm::vec2(right, top),
           glm::vec2(right, bottom),
@@ -160,7 +169,7 @@ void Renderer::RenderGrid(const Grid& grid, Font& font, const HlTable& hlTable) 
         for (size_t i = 0; i < 4; i++) {
           auto& vertex = textData.quads[textData.quadCount][i];
           vertex.position = textQuadPos + glyphInfo.positions[i];
-          vertex.uv = texCoords[i];
+          vertex.region = regionCorners[i];
           vertex.foreground = foreground;
         }
 
@@ -168,59 +177,61 @@ void Renderer::RenderGrid(const Grid& grid, Font& font, const HlTable& hlTable) 
         textData.IncrementCounts();
       }
 
-      textOffset.x += font.charWidth;
+      textOffset.x += font.charSize.x;
     }
 
-    textOffset.y += font.charHeight;
+    textOffset.y += font.charSize.y;
   }
 
   textData.WriteBuffers();
   rectData.WriteBuffers();
 
+  font.UpdateTexture();
+
   // background
   {
-    rectRenderPassDesc.cColorAttachments[0].view = nextTexture;
+    rectRenderPassDesc.cColorAttachments[0].view = grid.textureView;
     rectRenderPassDesc.cColorAttachments[0].clearValue = clearColor;
     RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&rectRenderPassDesc);
     passEncoder.SetPipeline(ctx.pipeline.rectRPL);
-    passEncoder.SetBindGroup(0, viewProjBG);
-    passEncoder.SetVertexBuffer(
-      0, rectData.vertexBuffer, 0, sizeof(RectQuadVertex) * rectData.vertexCount
-    );
-    passEncoder.SetIndexBuffer(
-      rectData.indexBuffer, IndexFormat::Uint32, 0,
-      rectData.indexCount * sizeof(uint32_t)
-    );
+    passEncoder.SetBindGroup(0, grid.viewProjBG);
+    rectData.SetBuffers(passEncoder);
     passEncoder.DrawIndexed(rectData.indexCount);
     passEncoder.End();
   }
   // text
   {
-    textRenderPassDesc.cColorAttachments[0].view = nextTexture;
+    textRenderPassDesc.cColorAttachments[0].view = grid.textureView;
     RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textRenderPassDesc);
     passEncoder.SetPipeline(ctx.pipeline.textRPL);
-    passEncoder.SetBindGroup(0, viewProjBG);
+    passEncoder.SetBindGroup(0, grid.viewProjBG);
     passEncoder.SetBindGroup(1, font.fontTextureBG);
-    passEncoder.SetVertexBuffer(
-      0, textData.vertexBuffer, 0, sizeof(TextQuadVertex) * textData.vertexCount
-    );
-    passEncoder.SetIndexBuffer(
-      textData.indexBuffer, IndexFormat::Uint32, 0,
-      textData.indexCount * sizeof(uint32_t)
-    );
+    textData.SetBuffers(passEncoder);
     passEncoder.DrawIndexed(textData.indexCount);
     passEncoder.End();
   }
+}
 
-  // update after rendering because texture dimensions will change and mess rendering up
-  font.UpdateTexture();
+void Renderer::RenderWindows(const std::vector<const Window*>& windows) {
+  textureRenderPassDesc.cColorAttachments[0].view = nextTexture;
+  textureRenderPassDesc.cColorAttachments[0].clearValue = clearColor;
+  auto passEncoder = commandEncoder.BeginRenderPass(&textureRenderPassDesc);
+  passEncoder.SetPipeline(ctx.pipeline.textureRPL);
+
+  for (auto win : windows) {
+    passEncoder.SetBindGroup(0, viewProjBG);
+    passEncoder.SetBindGroup(1, win->textureBG);
+    win->renderData.SetBuffers(passEncoder);
+    passEncoder.DrawIndexed(win->renderData.indexCount);
+  }
+
+  passEncoder.End();
 }
 
 void Renderer::RenderCursor(const Cursor& cursor, const HlTable& hlTable) {
   if (cursor.modeInfo == nullptr) return;
 
   cursorData.ResetCounts();
-  cursorData.ResizeBuffers(1);
 
   auto attrId = cursor.modeInfo->attrId;
   auto& hl = hlTable.at(attrId);
@@ -249,13 +260,7 @@ void Renderer::RenderCursor(const Cursor& cursor, const HlTable& hlTable) {
     passEncoder.SetPipeline(ctx.pipeline.cursorRPL);
     passEncoder.SetBindGroup(0, viewProjBG);
     passEncoder.SetBindGroup(1, maskBG);
-    passEncoder.SetVertexBuffer(
-      0, cursorData.vertexBuffer, 0, sizeof(RectQuadVertex) * cursorData.vertexCount
-    );
-    passEncoder.SetIndexBuffer(
-      cursorData.indexBuffer, IndexFormat::Uint32, 0,
-      cursorData.indexCount * sizeof(uint32_t)
-    );
+    cursorData.SetBuffers(passEncoder);
     passEncoder.DrawIndexed(cursorData.indexCount);
     passEncoder.End();
   }

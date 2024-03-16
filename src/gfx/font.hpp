@@ -23,10 +23,10 @@ struct Font {
   // dimensions
   static constexpr int atlasWidth = 16;
   int atlasHeight;
+  wgpu::Buffer textureSizeBuffer;
   glm::vec2 textureSize;
   glm::vec2 bufferSize;
-  float charWidth;
-  float charHeight;
+  glm::vec2 charSize;
 
   struct GlyphInfo {
     // floats because of high dpi

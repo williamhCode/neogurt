@@ -6,21 +6,26 @@
 
 struct WGPUContext;
 
-struct TextQuadVertex {
-  glm::vec2 position;
-  glm::vec2 uv;
-  glm::vec4 foreground;
-};
-
 struct RectQuadVertex {
   glm::vec2 position;
   glm::vec4 color;
+};
+
+struct TextQuadVertex {
+  glm::vec2 position;
+  glm::vec2 region; // region in the font texture
+  glm::vec4 foreground;
 };
 
 struct CursorQuadVertex {
   glm::vec2 position;
   glm::vec4 foreground;
   glm::vec4 background;
+};
+
+struct TextureQuadVertex {
+  glm::vec2 position;
+  glm::vec2 uv;
 };
 
 struct Pipeline {
@@ -30,6 +35,9 @@ struct Pipeline {
 
   wgpu::BindGroupLayout fontTextureBGL;
   wgpu::RenderPipeline textRPL;
+
+  wgpu::BindGroupLayout textureBGL;
+  wgpu::RenderPipeline textureRPL;
 
   wgpu::BindGroupLayout maskBGL;
   wgpu::RenderPipeline cursorRPL;

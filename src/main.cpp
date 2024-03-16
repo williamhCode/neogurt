@@ -1,3 +1,4 @@
+#include "GLFW/glfw3.h"
 #include "app/options.hpp"
 #include "app/window.hpp"
 #include "app/input.hpp"
@@ -16,6 +17,7 @@
 #include <format>
 #include <atomic>
 #include <chrono>
+#include <vector>
 
 using namespace wgpu;
 using namespace std::chrono_literals;
@@ -33,12 +35,12 @@ int main() {
   // Mono.ttf", 15, 2); Font font(ROOT_DIR
   // "/res/NerdFontsSymbolsOnly/SymbolsNerdFontMono-Regular.ttf", 15, 2);
 
-  int gridWidth = window.size.x / font.charWidth;
-  int gridHeight = window.size.y / font.charHeight;
+  int uiRows = window.size.x / font.charSize.x;
+  int uiCols = window.size.y / font.charSize.y;
 
   Nvim nvim(false);
   nvim.UiAttach(
-    gridWidth, gridHeight,
+    uiRows, uiCols,
     {
       {"rgb", true},
       {"ext_multigrid", true},
@@ -46,14 +48,25 @@ int main() {
     }
   );
 
-  EditorState editorState{};
-  editorState.cursor.fullSize = {font.charWidth, font.charHeight};
+  EditorState editorState{
+    .gridManager{
+      .gridSize = font.charSize,
+      .dpiScale = window.dpiScale,
+    },
+    .windowManager{
+      .gridSize = font.charSize,
+    },
+    .cursor{.fullSize = font.charSize},
+    .rows = uiRows,
+    .cols = uiCols,
+  };
+  editorState.windowManager.gridManager = &editorState.gridManager;
 
   // lock whenever ctx.device is used
   std::mutex wgpuDeviceMutex;
 
   // input -----------------------------------------------------------
-  InputHandler input(nvim, window.GetCursorPos(), {font.charWidth, font.charHeight});
+  InputHandler input(nvim, window.GetCursorPos(), font.charSize);
 
   window.keyCallback = [&](int key, int scancode, int action, int mods) {
     input.HandleKey(key, scancode, action, mods);
@@ -66,7 +79,7 @@ int main() {
   window.mouseButtonCallback = [&](int button, int action, int mods) {
     // if (action == GLFW_PRESS && button == GLFW_MOUSE_BUTTON_LEFT) {
     //   auto cursorPos = window.GetCursorPos();
-    //   auto charSize = glm::vec2(font.charWidth, font.charHeight);
+    //   auto charSize = font.charSize;
     //   int row = cursorPos.y / charSize.y;
     //   int col = cursorPos.x / charSize.x;
     //   auto& grid = editorState.gridManager.grids.at(1);
@@ -91,10 +104,13 @@ int main() {
     renderer.FbResize(window.fbSize);
 
     glm::vec2 size(window.fbSize / (unsigned int)window.dpiScale);
-    int widthChars = size.x / font.charWidth;
-    int heightChars = size.y / font.charHeight;
-    nvim.UiTryResize(widthChars, heightChars);
+    editorState.rows = size.x / font.charSize.x;
+    editorState.cols = size.y / font.charSize.y;
+    nvim.UiTryResize(editorState.rows, editorState.cols);
     renderer.Resize(size);
+
+    WinPos winPos{1, {}, 0, 0, editorState.rows, editorState.cols};
+    editorState.windowManager.Pos(winPos);
   };
 
   window.windowContentScaleCallback = [&](float xscale, float yscale) {
@@ -138,12 +154,12 @@ int main() {
       ProcessRedrawEvents(nvim.redrawState, editorState);
 
       // update ----------------------------------------------
-      for (auto& [id, grid] : editorState.gridManager.grids) {
-        editorState.cursor.SetDestPos(
-          glm::vec2(grid.cursorCol * font.charWidth, grid.cursorRow * font.charHeight)
-        );
-      }
-      editorState.cursor.Update(dt);
+      // for (auto& [id, grid] : editorState.gridManager.grids) {
+      //   editorState.cursor.SetDestPos(
+      //     glm::vec2(grid.cursorCol, grid.cursorRow) * font.charSize
+      //   );
+      // }
+      // editorState.cursor.Update(dt);
 
       // render ----------------------------------------------
       if (auto hlIter = editorState.hlTable.find(0);
@@ -156,13 +172,29 @@ int main() {
         std::scoped_lock lock(wgpuDeviceMutex);
         renderer.Begin();
         // LOG("----------------------");
+
         for (auto& [id, grid] : editorState.gridManager.grids) {
-          // LOG("render grid: {}", id);
-          renderer.RenderGrid(grid, font, editorState.hlTable);
-          if (editorState.cursor.blinkState != BlinkState::Off) {
-            renderer.RenderCursor(editorState.cursor, editorState.hlTable);
-          }
+          if (id == 4) continue;
+          // if (grid.dirty) {
+            renderer.RenderGrid(grid, font, editorState.hlTable);
+            // grid.dirty = false;
+          // }
         }
+
+        std::vector<const Window*> windows;
+        auto it = editorState.windowManager.windows.find(1);
+        if (it != editorState.windowManager.windows.end()) {
+          windows.push_back(&it->second);
+        }
+        for (auto& [id, win] : editorState.windowManager.windows) {
+          if (id == 4 || id == 1) continue;
+          if (!win.hidden) windows.push_back(&win);
+        }
+        renderer.RenderWindows(windows);
+
+        // if (editorState.cursor.blinkState != BlinkState::Off) {
+        //   renderer.RenderCursor(editorState.cursor, editorState.hlTable);
+        // }
         renderer.End();
         renderer.Present();
       }

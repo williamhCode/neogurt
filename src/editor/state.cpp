@@ -118,7 +118,7 @@ void ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
             }
           }
         },
-        [&](HlGroupSet& e) {
+        [&](HlGroupSet&) {
           // not needed to render grids, but used for rendering
           // own elements with consistent highlighting
         },
@@ -126,6 +126,10 @@ void ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
         },
         [&](GridResize& e) {
           editorState.gridManager.Resize(e);
+          if (e.grid == 1) {
+            WinPos winPos{e.grid, {}, 0, 0, e.width, e.height};
+            editorState.windowManager.Pos(winPos);
+          }
         },
         [&](GridClear& e) {
           editorState.gridManager.Clear(e);
@@ -143,16 +147,25 @@ void ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
           editorState.gridManager.Destroy(e);
         },
         [&](WinPos& e) {
+          editorState.windowManager.Pos(e);
         },
         [&](WinFloatPos& e) {
         },
         [&](WinExternalPos& e) {
         },
         [&](WinHide& e) {
+          editorState.windowManager.Hide(e);
         },
         [&](WinClose& e) {
+          editorState.windowManager.Close(e);
         },
         [&](MsgSetPos& e) {
+          // GridResize resize{
+          //   .grid = e.grid,
+          //   .width = 200,
+          //   .height = 200,
+          // };
+          // editorState.gridManager.Resize(resize);
         },
         [&](WinViewport& e) {
         },

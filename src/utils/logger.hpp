@@ -14,11 +14,6 @@ std::string ToString(const msgpack::object& obj);
 
 inline Logger logger;
 
-#ifdef XCODE  // apple clang doesn't support std::format yet
-  #define LOG(...) {}
-#else
-  #define LOG(...) logger.Log(std::format(__VA_ARGS__))
-#endif
-
+#define LOG(...) logger.Log(std::format(__VA_ARGS__))
 #define LOG_ENABLE() logger.enabled = true
 #define LOG_DISABLE() logger.enabled = false

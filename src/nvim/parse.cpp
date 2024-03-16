@@ -88,11 +88,12 @@ static std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
 
   // Grid Events --------------------------------------------------------------
   {"grid_resize", [](const msgpack::object& args, RedrawState& state) {
-    // LOG("grid_resize: {}", ToString(args));
+    LOG("grid_resize: {}", ToString(args));
     state.currEvents().push_back(args.as<GridResize>());
   }},
 
   {"grid_clear", [](const msgpack::object& args, RedrawState& state) {
+    LOG("grid_clear: {}", ToString(args));
     state.currEvents().push_back(args.as<GridClear>());
   }},
 
@@ -139,39 +140,48 @@ static std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
   }},
 
   {"grid_destroy", [](const msgpack::object& args, RedrawState& state) {
+    LOG("grid_destroy: {}", ToString(args));
     state.currEvents().push_back(args.as<GridDestroy>());
   }},
 
   // Multigrid Events ------------------------------------------------------------
   {"win_pos", [](const msgpack::object& args, RedrawState& state) {
+    LOG("win_pos: {}", ToString(args));
     state.currEvents().push_back(args.as<WinPos>());
   }},
 
   {"win_float_pos", [](const msgpack::object& args, RedrawState& state) {
+    LOG("win_float_pos: {}", ToString(args));
     state.currEvents().push_back(args.as<WinFloatPos>());
   }},
 
   {"win_external_pos", [](const msgpack::object& args, RedrawState& state) {
+    // LOG("win_external_pos: {}", ToString(args));
     state.currEvents().push_back(args.as<WinExternalPos>());
   }},
 
   {"win_hide", [](const msgpack::object& args, RedrawState& state) {
+    LOG("win_hide: {}", ToString(args));
     state.currEvents().push_back(args.as<WinHide>());
   }},
 
   {"win_close", [](const msgpack::object& args, RedrawState& state) {
+    LOG("win_close: {}", ToString(args));
     state.currEvents().push_back(args.as<WinClose>());
   }},
 
   {"msg_set_pos", [](const msgpack::object& args, RedrawState& state) {
+    LOG("msg_set_pos: {}", ToString(args));
     state.currEvents().push_back(args.as<MsgSetPos>());
   }},
 
   {"win_viewport", [](const msgpack::object& args, RedrawState& state) {
+    // LOG("win_viewport: {}", ToString(args));
     state.currEvents().push_back(args.as<WinViewport>());
   }},
 
   {"win_extmark", [](const msgpack::object& args, RedrawState& state) {
+    // LOG("win_extmark: {}", ToString(args));
     state.currEvents().push_back(args.as<WinExtmark>());
   }},
 };

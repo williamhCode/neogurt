@@ -95,9 +95,6 @@ public:
     return size;
   }
 
-  // void resize(size_t newCapacity) {
-  // }
-
   // begin is the same as end for ring buffer
   Iterator Begin() {
     return Iterator(buffer.data(), size, head);

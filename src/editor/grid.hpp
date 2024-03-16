@@ -1,10 +1,17 @@
 #pragma once
 
+#include "gfx/quad.hpp"
+#include "glm/ext/vector_float2.hpp"
 #include "nvim/parse.hpp"
 #include "utils/ring_buffer.hpp"
+#include "webgpu/webgpu_cpp.h"
 #include <vector>
 
+struct Window; // forward decl
+
 struct Grid {
+  Window* win;
+
   int width;
   int height;
 
@@ -18,9 +25,21 @@ struct Grid {
   using Line = std::vector<Cell>;
   using Lines = RingBuffer<Line>;
   Lines lines;
+
+  bool dirty;
+
+  wgpu::Buffer viewProjBuffer;
+  wgpu::BindGroup viewProjBG;
+  wgpu::TextureView textureView;
+
+  QuadRenderData<RectQuadVertex> rectData;
+  QuadRenderData<TextQuadVertex> textData;
 };
 
 struct GridManager {
+  glm::vec2 gridSize;
+  float dpiScale;
+
   std::unordered_map<int, Grid> grids;
 
   void Resize(GridResize& e);

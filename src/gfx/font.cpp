@@ -42,8 +42,8 @@ Font::Font(const std::string& path, int _size, float _dpiScale)
 
   FT_Set_Pixel_Sizes(face, 0, size * dpiScale);
 
-  charWidth = (face->size->metrics.max_advance >> 6) / dpiScale;
-  charHeight = (face->size->metrics.height >> 6) / dpiScale;
+  charSize.x = (face->size->metrics.max_advance >> 6) / dpiScale;
+  charSize.y = (face->size->metrics.height >> 6) / dpiScale;
 
   uint32_t numChars = 128;
 
@@ -141,6 +141,10 @@ const Font::GlyphInfo& Font::GetGlyphInfoOrAdd(FT_ULong charcode) {
 void Font::UpdateTexture() {
   if (!dirty) return;
 
+  textureSizeBuffer = utils::CreateUniformBuffer(
+    ctx.device, sizeof(glm::vec2), &textureSize
+  );
+
   textureView =
     utils::CreateTexture(
       ctx.device,
@@ -161,8 +165,9 @@ void Font::UpdateTexture() {
   fontTextureBG = utils::MakeBindGroup(
     ctx.device, ctx.pipeline.fontTextureBGL,
     {
-      {0, textureView},
-      {1, sampler},
+      {0, textureSizeBuffer},
+      {1, textureView},
+      {2, sampler},
     }
   );
 
