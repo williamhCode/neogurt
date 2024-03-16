@@ -2,6 +2,7 @@
 
 #include "freetype/freetype.h"
 #include "glm/ext/vector_float2.hpp"
+#include "utils/region.hpp"
 #include "webgpu/webgpu_cpp.h"
 #include <vector>
 
@@ -28,13 +29,14 @@ struct Font {
   glm::vec2 bufferSize;
   glm::vec2 charSize;
 
+  Region positions; // positions of untranslated character quad
+
   struct GlyphInfo {
     // floats because of high dpi
     glm::vec2 size;
     glm::vec2 bearing;
     float advance;
-    glm::vec2 pos;
-    static inline std::array<glm::vec2, 4> positions;
+    Region region;
   };
   using GlyphInfoMap = std::unordered_map<uint32_t, GlyphInfo>;
   GlyphInfoMap glyphInfoMap;

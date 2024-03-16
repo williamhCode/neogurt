@@ -17,3 +17,5 @@ inline Logger logger;
 #define LOG(...) logger.Log(std::format(__VA_ARGS__))
 #define LOG_ENABLE() logger.enabled = true
 #define LOG_DISABLE() logger.enabled = false
+
+// #define LOG_ERR(...) logger.Log(std::format(__VA_ARGS__))

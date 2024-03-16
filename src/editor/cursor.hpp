@@ -1,8 +1,8 @@
 #pragma once
 
 #include "glm/ext/vector_float2.hpp"
+#include "utils/region.hpp"
 #include <string>
-#include <array>
 
 enum class CursorShape {
   Block,
@@ -43,10 +43,9 @@ struct Cursor {
   ModeInfo* modeInfo = nullptr;
 
   glm::vec2 fullSize;
-  using Corners = std::array<glm::vec2, 4>;
-  Corners startCorners;
-  Corners destCorners;
-  Corners corners;
+  Region startCorners;
+  Region destCorners;
+  Region corners;
   float cornerTime = 0.06;
   float cornerElasped;
 

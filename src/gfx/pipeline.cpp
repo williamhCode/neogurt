@@ -56,7 +56,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
     sizeof(TextQuadVertex),
     {
       {VertexFormat::Float32x2, offsetof(TextQuadVertex, position), 0},
-      {VertexFormat::Float32x2, offsetof(TextQuadVertex, region), 1},
+      {VertexFormat::Float32x2, offsetof(TextQuadVertex, regionCoords), 1},
       {VertexFormat::Float32x4, offsetof(TextQuadVertex, foreground), 2},
     }
   };

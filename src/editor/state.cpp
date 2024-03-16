@@ -145,6 +145,9 @@ void ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
         },
         [&](GridDestroy& e) {
           editorState.gridManager.Destroy(e);
+          // TODO: file bug report
+          WinClose winClose{e.grid};
+          editorState.windowManager.Close(winClose);
         },
         [&](WinPos& e) {
           editorState.windowManager.Pos(e);

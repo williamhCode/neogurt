@@ -16,9 +16,9 @@ struct Window {
   int width;
   int height;
 
-  // rendering
   int hidden;
 
+  // rendering data
   wgpu::BindGroup textureBG;
   QuadRenderData<TextureQuadVertex> renderData;
 };

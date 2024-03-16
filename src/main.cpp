@@ -27,10 +27,10 @@ const WGPUContext& ctx = AppWindow::_ctx;
 AppOptions options;
 
 int main() {
-  // Window window({1400, 800}, "Neovim GUI", PresentMode::Immediate);
+  // AppWindow window({1400, 800}, "Neovim GUI", PresentMode::Immediate);
   AppWindow window({1600, 1000}, "Neovim GUI", PresentMode::Immediate);
   Renderer renderer(window.size, window.fbSize);
-  Font font("/Library/Fonts/SF-Mono-Medium.otf", 15, window.dpiScale);
+  Font font("/Library/Fonts/SF-Mono-Medium.otf", 13, window.dpiScale);
   // Font font("/Users/williamhou/Library/Fonts/Hack Regular Nerd Font Complete
   // Mono.ttf", 15, 2); Font font(ROOT_DIR
   // "/res/NerdFontsSymbolsOnly/SymbolsNerdFontMono-Regular.ttf", 15, 2);
@@ -67,6 +67,14 @@ int main() {
   InputHandler input(nvim, window.GetCursorPos(), font.charSize);
 
   window.keyCallback = [&](int key, int scancode, int action, int mods) {
+    if (action == GLFW_PRESS && key == GLFW_KEY_F2) {
+      for (auto& [id, grid] : editorState.gridManager.grids) {
+        LOG("grid {}: dirty={}", id, grid.dirty);
+      }
+      for (auto& [id, grid] : editorState.windowManager.windows) {
+        LOG("win {}: hidden={}", id, grid.hidden);
+      }
+    }
     input.HandleKey(key, scancode, action, mods);
   };
 
@@ -75,15 +83,6 @@ int main() {
   };
 
   window.mouseButtonCallback = [&](int button, int action, int mods) {
-    // if (action == GLFW_PRESS && button == GLFW_MOUSE_BUTTON_LEFT) {
-    //   auto cursorPos = window.GetCursorPos();
-    //   auto charSize = font.charSize;
-    //   int row = cursorPos.y / charSize.y;
-    //   int col = cursorPos.x / charSize.x;
-    //   auto& grid = editorState.gridManager.grids.at(1);
-    //   auto& cell = grid.lines[row][col];
-    //   LOG("hlId: {}", cell.hlId);
-    // }
     input.HandleMouseButton(button, action, mods);
   };
 
@@ -124,12 +123,12 @@ int main() {
     Clock clock;
 
     while (!windowShouldClose) {
-      auto dt = clock.Tick(60);
+      auto dt = clock.Tick();
       // LOG("dt: {}", dt);
 
       auto fps = clock.GetFps();
       auto fpsStr = std::format("fps: {:.2f}", fps);
-      // std::cout << '\r' << fpsStr << std::string(10, ' ') << std::flush;
+      std::cout << '\r' << fpsStr << std::string(10, ' ') << std::flush;
 
       {
         std::scoped_lock lock(wgpuDeviceMutex);
@@ -143,10 +142,13 @@ int main() {
       };
 
       nvim.ParseEvents();
-      if (nvim.redrawState.numFlushes == 0) continue;
+      // if (nvim.redrawState.numFlushes == 0) continue;
 
       // process events ---------------------------------------
-      ProcessRedrawEvents(nvim.redrawState, editorState);
+      {
+        std::scoped_lock lock(wgpuDeviceMutex);
+        ProcessRedrawEvents(nvim.redrawState, editorState);
+      }
 
       // update ----------------------------------------------
       // for (auto& [id, grid] : editorState.gridManager.grids) {

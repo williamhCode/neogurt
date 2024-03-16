@@ -148,27 +148,11 @@ void Renderer::RenderGrid(
           textOffset.y - glyphInfo.bearing.y + font.size,
         };
 
-        // region that holds current glyph in context of the entire font texture
-        // region = x, y, width, height
-        glm::vec4 region{glyphInfo.pos.x, glyphInfo.pos.y, font.size, font.size};
-
-        float left = region.x;
-        float right = region.x + region.z;
-        float top = region.y;
-        float bottom = region.y + region.w;
-
-        std::array<glm::vec2, 4> regionCorners{
-          glm::vec2(left, top),
-          glm::vec2(right, top),
-          glm::vec2(right, bottom),
-          glm::vec2(left, bottom),
-        };
-
         auto foreground = GetForeground(hlTable, hl);
         for (size_t i = 0; i < 4; i++) {
           auto& vertex = textData.quads[textData.quadCount][i];
-          vertex.position = textQuadPos + glyphInfo.positions[i];
-          vertex.region = regionCorners[i];
+          vertex.position = textQuadPos + font.positions[i];
+          vertex.regionCoords = glyphInfo.region[i];
           vertex.foreground = foreground;
         }
 

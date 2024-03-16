@@ -1,64 +1,59 @@
 #include "window.hpp"
 #include "gfx/instance.hpp"
 #include "glm/ext/vector_float2.hpp"
+#include "utils/region.hpp"
 #include "webgpu_utils/webgpu.hpp"
 
 using namespace wgpu;
 
 void WindowManager::Pos(WinPos& e) {
-  auto& win = windows[e.grid];
+  auto [it, first] = windows.try_emplace(e.grid);
+  auto& win = it->second;
 
-  win.grid = &gridManager->grids.at(e.grid);
-  win.grid->win = &win;
+  if (first) {
+    win.grid = &gridManager->grids.at(e.grid);
+    win.grid->win = &win;
+  }
 
   win.startRow = e.startRow;
   win.startCol = e.startCol;
+
   win.width = e.width;
   win.height = e.height;
 
-  // rendering
   win.hidden = false;
 
-  auto textureSampler = ctx.device.CreateSampler(
-    ToPtr(SamplerDescriptor{
+  // rendering data
+  if (first) {
+    auto textureSampler = ctx.device.CreateSampler(ToPtr(SamplerDescriptor{
       .addressModeU = AddressMode::ClampToEdge,
       .addressModeV = AddressMode::ClampToEdge,
       .magFilter = FilterMode::Nearest,
       .minFilter = FilterMode::Nearest,
-    })
-  );
+    }));
 
-  win.textureBG = utils::MakeBindGroup(
-    ctx.device, ctx.pipeline.textureBGL,
-    {
-      {0, win.grid->textureView},
-      {1, textureSampler},
-    }
-  );
+    win.textureBG = utils::MakeBindGroup(
+      ctx.device, ctx.pipeline.textureBGL,
+      {
+        {0, win.grid->textureView},
+        {1, textureSampler},
+      }
+    );
+  }
 
-  win.renderData.CreateBuffers(1);
-  win.renderData.ReserveVectors(1);
+  if (first) {
+    win.renderData.CreateBuffers(1);
+    win.renderData.ReserveVectors(1);
+  }
 
   win.renderData.ResetCounts();
 
-  glm::vec2 offset(e.startCol, e.startRow);
-  std::array<glm::vec2, 4> positions{
-    glm::vec2(0, 0),
-    glm::vec2(win.width, 0),
-    glm::vec2(win.width, win.height),
-    glm::vec2(0, win.height),
-  };
-
-  std::array<glm::vec2, 4> uvs{
-    glm::vec2(0, 0),
-    glm::vec2(1, 0),
-    glm::vec2(1, 1),
-    glm::vec2(0, 1),
-  };
+  auto positions = MakeRegion(e.startCol, e.startRow, e.width, e.height);
+  auto uvs = MakeRegion(0, 0, 1, 1);
 
   for (size_t i = 0; i < 4; i++) {
     auto& vertex = win.renderData.quads[0][i];
-    vertex.position = (offset + positions[i]) * gridSize;
+    vertex.position = positions[i] * gridSize;
     vertex.uv = uvs[i];
   }
 
@@ -75,7 +70,13 @@ void WindowManager::ExternalPos(WinExternalPos& e) {
 }
 
 void WindowManager::Hide(WinHide& e) {
-  windows.at(e.grid).hidden = true;
+  // NOTE: temporary to fix nvim issue
+  if (auto it = windows.find(e.grid); it != windows.end()) {
+    auto& win = it->second;
+    win.hidden = true;
+  } else {
+
+  }
 }
 
 void WindowManager::Close(WinClose& e) {

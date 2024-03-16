@@ -13,7 +13,7 @@ struct RectQuadVertex {
 
 struct TextQuadVertex {
   glm::vec2 position;
-  glm::vec2 region; // region in the font texture
+  glm::vec2 regionCoords; // region in the font texture
   glm::vec4 foreground;
 };
 

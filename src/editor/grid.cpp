@@ -9,11 +9,13 @@
 using namespace wgpu;
 
 void GridManager::Resize(GridResize& e) {
-  bool exists = grids.contains(e.grid);
-  auto& grid = grids[e.grid];
+  auto [it, first] = grids.try_emplace(e.grid);
+  auto& grid = it->second;
 
-  // TODO: perhaps add RingBuffer::Resize for cleaner code
-  if (exists) {
+  if (first) {
+    grid.lines = Grid::Lines(e.height, Grid::Line(e.width, Grid::Cell{" "}));
+  } else {
+    // TODO: perhaps add RingBuffer::Resize for cleaner code
     // copy lines over
     int minWidth = std::min(grid.width, e.width);
     int minHeight = std::min(grid.height, e.height);
@@ -26,8 +28,6 @@ void GridManager::Resize(GridResize& e) {
       auto& newLine = grid.lines[i];
       std::copy(oldLine.begin(), oldLine.begin() + minWidth, newLine.begin());
     }
-  } else {
-    grid.lines = Grid::Lines(e.height, Grid::Line(e.width, Grid::Cell{" "}));
   }
 
   grid.width = e.width;
@@ -38,15 +38,20 @@ void GridManager::Resize(GridResize& e) {
   // rendering
   auto size = glm::vec2(grid.width, grid.height) * gridSize;
   auto view = glm::ortho<float>(0, size.x, size.y, 0, -1, 1);
-  grid.viewProjBuffer =
-    utils::CreateUniformBuffer(ctx.device, sizeof(glm::mat4), &view);
 
-  grid.viewProjBG = utils::MakeBindGroup(
-    ctx.device, ctx.pipeline.viewProjBGL,
-    {
-      {0, grid.viewProjBuffer},
-    }
-  );
+  if (first) {
+    grid.viewProjBuffer =
+      utils::CreateUniformBuffer(ctx.device, sizeof(glm::mat4), &view);
+
+    grid.viewProjBG = utils::MakeBindGroup(
+      ctx.device, ctx.pipeline.viewProjBGL,
+      {
+        {0, grid.viewProjBuffer},
+      }
+    );
+  } else {
+    ctx.queue.WriteBuffer(grid.viewProjBuffer, 0, &view, sizeof(glm::mat4));
+  }
 
   Extent3D textureSize{
     .width = static_cast<uint32_t>(size.x * dpiScale),
@@ -55,7 +60,6 @@ void GridManager::Resize(GridResize& e) {
   grid.textureView =
     utils::CreateRenderTexture(ctx.device, textureSize, TextureFormat::BGRA8Unorm)
       .CreateView();
-  // grid.textureView.SetLabel(std::format("grid texture {}", e.grid).c_str());
 
   if (grid.win) {
     auto textureSampler = ctx.device.CreateSampler(ToPtr(SamplerDescriptor{
@@ -90,8 +94,6 @@ void GridManager::Clear(GridClear& e) {
       cell = Grid::Cell{" "};
     }
   }
-
-  grid.dirty = true;
 }
 
 void GridManager::CursorGoto(GridCursorGoto& e) {

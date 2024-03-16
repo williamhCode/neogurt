@@ -1,6 +1,6 @@
 struct VertexInput {
   @location(0) position: vec2f,
-  @location(1) region: vec2f,
+  @location(1) regionCoords: vec2f,
   @location(2) foreground: vec4f,
 }
 
@@ -15,7 +15,7 @@ struct VertexOutput {
 
 @vertex
 fn vs_main(in: VertexInput) -> VertexOutput {
-  let uv = in.region / textureSize;
+  let uv = in.regionCoords / textureSize;
   let out = VertexOutput(
     viewProj * vec4f(in.position, 0.0, 1.0),
     uv, in.foreground,

@@ -15,7 +15,7 @@ private:
   std::deque<std::chrono::nanoseconds> durations;
 
 public:
-  size_t bufferSize = 500;
+  size_t bufferSize = 200;
 
   Clock();
   double Tick(std::optional<double> fps = std::nullopt);

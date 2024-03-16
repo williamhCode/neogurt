@@ -1,4 +1,5 @@
 #include "font.hpp"
+#include "utils/region.hpp"
 #include "webgpu_utils/webgpu.hpp"
 #include "gfx/instance.hpp"
 
@@ -19,9 +20,8 @@ Font::Font(const std::string& path, int _size, float _dpiScale)
     }
     ftInitialized = true;
 
-    std::string nerdFontPath(
-      ROOT_DIR "/res/Hack/HackNerdFont-Regular.ttf"
-      // ROOT_DIR "/res/Hack/HackNerdFontMono-Regular.ttf"
+    std::string nerdFontPath(ROOT_DIR "/res/Hack/HackNerdFont-Regular.ttf"
+                             // ROOT_DIR "/res/Hack/HackNerdFontMono-Regular.ttf"
     );
     if (FT_New_Face(library, nerdFontPath.c_str(), 0, &nerdFace)) {
       throw std::runtime_error("Failed to load nerd font");
@@ -33,12 +33,7 @@ Font::Font(const std::string& path, int _size, float _dpiScale)
   }
 
   // winding order is clockwise starting from top left
-  GlyphInfo::positions = {
-    glm::vec2(0, 0),
-    glm::vec2(size, 0),
-    glm::vec2(size, size),
-    glm::vec2(0, size),
-  };
+  positions = MakeRegion(0, 0, size, size);
 
   FT_Set_Pixel_Sizes(face, 0, size * dpiScale);
 
@@ -131,7 +126,7 @@ const Font::GlyphInfo& Font::GetGlyphInfoOrAdd(FT_ULong charcode) {
           glyph.bitmap_top / dpiScale,
         },
       .advance = (glyph.advance.x >> 6) / dpiScale,
-      .pos = pos,
+      .region = MakeRegion(pos.x, pos.y, size, size),
     }
   );
 
@@ -141,9 +136,8 @@ const Font::GlyphInfo& Font::GetGlyphInfoOrAdd(FT_ULong charcode) {
 void Font::UpdateTexture() {
   if (!dirty) return;
 
-  textureSizeBuffer = utils::CreateUniformBuffer(
-    ctx.device, sizeof(glm::vec2), &textureSize
-  );
+  textureSizeBuffer =
+    utils::CreateUniformBuffer(ctx.device, sizeof(glm::vec2), &textureSize);
 
   textureView =
     utils::CreateTexture(
