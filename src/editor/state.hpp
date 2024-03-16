@@ -14,9 +14,6 @@ struct EditorState {
   Cursor cursor;
   std::vector<ModeInfo> modeInfoList;
   int modeIdx;
-
-  int rows;
-  int cols;
 };
 
 inline EditorState editorState;

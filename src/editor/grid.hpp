@@ -26,6 +26,7 @@ struct Grid {
   using Lines = RingBuffer<Line>;
   Lines lines;
 
+  // rendering
   bool dirty;
 
   wgpu::Buffer viewProjBuffer;

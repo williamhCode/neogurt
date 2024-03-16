@@ -82,18 +82,18 @@ void Renderer::Resize(glm::uvec2 size) {
 }
 
 void Renderer::FbResize(glm::uvec2 fbSize) {
-  maskTextureView =
-    utils::CreateRenderTexture(ctx.device, {fbSize.x, fbSize.y}, TextureFormat::R8Unorm)
-      .CreateView();
+  // maskTextureView =
+  //   utils::CreateRenderTexture(ctx.device, {fbSize.x, fbSize.y}, TextureFormat::R8Unorm)
+  //     .CreateView();
 
-  maskBG = utils::MakeBindGroup(
-    ctx.device, ctx.pipeline.maskBGL,
-    {
-      {0, maskTextureView},
-    }
-  );
+  // maskBG = utils::MakeBindGroup(
+  //   ctx.device, ctx.pipeline.maskBGL,
+  //   {
+  //     {0, maskTextureView},
+  //   }
+  // );
 
-  textRenderPassDesc.cColorAttachments[1].view = maskTextureView;
+  // textRenderPassDesc.cColorAttachments[1].view = maskTextureView;
 }
 
 void Renderer::Begin() {
@@ -110,7 +110,6 @@ void Renderer::RenderGrid(
   textData.ResetCounts();
   rectData.ResetCounts();
 
-  glm::vec2 textureSize(font.textureSize);
   glm::vec2 textOffset(0, 0);
 
   for (size_t i = 0; i < grid.lines.Size(); i++) {

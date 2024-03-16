@@ -127,7 +127,7 @@ void ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
         [&](GridResize& e) {
           editorState.gridManager.Resize(e);
           if (e.grid == 1) {
-            WinPos winPos{e.grid, {}, 0, 0, e.width, e.height};
+            WinPos winPos{1, {}, 0, 0, e.width, e.height};
             editorState.windowManager.Pos(winPos);
           }
         },
@@ -160,12 +160,6 @@ void ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
           editorState.windowManager.Close(e);
         },
         [&](MsgSetPos& e) {
-          // GridResize resize{
-          //   .grid = e.grid,
-          //   .width = 200,
-          //   .height = 200,
-          // };
-          // editorState.gridManager.Resize(resize);
         },
         [&](WinViewport& e) {
         },

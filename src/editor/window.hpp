@@ -16,6 +16,7 @@ struct Window {
   int width;
   int height;
 
+  // rendering
   int hidden;
 
   wgpu::BindGroup textureBG;

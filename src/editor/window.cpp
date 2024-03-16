@@ -15,9 +15,10 @@ void WindowManager::Pos(WinPos& e) {
   win.startCol = e.startCol;
   win.width = e.width;
   win.height = e.height;
-  win.hidden = false;
 
   // rendering
+  win.hidden = false;
+
   auto textureSampler = ctx.device.CreateSampler(
     ToPtr(SamplerDescriptor{
       .addressModeU = AddressMode::ClampToEdge,

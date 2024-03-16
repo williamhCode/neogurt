@@ -57,8 +57,6 @@ int main() {
       .gridSize = font.charSize,
     },
     .cursor{.fullSize = font.charSize},
-    .rows = uiRows,
-    .cols = uiCols,
   };
   editorState.windowManager.gridManager = &editorState.gridManager;
 
@@ -104,13 +102,10 @@ int main() {
     renderer.FbResize(window.fbSize);
 
     glm::vec2 size(window.fbSize / (unsigned int)window.dpiScale);
-    editorState.rows = size.x / font.charSize.x;
-    editorState.cols = size.y / font.charSize.y;
-    nvim.UiTryResize(editorState.rows, editorState.cols);
+    int rows = size.x / font.charSize.x;
+    int cols = size.y / font.charSize.y;
+    nvim.UiTryResize(rows, cols);
     renderer.Resize(size);
-
-    WinPos winPos{1, {}, 0, 0, editorState.rows, editorState.cols};
-    editorState.windowManager.Pos(winPos);
   };
 
   window.windowContentScaleCallback = [&](float xscale, float yscale) {
@@ -148,9 +143,9 @@ int main() {
       };
 
       nvim.ParseEvents();
+      if (nvim.redrawState.numFlushes == 0) continue;
 
       // process events ---------------------------------------
-      // if (nvim.redrawState.numFlushes == 0) continue;
       ProcessRedrawEvents(nvim.redrawState, editorState);
 
       // update ----------------------------------------------
@@ -171,14 +166,13 @@ int main() {
       {
         std::scoped_lock lock(wgpuDeviceMutex);
         renderer.Begin();
-        // LOG("----------------------");
 
         for (auto& [id, grid] : editorState.gridManager.grids) {
           if (id == 4) continue;
-          // if (grid.dirty) {
+          if (grid.dirty) {
             renderer.RenderGrid(grid, font, editorState.hlTable);
-            // grid.dirty = false;
-          // }
+            grid.dirty = false;
+          }
         }
 
         std::vector<const Window*> windows;
