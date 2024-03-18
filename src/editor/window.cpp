@@ -6,7 +6,7 @@
 
 using namespace wgpu;
 
-void WindowManager::Pos(WinPos& e) {
+void WinManager::Pos(WinPos& e) {
   auto [it, first] = windows.try_emplace(e.grid);
   auto& win = it->second;
 
@@ -63,13 +63,13 @@ void WindowManager::Pos(WinPos& e) {
   win.renderData.WriteBuffers();
 }
 
-void WindowManager::FloatPos(WinFloatPos& e) {
+void WinManager::FloatPos(WinFloatPos& e) {
 }
 
-void WindowManager::ExternalPos(WinExternalPos& e) {
+void WinManager::ExternalPos(WinExternalPos& e) {
 }
 
-void WindowManager::Hide(WinHide& e) {
+void WinManager::Hide(WinHide& e) {
   // NOTE: temporary to fix nvim issue
   if (auto it = windows.find(e.grid); it != windows.end()) {
     auto& win = it->second;
@@ -79,12 +79,12 @@ void WindowManager::Hide(WinHide& e) {
   }
 }
 
-void WindowManager::Close(WinClose& e) {
+void WinManager::Close(WinClose& e) {
   windows.erase(e.grid);
 }
 
-void WindowManager::Viewport(WinViewport& e) {
+void WinManager::Viewport(WinViewport& e) {
 }
 
-void WindowManager::Extmark(WinExtmark& e) {
+void WinManager::Extmark(WinExtmark& e) {
 }

@@ -9,7 +9,7 @@
 
 struct EditorState {
   GridManager gridManager;
-  WindowManager windowManager;
+  WinManager winManager;
   HlTable hlTable;
   Cursor cursor;
   std::vector<ModeInfo> modeInfoList;

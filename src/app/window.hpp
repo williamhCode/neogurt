@@ -6,7 +6,7 @@
 
 #include <string>
 
-struct AppWindow {
+struct Window {
   static inline WGPUContext _ctx;
   GLFWwindow* window;
 
@@ -24,9 +24,9 @@ struct AppWindow {
   std::function<void(float, float)> windowContentScaleCallback = nullptr;
   std::function<void()> windowCloseCallback = nullptr;
 
-  AppWindow() = default;
-  AppWindow(glm::uvec2 size, const std::string& title, wgpu::PresentMode presentMode);
-  ~AppWindow();
+  Window() = default;
+  Window(glm::uvec2 size, const std::string& title, wgpu::PresentMode presentMode);
+  ~Window();
 
   void SetShouldClose(bool value);
   bool ShouldClose();

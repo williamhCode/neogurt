@@ -7,7 +7,7 @@
 #include "webgpu/webgpu_cpp.h"
 #include <unordered_map>
 
-struct Window {
+struct Win {
   Grid* grid;
 
   int startRow;
@@ -23,11 +23,11 @@ struct Window {
   QuadRenderData<TextureQuadVertex> renderData;
 };
 
-struct WindowManager {
+struct WinManager {
   GridManager* gridManager;
   glm::vec2 gridSize;
 
-  std::unordered_map<int, Window> windows;
+  std::unordered_map<int, Win> windows;
 
   void Pos(WinPos& e);
   void FloatPos(WinFloatPos& e);

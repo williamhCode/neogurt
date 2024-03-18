@@ -43,7 +43,7 @@ struct Renderer {
 
   void Begin();
   void RenderGrid(Grid& grid, Font& font, const HlTable& hlTable);
-  void RenderWindows(const std::vector<const Window*>& windows);
+  void RenderWindows(const std::vector<const Win*>& windows);
   void RenderCursor(const Cursor& cursor, const HlTable& hlTable);
   void End();
   void Present();

@@ -128,7 +128,7 @@ void ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
           editorState.gridManager.Resize(e);
           if (e.grid == 1) {
             WinPos winPos{1, {}, 0, 0, e.width, e.height};
-            editorState.windowManager.Pos(winPos);
+            editorState.winManager.Pos(winPos);
           }
         },
         [&](GridClear& e) {
@@ -147,20 +147,20 @@ void ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
           editorState.gridManager.Destroy(e);
           // TODO: file bug report
           WinClose winClose{e.grid};
-          editorState.windowManager.Close(winClose);
+          editorState.winManager.Close(winClose);
         },
         [&](WinPos& e) {
-          editorState.windowManager.Pos(e);
+          editorState.winManager.Pos(e);
         },
         [&](WinFloatPos& e) {
         },
         [&](WinExternalPos& e) {
         },
         [&](WinHide& e) {
-          editorState.windowManager.Hide(e);
+          editorState.winManager.Hide(e);
         },
         [&](WinClose& e) {
-          editorState.windowManager.Close(e);
+          editorState.winManager.Close(e);
         },
         [&](MsgSetPos& e) {
         },

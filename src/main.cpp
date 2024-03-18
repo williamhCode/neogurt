@@ -23,12 +23,12 @@ using namespace wgpu;
 using namespace std::chrono_literals;
 using namespace std::chrono;
 
-const WGPUContext& ctx = AppWindow::_ctx;
+const WGPUContext& ctx = Window::_ctx;
 AppOptions options;
 
 int main() {
   // AppWindow window({1400, 800}, "Neovim GUI", PresentMode::Immediate);
-  AppWindow window({1600, 1000}, "Neovim GUI", PresentMode::Immediate);
+  Window window({1600, 1000}, "Neovim GUI", PresentMode::Immediate);
   Renderer renderer(window.size, window.fbSize);
   Font font("/Library/Fonts/SF-Mono-Medium.otf", 13, window.dpiScale);
   // Font font("/Users/williamhou/Library/Fonts/Hack Regular Nerd Font Complete
@@ -53,12 +53,12 @@ int main() {
       .gridSize = font.charSize,
       .dpiScale = window.dpiScale,
     },
-    .windowManager{
+    .winManager{
       .gridSize = font.charSize,
     },
     .cursor{.fullSize = font.charSize},
   };
-  editorState.windowManager.gridManager = &editorState.gridManager;
+  editorState.winManager.gridManager = &editorState.gridManager;
 
   // lock whenever ctx.device is used
   std::mutex wgpuDeviceMutex;
@@ -71,7 +71,7 @@ int main() {
       for (auto& [id, grid] : editorState.gridManager.grids) {
         LOG("grid {}: dirty={}", id, grid.dirty);
       }
-      for (auto& [id, grid] : editorState.windowManager.windows) {
+      for (auto& [id, grid] : editorState.winManager.windows) {
         LOG("win {}: hidden={}", id, grid.hidden);
       }
     }
@@ -130,11 +130,6 @@ int main() {
       auto fpsStr = std::format("fps: {:.2f}", fps);
       std::cout << '\r' << fpsStr << std::string(10, ' ') << std::flush;
 
-      {
-        std::scoped_lock lock(wgpuDeviceMutex);
-        ctx.device.Tick();
-      }
-
       // nvim events -------------------------------------------
       if (!nvim.client.IsConnected()) {
         windowShouldClose = true;
@@ -177,12 +172,12 @@ int main() {
           }
         }
 
-        std::vector<const Window*> windows;
-        auto it = editorState.windowManager.windows.find(1);
-        if (it != editorState.windowManager.windows.end()) {
+        std::vector<const Win*> windows;
+        auto it = editorState.winManager.windows.find(1);
+        if (it != editorState.winManager.windows.end()) {
           windows.push_back(&it->second);
         }
-        for (auto& [id, win] : editorState.windowManager.windows) {
+        for (auto& [id, win] : editorState.winManager.windows) {
           if (id == 4 || id == 1) continue;
           if (!win.hidden) windows.push_back(&win);
         }
@@ -193,6 +188,8 @@ int main() {
         // }
         renderer.End();
         renderer.Present();
+
+        ctx.device.Tick();
       }
     }
   });

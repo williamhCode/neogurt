@@ -4,54 +4,54 @@
 #include <ostream>
 
 static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-  AppWindow& win = *reinterpret_cast<AppWindow*>(glfwGetWindowUserPointer(window));
+  Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
   if (win.keyCallback) win.keyCallback(key, scancode, action, mods);
 }
 
 static void CharCallback(GLFWwindow* window, unsigned int codepoint) {
-  AppWindow& win = *reinterpret_cast<AppWindow*>(glfwGetWindowUserPointer(window));
+  Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
   if (win.charCallback) win.charCallback(codepoint);
 }
 
 static void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
-  AppWindow& win = *reinterpret_cast<AppWindow*>(glfwGetWindowUserPointer(window));
+  Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
   if (win.mouseButtonCallback) win.mouseButtonCallback(button, action, mods);
 }
 
 static void CursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
-  AppWindow& win = *reinterpret_cast<AppWindow*>(glfwGetWindowUserPointer(window));
+  Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
   if (win.cursorPosCallback) win.cursorPosCallback(xpos, ypos);
 }
 
 static void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
-  AppWindow& win = *reinterpret_cast<AppWindow*>(glfwGetWindowUserPointer(window));
+  Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
   if (win.scrollCallback) win.scrollCallback(xoffset, yoffset);
 }
 
 static void WindowSizeCallback(GLFWwindow* window, int width, int height) {
-  AppWindow& win = *reinterpret_cast<AppWindow*>(glfwGetWindowUserPointer(window));
+  Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
   win.size = {width, height};
   if (win.windowSizeCallback) win.windowSizeCallback(width, height);
 }
 
 static void FramebufferSizeCallback(GLFWwindow* window, int width, int height) {
-  AppWindow& win = *reinterpret_cast<AppWindow*>(glfwGetWindowUserPointer(window));
+  Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
   win.fbSize = {width, height};
   if (win.framebufferSizeCallback) win.framebufferSizeCallback(width, height);
 }
 
 static void WindowContentScaleCallback(GLFWwindow* window, float xscale, float yscale) {
-  AppWindow& win = *reinterpret_cast<AppWindow*>(glfwGetWindowUserPointer(window));
+  Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
   win.dpiScale = xscale;
   if (win.windowContentScaleCallback) win.windowContentScaleCallback(xscale, yscale);
 }
 
 static void WindowCloseCallback(GLFWwindow* window) {
-  AppWindow& win = *reinterpret_cast<AppWindow*>(glfwGetWindowUserPointer(window));
+  Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
   if (win.windowCloseCallback) win.windowCloseCallback();
 }
 
-AppWindow::AppWindow(glm::uvec2 size, const std::string& title, wgpu::PresentMode presentMode)
+Window::Window(glm::uvec2 size, const std::string& title, wgpu::PresentMode presentMode)
     : size(size) {
   if (!glfwInit()) {
     std::cerr << "Could not initialize GLFW!" << std::endl;
@@ -90,48 +90,48 @@ AppWindow::AppWindow(glm::uvec2 size, const std::string& title, wgpu::PresentMod
   std::cout << "WGPUContext created" << std::endl;
 }
 
-AppWindow::~AppWindow() {
+Window::~Window() {
   glfwDestroyWindow(window);
   glfwTerminate();
 }
 
-void AppWindow::SetShouldClose(bool value) {
+void Window::SetShouldClose(bool value) {
   glfwSetWindowShouldClose(window, value);
 }
 
-bool AppWindow::ShouldClose() {
+bool Window::ShouldClose() {
   return glfwWindowShouldClose(window);
 }
 
-void AppWindow::SetTitle(const std::string& title) {
+void Window::SetTitle(const std::string& title) {
   glfwSetWindowTitle(window, title.c_str());
 }
 
-void AppWindow::PollEvents() {
+void Window::PollEvents() {
   glfwPollEvents();
 }
 
-void AppWindow::WaitEvents() {
+void Window::WaitEvents() {
   glfwWaitEvents();
 }
 
-bool AppWindow::KeyPressed(int key) {
+bool Window::KeyPressed(int key) {
   return glfwGetKey(window, key) == GLFW_PRESS;
 }
 
-bool AppWindow::KeyReleased(int key) {
+bool Window::KeyReleased(int key) {
   return glfwGetKey(window, key) == GLFW_RELEASE;
 }
 
-bool AppWindow::MouseButtonPressed(int button) {
+bool Window::MouseButtonPressed(int button) {
   return glfwGetMouseButton(window, button) == GLFW_PRESS;
 }
 
-bool AppWindow::MouseButtonReleased(int button) {
+bool Window::MouseButtonReleased(int button) {
   return glfwGetMouseButton(window, button) == GLFW_RELEASE;
 }
 
-glm::vec2 AppWindow::GetCursorPos() {
+glm::vec2 Window::GetCursorPos() {
   double xpos, ypos;
   glfwGetCursorPos(window, &xpos, &ypos);
   return {xpos, ypos};

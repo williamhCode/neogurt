@@ -7,10 +7,10 @@
 #include "webgpu/webgpu_cpp.h"
 #include <vector>
 
-struct Window; // forward decl
+struct Win; // forward decl
 
 struct Grid {
-  Window* win;
+  Win* win;
 
   int width;
   int height;

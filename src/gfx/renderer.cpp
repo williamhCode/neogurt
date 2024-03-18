@@ -195,7 +195,7 @@ void Renderer::RenderGrid(
   }
 }
 
-void Renderer::RenderWindows(const std::vector<const Window*>& windows) {
+void Renderer::RenderWindows(const std::vector<const Win*>& windows) {
   textureRenderPassDesc.cColorAttachments[0].view = nextTexture;
   textureRenderPassDesc.cColorAttachments[0].clearValue = clearColor;
   auto passEncoder = commandEncoder.BeginRenderPass(&textureRenderPassDesc);
