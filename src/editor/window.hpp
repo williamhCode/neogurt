@@ -19,6 +19,8 @@ struct FloatData {
 
   bool focusable;
   int zindex;
+
+  bool operator==(const FloatData& other) const;
 };
 
 struct Win {
@@ -52,7 +54,7 @@ struct WinManager {
   glm::vec2 gridSize;
 
   // not unordered because telescope float background overlaps text
-  // so have to render in reverse order else text will be covered
+  // so have to render floats in reverse order else text will be covered
   std::map<int, Win> windows;
 
   void Pos(WinPos& e);

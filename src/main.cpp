@@ -31,7 +31,7 @@ int main() {
   // AppWindow window({1400, 800}, "Neovim GUI", PresentMode::Immediate);
   Window window({1600, 1000}, "Neovim GUI", PresentMode::Immediate);
   Renderer renderer(window.size, window.fbSize);
-  Font font("/Library/Fonts/SF-Mono-Medium.otf", 13, window.dpiScale);
+  Font font("/Library/Fonts/SF-Mono-Medium.otf", 15, window.dpiScale);
   // Font font("/Users/williamhou/Library/Fonts/Hack Regular Nerd Font Complete
   // Mono.ttf", 15, 2); Font font(ROOT_DIR
   // "/res/NerdFontsSymbolsOnly/SymbolsNerdFontMono-Regular.ttf", 15, 2);
@@ -189,6 +189,7 @@ int main() {
             }
           }
         }
+        // see editor/window.hpp comment for WinManager::windows
         std::ranges::reverse(floatingWindows);
         windows.insert(windows.end(), floatingWindows.begin(), floatingWindows.end());
         renderer.RenderWindows(windows);

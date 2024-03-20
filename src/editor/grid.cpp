@@ -17,7 +17,7 @@ void GridManager::Resize(GridResize& e) {
     grid.lines = Grid::Lines(e.height, Grid::Line(e.width, Grid::Cell{" "}));
   } else {
     // TODO: perhaps add RingBuffer::Resize for cleaner code
-    // copy lines over
+    // copy old lines over when resizing
     int minWidth = std::min(grid.width, e.width);
     int minHeight = std::min(grid.height, e.height);
 

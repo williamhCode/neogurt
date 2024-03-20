@@ -145,10 +145,10 @@ void ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
         },
         [&](GridDestroy& e) {
           editorState.gridManager.Destroy(e);
-          // TODO: file bug report
-          // temp fix for win not closing after tabclose
-          // WinClose winClose{e.grid};
-          // editorState.winManager.Close(winClose);
+          // TODO: file bug report, win_close not called after tabclose
+          // temp fix for bug
+          WinClose winClose{e.grid};
+          editorState.winManager.Close(winClose);
         },
         [&](WinPos& e) {
           editorState.winManager.Pos(e);

@@ -20,8 +20,11 @@ Font::Font(const std::string& path, int _size, float _dpiScale)
     }
     ftInitialized = true;
 
-    std::string nerdFontPath(ROOT_DIR "/res/Hack/HackNerdFont-Regular.ttf"
-                             // ROOT_DIR "/res/Hack/HackNerdFontMono-Regular.ttf"
+    std::string nerdFontPath(
+      // ROOT_DIR "/res/Hack/HackNerdFont-Regular.ttf"
+      // ROOT_DIR "/res/Hack/HackNerdFontMono-Regular.ttf"
+      ROOT_DIR "/res/NerdFontsSymbolsOnly/SymbolsNerdFont-Regular.ttf"
+      // ROOT_DIR "/res/NerdFontsSymbolsOnly/SymbolsNerdFontMono-Regular.ttf"
     );
     if (FT_New_Face(library, nerdFontPath.c_str(), 0, &nerdFace)) {
       throw std::runtime_error("Failed to load nerd font");
@@ -57,6 +60,7 @@ const Font::GlyphInfo& Font::GetGlyphInfoOrAdd(FT_ULong charcode) {
 
   FT_Face currFace;
   GlyphInfoMap* currMap;
+  float vertOffset = 0;
   if (glyphIndex != 0) {
     auto it = glyphInfoMap.find(glyphIndex);
     if (it != glyphInfoMap.end()) {
@@ -78,6 +82,8 @@ const Font::GlyphInfo& Font::GetGlyphInfoOrAdd(FT_ULong charcode) {
     currMap = &nerdGlyphInfoMap;
 
     FT_Set_Pixel_Sizes(nerdFace, 0, size * dpiScale);
+
+    vertOffset = size / 16.0;
   }
 
   dirty = true;
@@ -123,7 +129,7 @@ const Font::GlyphInfo& Font::GetGlyphInfoOrAdd(FT_ULong charcode) {
       .bearing =
         {
           glyph.bitmap_left / dpiScale,
-          glyph.bitmap_top / dpiScale,
+          glyph.bitmap_top / dpiScale + vertOffset,
         },
       .advance = (glyph.advance.x >> 6) / dpiScale,
       .region = MakeRegion(pos.x, pos.y, size, size),

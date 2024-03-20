@@ -6,6 +6,13 @@
 
 using namespace wgpu;
 
+bool FloatData::operator==(const FloatData& other) const {
+  return anchorWin == other.anchorWin && anchor == other.anchor &&
+         anchorGrid == other.anchorGrid && anchorRow == other.anchorRow &&
+         anchorCol == other.anchorCol && focusable == other.focusable &&
+         zindex == other.zindex;
+}
+
 Win::Win(Grid& grid) : grid(grid) {
   // when creating new window, grid_resize is called first, so we can create
   // bind group with grid's textureview when initializing window first time
@@ -102,7 +109,6 @@ void WinManager::Pos(WinPos& e) {
 
 void WinManager::FloatPos(WinFloatPos& e) {
   auto [winIt, first] = windows.try_emplace(e.grid, Win(gridManager->grids.at(e.grid)));
-  if (!first) return; // assume float can't be moved after creation
   auto& win = winIt->second;
 
   win.grid.win = &win;
@@ -119,7 +125,8 @@ void WinManager::FloatPos(WinFloatPos& e) {
     LOG_ERR("WinManager::FloatPos: anchor grid {} not found", e.anchorGrid);
     return;
   }
-  win.floatData = FloatData{
+
+  FloatData newFloatData{
     .anchorWin = &anchorIt->second,
     .anchor =
       [&] {
@@ -136,8 +143,11 @@ void WinManager::FloatPos(WinFloatPos& e) {
     .zindex = e.zindex,
   };
 
-  win.UpdateFloatPos();
-  win.UpdateRenderData();
+  if (first || (win.floatData.value() != newFloatData)) {
+    win.floatData = newFloatData;
+    win.UpdateFloatPos();
+    win.UpdateRenderData();
+  }
 }
 
 void WinManager::ExternalPos(WinExternalPos& e) {
@@ -155,7 +165,8 @@ void WinManager::Hide(WinHide& e) {
 void WinManager::Close(WinClose& e) {
   auto removed = windows.erase(e.grid);
   if (removed == 0) {
-    LOG_WARN("WinManager::Close: window {} not found", e.grid);
+    // see editor/state.cpp GridDestroy
+    LOG_WARN("WinManager::Close: window {} not found - ignore due to nvim bug", e.grid);
   }
 }
 
