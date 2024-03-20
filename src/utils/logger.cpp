@@ -8,6 +8,14 @@ void Logger::Log(const std::string& message) {
   std::cout << message << std::endl;
 }
 
+void Logger::LogWarn(const std::string& message) {
+  std::cout << "WARNING: " << message << std::endl;
+}
+
+void Logger::LogErr(const std::string& message) {
+  std::cout << "ERROR: " << message << std::endl;
+}
+
 std::string ToString(const msgpack::object& obj) {
   return (std::ostringstream() << obj).str();
 }

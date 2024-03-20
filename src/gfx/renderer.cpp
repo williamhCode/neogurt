@@ -52,7 +52,7 @@ Renderer::Renderer(glm::uvec2 size, glm::uvec2 fbSize) {
   // texture
   textureRenderPassDesc = utils::RenderPassDescriptor({
     RenderPassColorAttachment{
-      .loadOp = LoadOp::Clear,
+      .loadOp = LoadOp::Load,
       .storeOp = StoreOp::Store,
     },
   });

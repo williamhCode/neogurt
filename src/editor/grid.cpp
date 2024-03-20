@@ -3,6 +3,7 @@
 #include "gfx/instance.hpp"
 #include "glm/ext/matrix_clip_space.hpp"
 #include "glm/ext/matrix_float4x4.hpp"
+#include "utils/logger.hpp"
 #include "webgpu_utils/webgpu.hpp"
 #include <algorithm>
 
@@ -61,21 +62,21 @@ void GridManager::Resize(GridResize& e) {
     utils::CreateRenderTexture(ctx.device, textureSize, TextureFormat::BGRA8Unorm)
       .CreateView();
 
-  if (grid.win) {
-    auto textureSampler = ctx.device.CreateSampler(ToPtr(SamplerDescriptor{
-      .addressModeU = AddressMode::ClampToEdge,
-      .addressModeV = AddressMode::ClampToEdge,
-      .magFilter = FilterMode::Nearest,
-      .minFilter = FilterMode::Nearest,
-    }));
+  // when creating new window, grid_resize is called first, so handle that in win_pos
+  // but when resizing window, order is unknown, so we need to update
+  // window's bind group after grid's texture view is recreated
+  if (grid.win != nullptr) {
+    auto& win = *grid.win;
+    win.MakeTextureBG();
 
-    grid.win->textureBG = utils::MakeBindGroup(
-      ctx.device, ctx.pipeline.textureBGL,
-      {
-        {0, grid.textureView},
-        {1, textureSampler},
-      }
-    );
+    // we also need to update floating windows because their width and height
+    // depend on grid's width and height
+    if (win.floatData.has_value()) {
+      win.width = win.grid.width;
+      win.height = win.grid.height;
+      win.UpdateFloatPos();
+      win.UpdateRenderData();
+    }
   }
 
   const size_t maxTextQuads = grid.width * grid.height;
@@ -87,7 +88,13 @@ void GridManager::Resize(GridResize& e) {
 }
 
 void GridManager::Clear(GridClear& e) {
-  auto& grid = grids.at(e.grid);
+  auto it = grids.find(e.grid);
+  if (it == grids.end()) {
+    LOG_WARN("GridManager::Clear: grid {} not found", e.grid);
+    return;
+  }
+  auto& grid = it->second;
+
   for (size_t i = 0; i < grid.lines.Size(); i++) {
     auto& line = grid.lines[i];
     for (auto& cell : line) {
@@ -97,13 +104,24 @@ void GridManager::Clear(GridClear& e) {
 }
 
 void GridManager::CursorGoto(GridCursorGoto& e) {
-  auto& grid = grids.at(e.grid);
+  auto it = grids.find(e.grid);
+  if (it == grids.end()) {
+    LOG_WARN("GridManager::CursorGoto: grid {} not found", e.grid);
+    return;
+  }
+  auto& grid = it->second;
+
   grid.cursorRow = e.row;
   grid.cursorCol = e.col;
 }
 
 void GridManager::Line(GridLine& e) {
-  auto& grid = grids.at(e.grid);
+  auto it = grids.find(e.grid);
+  if (it == grids.end()) {
+    LOG_WARN("GridManager::Line: grid {} not found", e.grid);
+    return;
+  }
+  auto& grid = it->second;
 
   auto& line = grid.lines[e.row];
   int col = e.colStart;
@@ -120,7 +138,12 @@ void GridManager::Line(GridLine& e) {
 }
 
 void GridManager::Scroll(GridScroll& e) {
-  auto& grid = grids.at(e.grid);
+  auto it = grids.find(e.grid);
+  if (it == grids.end()) {
+    LOG_WARN("GridManager::Scroll: grid {} not found", e.grid);
+    return;
+  }
+  auto& grid = it->second;
 
   if (e.top == 0 && e.bot == grid.height && e.left == 0 && e.right == grid.width && e.cols == 0) {
     grid.lines.Scroll(e.rows);
@@ -151,5 +174,8 @@ void GridManager::Scroll(GridScroll& e) {
 }
 
 void GridManager::Destroy(GridDestroy& e) {
-  grids.erase(e.grid);
+  auto removed = grids.erase(e.grid);
+  if (removed == 0) {
+    LOG_WARN("GridManager::Destroy: grid {} not found", e.grid);
+  }
 }

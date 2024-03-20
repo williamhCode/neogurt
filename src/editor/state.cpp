@@ -35,7 +35,7 @@ void ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
                 } else if (shape == "vertical") {
                   modeInfo.cursorShape = CursorShape::Vertical;
                 } else {
-                  assert(false);
+                  LOG_WARN("unknown cursor shape: {}", shape);
                 }
               } else if (key == "cell_percentage") {
                 modeInfo.cellPercentage = value.as_uint64_t();
@@ -114,7 +114,7 @@ void ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
             } else if (key == "blend") {
               hl.blend = value.as_uint64_t();
             } else {
-              assert(false);
+              LOG_WARN("unknown hl attr key: {}", key);
             }
           }
         },
@@ -146,13 +146,15 @@ void ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
         [&](GridDestroy& e) {
           editorState.gridManager.Destroy(e);
           // TODO: file bug report
-          WinClose winClose{e.grid};
-          editorState.winManager.Close(winClose);
+          // temp fix for win not closing after tabclose
+          // WinClose winClose{e.grid};
+          // editorState.winManager.Close(winClose);
         },
         [&](WinPos& e) {
           editorState.winManager.Pos(e);
         },
         [&](WinFloatPos& e) {
+          editorState.winManager.FloatPos(e);
         },
         [&](WinExternalPos& e) {
         },

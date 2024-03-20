@@ -13,6 +13,7 @@
 #include "utils/logger.hpp"
 #include "utils/timer.hpp"
 
+#include <algorithm>
 #include <iostream>
 #include <format>
 #include <atomic>
@@ -123,7 +124,7 @@ int main() {
     Clock clock;
 
     while (!windowShouldClose) {
-      auto dt = clock.Tick();
+      auto dt = clock.Tick(60);
       // LOG("dt: {}", dt);
 
       auto fps = clock.GetFps();
@@ -173,14 +174,23 @@ int main() {
         }
 
         std::vector<const Win*> windows;
-        auto it = editorState.winManager.windows.find(1);
-        if (it != editorState.winManager.windows.end()) {
+        std::vector<const Win*> floatingWindows;
+        if (auto it = editorState.winManager.windows.find(1);
+            it != editorState.winManager.windows.end()) {
           windows.push_back(&it->second);
         }
         for (auto& [id, win] : editorState.winManager.windows) {
           if (id == 4 || id == 1) continue;
-          if (!win.hidden) windows.push_back(&win);
+          if (!win.hidden) {
+            if (win.floatData.has_value()) {
+              floatingWindows.push_back(&win);
+            } else {
+              windows.push_back(&win);
+            }
+          }
         }
+        std::ranges::reverse(floatingWindows);
+        windows.insert(windows.end(), floatingWindows.begin(), floatingWindows.end());
         renderer.RenderWindows(windows);
 
         // if (editorState.cursor.blinkState != BlinkState::Off) {

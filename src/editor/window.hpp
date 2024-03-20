@@ -5,10 +5,24 @@
 #include "nvim/parse.hpp"
 #include "editor/grid.hpp"
 #include "webgpu/webgpu_cpp.h"
-#include <unordered_map>
+#include <map>
+
+enum class Anchor { NW, NE, SW, SE };
+
+struct FloatData {
+  Win* anchorWin;
+
+  Anchor anchor;
+  int anchorGrid;
+  float anchorRow;
+  float anchorCol;
+
+  bool focusable;
+  int zindex;
+};
 
 struct Win {
-  Grid* grid;
+  Grid& grid;
 
   int startRow;
   int startCol;
@@ -18,16 +32,28 @@ struct Win {
 
   int hidden;
 
+  // exists only if window is floating
+  std::optional<FloatData> floatData;
+
   // rendering data
+  glm::vec2 gridSize;
+
   wgpu::BindGroup textureBG;
   QuadRenderData<TextureQuadVertex> renderData;
+
+  Win(Grid& grid);
+  void MakeTextureBG();
+  void UpdateRenderData();
+  void UpdateFloatPos();
 };
 
 struct WinManager {
   GridManager* gridManager;
   glm::vec2 gridSize;
 
-  std::unordered_map<int, Win> windows;
+  // not unordered because telescope float background overlaps text
+  // so have to render in reverse order else text will be covered
+  std::map<int, Win> windows;
 
   void Pos(WinPos& e);
   void FloatPos(WinFloatPos& e);
