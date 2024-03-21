@@ -7,7 +7,6 @@
 class Clock {
 private:
   // clock sleep
-  std::chrono::steady_clock::time_point lastFrame;
   std::chrono::steady_clock::time_point nextFrame;
 
   // calc delta and fps

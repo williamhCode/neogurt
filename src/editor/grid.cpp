@@ -9,7 +9,7 @@
 
 using namespace wgpu;
 
-void GridManager::Resize(GridResize& e) {
+void GridManager::Resize(const GridResize& e) {
   auto [it, first] = grids.try_emplace(e.grid);
   auto& grid = it->second;
 
@@ -87,7 +87,7 @@ void GridManager::Resize(GridResize& e) {
   grid.textData.ReserveVectors(maxTextQuads);
 }
 
-void GridManager::Clear(GridClear& e) {
+void GridManager::Clear(const GridClear& e) {
   auto it = grids.find(e.grid);
   if (it == grids.end()) {
     LOG_WARN("GridManager::Clear: grid {} not found", e.grid);
@@ -103,7 +103,7 @@ void GridManager::Clear(GridClear& e) {
   }
 }
 
-void GridManager::CursorGoto(GridCursorGoto& e) {
+void GridManager::CursorGoto(const GridCursorGoto& e) {
   auto it = grids.find(e.grid);
   if (it == grids.end()) {
     LOG_WARN("GridManager::CursorGoto: grid {} not found", e.grid);
@@ -115,7 +115,7 @@ void GridManager::CursorGoto(GridCursorGoto& e) {
   grid.cursorCol = e.col;
 }
 
-void GridManager::Line(GridLine& e) {
+void GridManager::Line(const GridLine& e) {
   auto it = grids.find(e.grid);
   if (it == grids.end()) {
     LOG_WARN("GridManager::Line: grid {} not found", e.grid);
@@ -137,7 +137,7 @@ void GridManager::Line(GridLine& e) {
   grid.dirty = true;
 }
 
-void GridManager::Scroll(GridScroll& e) {
+void GridManager::Scroll(const GridScroll& e) {
   auto it = grids.find(e.grid);
   if (it == grids.end()) {
     LOG_WARN("GridManager::Scroll: grid {} not found", e.grid);
@@ -159,11 +159,11 @@ void GridManager::Scroll(GridScroll& e) {
       }
     } else {
       // scrolling up, move lines down
-      e.rows = -e.rows;
-      int top = e.top + e.rows;
+      int rows = -e.rows;
+      int top = e.top + rows;
       int bot = e.bot;
       for (int i = bot - 1; i >= top; i--) {
-        auto& src = grid.lines[i - e.rows];
+        auto& src = grid.lines[i - rows];
         auto& dest = grid.lines[i];
         std::copy(src.begin() + e.left, src.begin() + e.right, dest.begin() + e.left);
       }
@@ -173,7 +173,7 @@ void GridManager::Scroll(GridScroll& e) {
   grid.dirty = true;
 }
 
-void GridManager::Destroy(GridDestroy& e) {
+void GridManager::Destroy(const GridDestroy& e) {
   auto removed = grids.erase(e.grid);
   if (removed == 0) {
     LOG_WARN("GridManager::Destroy: grid {} not found", e.grid);

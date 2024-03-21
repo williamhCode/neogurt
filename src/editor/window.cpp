@@ -88,7 +88,7 @@ void Win::UpdateFloatPos() {
   }
 }
 
-void WinManager::Pos(WinPos& e) {
+void WinManager::Pos(const WinPos& e) {
   auto [it, first] = windows.try_emplace(e.grid, Win(gridManager->grids.at(e.grid)));
   auto& win = it->second;
 
@@ -107,7 +107,7 @@ void WinManager::Pos(WinPos& e) {
   win.UpdateRenderData();
 }
 
-void WinManager::FloatPos(WinFloatPos& e) {
+void WinManager::FloatPos(const WinFloatPos& e) {
   auto [winIt, first] = windows.try_emplace(e.grid, Win(gridManager->grids.at(e.grid)));
   auto& win = winIt->second;
 
@@ -150,10 +150,10 @@ void WinManager::FloatPos(WinFloatPos& e) {
   }
 }
 
-void WinManager::ExternalPos(WinExternalPos& e) {
+void WinManager::ExternalPos(const WinExternalPos& e) {
 }
 
-void WinManager::Hide(WinHide& e) {
+void WinManager::Hide(const WinHide& e) {
   // NOTE: temporary to fix nvim issue
   if (auto it = windows.find(e.grid); it != windows.end()) {
     auto& win = it->second;
@@ -162,7 +162,7 @@ void WinManager::Hide(WinHide& e) {
   }
 }
 
-void WinManager::Close(WinClose& e) {
+void WinManager::Close(const WinClose& e) {
   auto removed = windows.erase(e.grid);
   if (removed == 0) {
     // see editor/state.cpp GridDestroy
@@ -170,8 +170,8 @@ void WinManager::Close(WinClose& e) {
   }
 }
 
-void WinManager::Viewport(WinViewport& e) {
+void WinManager::Viewport(const WinViewport& e) {
 }
 
-void WinManager::Extmark(WinExtmark& e) {
+void WinManager::Extmark(const WinExtmark& e) {
 }

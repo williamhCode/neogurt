@@ -13,6 +13,9 @@
 
 // forward decl
 struct Renderer {
+  glm::uvec2 size;
+  glm::uvec2 fbSize;
+
   wgpu::Color clearColor;
   wgpu::CommandEncoder commandEncoder;
   wgpu::TextureView nextTexture;
@@ -21,6 +24,7 @@ struct Renderer {
   wgpu::Buffer viewProjBuffer;
   wgpu::BindGroup viewProjBG;
   wgpu::TextureView maskTextureView;
+  wgpu::TextureView windowsTextureView;
 
   // rect (background)
   wgpu::utils::RenderPassDescriptor rectRenderPassDesc;
@@ -28,12 +32,17 @@ struct Renderer {
   // text
   wgpu::utils::RenderPassDescriptor textRenderPassDesc;
 
-  // texture
-  wgpu::utils::RenderPassDescriptor textureRenderPassDesc;
+  // windows
+  wgpu::utils::RenderPassDescriptor windowRenderPassDesc;
+  
+  // final texture
+  QuadRenderData<TextureQuadVertex> windowsTextureData;
+  wgpu::BindGroup windowsTextureBG;
+  wgpu::utils::RenderPassDescriptor windowsRenderPassDesc;
 
   // cursor
   QuadRenderData<CursorQuadVertex> cursorData;
-  wgpu::BindGroup maskBG;
+  wgpu::BindGroup cursorBG;
   wgpu::utils::RenderPassDescriptor cursorRenderPassDesc;
 
   Renderer(glm::uvec2 size, glm::uvec2 fbSize);
@@ -44,7 +53,7 @@ struct Renderer {
   void Begin();
   void RenderGrid(Grid& grid, Font& font, const HlTable& hlTable);
   void RenderWindows(const std::vector<const Win*>& windows);
-  void RenderFloatingWindows(const std::vector<const Win*>& windows);
+  void RenderWindowsTexture();
   void RenderCursor(const Cursor& cursor, const HlTable& hlTable);
   void End();
   void Present();

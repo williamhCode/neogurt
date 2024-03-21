@@ -17,15 +17,15 @@ struct TextQuadVertex {
   glm::vec4 foreground;
 };
 
+struct TextureQuadVertex {
+  glm::vec2 position;
+  glm::vec2 uv;
+};
+
 struct CursorQuadVertex {
   glm::vec2 position;
   glm::vec4 foreground;
   glm::vec4 background;
-};
-
-struct TextureQuadVertex {
-  glm::vec2 position;
-  glm::vec2 uv;
 };
 
 struct Pipeline {
@@ -39,7 +39,7 @@ struct Pipeline {
   wgpu::BindGroupLayout textureBGL;
   wgpu::RenderPipeline textureRPL;
 
-  wgpu::BindGroupLayout maskBGL;
+  wgpu::BindGroupLayout cursorBGL;
   wgpu::RenderPipeline cursorRPL;
 
   Pipeline() = default;

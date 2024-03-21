@@ -43,10 +43,10 @@ struct GridManager {
 
   std::unordered_map<int, Grid> grids;
 
-  void Resize(GridResize& e);
-  void Clear(GridClear& e);
-  void CursorGoto(GridCursorGoto& e);
-  void Line(GridLine& e);
-  void Scroll(GridScroll& e);
-  void Destroy(GridDestroy& e);
+  void Resize(const GridResize& e);
+  void Clear(const GridClear& e);
+  void CursorGoto(const GridCursorGoto& e);
+  void Line(const GridLine& e);
+  void Scroll(const GridScroll& e);
+  void Destroy(const GridDestroy& e);
 };

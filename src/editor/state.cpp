@@ -126,9 +126,9 @@ void ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
         },
         [&](GridResize& e) {
           editorState.gridManager.Resize(e);
+          // default window events not send by nvim
           if (e.grid == 1) {
-            WinPos winPos{1, {}, 0, 0, e.width, e.height};
-            editorState.winManager.Pos(winPos);
+            editorState.winManager.Pos({1, {}, 0, 0, e.width, e.height});
           }
         },
         [&](GridClear& e) {

@@ -10,7 +10,8 @@
 
 using namespace wgpu;
 
-Renderer::Renderer(glm::uvec2 size, glm::uvec2 fbSize) {
+Renderer::Renderer(glm::uvec2 _size, glm::uvec2 _fbSize)
+    : size(_size), fbSize(_fbSize) {
   clearColor = {0.0, 0.0, 0.0, 1.0};
 
   // shared
@@ -26,6 +27,11 @@ Renderer::Renderer(glm::uvec2 size, glm::uvec2 fbSize) {
   maskTextureView =
     utils::CreateRenderTexture(ctx.device, {fbSize.x, fbSize.y}, TextureFormat::R8Unorm)
       .CreateView();
+
+  windowsTextureView = utils::CreateRenderTexture(
+                         ctx.device, {fbSize.x, fbSize.y}, TextureFormat::BGRA8Unorm
+  )
+                         .CreateView();
 
   // rect
   rectRenderPassDesc = utils::RenderPassDescriptor({
@@ -49,8 +55,35 @@ Renderer::Renderer(glm::uvec2 size, glm::uvec2 fbSize) {
     // },
   });
 
-  // texture
-  textureRenderPassDesc = utils::RenderPassDescriptor({
+  // windows
+  windowRenderPassDesc = utils::RenderPassDescriptor({
+    RenderPassColorAttachment{
+      .view = windowsTextureView,
+      .loadOp = LoadOp::Load,
+      .storeOp = StoreOp::Store,
+    },
+  });
+
+  // all windows combined
+  windowsTextureData.CreateBuffers(1);
+  windowsTextureData.ReserveVectors(1);
+
+  auto textureSampler = ctx.device.CreateSampler(ToPtr(SamplerDescriptor{
+    .addressModeU = AddressMode::ClampToEdge,
+    .addressModeV = AddressMode::ClampToEdge,
+    .magFilter = FilterMode::Nearest,
+    .minFilter = FilterMode::Nearest,
+  }));
+
+  windowsTextureBG = utils::MakeBindGroup(
+    ctx.device, ctx.pipeline.textureBGL,
+    {
+      {0, windowsTextureView},
+      {1, textureSampler},
+    }
+  );
+
+  windowsRenderPassDesc = utils::RenderPassDescriptor({
     RenderPassColorAttachment{
       .loadOp = LoadOp::Load,
       .storeOp = StoreOp::Store,
@@ -61,8 +94,8 @@ Renderer::Renderer(glm::uvec2 size, glm::uvec2 fbSize) {
   cursorData.CreateBuffers(1);
   cursorData.ReserveVectors(1);
 
-  maskBG = utils::MakeBindGroup(
-    ctx.device, ctx.pipeline.maskBGL,
+  cursorBG = utils::MakeBindGroup(
+    ctx.device, ctx.pipeline.cursorBGL,
     {
       {0, maskTextureView},
     }
@@ -76,14 +109,19 @@ Renderer::Renderer(glm::uvec2 size, glm::uvec2 fbSize) {
   });
 }
 
-void Renderer::Resize(glm::uvec2 size) {
+void Renderer::Resize(glm::uvec2 _size) {
+  size = _size;
+
   auto view = glm::ortho<float>(0, size.x, size.y, 0, -1, 1);
   ctx.queue.WriteBuffer(viewProjBuffer, 0, &view, sizeof(glm::mat4));
 }
 
-void Renderer::FbResize(glm::uvec2 fbSize) {
+void Renderer::FbResize(glm::uvec2 _fbSize) {
+  fbSize = _fbSize;
+
   // maskTextureView =
-  //   utils::CreateRenderTexture(ctx.device, {fbSize.x, fbSize.y}, TextureFormat::R8Unorm)
+  //   utils::CreateRenderTexture(ctx.device, {fbSize.x, fbSize.y},
+  //   TextureFormat::R8Unorm)
   //     .CreateView();
 
   // maskBG = utils::MakeBindGroup(
@@ -101,9 +139,7 @@ void Renderer::Begin() {
   nextTexture = ctx.swapChain.GetCurrentTextureView();
 }
 
-void Renderer::RenderGrid(
-  Grid& grid, Font& font, const HlTable& hlTable
-) {
+void Renderer::RenderGrid(Grid& grid, Font& font, const HlTable& hlTable) {
   auto& textData = grid.textData;
   auto& rectData = grid.rectData;
 
@@ -121,7 +157,7 @@ void Renderer::RenderGrid(
       auto hl = hlTable.at(cell.hlId);
 
       // don't render background if default
-      if (cell.hlId != 0 && hl.background.has_value()) {
+      if (cell.hlId != 0 && hl.background.has_value() && hl.background != hlTable.at(0).background) {
         static std::array<glm::vec2, 4> rectPositions{
           glm::vec2(0, 0),
           glm::vec2(font.charSize.x, 0),
@@ -196,9 +232,7 @@ void Renderer::RenderGrid(
 }
 
 void Renderer::RenderWindows(const std::vector<const Win*>& windows) {
-  textureRenderPassDesc.cColorAttachments[0].view = nextTexture;
-  textureRenderPassDesc.cColorAttachments[0].clearValue = clearColor;
-  auto passEncoder = commandEncoder.BeginRenderPass(&textureRenderPassDesc);
+  auto passEncoder = commandEncoder.BeginRenderPass(&windowRenderPassDesc);
   passEncoder.SetPipeline(ctx.pipeline.textureRPL);
 
   for (auto win : windows) {
@@ -208,6 +242,29 @@ void Renderer::RenderWindows(const std::vector<const Win*>& windows) {
     passEncoder.DrawIndexed(win->renderData.indexCount);
   }
 
+  passEncoder.End();
+}
+
+void Renderer::RenderWindowsTexture() {
+  windowsTextureData.ResetCounts();
+  auto positions = MakeRegion(0, 0, size.x, size.y);
+  auto uvs = MakeRegion(0, 0, 1, 1);
+  for (size_t i = 0; i < 4; i++) {
+    auto& vertex = windowsTextureData.quads[0][i];
+    vertex.position = positions[i];
+    vertex.uv = uvs[i];
+  }
+  windowsTextureData.SetIndices();
+  windowsTextureData.IncrementCounts();
+  windowsTextureData.WriteBuffers();
+
+  windowsRenderPassDesc.cColorAttachments[0].view = nextTexture;
+  auto passEncoder = commandEncoder.BeginRenderPass(&windowsRenderPassDesc);
+  passEncoder.SetPipeline(ctx.pipeline.textureRPL);
+  passEncoder.SetBindGroup(0, viewProjBG);
+  passEncoder.SetBindGroup(1, windowsTextureBG);
+  windowsTextureData.SetBuffers(passEncoder);
+  passEncoder.DrawIndexed(windowsTextureData.indexCount);
   passEncoder.End();
 }
 
@@ -225,7 +282,7 @@ void Renderer::RenderCursor(const Cursor& cursor, const HlTable& hlTable) {
   }
 
   for (size_t i = 0; i < 4; i++) {
-    auto& vertex = cursorData.quads[cursorData.quadCount][i];
+    auto& vertex = cursorData.quads[0][i];
     vertex.position = cursor.pos + cursor.corners[i];
     vertex.foreground = foreground;
     vertex.background = background;
@@ -233,7 +290,6 @@ void Renderer::RenderCursor(const Cursor& cursor, const HlTable& hlTable) {
 
   cursorData.SetIndices();
   cursorData.IncrementCounts();
-
   cursorData.WriteBuffers();
 
   {
@@ -242,7 +298,7 @@ void Renderer::RenderCursor(const Cursor& cursor, const HlTable& hlTable) {
       commandEncoder.BeginRenderPass(&cursorRenderPassDesc);
     passEncoder.SetPipeline(ctx.pipeline.cursorRPL);
     passEncoder.SetBindGroup(0, viewProjBG);
-    passEncoder.SetBindGroup(1, maskBG);
+    passEncoder.SetBindGroup(1, cursorBG);
     cursorData.SetBuffers(passEncoder);
     passEncoder.DrawIndexed(cursorData.indexCount);
     passEncoder.End();

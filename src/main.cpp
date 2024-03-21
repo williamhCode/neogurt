@@ -28,7 +28,7 @@ const WGPUContext& ctx = Window::_ctx;
 AppOptions options;
 
 int main() {
-  // AppWindow window({1400, 800}, "Neovim GUI", PresentMode::Immediate);
+  // Window window({1400, 800}, "Neovim GUI", PresentMode::Immediate);
   Window window({1600, 1000}, "Neovim GUI", PresentMode::Immediate);
   Renderer renderer(window.size, window.fbSize);
   Font font("/Library/Fonts/SF-Mono-Medium.otf", 15, window.dpiScale);
@@ -124,7 +124,7 @@ int main() {
     Clock clock;
 
     while (!windowShouldClose) {
-      auto dt = clock.Tick(60);
+      auto dt = clock.Tick();
       // LOG("dt: {}", dt);
 
       auto fps = clock.GetFps();
@@ -165,34 +165,38 @@ int main() {
         std::scoped_lock lock(wgpuDeviceMutex);
         renderer.Begin();
 
-        for (auto& [id, grid] : editorState.gridManager.grids) {
-          if (id == 4) continue;
-          if (grid.dirty) {
-            renderer.RenderGrid(grid, font, editorState.hlTable);
-            grid.dirty = false;
-          }
-        }
-
-        std::vector<const Win*> windows;
-        std::vector<const Win*> floatingWindows;
-        if (auto it = editorState.winManager.windows.find(1);
-            it != editorState.winManager.windows.end()) {
-          windows.push_back(&it->second);
-        }
-        for (auto& [id, win] : editorState.winManager.windows) {
-          if (id == 4 || id == 1) continue;
-          if (!win.hidden) {
-            if (win.floatData.has_value()) {
-              floatingWindows.push_back(&win);
-            } else {
-              windows.push_back(&win);
+        if (nvim.redrawState.numFlushes != 0) {
+          for (auto& [id, grid] : editorState.gridManager.grids) {
+            if (id == 4) continue;
+            if (grid.dirty) {
+              renderer.RenderGrid(grid, font, editorState.hlTable);
+              grid.dirty = false;
             }
           }
+
+          std::vector<const Win*> windows;
+          std::vector<const Win*> floatingWindows;
+          if (auto it = editorState.winManager.windows.find(1);
+              it != editorState.winManager.windows.end()) {
+            windows.push_back(&it->second);
+          }
+          for (auto& [id, win] : editorState.winManager.windows) {
+            if (id == 4 || id == 1) continue;
+            if (!win.hidden) {
+              if (win.floatData.has_value()) {
+                floatingWindows.push_back(&win);
+              } else {
+                windows.push_back(&win);
+              }
+            }
+          }
+          // see editor/window.hpp comment for WinManager::windows
+          std::ranges::reverse(floatingWindows);
+          windows.insert(windows.end(), floatingWindows.begin(), floatingWindows.end());
+          renderer.RenderWindows(windows);
         }
-        // see editor/window.hpp comment for WinManager::windows
-        std::ranges::reverse(floatingWindows);
-        windows.insert(windows.end(), floatingWindows.begin(), floatingWindows.end());
-        renderer.RenderWindows(windows);
+
+        renderer.RenderWindowsTexture();
 
         // if (editorState.cursor.blinkState != BlinkState::Off) {
         //   renderer.RenderCursor(editorState.cursor, editorState.hlTable);

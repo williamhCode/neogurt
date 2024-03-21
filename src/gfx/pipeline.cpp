@@ -161,7 +161,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
   ShaderModule cursorShader =
     utils::LoadShaderModule(ctx.device, ROOT_DIR "/src/shaders/cursor.wgsl");
 
-  maskBGL = utils::MakeBindGroupLayout(
+  cursorBGL = utils::MakeBindGroupLayout(
     ctx.device,
     {
       {0, ShaderStage::Fragment, TextureSampleType::UnfilterableFloat},
@@ -173,7 +173,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
       ctx.device,
       {
         viewProjBGL,
-        maskBGL,
+        cursorBGL,
       }
     ),
     .vertex = VertexState{

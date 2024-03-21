@@ -57,12 +57,12 @@ struct WinManager {
   // so have to render floats in reverse order else text will be covered
   std::map<int, Win> windows;
 
-  void Pos(WinPos& e);
-  void FloatPos(WinFloatPos& e);
-  void ExternalPos(WinExternalPos& e);
-  void Hide(WinHide& e);
-  void Close(WinClose& e);
-  // void MsgSetPos(MsgSetPos& e);
-  void Viewport(WinViewport& e);
-  void Extmark(WinExtmark& e);
+  void Pos(const WinPos& e);
+  void FloatPos(const WinFloatPos& e);
+  void ExternalPos(const WinExternalPos& e);
+  void Hide(const WinHide& e);
+  void Close(const WinClose& e);
+  // void MsgSetPos(const MsgSetPos& e);
+  void Viewport(const WinViewport& e);
+  void Extmark(const WinExtmark& e);
 };

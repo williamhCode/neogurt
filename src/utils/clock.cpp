@@ -1,20 +1,24 @@
 #include "clock.hpp"
+#include "utils/logger.hpp"
 #include <numeric>
 #include <thread>
 
 using namespace std::chrono;
 
 Clock::Clock() {
-  lastFrame = steady_clock::now();
-  nextFrame = lastFrame;
-
+  nextFrame = steady_clock::now();
   prevTime = steady_clock::now();
 }
 
 double Clock::Tick(std::optional<double> fps) {
-  if (fps) {
+  if (fps.has_value()) {
+    // nextFrame not catching up when app is paused for a while
+    auto now = steady_clock::now();
+    if (nextFrame < now) {
+      nextFrame = now;
+    }
+
     std::this_thread::sleep_until(nextFrame);
-    lastFrame = nextFrame;
     double deltaSecs = 1.0 / *fps;
     auto delta = nanoseconds(static_cast<long long>(deltaSecs * 1e9));
     nextFrame += delta;

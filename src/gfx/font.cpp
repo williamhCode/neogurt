@@ -60,7 +60,7 @@ const Font::GlyphInfo& Font::GetGlyphInfoOrAdd(FT_ULong charcode) {
 
   FT_Face currFace;
   GlyphInfoMap* currMap;
-  float vertOffset = 0;
+  int vertOffset = 0;
   if (glyphIndex != 0) {
     auto it = glyphInfoMap.find(glyphIndex);
     if (it != glyphInfoMap.end()) {
