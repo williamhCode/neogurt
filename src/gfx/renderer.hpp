@@ -1,5 +1,6 @@
 #pragma once
 
+#include "app/size.hpp"
 #include "editor/cursor.hpp"
 #include "editor/highlight.hpp"
 #include "editor/grid.hpp"
@@ -13,9 +14,6 @@
 
 // forward decl
 struct Renderer {
-  glm::uvec2 size;
-  glm::uvec2 fbSize;
-
   wgpu::Color clearColor;
   wgpu::CommandEncoder commandEncoder;
   wgpu::TextureView nextTexture;
@@ -33,6 +31,8 @@ struct Renderer {
   wgpu::utils::RenderPassDescriptor textRenderPassDesc;
 
   // windows
+  wgpu::Buffer uiViewProjBuffer;
+  wgpu::BindGroup uiViewProjBG;
   wgpu::utils::RenderPassDescriptor windowRenderPassDesc;
   
   // final texture
@@ -45,10 +45,9 @@ struct Renderer {
   wgpu::BindGroup cursorBG;
   wgpu::utils::RenderPassDescriptor cursorRenderPassDesc;
 
-  Renderer(glm::uvec2 size, glm::uvec2 fbSize);
+  Renderer(const SizeHandler& sizes);
 
-  void Resize(glm::uvec2 size);
-  void FbResize(glm::uvec2 fbSize);
+  void Resize(const SizeHandler& sizes);
 
   void Begin();
   void RenderGrid(Grid& grid, Font& font, const HlTable& hlTable);

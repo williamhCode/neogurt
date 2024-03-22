@@ -127,8 +127,14 @@ void ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
         [&](GridResize& e) {
           editorState.gridManager.Resize(e);
           // default window events not send by nvim
+          auto& winMgr = editorState.winManager;
           if (e.grid == 1) {
-            editorState.winManager.Pos({1, {}, 0, 0, e.width, e.height});
+            winMgr.Pos({1, {}, 0, 0, e.width, e.height});
+          } else if (e.grid == winMgr.msgGridId && winMgr.currMsgSetPos.has_value()) {
+            // workaround since msg_set_pos is called before grid_resize
+            // only runs first time
+            winMgr.MsgSet(*winMgr.currMsgSetPos);
+            winMgr.currMsgSetPos.reset();
           }
         },
         [&](GridClear& e) {
@@ -165,6 +171,7 @@ void ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
           editorState.winManager.Close(e);
         },
         [&](MsgSetPos& e) {
+          editorState.winManager.MsgSet(e);
         },
         [&](WinViewport& e) {
         },

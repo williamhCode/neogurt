@@ -23,6 +23,7 @@ set(APP_SRC
 
   src/app/window.cpp
   src/app/input.cpp
+  src/app/size.cpp
 
   src/editor/state.cpp
   src/editor/cursor.cpp

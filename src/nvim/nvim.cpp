@@ -4,11 +4,11 @@
 Nvim::Nvim(bool debug) {
   // start nvim process
   if (!debug) {
-    // std::string command = "nvim --listen localhost:6666 --headless "
-    //                       "--cmd \"let g:neovim_gui = 1\"";
-    std::string command = "cd ~/.config/nvim && "
-                          "nvim --listen localhost:6666 --headless "
+    std::string command = "nvim --listen localhost:6666 --headless "
                           "--cmd \"let g:neovim_gui = 1\"";
+    // std::string command = "cd ~/.config/nvim && "
+    //                       "nvim --listen localhost:6666 --headless "
+    //                       "--cmd \"let g:neovim_gui = 1\"";
     nvimProcess = std::make_unique<TinyProcessLib::Process>(command, "", nullptr);
   }
 
@@ -23,9 +23,10 @@ Nvim::Nvim(bool debug) {
   }
 
   if (client.IsConnected()) {
-    std::cout << "Connected to nvim" << std::endl;
+    // std::cout << "Connected to nvim" << std::endl;
+    LOG_INFO("Connected to nvim");
   } else {
-    std::cout << "Failed to connect to nvim" << std::endl;
+    LOG_ERR("Failed to connect to nvim");
   }
 
   SetClientInfo(

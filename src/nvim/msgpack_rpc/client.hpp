@@ -149,7 +149,7 @@ private:
           while (unpacker.next(handle)) {
             auto& obj = handle.get();
             if (obj.type != msgpack::type::ARRAY) {
-              std::cout << "Not an array" << std::endl;
+              LOG_ERR("Client::GetData: Not an array");
               continue;
             }
 
@@ -172,6 +172,9 @@ private:
                   // ));
                   std::cout << "ERROR_TYPE: " << msg.error.via.array.ptr[0] << "\n";
                   std::cout << "ERROR: " << msg.error.via.array.ptr[1] << "\n";
+                  // promise.set_value(
+                  //   msgpack::object_handle(msg.error, std::move(handle.zone()))
+                  // );
                 }
 
                 {
@@ -180,7 +183,7 @@ private:
                 }
 
               } else {
-                LOG("Response not found for msgid: {}", msg.msgid);
+                LOG_WARN("Client::GetData: Response not found for msgid: {}", msg.msgid);
               }
 
             } else if (type == MessageType::Notification) {
@@ -192,7 +195,7 @@ private:
               });
 
             } else {
-              std::cout << "Unknown type: " << type << "\n";
+              LOG_WARN("Client::GetData: Unknown type: {}", type);
             }
           }
 
@@ -203,13 +206,14 @@ private:
           GetData();
 
         } else if (ec == asio::error::eof) {
-          std::cout << "The server closed the connection\n";
+          LOG_INFO("Client::GetData: The server closed the connection");
           Disconnect();
 
         } else {
           if (IsConnected()) {
-            std::cout << "Error code: " << ec << std::endl;
-            std::cout << "Error message: " << ec.message() << std::endl;
+            // std::cout << "Error code: " << ec << std::endl;
+            // std::cout << "Error message: " << ec.message() << std::endl;
+            LOG_INFO("Client::GetData: {}", ec.message());
           }
         }
       }
@@ -232,14 +236,14 @@ private:
         (void)length;
         if (!ec) {
           if (msgsOut.Empty()) {
-            LOG("Unexpected empty msgsOut queue");
+            LOG_WARN("Client::DoWrite: msgsOut is empty");
             return;
           }
           msgsOut.Pop();
           DoWrite();
 
         } else {
-          std::cerr << "Failed to write to socket:\n" << ec.message() << std::endl;
+          LOG_INFO("Client::DoWrite: {}", ec.message());
         }
       }
     );

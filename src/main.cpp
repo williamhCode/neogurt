@@ -1,5 +1,6 @@
 #include "GLFW/glfw3.h"
 #include "app/options.hpp"
+#include "app/size.hpp"
 #include "app/window.hpp"
 #include "app/input.hpp"
 #include "editor/grid.hpp"
@@ -30,18 +31,17 @@ AppOptions options;
 int main() {
   // Window window({1400, 800}, "Neovim GUI", PresentMode::Immediate);
   Window window({1600, 1000}, "Neovim GUI", PresentMode::Immediate);
-  Renderer renderer(window.size, window.fbSize);
   Font font("/Library/Fonts/SF-Mono-Medium.otf", 15, window.dpiScale);
-  // Font font("/Users/williamhou/Library/Fonts/Hack Regular Nerd Font Complete
-  // Mono.ttf", 15, 2); Font font(ROOT_DIR
-  // "/res/NerdFontsSymbolsOnly/SymbolsNerdFontMono-Regular.ttf", 15, 2);
 
-  int uiRows = window.size.x / font.charSize.x;
-  int uiCols = window.size.y / font.charSize.y;
+  SizeHandler sizes;
+  sizes.UpdateSizes(window.size, window.dpiScale, font.charSize);
 
+  Renderer renderer(sizes);
+
+  auto [uiWidth, uiHeight] = sizes.GetUiWidthHeight();
   Nvim nvim(false);
   nvim.UiAttach(
-    uiRows, uiCols,
+    uiWidth, uiHeight,
     {
       {"rgb", true},
       {"ext_multigrid", true},
@@ -98,14 +98,15 @@ int main() {
   // resizing and dpi changed -------------------------------------
   window.framebufferSizeCallback = [&](int width, int height) {
     std::scoped_lock lock(wgpuDeviceMutex);
-    window._ctx.Resize(window.fbSize);
-    renderer.FbResize(window.fbSize);
-
     glm::vec2 size(window.fbSize / (unsigned int)window.dpiScale);
-    int rows = size.x / font.charSize.x;
-    int cols = size.y / font.charSize.y;
-    nvim.UiTryResize(rows, cols);
-    renderer.Resize(size);
+    sizes.UpdateSizes(size, window.dpiScale, font.charSize);
+
+    window._ctx.Resize(sizes.fbSize);
+
+    auto [uiWidth, uiHeight] = sizes.GetUiWidthHeight();
+    nvim.UiTryResize(uiWidth, uiHeight);
+
+    renderer.Resize(sizes);
   };
 
   window.windowContentScaleCallback = [&](float xscale, float yscale) {
@@ -124,12 +125,12 @@ int main() {
     Clock clock;
 
     while (!windowShouldClose) {
-      auto dt = clock.Tick();
+      auto dt = clock.Tick(60);
       // LOG("dt: {}", dt);
 
-      auto fps = clock.GetFps();
-      auto fpsStr = std::format("fps: {:.2f}", fps);
-      std::cout << '\r' << fpsStr << std::string(10, ' ') << std::flush;
+      // auto fps = clock.GetFps();
+      // auto fpsStr = std::format("fps: {:.2f}", fps);
+      // std::cout << '\r' << fpsStr << std::string(10, ' ') << std::flush;
 
       // nvim events -------------------------------------------
       if (!nvim.client.IsConnected()) {
@@ -167,7 +168,6 @@ int main() {
 
         if (nvim.redrawState.numFlushes != 0) {
           for (auto& [id, grid] : editorState.gridManager.grids) {
-            if (id == 4) continue;
             if (grid.dirty) {
               renderer.RenderGrid(grid, font, editorState.hlTable);
               grid.dirty = false;
@@ -181,7 +181,7 @@ int main() {
             windows.push_back(&it->second);
           }
           for (auto& [id, win] : editorState.winManager.windows) {
-            if (id == 4 || id == 1) continue;
+            if (id == 1) continue;
             if (!win.hidden) {
               if (win.floatData.has_value()) {
                 floatingWindows.push_back(&win);

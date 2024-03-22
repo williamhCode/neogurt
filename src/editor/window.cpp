@@ -170,6 +170,32 @@ void WinManager::Close(const WinClose& e) {
   }
 }
 
+void WinManager::MsgSet(const MsgSetPos& e) {
+  // workaround since msg_set_pos is called before grid_resize
+  if (msgGridId == -1) {
+    msgGridId = e.grid;
+    currMsgSetPos = e;
+    return;
+  }
+
+  auto [winIt, first] = windows.try_emplace(e.grid, Win(gridManager->grids.at(e.grid)));
+  auto& win = winIt->second;
+
+  win.grid.win = &win;
+
+  win.startRow = e.row;
+  win.startCol = 0;
+
+  win.width = win.grid.width;
+  win.height = win.grid.height;
+
+  win.hidden = false;
+
+  win.gridSize = gridSize;
+
+  win.UpdateRenderData();
+}
+
 void WinManager::Viewport(const WinViewport& e) {
 }
 

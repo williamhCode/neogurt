@@ -3,6 +3,7 @@
 #include "gfx/instance.hpp"
 #include "glm/ext/matrix_clip_space.hpp"
 #include "glm/ext/matrix_float4x4.hpp"
+#include "glm/gtx/string_cast.hpp"
 #include "utils/logger.hpp"
 #include "webgpu_utils/webgpu.hpp"
 #include <algorithm>
@@ -75,6 +76,11 @@ void GridManager::Resize(const GridResize& e) {
       win.width = win.grid.width;
       win.height = win.grid.height;
       win.UpdateFloatPos();
+      win.UpdateRenderData();
+    } else if (e.grid == 4) {
+      // for msg window
+      win.width = win.grid.width;
+      win.height = win.grid.height;
       win.UpdateRenderData();
     }
   }

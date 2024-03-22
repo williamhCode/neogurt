@@ -53,6 +53,8 @@ struct WinManager {
   GridManager* gridManager;
   glm::vec2 gridSize;
 
+  int msgGridId = -1;
+  std::optional<MsgSetPos> currMsgSetPos;
   // not unordered because telescope float background overlaps text
   // so have to render floats in reverse order else text will be covered
   std::map<int, Win> windows;
@@ -62,7 +64,7 @@ struct WinManager {
   void ExternalPos(const WinExternalPos& e);
   void Hide(const WinHide& e);
   void Close(const WinClose& e);
-  // void MsgSetPos(const MsgSetPos& e);
+  void MsgSet(const MsgSetPos& e);
   void Viewport(const WinViewport& e);
   void Extmark(const WinExtmark& e);
 };

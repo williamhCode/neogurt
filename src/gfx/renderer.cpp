@@ -10,12 +10,11 @@
 
 using namespace wgpu;
 
-Renderer::Renderer(glm::uvec2 _size, glm::uvec2 _fbSize)
-    : size(_size), fbSize(_fbSize) {
+Renderer::Renderer(const SizeHandler& sizes) {
   clearColor = {0.0, 0.0, 0.0, 1.0};
 
   // shared
-  auto view = glm::ortho<float>(0, size.x, size.y, 0, -1, 1);
+  auto view = glm::ortho<float>(0, sizes.size.x, sizes.size.y, 0, -1, 1);
   viewProjBuffer = utils::CreateUniformBuffer(ctx.device, sizeof(glm::mat4), &view);
   viewProjBG = utils::MakeBindGroup(
     ctx.device, ctx.pipeline.viewProjBGL,
@@ -24,14 +23,19 @@ Renderer::Renderer(glm::uvec2 _size, glm::uvec2 _fbSize)
     }
   );
 
+  Extent3D maskSize = {
+    static_cast<uint32_t>(sizes.fbSize.x), static_cast<uint32_t>(sizes.fbSize.y)
+  };
   maskTextureView =
-    utils::CreateRenderTexture(ctx.device, {fbSize.x, fbSize.y}, TextureFormat::R8Unorm)
+    utils::CreateRenderTexture(ctx.device, maskSize, TextureFormat::R8Unorm)
       .CreateView();
 
-  windowsTextureView = utils::CreateRenderTexture(
-                         ctx.device, {fbSize.x, fbSize.y}, TextureFormat::BGRA8Unorm
-  )
-                         .CreateView();
+  Extent3D windowsSize = {
+    static_cast<uint32_t>(sizes.uiFbSize.x), static_cast<uint32_t>(sizes.uiFbSize.y)
+  };
+  windowsTextureView =
+    utils::CreateRenderTexture(ctx.device, windowsSize, TextureFormat::BGRA8Unorm)
+      .CreateView();
 
   // rect
   rectRenderPassDesc = utils::RenderPassDescriptor({
@@ -56,6 +60,15 @@ Renderer::Renderer(glm::uvec2 _size, glm::uvec2 _fbSize)
   });
 
   // windows
+  auto uiView = glm::ortho<float>(0, sizes.uiSize.x, sizes.uiSize.y, 0, -1, 1);
+  uiViewProjBuffer = utils::CreateUniformBuffer(ctx.device, sizeof(glm::mat4), &uiView);
+  uiViewProjBG = utils::MakeBindGroup(
+    ctx.device, ctx.pipeline.viewProjBGL,
+    {
+      {0, uiViewProjBuffer},
+    }
+  );
+
   windowRenderPassDesc = utils::RenderPassDescriptor({
     RenderPassColorAttachment{
       .view = windowsTextureView,
@@ -67,6 +80,18 @@ Renderer::Renderer(glm::uvec2 _size, glm::uvec2 _fbSize)
   // all windows combined
   windowsTextureData.CreateBuffers(1);
   windowsTextureData.ReserveVectors(1);
+
+  windowsTextureData.ResetCounts();
+  auto positions = MakeRegion(0, 0, sizes.uiSize.x, sizes.uiSize.y);
+  auto uvs = MakeRegion(0, 0, 1, 1);
+  for (size_t i = 0; i < 4; i++) {
+    auto& vertex = windowsTextureData.quads[0][i];
+    vertex.position = positions[i];
+    vertex.uv = uvs[i];
+  }
+  windowsTextureData.SetIndices();
+  windowsTextureData.IncrementCounts();
+  windowsTextureData.WriteBuffers();
 
   auto textureSampler = ctx.device.CreateSampler(ToPtr(SamplerDescriptor{
     .addressModeU = AddressMode::ClampToEdge,
@@ -109,30 +134,74 @@ Renderer::Renderer(glm::uvec2 _size, glm::uvec2 _fbSize)
   });
 }
 
-void Renderer::Resize(glm::uvec2 _size) {
-  size = _size;
-
-  auto view = glm::ortho<float>(0, size.x, size.y, 0, -1, 1);
+void Renderer::Resize(const SizeHandler& sizes) {
+  // shared
+  auto view = glm::ortho<float>(0, sizes.size.x, sizes.size.y, 0, -1, 1);
   ctx.queue.WriteBuffer(viewProjBuffer, 0, &view, sizeof(glm::mat4));
+
+  Extent3D windowsSize = {
+    static_cast<uint32_t>(sizes.uiFbSize.x), static_cast<uint32_t>(sizes.uiFbSize.y)
+  };
+  windowsTextureView =
+    utils::CreateRenderTexture(ctx.device, windowsSize, TextureFormat::BGRA8Unorm)
+      .CreateView();
+
+  // windows
+  auto uiView = glm::ortho<float>(0, sizes.uiSize.x, sizes.uiSize.y, 0, -1, 1);
+  ctx.queue.WriteBuffer(uiViewProjBuffer, 0, &uiView, sizeof(glm::mat4));
+
+  windowRenderPassDesc = utils::RenderPassDescriptor({
+    RenderPassColorAttachment{
+      .view = windowsTextureView,
+      .loadOp = LoadOp::Load,
+      .storeOp = StoreOp::Store,
+    },
+  });
+
+  // final texture
+  windowsTextureData.ResetCounts();
+  auto positions = MakeRegion(0, 0, sizes.uiSize.x, sizes.uiSize.y);
+  auto uvs = MakeRegion(0, 0, 1, 1);
+  for (size_t i = 0; i < 4; i++) {
+    auto& vertex = windowsTextureData.quads[0][i];
+    vertex.position = positions[i];
+    vertex.uv = uvs[i];
+  }
+  windowsTextureData.SetIndices();
+  windowsTextureData.IncrementCounts();
+  windowsTextureData.WriteBuffers();
+
+  auto textureSampler = ctx.device.CreateSampler(ToPtr(SamplerDescriptor{
+    .addressModeU = AddressMode::ClampToEdge,
+    .addressModeV = AddressMode::ClampToEdge,
+    .magFilter = FilterMode::Nearest,
+    .minFilter = FilterMode::Nearest,
+  }));
+
+  windowsTextureBG = utils::MakeBindGroup(
+    ctx.device, ctx.pipeline.textureBGL,
+    {
+      {0, windowsTextureView},
+      {1, textureSampler},
+    }
+  );
 }
 
-void Renderer::FbResize(glm::uvec2 _fbSize) {
-  fbSize = _fbSize;
+// void Renderer::FbResize(glm::uvec2 fbSize) {
+// maskTextureView =
+//   utils::CreateRenderTexture(ctx.device, {fbSize.x, fbSize.y},
+//   TextureFormat::R8Unorm)
+//     .CreateView();
 
-  // maskTextureView =
-  //   utils::CreateRenderTexture(ctx.device, {fbSize.x, fbSize.y},
-  //   TextureFormat::R8Unorm)
-  //     .CreateView();
+// maskBG = utils::MakeBindGroup(
+//   ctx.device, ctx.pipeline.maskBGL,
+//   {
+//     {0, maskTextureView},
+//   }
+// );
 
-  // maskBG = utils::MakeBindGroup(
-  //   ctx.device, ctx.pipeline.maskBGL,
-  //   {
-  //     {0, maskTextureView},
-  //   }
-  // );
-
-  // textRenderPassDesc.cColorAttachments[1].view = maskTextureView;
-}
+// textRenderPassDesc.cColorAttachments[1].view = maskTextureView;
+// }
 
 void Renderer::Begin() {
   commandEncoder = ctx.device.CreateCommandEncoder();
@@ -236,7 +305,7 @@ void Renderer::RenderWindows(const std::vector<const Win*>& windows) {
   passEncoder.SetPipeline(ctx.pipeline.textureRPL);
 
   for (auto win : windows) {
-    passEncoder.SetBindGroup(0, viewProjBG);
+    passEncoder.SetBindGroup(0, uiViewProjBG);
     passEncoder.SetBindGroup(1, win->textureBG);
     win->renderData.SetBuffers(passEncoder);
     passEncoder.DrawIndexed(win->renderData.indexCount);
@@ -246,18 +315,6 @@ void Renderer::RenderWindows(const std::vector<const Win*>& windows) {
 }
 
 void Renderer::RenderWindowsTexture() {
-  windowsTextureData.ResetCounts();
-  auto positions = MakeRegion(0, 0, size.x, size.y);
-  auto uvs = MakeRegion(0, 0, 1, 1);
-  for (size_t i = 0; i < 4; i++) {
-    auto& vertex = windowsTextureData.quads[0][i];
-    vertex.position = positions[i];
-    vertex.uv = uvs[i];
-  }
-  windowsTextureData.SetIndices();
-  windowsTextureData.IncrementCounts();
-  windowsTextureData.WriteBuffers();
-
   windowsRenderPassDesc.cColorAttachments[0].view = nextTexture;
   auto passEncoder = commandEncoder.BeginRenderPass(&windowsRenderPassDesc);
   passEncoder.SetPipeline(ctx.pipeline.textureRPL);

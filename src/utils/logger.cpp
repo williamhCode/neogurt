@@ -8,6 +8,10 @@ void Logger::Log(const std::string& message) {
   std::cout << message << std::endl;
 }
 
+void Logger::LogInfo(const std::string& message) {
+  std::cout << "INFO: " << message << std::endl;
+}
+
 void Logger::LogWarn(const std::string& message) {
   std::cout << "WARNING: " << message << std::endl;
 }
