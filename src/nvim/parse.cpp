@@ -69,7 +69,7 @@ static std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
   }},
 
   {"flush", [](const msgpack::object&, RedrawState& state) {
-    // LOG("flush");
+    // LOG("flush ---------------------------- ");
     state.currEvents().push_back(Flush{});
     state.eventsQueue.emplace_back();
     state.numFlushes++;

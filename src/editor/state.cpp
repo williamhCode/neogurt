@@ -1,6 +1,7 @@
 #include "state.hpp"
 #include "glm/ext/vector_float4.hpp"
 #include "utils/variant.hpp"
+#include <vector>
 
 static auto IntToColor(uint32_t color) {
   return glm::vec4(
@@ -14,6 +15,9 @@ static auto IntToColor(uint32_t color) {
 void ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
   for (int i = 0; i < redrawState.numFlushes; i++) {
     auto& redrawEvents = redrawState.eventsQueue.front();
+    // to process grid events first then window
+    std::vector<RedrawEvent*> gridEvents;
+    std::vector<RedrawEvent*> winEvents;
     for (auto& event : redrawEvents) {
       std::visit(overloaded{
         [&](SetTitle& e) {
@@ -123,62 +127,116 @@ void ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
           // own elements with consistent highlighting
         },
         [&](Flush&) {
+          // process grid and window events
+          for (auto event : gridEvents) {
+            std::visit(overloaded{
+              [&](GridResize& e) {
+                editorState.gridManager.Resize(e);
+                // default window events not send by nvim
+                if (e.grid == 1) {
+                  editorState.winManager.Pos({1, {}, 0, 0, e.width, e.height});
+                }
+              },
+              [&](GridClear& e) {
+                editorState.gridManager.Clear(e);
+              },
+              [&](GridCursorGoto& e) {
+                editorState.gridManager.CursorGoto(e);
+              },
+              [&](GridLine& e) {
+                editorState.gridManager.Line(e);
+              },
+              [&](GridScroll& e) {
+                editorState.gridManager.Scroll(e);
+              },
+              [&](GridDestroy& e) {
+                editorState.gridManager.Destroy(e);
+                // TODO: file bug report, win_close not called after tabclose
+                // temp fix for bug
+                WinClose winClose{e.grid};
+                editorState.winManager.Close(winClose);
+              },
+              [&](auto&) {
+                LOG_WARN("unknown event");
+              }
+            }, *event);
+          }
+          for (auto& event : winEvents) {
+            std::visit(overloaded{
+              [&](WinPos& e) {
+                editorState.winManager.Pos(e);
+              },
+              [&](WinFloatPos& e) {
+                editorState.winManager.FloatPos(e);
+              },
+              [&](WinExternalPos& e) {
+              },
+              [&](WinHide& e) {
+                editorState.winManager.Hide(e);
+              },
+              [&](WinClose& e) {
+                editorState.winManager.Close(e);
+              },
+              [&](MsgSetPos& e) {
+                editorState.winManager.MsgSet(e);
+              },
+              [&](WinViewport& e) {
+              },
+              [&](WinExtmark& e) {
+              },
+              [&](auto&) {
+                LOG_WARN("unknown event");
+              }
+            }, *event);
+          }
+          gridEvents.clear();
+          winEvents.clear();
         },
         [&](GridResize& e) {
-          editorState.gridManager.Resize(e);
-          // default window events not send by nvim
-          auto& winMgr = editorState.winManager;
-          if (e.grid == 1) {
-            winMgr.Pos({1, {}, 0, 0, e.width, e.height});
-          } else if (e.grid == winMgr.msgGridId && winMgr.currMsgSetPos.has_value()) {
-            // workaround since msg_set_pos is called before grid_resize
-            // only runs first time
-            winMgr.MsgSet(*winMgr.currMsgSetPos);
-            winMgr.currMsgSetPos.reset();
-          }
+          gridEvents.push_back((RedrawEvent*)&e);
         },
         [&](GridClear& e) {
-          editorState.gridManager.Clear(e);
+          gridEvents.push_back((RedrawEvent*)&e);
         },
         [&](GridCursorGoto& e) {
-          editorState.gridManager.CursorGoto(e);
+          gridEvents.push_back((RedrawEvent*)&e);
         },
         [&](GridLine& e) {
-          editorState.gridManager.Line(e);
+          gridEvents.push_back((RedrawEvent*)&e);
         },
         [&](GridScroll& e) {
-          editorState.gridManager.Scroll(e);
+          gridEvents.push_back((RedrawEvent*)&e);
+          // editorState.gridManager.Scroll(e);
         },
         [&](GridDestroy& e) {
-          editorState.gridManager.Destroy(e);
-          // TODO: file bug report, win_close not called after tabclose
-          // temp fix for bug
-          WinClose winClose{e.grid};
-          editorState.winManager.Close(winClose);
+          gridEvents.push_back((RedrawEvent*)&e);
         },
         [&](WinPos& e) {
-          editorState.winManager.Pos(e);
+          winEvents.push_back((RedrawEvent*)&e);
         },
         [&](WinFloatPos& e) {
-          editorState.winManager.FloatPos(e);
+          winEvents.push_back((RedrawEvent*)&e);
         },
         [&](WinExternalPos& e) {
+          winEvents.push_back((RedrawEvent*)&e);
         },
         [&](WinHide& e) {
-          editorState.winManager.Hide(e);
+          winEvents.push_back((RedrawEvent*)&e);
         },
         [&](WinClose& e) {
-          editorState.winManager.Close(e);
+          winEvents.push_back((RedrawEvent*)&e);
         },
         [&](MsgSetPos& e) {
-          editorState.winManager.MsgSet(e);
+          winEvents.push_back((RedrawEvent*)&e);
         },
         [&](WinViewport& e) {
+          winEvents.push_back((RedrawEvent*)&e);
         },
         [&](WinExtmark& e) {
+          winEvents.push_back((RedrawEvent*)&e);
         },
         [&](auto&) {
-          LOG("unknown event");
+          LOG_WARN("unknown event");
         },
       }, event);
     }

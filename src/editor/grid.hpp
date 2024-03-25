@@ -11,8 +11,6 @@
 struct Win; // forward decl
 
 struct Grid {
-  Win* win;
-
   int width;
   int height;
 

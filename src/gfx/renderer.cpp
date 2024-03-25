@@ -207,12 +207,7 @@ void Renderer::RenderGrid(Grid& grid, Font& font, const HlTable& hlTable) {
 
       // don't render background if default
       if (cell.hlId != 0 && hl.background.has_value() && hl.background != hlTable.at(0).background) {
-        static std::array<glm::vec2, 4> rectPositions{
-          glm::vec2(0, 0),
-          glm::vec2(font.charSize.x, 0),
-          glm::vec2(font.charSize.x, font.charSize.y),
-          glm::vec2(0, font.charSize.y),
-        };
+        auto rectPositions = MakeRegion({0, 0}, font.charSize);
 
         auto background = *hl.background;
         for (size_t i = 0; i < 4; i++) {

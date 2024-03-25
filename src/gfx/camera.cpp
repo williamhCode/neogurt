@@ -7,7 +7,7 @@
 
 using namespace wgpu;
 
-Ortho2D::Ortho2D(glm::uvec2 size) {
+Ortho2D::Ortho2D(glm::vec2 size) {
   auto view = glm::ortho<float>(0, size.x, size.y, 0, -1, 1);
   viewProjBuffer = utils::CreateUniformBuffer(ctx.device, sizeof(glm::mat4), &view);
 
@@ -19,7 +19,7 @@ Ortho2D::Ortho2D(glm::uvec2 size) {
   );
 }
 
-void Ortho2D::Resize(glm::uvec2 size) {
+void Ortho2D::Resize(glm::vec2 size) {
   auto view = glm::ortho<float>(0, size.x, size.y, 0, -1, 1);
   ctx.queue.WriteBuffer(viewProjBuffer, 0, &view, sizeof(glm::mat4));
 }

@@ -10,17 +10,15 @@
 enum class Anchor { NW, NE, SW, SE };
 
 struct FloatData {
-  Win* anchorWin;
+  // Win* anchorWin;
 
-  Anchor anchor;
-  int anchorGrid;
-  float anchorRow;
-  float anchorCol;
+  // Anchor anchor;
+  // int anchorGrid;
+  // float anchorRow;
+  // float anchorCol;
 
   bool focusable;
   int zindex;
-
-  bool operator==(const FloatData& other) const;
 };
 
 struct Win {
@@ -46,7 +44,6 @@ struct Win {
   Win(Grid& grid);
   void MakeTextureBG();
   void UpdateRenderData();
-  void UpdateFloatPos();
 };
 
 struct WinManager {

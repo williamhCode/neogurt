@@ -6,20 +6,8 @@
 
 using namespace wgpu;
 
-bool FloatData::operator==(const FloatData& other) const {
-  return anchorWin == other.anchorWin && anchor == other.anchor &&
-         anchorGrid == other.anchorGrid && anchorRow == other.anchorRow &&
-         anchorCol == other.anchorCol && focusable == other.focusable &&
-         zindex == other.zindex;
-}
-
 Win::Win(Grid& grid) : grid(grid) {
-  // when creating new window, grid_resize is called first, so we can create
-  // bind group with grid's textureview when initializing window first time
-
-  // but when resizing window, order is unknown, so we update from grid_resize
   MakeTextureBG();
-
   renderData.CreateBuffers(1);
 }
 
@@ -54,40 +42,9 @@ void Win::UpdateRenderData() {
   renderData.WriteBuffers();
 }
 
-void Win::UpdateFloatPos() {
-  auto& anchorWin = *floatData->anchorWin;
-  auto& e = *floatData;
-
-  auto north = anchorWin.startRow + e.anchorRow;
-  auto south = anchorWin.startRow + e.anchorRow - height;
-  auto west = anchorWin.startCol + e.anchorCol;
-  auto east = anchorWin.startCol + e.anchorCol - width;
-  switch (e.anchor) {
-    case Anchor::NW:
-      startRow = north;
-      startCol = west;
-      break;
-    case Anchor::NE:
-      startRow = north;
-      startCol = east;
-      break;
-    case Anchor::SW:
-      startRow = south;
-      startCol = west;
-      break;
-    case Anchor::SE:
-      startRow = south;
-      startCol = east;
-      break;
-    default: assert(false);
-  }
-}
-
 void WinManager::Pos(const WinPos& e) {
   auto [it, first] = windows.try_emplace(e.grid, Win(gridManager->grids.at(e.grid)));
   auto& win = it->second;
-
-  win.grid.win = &win;
 
   win.startRow = e.startRow;
   win.startCol = e.startCol;
@@ -99,14 +56,13 @@ void WinManager::Pos(const WinPos& e) {
 
   win.gridSize = gridSize;
 
+  win.MakeTextureBG();
   win.UpdateRenderData();
 }
 
 void WinManager::FloatPos(const WinFloatPos& e) {
   auto [winIt, first] = windows.try_emplace(e.grid, Win(gridManager->grids.at(e.grid)));
   auto& win = winIt->second;
-
-  win.grid.win = &win;
 
   win.width = win.grid.width;
   win.height = win.grid.height;
@@ -120,29 +76,35 @@ void WinManager::FloatPos(const WinFloatPos& e) {
     LOG_ERR("WinManager::FloatPos: anchor grid {} not found", e.anchorGrid);
     return;
   }
+  auto& anchorWin = anchorIt->second;
 
-  FloatData newFloatData{
-    .anchorWin = &anchorIt->second,
-    .anchor =
-      [&] {
-        if (e.anchor == "NW") return Anchor::NW;
-        if (e.anchor == "NE") return Anchor::NE;
-        if (e.anchor == "SW") return Anchor::SW;
-        if (e.anchor == "SE") return Anchor::SE;
-        LOG_WARN("WinManager::FloatPos: unknown anchor {}", e.anchor);
-      }(),
-    .anchorGrid = e.anchorGrid,
-    .anchorRow = e.anchorRow,
-    .anchorCol = e.anchorCol,
+  auto north = anchorWin.startRow + e.anchorRow;
+  auto south = anchorWin.startRow + e.anchorRow - win.height;
+  auto west = anchorWin.startCol + e.anchorCol;
+  auto east = anchorWin.startCol + e.anchorCol - win.width;
+  if (e.anchor == "NW") {
+    win.startRow = north;
+    win.startCol = west;
+  } else if (e.anchor == "NE") {
+    win.startRow = north;
+    win.startCol = east;
+  } else if (e.anchor == "SW") {
+    win.startRow = south;
+    win.startCol = west;
+  } else if (e.anchor == "SE") {
+    win.startRow = south;
+    win.startCol = east;
+  } else {
+    LOG_WARN("WinManager::FloatPos: unknown anchor {}", e.anchor);
+  }
+
+  win.floatData = FloatData{
     .focusable = e.focusable,
     .zindex = e.zindex,
   };
 
-  if (first || (win.floatData.value() != newFloatData)) {
-    win.floatData = newFloatData;
-    win.UpdateFloatPos();
-    win.UpdateRenderData();
-  }
+  win.MakeTextureBG();
+  win.UpdateRenderData();
 }
 
 void WinManager::ExternalPos(const WinExternalPos& e) {
@@ -166,17 +128,8 @@ void WinManager::Close(const WinClose& e) {
 }
 
 void WinManager::MsgSet(const MsgSetPos& e) {
-  // workaround since msg_set_pos is called before grid_resize
-  if (msgGridId == -1) {
-    msgGridId = e.grid;
-    currMsgSetPos = e;
-    return;
-  }
-
   auto [winIt, first] = windows.try_emplace(e.grid, Win(gridManager->grids.at(e.grid)));
   auto& win = winIt->second;
-
-  win.grid.win = &win;
 
   win.startRow = e.row;
   win.startCol = 0;
@@ -188,6 +141,7 @@ void WinManager::MsgSet(const MsgSetPos& e) {
 
   win.gridSize = gridSize;
 
+  win.MakeTextureBG();
   win.UpdateRenderData();
 }
 
