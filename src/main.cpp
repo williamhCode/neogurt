@@ -50,12 +50,9 @@ int main() {
   );
 
   EditorState editorState{
-    .gridManager{
-      .gridSize = font.charSize,
-      .dpiScale = window.dpiScale,
-    },
     .winManager{
-      .gridSize = font.charSize,
+      .gridSize = sizes.charSize,
+      .dpiScale = window.dpiScale,
     },
     .cursor{.fullSize = font.charSize},
   };
@@ -68,14 +65,6 @@ int main() {
   InputHandler input(nvim, window.GetCursorPos(), font.charSize);
 
   window.keyCallback = [&](int key, int scancode, int action, int mods) {
-    if (action == GLFW_PRESS && key == GLFW_KEY_F2) {
-      for (auto& [id, grid] : editorState.gridManager.grids) {
-        LOG("grid {}: dirty={}", id, grid.dirty);
-      }
-      for (auto& [id, grid] : editorState.winManager.windows) {
-        LOG("win {}: hidden={}", id, grid.hidden);
-      }
-    }
     input.HandleKey(key, scancode, action, mods);
   };
 
@@ -167,10 +156,10 @@ int main() {
         renderer.Begin();
 
         if (nvim.redrawState.numFlushes != 0) {
-          for (auto& [id, grid] : editorState.gridManager.grids) {
-            if (grid.dirty) {
-              renderer.RenderGrid(grid, font, editorState.hlTable);
-              grid.dirty = false;
+          for (auto& [id, win] : editorState.winManager.windows) {
+            if (win.grid.dirty) {
+              renderer.RenderWindow(win, font, editorState.hlTable);
+              win.grid.dirty = false;
             }
           }
 

@@ -16,19 +16,15 @@ Renderer::Renderer(const SizeHandler& sizes) {
   // shared
   camera = Ortho2D(sizes.size);
 
-  Extent3D maskSize = {
+  Extent3D maskSize{
     static_cast<uint32_t>(sizes.fbSize.x), static_cast<uint32_t>(sizes.fbSize.y)
   };
   maskTextureView =
     utils::CreateRenderTexture(ctx.device, maskSize, TextureFormat::R8Unorm)
       .CreateView();
 
-  Extent3D windowsSize = {
-    static_cast<uint32_t>(sizes.uiFbSize.x), static_cast<uint32_t>(sizes.uiFbSize.y)
-  };
-  windowsTextureView =
-    utils::CreateRenderTexture(ctx.device, windowsSize, TextureFormat::BGRA8Unorm)
-      .CreateView();
+  windowsRenderTexture =
+    RenderTexture({0, 0}, sizes.uiSize, sizes.dpiScale, TextureFormat::BGRA8Unorm);
 
   // rect
   rectRenderPassDesc = utils::RenderPassDescriptor({
@@ -53,45 +49,15 @@ Renderer::Renderer(const SizeHandler& sizes) {
   });
 
   // windows
-  uiCamera = Ortho2D(sizes.uiSize);
-
   windowRenderPassDesc = utils::RenderPassDescriptor({
     RenderPassColorAttachment{
-      .view = windowsTextureView,
+      .view = windowsRenderTexture.textureView,
       .loadOp = LoadOp::Load,
       .storeOp = StoreOp::Store,
     },
   });
 
-  // all windows combined
-  windowsTextureData.CreateBuffers(1);
-
-  windowsTextureData.ResetCounts();
-  auto positions = MakeRegion(0, 0, sizes.uiSize.x, sizes.uiSize.y);
-  auto uvs = MakeRegion(0, 0, 1, 1);
-  for (size_t i = 0; i < 4; i++) {
-    auto& vertex = windowsTextureData.quads[0][i];
-    vertex.position = positions[i];
-    vertex.uv = uvs[i];
-  }
-  windowsTextureData.Increment();
-  windowsTextureData.WriteBuffers();
-
-  auto textureSampler = ctx.device.CreateSampler(ToPtr(SamplerDescriptor{
-    .addressModeU = AddressMode::ClampToEdge,
-    .addressModeV = AddressMode::ClampToEdge,
-    .magFilter = FilterMode::Nearest,
-    .minFilter = FilterMode::Nearest,
-  }));
-
-  windowsTextureBG = utils::MakeBindGroup(
-    ctx.device, ctx.pipeline.textureBGL,
-    {
-      {0, windowsTextureView},
-      {1, textureSampler},
-    }
-  );
-
+  // all windows
   windowsRenderPassDesc = utils::RenderPassDescriptor({
     RenderPassColorAttachment{
       .loadOp = LoadOp::Load,
@@ -118,53 +84,16 @@ Renderer::Renderer(const SizeHandler& sizes) {
 }
 
 void Renderer::Resize(const SizeHandler& sizes) {
-  // shared
   camera.Resize(sizes.size);
 
-  Extent3D windowsSize = {
-    static_cast<uint32_t>(sizes.uiFbSize.x), static_cast<uint32_t>(sizes.uiFbSize.y)
-  };
-  windowsTextureView =
-    utils::CreateRenderTexture(ctx.device, windowsSize, TextureFormat::BGRA8Unorm)
-      .CreateView();
-
-  // windows
-  uiCamera.Resize(sizes.uiSize);
-
+  windowsRenderTexture.Resize({0, 0}, sizes.uiSize, sizes.dpiScale);
   windowRenderPassDesc = utils::RenderPassDescriptor({
     RenderPassColorAttachment{
-      .view = windowsTextureView,
+      .view = windowsRenderTexture.textureView,
       .loadOp = LoadOp::Load,
       .storeOp = StoreOp::Store,
     },
   });
-
-  // final texture
-  windowsTextureData.ResetCounts();
-  auto positions = MakeRegion(0, 0, sizes.uiSize.x, sizes.uiSize.y);
-  auto uvs = MakeRegion(0, 0, 1, 1);
-  for (size_t i = 0; i < 4; i++) {
-    auto& vertex = windowsTextureData.quads[0][i];
-    vertex.position = positions[i];
-    vertex.uv = uvs[i];
-  }
-  windowsTextureData.Increment();
-  windowsTextureData.WriteBuffers();
-
-  auto textureSampler = ctx.device.CreateSampler(ToPtr(SamplerDescriptor{
-    .addressModeU = AddressMode::ClampToEdge,
-    .addressModeV = AddressMode::ClampToEdge,
-    .magFilter = FilterMode::Nearest,
-    .minFilter = FilterMode::Nearest,
-  }));
-
-  windowsTextureBG = utils::MakeBindGroup(
-    ctx.device, ctx.pipeline.textureBGL,
-    {
-      {0, windowsTextureView},
-      {1, textureSampler},
-    }
-  );
 }
 
 // void Renderer::FbResize(glm::uvec2 fbSize) {
@@ -188,17 +117,17 @@ void Renderer::Begin() {
   nextTexture = ctx.swapChain.GetCurrentTextureView();
 }
 
-void Renderer::RenderGrid(Grid& grid, Font& font, const HlTable& hlTable) {
-  auto& textData = grid.textData;
-  auto& rectData = grid.rectData;
+void Renderer::RenderWindow(Win& win, Font& font, const HlTable& hlTable) {
+  auto& textData = win.textData;
+  auto& rectData = win.rectData;
 
   textData.ResetCounts();
   rectData.ResetCounts();
 
   glm::vec2 textOffset(0, 0);
 
-  for (size_t i = 0; i < grid.lines.Size(); i++) {
-    auto& line = grid.lines[i];
+  for (size_t i = 0; i < win.grid.lines.Size(); i++) {
+    auto& line = win.grid.lines[i];
     textOffset.x = 0;
 
     for (auto& cell : line) {
@@ -251,21 +180,21 @@ void Renderer::RenderGrid(Grid& grid, Font& font, const HlTable& hlTable) {
 
   // background
   {
-    rectRenderPassDesc.cColorAttachments[0].view = grid.textureView;
+    rectRenderPassDesc.cColorAttachments[0].view = win.renderTexture.textureView;
     rectRenderPassDesc.cColorAttachments[0].clearValue = clearColor;
     RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&rectRenderPassDesc);
     passEncoder.SetPipeline(ctx.pipeline.rectRPL);
-    passEncoder.SetBindGroup(0, grid.camera.viewProjBG);
+    passEncoder.SetBindGroup(0, win.renderTexture.camera.viewProjBG);
     rectData.SetBuffers(passEncoder);
     passEncoder.DrawIndexed(rectData.indexCount);
     passEncoder.End();
   }
   // text
   {
-    textRenderPassDesc.cColorAttachments[0].view = grid.textureView;
+    textRenderPassDesc.cColorAttachments[0].view = win.renderTexture.textureView;
     RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textRenderPassDesc);
     passEncoder.SetPipeline(ctx.pipeline.textRPL);
-    passEncoder.SetBindGroup(0, grid.camera.viewProjBG);
+    passEncoder.SetBindGroup(0, win.renderTexture.camera.viewProjBG);
     passEncoder.SetBindGroup(1, font.fontTextureBG);
     textData.SetBuffers(passEncoder);
     passEncoder.DrawIndexed(textData.indexCount);
@@ -278,10 +207,10 @@ void Renderer::RenderWindows(const std::vector<const Win*>& windows) {
   passEncoder.SetPipeline(ctx.pipeline.textureRPL);
 
   for (auto win : windows) {
-    passEncoder.SetBindGroup(0, uiCamera.viewProjBG);
-    passEncoder.SetBindGroup(1, win->textureBG);
-    win->renderData.SetBuffers(passEncoder);
-    passEncoder.DrawIndexed(win->renderData.indexCount);
+    passEncoder.SetBindGroup(0, windowsRenderTexture.camera.viewProjBG);
+    passEncoder.SetBindGroup(1, win->renderTexture.textureBG);
+    win->renderTexture.renderData.SetBuffers(passEncoder);
+    passEncoder.DrawIndexed(win->renderTexture.renderData.indexCount);
   }
 
   passEncoder.End();
@@ -292,9 +221,9 @@ void Renderer::RenderWindowsTexture() {
   auto passEncoder = commandEncoder.BeginRenderPass(&windowsRenderPassDesc);
   passEncoder.SetPipeline(ctx.pipeline.textureRPL);
   passEncoder.SetBindGroup(0, camera.viewProjBG);
-  passEncoder.SetBindGroup(1, windowsTextureBG);
-  windowsTextureData.SetBuffers(passEncoder);
-  passEncoder.DrawIndexed(windowsTextureData.indexCount);
+  passEncoder.SetBindGroup(1, windowsRenderTexture.textureBG);
+  windowsRenderTexture.renderData.SetBuffers(passEncoder);
+  passEncoder.DrawIndexed(windowsRenderTexture.renderData.indexCount);
   passEncoder.End();
 }
 

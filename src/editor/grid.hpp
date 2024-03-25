@@ -25,20 +25,10 @@ struct Grid {
   using Lines = RingBuffer<Line>;
   Lines lines;
 
-  // rendering
   bool dirty;
-
-  Ortho2D camera;
-  wgpu::TextureView textureView;
-
-  QuadRenderData<RectQuadVertex> rectData;
-  QuadRenderData<TextQuadVertex> textData;
 };
 
 struct GridManager {
-  glm::vec2 gridSize;
-  float dpiScale;
-
   std::unordered_map<int, Grid> grids;
 
   void Resize(const GridResize& e);

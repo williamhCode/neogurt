@@ -9,7 +9,6 @@
 #include "gfx/font.hpp"
 #include "gfx/pipeline.hpp"
 #include "gfx/quad.hpp"
-#include "glm/ext/vector_uint2.hpp"
 #include "webgpu/webgpu_cpp.h"
 #include "webgpu_utils/webgpu.hpp"
 
@@ -21,9 +20,8 @@ struct Renderer {
 
   // shared
   Ortho2D camera;
-
   wgpu::TextureView maskTextureView;
-  wgpu::TextureView windowsTextureView;
+  RenderTexture windowsRenderTexture;
 
   // rect (background)
   wgpu::utils::RenderPassDescriptor rectRenderPassDesc;
@@ -32,12 +30,9 @@ struct Renderer {
   wgpu::utils::RenderPassDescriptor textRenderPassDesc;
 
   // windows
-  Ortho2D uiCamera;
   wgpu::utils::RenderPassDescriptor windowRenderPassDesc;
   
   // final texture
-  QuadRenderData<TextureQuadVertex> windowsTextureData;
-  wgpu::BindGroup windowsTextureBG;
   wgpu::utils::RenderPassDescriptor windowsRenderPassDesc;
 
   // cursor
@@ -50,7 +45,7 @@ struct Renderer {
   void Resize(const SizeHandler& sizes);
 
   void Begin();
-  void RenderGrid(Grid& grid, Font& font, const HlTable& hlTable);
+  void RenderWindow(Win& win, Font& font, const HlTable& hlTable);
   void RenderWindows(const std::vector<const Win*>& windows);
   void RenderWindowsTexture();
   void RenderCursor(const Cursor& cursor, const HlTable& hlTable);

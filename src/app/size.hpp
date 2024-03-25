@@ -10,6 +10,7 @@ struct SizeHandler {
   glm::vec2 uiFbSize;
   glm::vec2 charSize;
   glm::vec2 uiWidthHeight;
+  float dpiScale;
 
   void UpdateSizes(glm::vec2 size, float dpiScale, glm::vec2 charSize);
   std::tuple<int, int> GetUiWidthHeight();

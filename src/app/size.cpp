@@ -1,8 +1,9 @@
 #include "size.hpp"
 #include "glm/common.hpp"
 
-void SizeHandler::UpdateSizes(glm::vec2 _size, float dpiScale, glm::vec2 _charSize) {
+void SizeHandler::UpdateSizes(glm::vec2 _size, float _dpiScale, glm::vec2 _charSize) {
   size = _size;
+  dpiScale = _dpiScale;
   charSize = _charSize;
 
   fbSize = size * dpiScale;

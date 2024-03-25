@@ -1,34 +1,21 @@
 #include "render_texture.hpp"
 
-#include "utils/region.hpp"
 #include "webgpu_utils/webgpu.hpp"
+#include "utils/region.hpp"
 #include "gfx/instance.hpp"
-
-#include "glm/ext/matrix_float4x4.hpp"
-#include "glm/ext/matrix_clip_space.hpp"
 
 using namespace wgpu;
 
-RenderTexture::RenderTexture(glm::uvec2 size, wgpu::TextureFormat format) {
-  auto view = glm::ortho<float>(0, size.x, size.y, 0, -1, 1);
-  viewProjBuffer = utils::CreateUniformBuffer(ctx.device, sizeof(view), &view);
-  viewProjBG =
-    utils::MakeBindGroup(ctx.device, ctx.pipeline.viewProjBGL, {{0, viewProjBuffer}});
+RenderTexture::RenderTexture(
+  glm::vec2 pos, glm::vec2 size, float dpiScale, wgpu::TextureFormat format
+) {
+  camera = Ortho2D(size);
 
-  texture = utils::CreateRenderTexture(ctx.device, {size.x, size.y}, format);
+  Extent3D textureSize{
+    static_cast<uint32_t>(size.x * dpiScale), static_cast<uint32_t>(size.y * dpiScale)
+  };
+  texture = utils::CreateRenderTexture(ctx.device, textureSize, format);
   textureView = texture.CreateView();
-
-  textureData.CreateBuffers(1);
-  textureData.ResetCounts();
-  auto positions = MakeRegion(0, 0, size.x, size.y);
-  auto uvs = MakeRegion(0, 0, 1, 1);
-  for (size_t i = 0; i < 4; i++) {
-    auto& vertex = textureData.quads[0][i];
-    vertex.position = positions[i];
-    vertex.uv = uvs[i];
-  }
-  textureData.Increment();
-  textureData.WriteBuffers();
 
   auto textureSampler = ctx.device.CreateSampler(ToPtr(SamplerDescriptor{
     .addressModeU = AddressMode::ClampToEdge,
@@ -44,10 +31,53 @@ RenderTexture::RenderTexture(glm::uvec2 size, wgpu::TextureFormat format) {
       {1, textureSampler},
     }
   );
+
+  renderData.CreateBuffers(1);
+
+  renderData.ResetCounts();
+  auto positions = MakeRegion(pos, size);
+  auto uvs = MakeRegion(0, 0, 1, 1);
+  for (size_t i = 0; i < 4; i++) {
+    auto& vertex = renderData.quads[0][i];
+    vertex.position = positions[i];
+    vertex.uv = uvs[i];
+  }
+  renderData.Increment();
+  renderData.WriteBuffers();
 }
 
-void RenderTexture::Resize(glm::uvec2 size) {
-  textureView =
-    utils::CreateRenderTexture(ctx.device, {size.x, size.y}, texture.GetFormat())
-      .CreateView();
+void RenderTexture::Resize(glm::vec2 pos, glm::vec2 size, float dpiScale) {
+  camera.Resize(size);
+
+  Extent3D textureSize{
+    static_cast<uint32_t>(size.x * dpiScale), static_cast<uint32_t>(size.y * dpiScale)
+  };
+  texture = utils::CreateRenderTexture(ctx.device, textureSize, texture.GetFormat());
+  textureView = texture.CreateView();
+
+  auto textureSampler = ctx.device.CreateSampler(ToPtr(SamplerDescriptor{
+    .addressModeU = AddressMode::ClampToEdge,
+    .addressModeV = AddressMode::ClampToEdge,
+    .magFilter = FilterMode::Nearest,
+    .minFilter = FilterMode::Nearest,
+  }));
+
+  textureBG = utils::MakeBindGroup(
+    ctx.device, ctx.pipeline.textureBGL,
+    {
+      {0, textureView},
+      {1, textureSampler},
+    }
+  );
+
+  renderData.ResetCounts();
+  auto positions = MakeRegion(pos, size);
+  auto uvs = MakeRegion(0, 0, 1, 1);
+  for (size_t i = 0; i < 4; i++) {
+    auto& vertex = renderData.quads[0][i];
+    vertex.position = positions[i];
+    vertex.uv = uvs[i];
+  }
+  renderData.Increment();
+  renderData.WriteBuffers();
 }

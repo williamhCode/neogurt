@@ -6,44 +6,8 @@
 
 using namespace wgpu;
 
-Win::Win(Grid& grid) : grid(grid) {
-  MakeTextureBG();
-  renderData.CreateBuffers(1);
-}
-
-void Win::MakeTextureBG() {
-  auto textureSampler = ctx.device.CreateSampler(ToPtr(SamplerDescriptor{
-    .addressModeU = AddressMode::ClampToEdge,
-    .addressModeV = AddressMode::ClampToEdge,
-    .magFilter = FilterMode::Nearest,
-    .minFilter = FilterMode::Nearest,
-  }));
-
-  textureBG = utils::MakeBindGroup(
-    ctx.device, ctx.pipeline.textureBGL,
-    {
-      {0, grid.textureView},
-      {1, textureSampler},
-    }
-  );
-}
-
-void Win::UpdateRenderData() {
-  renderData.ResetCounts();
-  auto positions = MakeRegion(startCol, startRow, width, height);
-  auto uvs = MakeRegion(0, 0, 1, 1);
-  for (size_t i = 0; i < 4; i++) {
-    auto& vertex = renderData.quads[0][i];
-    vertex.position = positions[i] * gridSize;
-    vertex.uv = uvs[i];
-  }
-  renderData.Increment();
-
-  renderData.WriteBuffers();
-}
-
 void WinManager::Pos(const WinPos& e) {
-  auto [it, first] = windows.try_emplace(e.grid, Win(gridManager->grids.at(e.grid)));
+  auto [it, first] = windows.try_emplace(e.grid, Win{.grid = gridManager->grids.at(e.grid)});
   auto& win = it->second;
 
   win.startRow = e.startRow;
@@ -54,22 +18,28 @@ void WinManager::Pos(const WinPos& e) {
 
   win.hidden = false;
 
-  win.gridSize = gridSize;
+  auto pos = glm::vec2(win.startCol, win.startRow) * gridSize;
+  auto size = glm::vec2(win.width, win.height) * gridSize;
+  if (first) {
+    win.renderTexture = RenderTexture(pos, size, dpiScale, TextureFormat::BGRA8Unorm);
+  } else {
+    win.renderTexture.Resize(pos, size, dpiScale);
+  }
+  win.grid.dirty = true;
 
-  win.MakeTextureBG();
-  win.UpdateRenderData();
+  const size_t maxTextQuads = win.width * win.height;
+  win.rectData.CreateBuffers(maxTextQuads);
+  win.textData.CreateBuffers(maxTextQuads);
 }
 
 void WinManager::FloatPos(const WinFloatPos& e) {
-  auto [winIt, first] = windows.try_emplace(e.grid, Win(gridManager->grids.at(e.grid)));
+  auto [winIt, first] = windows.try_emplace(e.grid, Win{.grid = gridManager->grids.at(e.grid)});
   auto& win = winIt->second;
 
   win.width = win.grid.width;
   win.height = win.grid.height;
 
   win.hidden = false;
-
-  win.gridSize = gridSize;
 
   auto anchorIt = windows.find(e.anchorGrid);
   if (anchorIt == windows.end()) {
@@ -103,8 +73,18 @@ void WinManager::FloatPos(const WinFloatPos& e) {
     .zindex = e.zindex,
   };
 
-  win.MakeTextureBG();
-  win.UpdateRenderData();
+  auto pos = glm::vec2(win.startCol, win.startRow) * gridSize;
+  auto size = glm::vec2(win.width, win.height) * gridSize;
+  if (first) {
+    win.renderTexture = RenderTexture(pos, size, dpiScale, TextureFormat::BGRA8Unorm);
+  } else {
+    win.renderTexture.Resize(pos, size, dpiScale);
+  }
+  win.grid.dirty = true;
+
+  const size_t maxTextQuads = win.width * win.height;
+  win.rectData.CreateBuffers(maxTextQuads);
+  win.textData.CreateBuffers(maxTextQuads);
 }
 
 void WinManager::ExternalPos(const WinExternalPos& e) {
@@ -128,7 +108,7 @@ void WinManager::Close(const WinClose& e) {
 }
 
 void WinManager::MsgSet(const MsgSetPos& e) {
-  auto [winIt, first] = windows.try_emplace(e.grid, Win(gridManager->grids.at(e.grid)));
+  auto [winIt, first] = windows.try_emplace(e.grid, Win{.grid = gridManager->grids.at(e.grid)});
   auto& win = winIt->second;
 
   win.startRow = e.row;
@@ -139,10 +119,18 @@ void WinManager::MsgSet(const MsgSetPos& e) {
 
   win.hidden = false;
 
-  win.gridSize = gridSize;
+  auto pos = glm::vec2(win.startCol, win.startRow) * gridSize;
+  auto size = glm::vec2(win.width, win.height) * gridSize;
+  if (first) {
+    win.renderTexture = RenderTexture(pos, size, dpiScale, TextureFormat::BGRA8Unorm);
+  } else {
+    win.renderTexture.Resize(pos, size, dpiScale);
+  }
+  win.grid.dirty = true;
 
-  win.MakeTextureBG();
-  win.UpdateRenderData();
+  const size_t maxTextQuads = win.width * win.height;
+  win.rectData.CreateBuffers(maxTextQuads);
+  win.textData.CreateBuffers(maxTextQuads);
 }
 
 void WinManager::Viewport(const WinViewport& e) {

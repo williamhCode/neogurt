@@ -35,6 +35,7 @@ set(APP_SRC
   src/gfx/renderer.cpp
   src/gfx/font.cpp
   src/gfx/camera.cpp
+  src/gfx/render_texture.cpp
 
   src/nvim/nvim.cpp
   src/nvim/parse.cpp

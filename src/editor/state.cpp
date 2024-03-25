@@ -153,8 +153,7 @@ void ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
                 editorState.gridManager.Destroy(e);
                 // TODO: file bug report, win_close not called after tabclose
                 // temp fix for bug
-                WinClose winClose{e.grid};
-                editorState.winManager.Close(winClose);
+                editorState.winManager.Close({e.grid});
               },
               [&](auto&) {
                 LOG_WARN("unknown event");

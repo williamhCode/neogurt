@@ -32,27 +32,6 @@ void GridManager::Resize(const GridResize& e) {
   grid.height = e.height;
 
   grid.dirty = true;
-
-  // rendering
-  auto size = glm::vec2(grid.width, grid.height) * gridSize;
-
-  if (first) {
-    grid.camera = Ortho2D(size);
-  } else {
-    grid.camera.Resize(size);
-  }
-
-  Extent3D textureSize{
-    .width = static_cast<uint32_t>(size.x * dpiScale),
-    .height = static_cast<uint32_t>(size.y * dpiScale),
-  };
-  grid.textureView =
-    utils::CreateRenderTexture(ctx.device, textureSize, TextureFormat::BGRA8Unorm)
-      .CreateView();
-
-  const size_t maxTextQuads = grid.width * grid.height;
-  grid.rectData.CreateBuffers(maxTextQuads);
-  grid.textData.CreateBuffers(maxTextQuads);
 }
 
 void GridManager::Clear(const GridClear& e) {

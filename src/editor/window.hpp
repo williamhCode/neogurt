@@ -1,6 +1,7 @@
 #pragma once
 
 #include "gfx/quad.hpp"
+#include "gfx/render_texture.hpp"
 #include "glm/ext/vector_float2.hpp"
 #include "nvim/parse.hpp"
 #include "editor/grid.hpp"
@@ -36,22 +37,17 @@ struct Win {
   std::optional<FloatData> floatData;
 
   // rendering data
-  glm::vec2 gridSize;
+  RenderTexture renderTexture;
 
-  wgpu::BindGroup textureBG;
-  QuadRenderData<TextureQuadVertex> renderData;
-
-  Win(Grid& grid);
-  void MakeTextureBG();
-  void UpdateRenderData();
+  QuadRenderData<RectQuadVertex> rectData;
+  QuadRenderData<TextQuadVertex> textData;
 };
 
 struct WinManager {
   GridManager* gridManager;
   glm::vec2 gridSize;
+  float dpiScale;
 
-  int msgGridId = -1;
-  std::optional<MsgSetPos> currMsgSetPos;
   // not unordered because telescope float background overlaps text
   // so have to render floats in reverse order else text will be covered
   std::map<int, Win> windows;

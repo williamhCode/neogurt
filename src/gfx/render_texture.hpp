@@ -1,21 +1,22 @@
 #pragma once
 
 #include "webgpu/webgpu_cpp.h"
-
-#include "gfx/pipeline.hpp"
+#include "gfx/camera.hpp"
 #include "gfx/quad.hpp"
-#include "glm/ext/vector_uint2.hpp"
+#include "glm/ext/vector_float2.hpp"
 
 struct RenderTexture {
-  wgpu::Buffer viewProjBuffer;
-  wgpu::BindGroup viewProjBG;
+  Ortho2D camera;
 
   wgpu::Texture texture;
   wgpu::TextureView textureView;
   wgpu::BindGroup textureBG;
 
-  QuadRenderData<TextureQuadVertex> textureData;
+  QuadRenderData<TextureQuadVertex> renderData;
 
-  RenderTexture(glm::uvec2 size, wgpu::TextureFormat format);
-  void Resize(glm::uvec2 size);
+  RenderTexture() = default;
+  RenderTexture(
+    glm::vec2 pos, glm::vec2 size, float dpiScale, wgpu::TextureFormat format
+  );
+  void Resize(glm::vec2 pos, glm::vec2 size, float dpiScale);
 };
