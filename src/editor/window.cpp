@@ -21,7 +21,6 @@ Win::Win(Grid& grid) : grid(grid) {
   MakeTextureBG();
 
   renderData.CreateBuffers(1);
-  renderData.ReserveVectors(1);
 }
 
 void Win::MakeTextureBG() {
@@ -43,18 +42,14 @@ void Win::MakeTextureBG() {
 
 void Win::UpdateRenderData() {
   renderData.ResetCounts();
-
   auto positions = MakeRegion(startCol, startRow, width, height);
   auto uvs = MakeRegion(0, 0, 1, 1);
-
   for (size_t i = 0; i < 4; i++) {
     auto& vertex = renderData.quads[0][i];
     vertex.position = positions[i] * gridSize;
     vertex.uv = uvs[i];
   }
-
-  renderData.SetIndices();
-  renderData.IncrementCounts();
+  renderData.Increment();
 
   renderData.WriteBuffers();
 }

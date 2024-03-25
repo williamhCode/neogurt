@@ -5,6 +5,7 @@
 #include "editor/highlight.hpp"
 #include "editor/grid.hpp"
 #include "editor/window.hpp"
+#include "gfx/camera.hpp"
 #include "gfx/font.hpp"
 #include "gfx/pipeline.hpp"
 #include "gfx/quad.hpp"
@@ -19,8 +20,8 @@ struct Renderer {
   wgpu::TextureView nextTexture;
 
   // shared
-  wgpu::Buffer viewProjBuffer;
-  wgpu::BindGroup viewProjBG;
+  Ortho2D camera;
+
   wgpu::TextureView maskTextureView;
   wgpu::TextureView windowsTextureView;
 
@@ -31,8 +32,7 @@ struct Renderer {
   wgpu::utils::RenderPassDescriptor textRenderPassDesc;
 
   // windows
-  wgpu::Buffer uiViewProjBuffer;
-  wgpu::BindGroup uiViewProjBG;
+  Ortho2D uiCamera;
   wgpu::utils::RenderPassDescriptor windowRenderPassDesc;
   
   // final texture

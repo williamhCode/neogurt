@@ -34,6 +34,7 @@ set(APP_SRC
   src/gfx/pipeline.cpp
   src/gfx/renderer.cpp
   src/gfx/font.cpp
+  src/gfx/camera.cpp
 
   src/nvim/nvim.cpp
   src/nvim/parse.cpp

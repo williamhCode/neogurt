@@ -39,20 +39,11 @@ void GridManager::Resize(const GridResize& e) {
 
   // rendering
   auto size = glm::vec2(grid.width, grid.height) * gridSize;
-  auto view = glm::ortho<float>(0, size.x, size.y, 0, -1, 1);
 
   if (first) {
-    grid.viewProjBuffer =
-      utils::CreateUniformBuffer(ctx.device, sizeof(glm::mat4), &view);
-
-    grid.viewProjBG = utils::MakeBindGroup(
-      ctx.device, ctx.pipeline.viewProjBGL,
-      {
-        {0, grid.viewProjBuffer},
-      }
-    );
+    grid.camera = Ortho2D(size);
   } else {
-    ctx.queue.WriteBuffer(grid.viewProjBuffer, 0, &view, sizeof(glm::mat4));
+    grid.camera.Resize(size);
   }
 
   Extent3D textureSize{
@@ -88,9 +79,6 @@ void GridManager::Resize(const GridResize& e) {
   const size_t maxTextQuads = grid.width * grid.height;
   grid.rectData.CreateBuffers(maxTextQuads);
   grid.textData.CreateBuffers(maxTextQuads);
-
-  grid.rectData.ReserveVectors(maxTextQuads);
-  grid.textData.ReserveVectors(maxTextQuads);
 }
 
 void GridManager::Clear(const GridClear& e) {

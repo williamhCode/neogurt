@@ -1,5 +1,6 @@
 #pragma once
 
+#include "gfx/camera.hpp"
 #include "gfx/quad.hpp"
 #include "glm/ext/vector_float2.hpp"
 #include "nvim/parse.hpp"
@@ -29,8 +30,7 @@ struct Grid {
   // rendering
   bool dirty;
 
-  wgpu::Buffer viewProjBuffer;
-  wgpu::BindGroup viewProjBG;
+  Ortho2D camera;
   wgpu::TextureView textureView;
 
   QuadRenderData<RectQuadVertex> rectData;
