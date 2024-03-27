@@ -90,13 +90,13 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
     .fragment = ToPtr(FragmentState{
       .module = textShader,
       .entryPoint = "fs_main",
-      .targetCount = 1,
+      .targetCount = 2,
       .targets = ToPtr<ColorTargetState>({
         {
           .format = TextureFormat::BGRA8Unorm,
           .blend = &utils::BlendState::AlphaBlending,
         },
-        // {.format = TextureFormat::R8Unorm},
+        {.format = TextureFormat::R8Unorm},
       }),
     }),
   }));
@@ -165,6 +165,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
     ctx.device,
     {
       {0, ShaderStage::Fragment, TextureSampleType::UnfilterableFloat},
+      {1, ShaderStage::Fragment, BufferBindingType::Uniform},
     }
   );
 

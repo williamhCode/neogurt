@@ -37,7 +37,14 @@ struct Win {
   std::optional<FloatData> floatData;
 
   // rendering data
+  glm::vec2 pos;
+  glm::vec2 size;
+
   RenderTexture renderTexture;
+
+  wgpu::TextureView maskTextureView;
+  wgpu::Buffer maskPosBuffer;
+  wgpu::BindGroup cursorBG;
 
   QuadRenderData<RectQuadVertex> rectData;
   QuadRenderData<TextQuadVertex> textData;
@@ -52,6 +59,9 @@ struct WinManager {
   // so have to render floats in reverse order else text will be covered
   std::map<int, Win> windows;
 
+  void InitRenderData(Win& win);
+  void UpdateRenderData(Win& win);
+
   void Pos(const WinPos& e);
   void FloatPos(const WinFloatPos& e);
   void ExternalPos(const WinExternalPos& e);
@@ -60,4 +70,7 @@ struct WinManager {
   void MsgSet(const MsgSetPos& e);
   void Viewport(const WinViewport& e);
   void Extmark(const WinExtmark& e);
+
+  int activeWinId = 0;
+  Win* GetActiveWin();
 };

@@ -142,6 +142,7 @@ void ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
               },
               [&](GridCursorGoto& e) {
                 editorState.gridManager.CursorGoto(e);
+                editorState.winManager.activeWinId = e.grid;
               },
               [&](GridLine& e) {
                 editorState.gridManager.Line(e);

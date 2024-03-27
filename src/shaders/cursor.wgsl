@@ -30,10 +30,11 @@ struct FragmentInput {
 }
 
 @group(1) @binding(0) var maskTexture: texture_2d<f32>;
+@group(1) @binding(1) var<uniform> maskPos: vec2f;
 
 @fragment
 fn fs_main(in: FragmentInput) -> @location(0) vec4f {
-  let mask = textureLoad(maskTexture, vec2u(in.position.xy), 0).r;
+  let mask = textureLoad(maskTexture, vec2u(in.position.xy - maskPos), 0).r;
 
   var color = in.background;
   color.a = 1.0 - mask;

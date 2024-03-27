@@ -15,6 +15,7 @@
 #include "utils/timer.hpp"
 
 #include <algorithm>
+#include <deque>
 #include <iostream>
 #include <format>
 #include <atomic>
@@ -137,12 +138,18 @@ int main() {
       }
 
       // update ----------------------------------------------
-      // for (auto& [id, grid] : editorState.gridManager.grids) {
-      //   editorState.cursor.SetDestPos(
-      //     glm::vec2(grid.cursorCol, grid.cursorRow) * font.charSize
-      //   );
-      // }
-      // editorState.cursor.Update(dt);
+      wgpu::BindGroup currCursorBG;
+      if (auto win = editorState.winManager.GetActiveWin()) {
+        auto cursorPos =
+          glm::vec2{
+            win->startCol + win->grid.cursorCol,
+            win->startRow + win->grid.cursorRow,
+          } *
+          sizes.charSize;
+        editorState.cursor.SetDestPos(cursorPos);
+        currCursorBG = win->cursorBG;
+      }
+      editorState.cursor.Update(dt);
 
       // render ----------------------------------------------
       if (auto hlIter = editorState.hlTable.find(0);
@@ -163,17 +170,16 @@ int main() {
             }
           }
 
-          std::vector<const Win*> windows;
+          std::deque<const Win*> windows;
           std::vector<const Win*> floatingWindows;
-          if (auto it = editorState.winManager.windows.find(1);
-              it != editorState.winManager.windows.end()) {
-            windows.push_back(&it->second);
-          }
           for (auto& [id, win] : editorState.winManager.windows) {
-            if (id == 1) continue;
-            if (!win.hidden) {
+            if (id == 1) {
+              windows.push_front(&win);
+
+            } else if (!win.hidden) {
               if (win.floatData.has_value()) {
                 floatingWindows.push_back(&win);
+
               } else {
                 windows.push_back(&win);
               }
@@ -185,11 +191,12 @@ int main() {
           renderer.RenderWindows(windows);
         }
 
-        renderer.RenderWindowsTexture();
+        renderer.RenderFinalTexture();
 
-        // if (editorState.cursor.blinkState != BlinkState::Off) {
-        //   renderer.RenderCursor(editorState.cursor, editorState.hlTable);
-        // }
+        if (editorState.cursor.blinkState != BlinkState::Off && currCursorBG != nullptr) {
+          renderer.RenderCursor(editorState.cursor, editorState.hlTable, currCursorBG);
+        }
+
         renderer.End();
         renderer.Present();
 

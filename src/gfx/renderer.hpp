@@ -11,8 +11,12 @@
 #include "gfx/quad.hpp"
 #include "webgpu/webgpu_cpp.h"
 #include "webgpu_utils/webgpu.hpp"
+#include <ranges>
 
-// forward decl
+template <typename R, typename V>
+concept RangeOf =
+  std::ranges::range<R> && std::same_as<std::ranges::range_value_t<R>, V>;
+
 struct Renderer {
   wgpu::Color clearColor;
   wgpu::CommandEncoder commandEncoder;
@@ -21,24 +25,23 @@ struct Renderer {
   // shared
   Ortho2D camera;
   wgpu::TextureView maskTextureView;
-  RenderTexture windowsRenderTexture;
+  RenderTexture finalRenderTexture;
 
   // rect (background)
-  wgpu::utils::RenderPassDescriptor rectRenderPassDesc;
+  wgpu::utils::RenderPassDescriptor rectRPD;
 
   // text
-  wgpu::utils::RenderPassDescriptor textRenderPassDesc;
+  wgpu::utils::RenderPassDescriptor textRPD;
 
   // windows
-  wgpu::utils::RenderPassDescriptor windowRenderPassDesc;
-  
-  // final texture
-  wgpu::utils::RenderPassDescriptor windowsRenderPassDesc;
+  wgpu::utils::RenderPassDescriptor windowsRPD;
 
   // cursor
   QuadRenderData<CursorQuadVertex> cursorData;
-  wgpu::BindGroup cursorBG;
-  wgpu::utils::RenderPassDescriptor cursorRenderPassDesc;
+  wgpu::utils::RenderPassDescriptor cursorRPD;
+
+  // final texture
+  wgpu::utils::RenderPassDescriptor finalRPD;
 
   Renderer(const SizeHandler& sizes);
 
@@ -46,9 +49,9 @@ struct Renderer {
 
   void Begin();
   void RenderWindow(Win& win, Font& font, const HlTable& hlTable);
-  void RenderWindows(const std::vector<const Win*>& windows);
-  void RenderWindowsTexture();
-  void RenderCursor(const Cursor& cursor, const HlTable& hlTable);
+  void RenderWindows(const RangeOf<const Win*> auto& windows);
+  void RenderCursor(const Cursor& cursor, const HlTable& hlTable, wgpu::BindGroup cursorBG);
+  void RenderFinalTexture();
   void End();
   void Present();
 };

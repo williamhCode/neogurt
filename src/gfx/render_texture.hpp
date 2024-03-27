@@ -18,5 +18,6 @@ struct RenderTexture {
   RenderTexture(
     glm::vec2 pos, glm::vec2 size, float dpiScale, wgpu::TextureFormat format
   );
-  void Resize(glm::vec2 pos, glm::vec2 size, float dpiScale);
+  void Update(glm::vec2 pos, glm::vec2 size, float dpiScale);
+  void UpdateRegion(glm::vec2 pos, glm::vec2 size);
 };

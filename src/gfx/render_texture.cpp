@@ -46,7 +46,7 @@ RenderTexture::RenderTexture(
   renderData.WriteBuffers();
 }
 
-void RenderTexture::Resize(glm::vec2 pos, glm::vec2 size, float dpiScale) {
+void RenderTexture::Update(glm::vec2 pos, glm::vec2 size, float dpiScale) {
   camera.Resize(size);
 
   Extent3D textureSize{
@@ -70,6 +70,10 @@ void RenderTexture::Resize(glm::vec2 pos, glm::vec2 size, float dpiScale) {
     }
   );
 
+  UpdateRegion(pos, size);
+}
+
+void RenderTexture::UpdateRegion(glm::vec2 pos, glm::vec2 size) {
   renderData.ResetCounts();
   auto positions = MakeRegion(pos, size);
   auto uvs = MakeRegion(0, 0, 1, 1);
