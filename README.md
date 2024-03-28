@@ -1,4 +1,4 @@
-# neogui
+# Neogui
 An experimental prototype for a graphically flexible neovim gui.
 
 ## Name Ideas:
