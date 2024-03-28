@@ -23,18 +23,13 @@ void Cursor::SetMode(ModeInfo* _modeInfo) {
   glm::vec2 size = fullSize;
   glm::vec2 offset(0, 0);
   switch (modeInfo->cursorShape) {
-    case CursorShape::Block:
-      break;
+    case CursorShape::Block: break;
     case CursorShape::Horizontal:
       size.y *= ratio;
       offset.y = fullSize.y * (1 - ratio);
       break;
-    case CursorShape::Vertical:
-      size.x *= ratio;
-      break;
-    case CursorShape::None:
-      assert(false);
-      break;
+    case CursorShape::Vertical: size.x *= ratio; break;
+    case CursorShape::None: assert(false); break;
   }
 
   destCorners = MakeRegion(offset, size);
@@ -102,4 +97,8 @@ void Cursor::Update(float dt) {
         break;
     }
   }
+}
+
+bool Cursor::CanRender() {
+  return modeInfo != nullptr && blinkState != BlinkState::Off && currMaskBG != nullptr;
 }

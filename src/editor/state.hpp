@@ -16,6 +16,4 @@ struct EditorState {
   int modeIdx;
 };
 
-inline EditorState editorState;
-
 void ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState);

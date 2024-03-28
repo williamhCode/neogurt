@@ -126,7 +126,6 @@ public:
 
 private:
   msgpack::unpacker unpacker;
-  // TODO: make size dynamic if needed
   static constexpr std::size_t readSize = 1024 << 10;
   TSQueue<NotificationData> msgsIn;
   TSQueue<msgpack::sbuffer> msgsOut;

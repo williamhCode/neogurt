@@ -71,7 +71,7 @@ const Font::GlyphInfo& Font::GetGlyphInfoOrAdd(FT_ULong charcode) {
     currMap = &glyphInfoMap;
 
   } else {
-    // is nerd font
+    // is nerdfont
     glyphIndex = FT_Get_Char_Index(nerdFace, charcode);
     auto it = nerdGlyphInfoMap.find(glyphIndex);
     if (it != nerdGlyphInfoMap.end()) {
@@ -83,6 +83,7 @@ const Font::GlyphInfo& Font::GetGlyphInfoOrAdd(FT_ULong charcode) {
 
     FT_Set_Pixel_Sizes(nerdFace, 0, size * dpiScale);
 
+    // TODO: make nerdfont vertical offset an option
     vertOffset = size / 16.0;
   }
 

@@ -3,7 +3,7 @@
 TYPE = release
 
 build:
-	cmake --build build/$(TYPE) --target App
+	cmake --build build/$(TYPE) --target neogui
 	cp build/$(TYPE)/compile_commands.json .
 
 build-tint:
@@ -18,5 +18,5 @@ xcode-setup:
 	cmake . -B xcode -GXcode
 
 run:
-	build/$(TYPE)/App
+	build/$(TYPE)/neogui
 

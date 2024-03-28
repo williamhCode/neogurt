@@ -55,7 +55,7 @@ struct Renderer {
   void RenderWindow(Win& win, Font& font, const HlTable& hlTable);
   void RenderWindows(const RangeOf<const Win*> auto& windows);
   void RenderFinalTexture();
-  void RenderCursor(const Cursor& cursor, const HlTable& hlTable, const wgpu::BindGroup& cursorBG);
+  void RenderCursor(const Cursor& cursor, const HlTable& hlTable);
   void End();
   void Present();
 };

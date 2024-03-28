@@ -1,5 +1,6 @@
 #pragma once
 
+#include "webgpu/webgpu_cpp.h"
 #include "glm/ext/vector_float2.hpp"
 #include "utils/region.hpp"
 #include <string>
@@ -53,7 +54,10 @@ struct Cursor {
   float blinkElasped;
   BlinkState blinkState;
 
+  wgpu::BindGroup currMaskBG;
+
   void SetDestPos(glm::vec2 destPos);
   void SetMode(ModeInfo* modeInfo);
   void Update(float dt);
+  bool CanRender();
 };

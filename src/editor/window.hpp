@@ -1,11 +1,14 @@
 #pragma once
 
+#include "glm/ext/vector_float2.hpp"
+#include "webgpu/webgpu_cpp.h"
+
 #include "gfx/quad.hpp"
 #include "gfx/render_texture.hpp"
-#include "glm/ext/vector_float2.hpp"
 #include "nvim/parse.hpp"
 #include "editor/grid.hpp"
-#include "webgpu/webgpu_cpp.h"
+#include "app/size.hpp"
+
 #include <map>
 
 enum class Anchor { NW, NE, SW, SE };
@@ -44,16 +47,22 @@ struct Win {
 
   wgpu::TextureView maskTextureView;
   wgpu::Buffer maskPosBuffer;
-  wgpu::BindGroup cursorBG;
+  wgpu::BindGroup maskBG;
 
   QuadRenderData<RectQuadVertex> rectData;
   QuadRenderData<TextQuadVertex> textData;
 };
 
+// for input handler
+struct MouseInfo {
+  int grid;
+  int row;
+  int col;
+};
+
 struct WinManager {
   GridManager* gridManager;
-  glm::vec2 gridSize;
-  float dpiScale;
+  SizeHandler& sizes;
 
   // not unordered because telescope float background overlaps text
   // so have to render floats in reverse order else text will be covered
@@ -73,4 +82,7 @@ struct WinManager {
 
   int activeWinId = 0;
   Win* GetActiveWin();
+  
+  MouseInfo GetMouseInfo(glm::vec2 cursorPos);
+  MouseInfo GetMouseInfo(int grid, glm::vec2 cursorPos);
 };

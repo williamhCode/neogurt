@@ -4,10 +4,11 @@
 #include <optional>
 #include <unordered_map>
 #include "app/options.hpp"
+#include "editor/window.hpp"
 #include "utils/unicode.hpp"
 
-InputHandler::InputHandler(Nvim& nvim, glm::vec2 cursorPos, glm::vec2 charSize)
-    : nvim(nvim), cursorPos(cursorPos), charSize(charSize) {
+InputHandler::InputHandler(Nvim& nvim, WinManager& winManager, glm::vec2 cursorPos)
+    : nvim(nvim), winManager(winManager), cursorPos(cursorPos) {
 }
 
 // clang-format off
@@ -85,6 +86,7 @@ void InputHandler::HandleMouseButton(int button, int action, int mods) {
     mouseButton = button;
   } else if (action == GLFW_RELEASE) {
     mouseButton = std::nullopt;
+    currGrid = std::nullopt;
   }
 
   HandleMouseButtonAndCursorPos(action);
@@ -122,12 +124,15 @@ void InputHandler::HandleMouseButtonAndCursorPos(int action) {
   if (mods & GLFW_MOD_SUPER) modStr += "D-";
   if (mods & GLFW_MOD_SHIFT) modStr += "S-";
 
-  int grid = 0;
+  MouseInfo info;
+  if (!currGrid.has_value()) {
+    info = winManager.GetMouseInfo(cursorPos);
+    currGrid = info.grid;
+  } else {
+    info = winManager.GetMouseInfo(*currGrid, cursorPos);
+  }
 
-  int row = cursorPos.y / charSize.y;
-  int col = cursorPos.x / charSize.x;
-
-  nvim.InputMouse(buttonStr, actionStr, modStr, grid, row, col);
+  nvim.InputMouse(buttonStr, actionStr, modStr, info.grid, info.row, info.col);
 }
 
 void InputHandler::HandleScroll(double xoffset, double yoffset) {
@@ -137,10 +142,12 @@ void InputHandler::HandleScroll(double xoffset, double yoffset) {
   if (mods & GLFW_MOD_SUPER) modStr += "D-";
   if (mods & GLFW_MOD_SHIFT) modStr += "S-";
 
-  int grid = 0;
-
-  int row = cursorPos.y / charSize.y;
-  int col = cursorPos.x / charSize.x;
+  MouseInfo info;
+  if (!currGrid.has_value()) {
+    info = winManager.GetMouseInfo(cursorPos);
+  } else {
+    info = winManager.GetMouseInfo(*currGrid, cursorPos);
+  }
 
   double scrollSpeed = 1;
   double scrollUnit = 1 / scrollSpeed;
@@ -163,7 +170,7 @@ void InputHandler::HandleScroll(double xoffset, double yoffset) {
 
     auto actionStr = ypositive ? "up" : "down";
     while (yAccum >= scrollUnit) {
-      nvim.InputMouse("wheel", actionStr, modStr, grid, row, col);
+      nvim.InputMouse("wheel", actionStr, modStr, info.grid, info.row, info.col);
       yAccum -= scrollUnit;
     }
   } else if (xAbs > yAbs) {
@@ -178,7 +185,7 @@ void InputHandler::HandleScroll(double xoffset, double yoffset) {
 
     auto actionStr = xpositive ? "left" : "right";
     while (xAccum >= scrollUnit) {
-      nvim.InputMouse("wheel", actionStr, modStr, grid, row, col);
+      nvim.InputMouse("wheel", actionStr, modStr, info.grid, info.row, info.col);
       xAccum -= scrollUnit;
     }
   }

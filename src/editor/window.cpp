@@ -6,21 +6,23 @@
 using namespace wgpu;
 
 void WinManager::InitRenderData(Win& win) {
-  auto pos = glm::vec2(win.startCol, win.startRow) * gridSize;
-  auto size = glm::vec2(win.width, win.height) * gridSize;
+  auto pos = glm::vec2(win.startCol, win.startRow) * sizes.charSize;
+  auto size = glm::vec2(win.width, win.height) * sizes.charSize;
 
-  win.renderTexture = RenderTexture(pos, size, dpiScale, TextureFormat::BGRA8Unorm);
+  win.renderTexture =
+    RenderTexture(pos, size, sizes.dpiScale, TextureFormat::BGRA8Unorm);
 
-  auto fbSize = size * dpiScale;
+  auto fbSize = size * sizes.dpiScale;
   Extent3D maskSize{(uint32_t)fbSize.x, (uint32_t)fbSize.y};
   win.maskTextureView =
     utils::CreateRenderTexture(ctx.device, maskSize, TextureFormat::R8Unorm)
       .CreateView();
 
-  auto maskPos = pos * dpiScale;
-  win.maskPosBuffer = utils::CreateUniformBuffer(ctx.device, sizeof(glm::vec2), &maskPos);
+  auto maskPos = pos * sizes.dpiScale;
+  win.maskPosBuffer =
+    utils::CreateUniformBuffer(ctx.device, sizeof(glm::vec2), &maskPos);
 
-  win.cursorBG = utils::MakeBindGroup(
+  win.maskBG = utils::MakeBindGroup(
     ctx.device, ctx.pipeline.maskBGL,
     {
       {0, win.maskTextureView},
@@ -39,8 +41,8 @@ void WinManager::InitRenderData(Win& win) {
 }
 
 void WinManager::UpdateRenderData(Win& win) {
-  auto pos = glm::vec2(win.startCol, win.startRow) * gridSize;
-  auto size = glm::vec2(win.width, win.height) * gridSize;
+  auto pos = glm::vec2(win.startCol, win.startRow) * sizes.charSize;
+  auto size = glm::vec2(win.width, win.height) * sizes.charSize;
 
   bool posChanged = pos != win.pos;
   bool sizeChanged = size != win.size;
@@ -49,19 +51,19 @@ void WinManager::UpdateRenderData(Win& win) {
   }
 
   if (sizeChanged) {
-    win.renderTexture.Update(pos, size, dpiScale);
+    win.renderTexture.Update(pos, size, sizes.dpiScale);
   } else {
     win.renderTexture.UpdateRegion(pos, size);
   }
 
   if (sizeChanged) {
-    auto fbSize = size * dpiScale;
+    auto fbSize = size * sizes.dpiScale;
     Extent3D maskSize{(uint32_t)fbSize.x, (uint32_t)fbSize.y};
     win.maskTextureView =
       utils::CreateRenderTexture(ctx.device, maskSize, TextureFormat::R8Unorm)
         .CreateView();
 
-    win.cursorBG = utils::MakeBindGroup(
+    win.maskBG = utils::MakeBindGroup(
       ctx.device, ctx.pipeline.maskBGL,
       {
         {0, win.maskTextureView},
@@ -73,7 +75,7 @@ void WinManager::UpdateRenderData(Win& win) {
   }
 
   if (posChanged) {
-    auto maskPos = pos * dpiScale;
+    auto maskPos = pos * sizes.dpiScale;
     ctx.queue.WriteBuffer(win.maskPosBuffer, 0, &maskPos, sizeof(glm::vec2));
   }
 
@@ -82,7 +84,6 @@ void WinManager::UpdateRenderData(Win& win) {
     win.rectData.CreateBuffers(maxTextQuads);
     win.textData.CreateBuffers(maxTextQuads);
   }
-
 
   win.pos = pos;
   win.size = size;
@@ -198,7 +199,6 @@ void WinManager::MsgSet(const MsgSetPos& e) {
 }
 
 void WinManager::Viewport(const WinViewport& e) {
-
 }
 
 void WinManager::Extmark(const WinExtmark& e) {
@@ -208,4 +208,45 @@ Win* WinManager::GetActiveWin() {
   auto it = windows.find(activeWinId);
   if (it == windows.end()) return nullptr;
   return &it->second;
+}
+
+MouseInfo WinManager::GetMouseInfo(glm::vec2 cursorPos) {
+  cursorPos -= sizes.offset;
+  int globalRow = cursorPos.y / sizes.charSize.y;
+  int globalCol = cursorPos.x / sizes.charSize.x;
+
+  int grid = 1; // default grid number
+  for (auto& [id, win] : windows) {
+    if (win.hidden || id == 1) continue;
+
+    int top = win.startRow;
+    int bottom = win.startRow + win.height;
+    int left = win.startCol;
+    int right = win.startCol + win.width;
+
+    if (globalRow >= top && globalRow < bottom &&
+        globalCol >= left && globalCol < right) {
+      grid = id;
+      break;
+    }
+  }
+
+  auto& win = windows.at(grid);
+  int row = std::max(globalRow - win.startRow, 0);
+  int col = std::max(globalCol - win.startCol, 0);
+
+  return {grid, row, col};
+}
+
+MouseInfo WinManager::GetMouseInfo(int grid, glm::vec2 cursorPos) {
+  auto& win = windows.at(grid);
+
+  cursorPos -= sizes.offset;
+  int globalRow = cursorPos.y / sizes.charSize.y;
+  int globalCol = cursorPos.x / sizes.charSize.x;
+
+  int row = std::max(globalRow - win.startRow, 0);
+  int col = std::max(globalCol - win.startCol, 0);
+
+  return {grid, row, col};
 }

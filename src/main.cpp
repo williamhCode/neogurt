@@ -8,6 +8,7 @@
 #include "gfx/font.hpp"
 #include "gfx/instance.hpp"
 #include "gfx/renderer.hpp"
+#include "glm/ext/vector_float2.hpp"
 #include "nvim/msgpack_rpc/client.hpp"
 #include "nvim/nvim.hpp"
 #include "utils/clock.hpp"
@@ -30,8 +31,8 @@ const WGPUContext& ctx = Window::_ctx;
 AppOptions options;
 
 int main() {
-  // Window window({1400, 800}, "Neovim GUI", PresentMode::Immediate);
-  Window window({1600, 1000}, "Neovim GUI", PresentMode::Immediate);
+  auto presentMode = options.vsync ? PresentMode::Fifo : PresentMode::Immediate;
+  Window window({1600, 1000}, "Neovim GUI", presentMode);
   Font font("/Library/Fonts/SF-Mono-Medium.otf", 15, window.dpiScale);
 
   SizeHandler sizes;
@@ -45,16 +46,13 @@ int main() {
     uiWidth, uiHeight,
     {
       {"rgb", true},
-      // {"ext_multigrid", true},
+      {"ext_multigrid", options.multigrid},
       {"ext_linegrid", true},
     }
   );
 
   EditorState editorState{
-    .winManager{
-      .gridSize = sizes.charSize,
-      .dpiScale = sizes.dpiScale,
-    },
+    .winManager{.sizes = sizes},
     .cursor{.fullSize = sizes.charSize},
   };
   editorState.winManager.gridManager = &editorState.gridManager;
@@ -63,7 +61,7 @@ int main() {
   std::mutex wgpuDeviceMutex;
 
   // input -----------------------------------------------------------
-  InputHandler input(nvim, window.GetCursorPos(), sizes.charSize);
+  InputHandler input(nvim, editorState.winManager, window.GetCursorPos());
 
   window.keyCallback = [&](int key, int scancode, int action, int mods) {
     input.HandleKey(key, scancode, action, mods);
@@ -101,11 +99,8 @@ int main() {
   window.windowContentScaleCallback = [&](float xscale, float yscale) {
     std::scoped_lock lock(wgpuDeviceMutex);
     font = Font("/Library/Fonts/SF-Mono-Medium.otf", 15, window.dpiScale);
-    // update all depending on charSize and api
-    editorState.winManager.gridSize = font.charSize;
-    editorState.winManager.dpiScale = window.dpiScale;
+    // update all depending on charSize and dpi
     editorState.cursor.fullSize = font.charSize;
-    input.charSize = font.charSize;
   };
 
   // main thread -----------------------------------
@@ -141,7 +136,7 @@ int main() {
       }
 
       // update ----------------------------------------------
-      wgpu::BindGroup currCursorBG;
+      wgpu::BindGroup currMaskBG;
       if (auto win = editorState.winManager.GetActiveWin()) {
         auto cursorPos =
           glm::vec2{
@@ -150,8 +145,9 @@ int main() {
           } *
           sizes.charSize;
         editorState.cursor.SetDestPos(cursorPos);
-        currCursorBG = win->cursorBG;
+        currMaskBG = win->maskBG;
       }
+      editorState.cursor.currMaskBG = std::move(currMaskBG);
       editorState.cursor.Update(dt);
 
       // render ----------------------------------------------
@@ -200,8 +196,8 @@ int main() {
 
         renderer.RenderFinalTexture();
 
-        if (editorState.cursor.modeInfo != nullptr && editorState.cursor.blinkState != BlinkState::Off && currCursorBG != nullptr) {
-          renderer.RenderCursor(editorState.cursor, editorState.hlTable, currCursorBG);
+        if (editorState.cursor.CanRender()) {
+          renderer.RenderCursor(editorState.cursor, editorState.hlTable);
         }
 
         renderer.End();
