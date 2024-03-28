@@ -218,8 +218,6 @@ void Renderer::RenderFinalTexture() {
 void Renderer::RenderCursor(
   const Cursor& cursor, const HlTable& hlTable, const wgpu::BindGroup& maskBG
 ) {
-  if (cursor.modeInfo == nullptr) return;
-
   auto attrId = cursor.modeInfo->attrId;
   auto& hl = hlTable.at(attrId);
   auto foreground = GetForeground(hlTable, hl);

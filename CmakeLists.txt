@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.0...3.28)
 
 project(
-  NeovimGui
+  Neogui
   VERSION 0.1.0
   LANGUAGES CXX C
 )
@@ -45,22 +45,22 @@ set(APP_SRC
   src/utils/logger.cpp
 )
 
-add_executable(App ${APP_SRC})
+add_executable(neogui ${APP_SRC})
 
-# set_target_properties(App PROPERTIES
+# set_target_properties(neogui PROPERTIES
 # )
 
-target_include_directories(App PRIVATE 
+target_include_directories(neogui PRIVATE 
   ${PROJECT_SOURCE_DIR}/src
   ${ASIO_INCLUDE_DIR}
   ${UTFCPP_INCLUDE_DIR}
 )
 
-target_compile_definitions(App PRIVATE
+target_compile_definitions(neogui PRIVATE
   ROOT_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
-target_link_libraries(App PRIVATE 
+target_link_libraries(neogui PRIVATE 
   WebGPU_Tools
   msgpack-cxx
   tiny-process-library
@@ -68,18 +68,18 @@ target_link_libraries(App PRIVATE
 )
 
 if (MSVC)
-  target_compile_options(App PRIVATE /W4)
+  target_compile_options(neogui PRIVATE /W4)
 else()
-  target_compile_options(App PRIVATE -Wall -Wextra -pedantic)
+  target_compile_options(neogui PRIVATE -Wall -Wextra -pedantic)
   # assert in release
-  target_compile_options(App PRIVATE -UNDEBUG)
+  target_compile_options(neogui PRIVATE -UNDEBUG)
 endif()
 
 if (XCODE)
-  target_compile_definitions(App PRIVATE
+  target_compile_definitions(neogui PRIVATE
     XCODE=1
   )
-  set_target_properties(App PROPERTIES
+  set_target_properties(neogui PROPERTIES
     XCODE_GENERATE_SCHEME ON
     XCODE_SCHEME_ENABLE_GPU_FRAME_CAPTURE_MODE "Metal"
   )

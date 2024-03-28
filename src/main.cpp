@@ -101,7 +101,7 @@ int main() {
   window.windowContentScaleCallback = [&](float xscale, float yscale) {
     std::scoped_lock lock(wgpuDeviceMutex);
     font = Font("/Library/Fonts/SF-Mono-Medium.otf", 15, window.dpiScale);
-    // update all depending on charSize
+    // update all depending on charSize and api
     editorState.winManager.gridSize = font.charSize;
     editorState.winManager.dpiScale = window.dpiScale;
     editorState.cursor.fullSize = font.charSize;
@@ -133,7 +133,6 @@ int main() {
       };
 
       nvim.ParseEvents();
-      // if (nvim.redrawState.numFlushes == 0) continue;
 
       // process events ---------------------------------------
       {
@@ -167,37 +166,41 @@ int main() {
         renderer.Begin();
 
         if (nvim.redrawState.numFlushes != 0) {
+          bool renderWindows = false;
           for (auto& [id, win] : editorState.winManager.windows) {
             if (win.grid.dirty) {
               renderer.RenderWindow(win, font, editorState.hlTable);
               win.grid.dirty = false;
+              renderWindows = true;
             }
           }
 
-          std::deque<const Win*> windows;
-          std::vector<const Win*> floatingWindows;
-          for (auto& [id, win] : editorState.winManager.windows) {
-            if (id == 1) {
-              windows.push_front(&win);
-
-            } else if (!win.hidden) {
-              if (win.floatData.has_value()) {
-                floatingWindows.push_back(&win);
-
-              } else {
-                windows.push_back(&win);
+          if (renderWindows) {
+            std::deque<const Win*> windows;
+            std::vector<const Win*> floatingWindows;
+            for (auto& [id, win] : editorState.winManager.windows) {
+              if (id == 1) {
+                windows.push_front(&win);
+              } else if (!win.hidden) {
+                if (win.floatData.has_value()) {
+                  floatingWindows.push_back(&win);
+                } else {
+                  windows.push_back(&win);
+                }
               }
             }
+            // see editor/window.hpp comment for WinManager::windows
+            std::ranges::reverse(floatingWindows);
+            windows.insert(
+              windows.end(), floatingWindows.begin(), floatingWindows.end()
+            );
+            renderer.RenderWindows(windows);
           }
-          // see editor/window.hpp comment for WinManager::windows
-          std::ranges::reverse(floatingWindows);
-          windows.insert(windows.end(), floatingWindows.begin(), floatingWindows.end());
-          renderer.RenderWindows(windows);
         }
 
         renderer.RenderFinalTexture();
 
-        if (editorState.cursor.blinkState != BlinkState::Off && currCursorBG != nullptr) {
+        if (editorState.cursor.modeInfo != nullptr && editorState.cursor.blinkState != BlinkState::Off && currCursorBG != nullptr) {
           renderer.RenderCursor(editorState.cursor, editorState.hlTable, currCursorBG);
         }
 
