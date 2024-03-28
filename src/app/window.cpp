@@ -1,9 +1,11 @@
 #include "window.hpp"
+#include "utils/logger.hpp"
 
 #include <iostream>
 #include <ostream>
 
-static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+static void
+KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
   Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
   if (win.keyCallback) win.keyCallback(key, scancode, action, mods);
 }
@@ -54,15 +56,16 @@ static void WindowCloseCallback(GLFWwindow* window) {
 Window::Window(glm::uvec2 size, const std::string& title, wgpu::PresentMode presentMode)
     : size(size) {
   if (!glfwInit()) {
-    std::cerr << "Could not initialize GLFW!" << std::endl;
+    LOG_ERR("Could not initialize GLFW!");
     std::exit(1);
   }
 
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+  glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
 
   window = glfwCreateWindow(size.x, size.y, title.c_str(), NULL, NULL);
   if (!window) {
-    std::cerr << "Could not open window!" << std::endl;
+    LOG_ERR("Could not open window!");
     std::exit(1);
   }
 
@@ -87,7 +90,11 @@ Window::Window(glm::uvec2 size, const std::string& title, wgpu::PresentMode pres
 
   // webgpu ------------------------------------
   _ctx = WGPUContext(window, fbSize, presentMode);
-  std::cout << "WGPUContext created" << std::endl;
+  LOG_INFO("WGPUContext created");
+
+  if (glfwGetWindowAttrib(window, GLFW_TRANSPARENT_FRAMEBUFFER)) {
+    LOG_INFO("GLFW_TRANSPARENT_FRAMEBUFFER is supported");
+  }
 }
 
 Window::~Window() {

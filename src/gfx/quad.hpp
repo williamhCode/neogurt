@@ -52,7 +52,7 @@ struct QuadRenderData {
     );
   }
 
-  void SetBuffers(wgpu::RenderPassEncoder& passEncoder) const {
+  void SetBuffers(const wgpu::RenderPassEncoder& passEncoder) const {
     passEncoder.SetVertexBuffer(0, vertexBuffer, 0, sizeof(VertexType) * vertexCount);
     passEncoder.SetIndexBuffer(
       indexBuffer, wgpu::IndexFormat::Uint32, 0, indexCount * sizeof(uint32_t)

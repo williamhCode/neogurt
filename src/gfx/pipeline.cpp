@@ -161,11 +161,18 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
   ShaderModule cursorShader =
     utils::LoadShaderModule(ctx.device, ROOT_DIR "/src/shaders/cursor.wgsl");
 
-  cursorBGL = utils::MakeBindGroupLayout(
+  maskBGL = utils::MakeBindGroupLayout(
     ctx.device,
     {
       {0, ShaderStage::Fragment, TextureSampleType::UnfilterableFloat},
       {1, ShaderStage::Fragment, BufferBindingType::Uniform},
+    }
+  );
+
+  maskOffsetBGL = utils::MakeBindGroupLayout(
+    ctx.device,
+    {
+      {0, ShaderStage::Fragment, BufferBindingType::Uniform},
     }
   );
 
@@ -174,7 +181,8 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
       ctx.device,
       {
         viewProjBGL,
-        cursorBGL,
+        maskBGL,
+        maskOffsetBGL,
       }
     ),
     .vertex = VertexState{

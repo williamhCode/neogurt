@@ -181,6 +181,7 @@ void ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
                 editorState.winManager.MsgSet(e);
               },
               [&](WinViewport& e) {
+                editorState.winManager.Viewport(e);
               },
               [&](WinExtmark& e) {
               },

@@ -9,7 +9,7 @@
 static void ParseRedraw(const msgpack::object& params, RedrawState& state);
 
 void ParseRedrawEvents(rpc::Client& client, RedrawState& state) {
-  // LOG_DISABLE();
+  LOG_DISABLE();
   state.numFlushes = 0;
   while (client.HasNotification()) {
     auto notification = client.PopNotification();
@@ -76,10 +76,12 @@ static std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
   }},
 
   {"default_colors_set", [](const msgpack::object& args, RedrawState& state) {
+    // LOG_INFO("default_colors_set: {}", ToString(args));
     state.currEvents().push_back(args.as<DefaultColorsSet>());
   }},
 
   {"hl_attr_define", [](const msgpack::object& args, RedrawState& state) {
+    // LOG_INFO("hl_attr_define: {}", ToString(args));
     state.currEvents().push_back(args.as<HlAttrDefine>());
   }},
 
@@ -177,7 +179,8 @@ static std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
   }},
 
   {"win_viewport", [](const msgpack::object& args, RedrawState& state) {
-    // LOG("win_viewport: {}", ToString(args));
+    LOG("win_viewport: {}", ToString(args));
+    // LOG_INFO("win_viewport: {}", ToString(args));
     state.currEvents().push_back(args.as<WinViewport>());
   }},
 

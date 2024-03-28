@@ -146,7 +146,7 @@ void Font::UpdateTexture() {
     utils::CreateUniformBuffer(ctx.device, sizeof(glm::vec2), &textureSize);
 
   textureView =
-    utils::CreateTexture(
+    utils::CreateBindingTexture(
       ctx.device,
       {static_cast<uint32_t>(bufferSize.x), static_cast<uint32_t>(bufferSize.y)},
       wgpu::TextureFormat::RGBA8Unorm, textureData.data()

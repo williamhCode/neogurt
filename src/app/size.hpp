@@ -12,6 +12,8 @@ struct SizeHandler {
   glm::vec2 uiWidthHeight;
   float dpiScale;
 
+  glm::vec2 offset;
+
   void UpdateSizes(glm::vec2 size, float dpiScale, glm::vec2 charSize);
   std::tuple<int, int> GetUiWidthHeight();
 };

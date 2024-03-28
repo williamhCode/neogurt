@@ -14,8 +14,9 @@ Renderer::Renderer(const SizeHandler& sizes) {
   // shared
   camera = Ortho2D(sizes.size);
 
-  finalRenderTexture =
-    RenderTexture({0, 0}, sizes.uiSize, sizes.dpiScale, TextureFormat::BGRA8Unorm);
+  finalRenderTexture = RenderTexture(
+    sizes.offset, sizes.uiSize, sizes.dpiScale, TextureFormat::BGRA8Unorm
+  );
 
   // rect
   rectRPD = utils::RenderPassDescriptor({
@@ -51,19 +52,30 @@ Renderer::Renderer(const SizeHandler& sizes) {
   // final texture
   finalRPD = utils::RenderPassDescriptor({
     RenderPassColorAttachment{
-      .view = finalRenderTexture.textureView,
-      .loadOp = LoadOp::Load,
-      .storeOp = StoreOp::Store,
+      .loadOp = LoadOp::Load, .storeOp = StoreOp::Store,
+      // .clearValue = {1.0, 0.0, 0.0, 0.5},
     },
   });
 
   // cursor
+  offset = sizes.offset;
+  auto maskOffset = offset * sizes.dpiScale;
+  offsetBuffer = utils::CreateUniformBuffer(ctx.device, sizeof(glm::vec2), &maskOffset);
+  maskOffsetBG = utils::MakeBindGroup(
+    ctx.device, ctx.pipeline.maskOffsetBGL,
+    {
+      {0, offsetBuffer},
+    }
+  );
+
   cursorData.CreateBuffers(1);
 
   cursorRPD = utils::RenderPassDescriptor({
     RenderPassColorAttachment{
-      .loadOp = LoadOp::Load,
-      .storeOp = StoreOp::Store,
+      .loadOp = LoadOp::Load, .storeOp = StoreOp::Store,
+      // .loadOp = LoadOp::Clear,
+      // .storeOp = StoreOp::Store,
+      // .clearValue = {1.0, 0.7, 0.8, 0.5},
     },
   });
 }
@@ -71,7 +83,7 @@ Renderer::Renderer(const SizeHandler& sizes) {
 void Renderer::Resize(const SizeHandler& sizes) {
   camera.Resize(sizes.size);
 
-  finalRenderTexture.Update({0, 0}, sizes.uiSize, sizes.dpiScale);
+  finalRenderTexture.Update(sizes.offset, sizes.uiSize, sizes.dpiScale);
   windowsRPD = utils::RenderPassDescriptor({
     RenderPassColorAttachment{
       .view = finalRenderTexture.textureView,
@@ -79,27 +91,16 @@ void Renderer::Resize(const SizeHandler& sizes) {
       .storeOp = StoreOp::Store,
     },
   });
+
+  offset = sizes.offset;
+  auto maskOffset = offset * sizes.dpiScale;
+  ctx.queue.WriteBuffer(offsetBuffer, 0, &maskOffset, sizeof(glm::vec2));
 }
-
-// void Renderer::FbResize(glm::uvec2 fbSize) {
-// maskTextureView =
-//   utils::CreateRenderTexture(ctx.device, {fbSize.x, fbSize.y},
-//   TextureFormat::R8Unorm)
-//     .CreateView();
-
-// maskBG = utils::MakeBindGroup(
-//   ctx.device, ctx.pipeline.maskBGL,
-//   {
-//     {0, maskTextureView},
-//   }
-// );
-
-// textRenderPassDesc.cColorAttachments[1].view = maskTextureView;
-// }
 
 void Renderer::Begin() {
   commandEncoder = ctx.device.CreateCommandEncoder();
-  nextTexture = ctx.swapChain.GetCurrentTextureView();
+  nextTexture = ctx.swapChain.GetCurrentTexture();
+  nextTextureView = nextTexture.CreateView();
 }
 
 void Renderer::RenderWindow(Win& win, Font& font, const HlTable& hlTable) {
@@ -196,8 +197,7 @@ void Renderer::RenderWindows(const RangeOf<const Win*> auto& windows) {
   for (const Win* win : windows) {
     passEncoder.SetBindGroup(0, finalRenderTexture.camera.viewProjBG);
     passEncoder.SetBindGroup(1, win->renderTexture.textureBG);
-    win->renderTexture.renderData.SetBuffers(passEncoder);
-    passEncoder.DrawIndexed(win->renderTexture.renderData.indexCount);
+    win->renderTexture.Render(passEncoder);
   }
 
   passEncoder.End();
@@ -205,7 +205,19 @@ void Renderer::RenderWindows(const RangeOf<const Win*> auto& windows) {
 // explicit template instantiations
 template void Renderer::RenderWindows(const std::deque<const Win*>& windows);
 
-void Renderer::RenderCursor(const Cursor& cursor, const HlTable& hlTable, wgpu::BindGroup cursorBG) {
+void Renderer::RenderFinalTexture() {
+  finalRPD.cColorAttachments[0].view = nextTextureView;
+  auto passEncoder = commandEncoder.BeginRenderPass(&finalRPD);
+  passEncoder.SetPipeline(ctx.pipeline.textureRPL);
+  passEncoder.SetBindGroup(0, camera.viewProjBG);
+  passEncoder.SetBindGroup(1, finalRenderTexture.textureBG);
+  finalRenderTexture.Render(passEncoder);
+  passEncoder.End();
+}
+
+void Renderer::RenderCursor(
+  const Cursor& cursor, const HlTable& hlTable, const wgpu::BindGroup& maskBG
+) {
   if (cursor.modeInfo == nullptr) return;
 
   auto attrId = cursor.modeInfo->attrId;
@@ -217,31 +229,21 @@ void Renderer::RenderCursor(const Cursor& cursor, const HlTable& hlTable, wgpu::
   cursorData.ResetCounts();
   for (size_t i = 0; i < 4; i++) {
     auto& vertex = cursorData.quads[0][i];
-    vertex.position = cursor.pos + cursor.corners[i];
+    vertex.position = offset + cursor.pos + cursor.corners[i];
     vertex.foreground = foreground;
     vertex.background = background;
   }
   cursorData.Increment();
   cursorData.WriteBuffers();
 
-  cursorRPD.cColorAttachments[0].view = nextTexture;
+  cursorRPD.cColorAttachments[0].view = nextTextureView;
   RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&cursorRPD);
   passEncoder.SetPipeline(ctx.pipeline.cursorRPL);
   passEncoder.SetBindGroup(0, camera.viewProjBG);
-  passEncoder.SetBindGroup(1, cursorBG);
+  passEncoder.SetBindGroup(1, maskBG);
+  passEncoder.SetBindGroup(2, maskOffsetBG);
   cursorData.SetBuffers(passEncoder);
   passEncoder.DrawIndexed(cursorData.indexCount);
-  passEncoder.End();
-}
-
-void Renderer::RenderFinalTexture() {
-  finalRPD.cColorAttachments[0].view = nextTexture;
-  auto passEncoder = commandEncoder.BeginRenderPass(&finalRPD);
-  passEncoder.SetPipeline(ctx.pipeline.textureRPL);
-  passEncoder.SetBindGroup(0, camera.viewProjBG);
-  passEncoder.SetBindGroup(1, finalRenderTexture.textureBG);
-  finalRenderTexture.renderData.SetBuffers(passEncoder);
-  passEncoder.DrawIndexed(finalRenderTexture.renderData.indexCount);
   passEncoder.End();
 }
 

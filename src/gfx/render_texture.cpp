@@ -85,3 +85,8 @@ void RenderTexture::UpdateRegion(glm::vec2 pos, glm::vec2 size) {
   renderData.Increment();
   renderData.WriteBuffers();
 }
+
+void RenderTexture::Render(const wgpu::RenderPassEncoder& pass) const {
+  renderData.SetBuffers(pass);
+  pass.DrawIndexed(renderData.indexCount);
+}

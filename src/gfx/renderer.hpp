@@ -20,7 +20,8 @@ concept RangeOf =
 struct Renderer {
   wgpu::Color clearColor;
   wgpu::CommandEncoder commandEncoder;
-  wgpu::TextureView nextTexture;
+  wgpu::Texture nextTexture;
+  wgpu::TextureView nextTextureView;
 
   // shared
   Ortho2D camera;
@@ -36,12 +37,15 @@ struct Renderer {
   // windows
   wgpu::utils::RenderPassDescriptor windowsRPD;
 
-  // cursor
-  QuadRenderData<CursorQuadVertex> cursorData;
-  wgpu::utils::RenderPassDescriptor cursorRPD;
-
   // final texture
   wgpu::utils::RenderPassDescriptor finalRPD;
+
+  // cursor
+  glm::vec2 offset;
+  wgpu::Buffer offsetBuffer;
+  wgpu::BindGroup maskOffsetBG;
+  QuadRenderData<CursorQuadVertex> cursorData;
+  wgpu::utils::RenderPassDescriptor cursorRPD;
 
   Renderer(const SizeHandler& sizes);
 
@@ -50,8 +54,8 @@ struct Renderer {
   void Begin();
   void RenderWindow(Win& win, Font& font, const HlTable& hlTable);
   void RenderWindows(const RangeOf<const Win*> auto& windows);
-  void RenderCursor(const Cursor& cursor, const HlTable& hlTable, wgpu::BindGroup cursorBG);
   void RenderFinalTexture();
+  void RenderCursor(const Cursor& cursor, const HlTable& hlTable, const wgpu::BindGroup& cursorBG);
   void End();
   void Present();
 };

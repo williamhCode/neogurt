@@ -1,7 +1,6 @@
 #include "window.hpp"
 #include "gfx/instance.hpp"
 #include "glm/ext/vector_float2.hpp"
-#include "utils/region.hpp"
 #include "webgpu_utils/webgpu.hpp"
 
 using namespace wgpu;
@@ -18,10 +17,11 @@ void WinManager::InitRenderData(Win& win) {
     utils::CreateRenderTexture(ctx.device, maskSize, TextureFormat::R8Unorm)
       .CreateView();
 
-  win.maskPosBuffer = utils::CreateUniformBuffer(ctx.device, sizeof(glm::vec2), &pos);
+  auto maskPos = pos * dpiScale;
+  win.maskPosBuffer = utils::CreateUniformBuffer(ctx.device, sizeof(glm::vec2), &maskPos);
 
   win.cursorBG = utils::MakeBindGroup(
-    ctx.device, ctx.pipeline.cursorBGL,
+    ctx.device, ctx.pipeline.maskBGL,
     {
       {0, win.maskTextureView},
       {1, win.maskPosBuffer},
@@ -62,15 +62,20 @@ void WinManager::UpdateRenderData(Win& win) {
         .CreateView();
 
     win.cursorBG = utils::MakeBindGroup(
-      ctx.device, ctx.pipeline.cursorBGL,
+      ctx.device, ctx.pipeline.maskBGL,
       {
         {0, win.maskTextureView},
         {1, win.maskPosBuffer},
       }
     );
+
+    win.grid.dirty = true;
   }
 
-  if (posChanged) ctx.queue.WriteBuffer(win.maskPosBuffer, 0, &pos, sizeof(glm::vec2));
+  if (posChanged) {
+    auto maskPos = pos * dpiScale;
+    ctx.queue.WriteBuffer(win.maskPosBuffer, 0, &maskPos, sizeof(glm::vec2));
+  }
 
   if (sizeChanged) {
     const size_t maxTextQuads = win.width * win.height;
@@ -78,7 +83,6 @@ void WinManager::UpdateRenderData(Win& win) {
     win.textData.CreateBuffers(maxTextQuads);
   }
 
-  win.grid.dirty = true;
 
   win.pos = pos;
   win.size = size;
@@ -194,6 +198,7 @@ void WinManager::MsgSet(const MsgSetPos& e) {
 }
 
 void WinManager::Viewport(const WinViewport& e) {
+
 }
 
 void WinManager::Extmark(const WinExtmark& e) {

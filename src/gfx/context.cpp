@@ -31,7 +31,13 @@ WGPUContext::WGPUContext(GLFWwindow* window, glm::uvec2 size, PresentMode presen
     .limits = supportedLimits.limits,
   };
 
+  // std::vector<FeatureName> requiredFeatures{
+  //   FeatureName::SurfaceCapabilities,
+  // };
+
   DeviceDescriptor deviceDesc{
+    // .requiredFeatureCount = requiredFeatures.size(),
+    // .requiredFeatures = requiredFeatures.data(),
     .requiredLimits = &requiredLimits,
   };
   device = utils::RequestDevice(adapter, &deviceDesc);

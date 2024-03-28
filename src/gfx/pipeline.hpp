@@ -39,7 +39,8 @@ struct Pipeline {
   wgpu::BindGroupLayout textureBGL;
   wgpu::RenderPipeline textureRPL;
 
-  wgpu::BindGroupLayout cursorBGL;
+  wgpu::BindGroupLayout maskBGL;
+  wgpu::BindGroupLayout maskOffsetBGL;
   wgpu::RenderPipeline cursorRPL;
 
   Pipeline() = default;

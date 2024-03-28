@@ -12,6 +12,9 @@ void SizeHandler::UpdateSizes(glm::vec2 _size, float _dpiScale, glm::vec2 _charS
 
   uiSize = uiWidthHeight * charSize;
   uiFbSize = uiSize * dpiScale;
+
+  offset = (size - uiSize) / 2.0f;
+  offset = glm::round(offset * dpiScale) / dpiScale;
 }
 
 std::tuple<int, int> SizeHandler::GetUiWidthHeight() {

@@ -45,7 +45,7 @@ int main() {
     uiWidth, uiHeight,
     {
       {"rgb", true},
-      {"ext_multigrid", true},
+      // {"ext_multigrid", true},
       {"ext_linegrid", true},
     }
   );
@@ -53,9 +53,9 @@ int main() {
   EditorState editorState{
     .winManager{
       .gridSize = sizes.charSize,
-      .dpiScale = window.dpiScale,
+      .dpiScale = sizes.dpiScale,
     },
-    .cursor{.fullSize = font.charSize},
+    .cursor{.fullSize = sizes.charSize},
   };
   editorState.winManager.gridManager = &editorState.gridManager;
 
@@ -63,7 +63,7 @@ int main() {
   std::mutex wgpuDeviceMutex;
 
   // input -----------------------------------------------------------
-  InputHandler input(nvim, window.GetCursorPos(), font.charSize);
+  InputHandler input(nvim, window.GetCursorPos(), sizes.charSize);
 
   window.keyCallback = [&](int key, int scancode, int action, int mods) {
     input.HandleKey(key, scancode, action, mods);
@@ -92,16 +92,20 @@ int main() {
     sizes.UpdateSizes(size, window.dpiScale, font.charSize);
 
     window._ctx.Resize(sizes.fbSize);
+    renderer.Resize(sizes);
 
     auto [uiWidth, uiHeight] = sizes.GetUiWidthHeight();
     nvim.UiTryResize(uiWidth, uiHeight);
-
-    renderer.Resize(sizes);
   };
 
   window.windowContentScaleCallback = [&](float xscale, float yscale) {
     std::scoped_lock lock(wgpuDeviceMutex);
     font = Font("/Library/Fonts/SF-Mono-Medium.otf", 15, window.dpiScale);
+    // update all depending on charSize
+    editorState.winManager.gridSize = font.charSize;
+    editorState.winManager.dpiScale = window.dpiScale;
+    editorState.cursor.fullSize = font.charSize;
+    input.charSize = font.charSize;
   };
 
   // main thread -----------------------------------
