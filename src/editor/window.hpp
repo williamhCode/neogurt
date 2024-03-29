@@ -62,11 +62,12 @@ struct MouseInfo {
 
 struct WinManager {
   GridManager* gridManager;
-  SizeHandler& sizes;
+  const SizeHandler& sizes;
 
   // not unordered because telescope float background overlaps text
   // so have to render floats in reverse order else text will be covered
   std::map<int, Win> windows;
+  int msgWinId = -1;
 
   void InitRenderData(Win& win);
   void UpdateRenderData(Win& win);

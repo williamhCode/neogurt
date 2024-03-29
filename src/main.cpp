@@ -40,10 +40,9 @@ int main() {
 
   Renderer renderer(sizes);
 
-  auto [uiWidth, uiHeight] = sizes.GetUiWidthHeight();
   Nvim nvim(false);
   nvim.UiAttach(
-    uiWidth, uiHeight,
+    sizes.uiWidth, sizes.uiHeight,
     {
       {"rgb", true},
       {"ext_multigrid", options.multigrid},
@@ -92,14 +91,12 @@ int main() {
     window._ctx.Resize(sizes.fbSize);
     renderer.Resize(sizes);
 
-    auto [uiWidth, uiHeight] = sizes.GetUiWidthHeight();
-    nvim.UiTryResize(uiWidth, uiHeight);
+    nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight);
   };
 
   window.windowContentScaleCallback = [&](float xscale, float yscale) {
     std::scoped_lock lock(wgpuDeviceMutex);
     font = Font("/Library/Fonts/SF-Mono-Medium.otf", 15, window.dpiScale);
-    // update all depending on charSize and dpi
     editorState.cursor.fullSize = font.charSize;
   };
 
@@ -126,7 +123,6 @@ int main() {
         windowShouldClose = true;
         glfwPostEmptyEvent();
       };
-
       nvim.ParseEvents();
 
       // process events ---------------------------------------
@@ -142,8 +138,7 @@ int main() {
           glm::vec2{
             win->startCol + win->grid.cursorCol,
             win->startRow + win->grid.cursorRow,
-          } *
-          sizes.charSize;
+          } * sizes.charSize + sizes.offset;
         editorState.cursor.SetDestPos(cursorPos);
         currMaskBG = win->maskBG;
       }
@@ -153,8 +148,7 @@ int main() {
       // render ----------------------------------------------
       if (auto hlIter = editorState.hlTable.find(0);
           hlIter != editorState.hlTable.end()) {
-        auto color = hlIter->second.background.value();
-        renderer.clearColor = {color.r, color.g, color.b, color.a};
+        renderer.SetClearColor(hlIter->second.background.value());
       }
 
       {
@@ -175,7 +169,7 @@ int main() {
             std::deque<const Win*> windows;
             std::vector<const Win*> floatingWindows;
             for (auto& [id, win] : editorState.winManager.windows) {
-              if (id == 1) {
+              if (id == editorState.winManager.msgWinId) {
                 windows.push_front(&win);
               } else if (!win.hidden) {
                 if (win.floatData.has_value()) {
@@ -185,6 +179,11 @@ int main() {
                 }
               }
             }
+            if (auto winIt = editorState.winManager.windows.find(1);
+                winIt != editorState.winManager.windows.end()) {
+              windows.push_front(&winIt->second);
+            }
+
             // see editor/window.hpp comment for WinManager::windows
             std::ranges::reverse(floatingWindows);
             windows.insert(
@@ -196,7 +195,7 @@ int main() {
 
         renderer.RenderFinalTexture();
 
-        if (editorState.cursor.CanRender()) {
+        if (editorState.cursor.ShouldRender()) {
           renderer.RenderCursor(editorState.cursor, editorState.hlTable);
         }
 

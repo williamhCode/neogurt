@@ -58,13 +58,12 @@ Renderer::Renderer(const SizeHandler& sizes) {
   });
 
   // cursor
-  offset = sizes.offset;
-  auto maskOffset = offset * sizes.dpiScale;
-  offsetBuffer = utils::CreateUniformBuffer(ctx.device, sizeof(glm::vec2), &maskOffset);
+  maskOffsetBuffer =
+    utils::CreateUniformBuffer(ctx.device, sizeof(glm::vec2), &sizes.fbOffset);
   maskOffsetBG = utils::MakeBindGroup(
     ctx.device, ctx.pipeline.maskOffsetBGL,
     {
-      {0, offsetBuffer},
+      {0, maskOffsetBuffer},
     }
   );
 
@@ -72,10 +71,8 @@ Renderer::Renderer(const SizeHandler& sizes) {
 
   cursorRPD = utils::RenderPassDescriptor({
     RenderPassColorAttachment{
-      .loadOp = LoadOp::Load, .storeOp = StoreOp::Store,
-      // .loadOp = LoadOp::Clear,
-      // .storeOp = StoreOp::Store,
-      // .clearValue = {1.0, 0.7, 0.8, 0.5},
+      .loadOp = LoadOp::Load,
+      .storeOp = StoreOp::Store,
     },
   });
 }
@@ -92,9 +89,11 @@ void Renderer::Resize(const SizeHandler& sizes) {
     },
   });
 
-  offset = sizes.offset;
-  auto maskOffset = offset * sizes.dpiScale;
-  ctx.queue.WriteBuffer(offsetBuffer, 0, &maskOffset, sizeof(glm::vec2));
+  ctx.queue.WriteBuffer(maskOffsetBuffer, 0, &sizes.fbOffset, sizeof(glm::vec2));
+}
+
+void Renderer::SetClearColor(glm::vec4 color) {
+  clearColor = {color.r, color.g, color.b, color.a};
 }
 
 void Renderer::Begin() {
@@ -104,11 +103,11 @@ void Renderer::Begin() {
 }
 
 void Renderer::RenderWindow(Win& win, Font& font, const HlTable& hlTable) {
-  auto& textData = win.textData;
   auto& rectData = win.rectData;
+  auto& textData = win.textData;
 
-  textData.ResetCounts();
   rectData.ResetCounts();
+  textData.ResetCounts();
 
   glm::vec2 textOffset(0, 0);
 
@@ -126,7 +125,7 @@ void Renderer::RenderWindow(Win& win, Font& font, const HlTable& hlTable) {
 
         auto background = *hl.background;
         for (size_t i = 0; i < 4; i++) {
-          auto& vertex = rectData.quads[rectData.quadCount][i];
+          auto& vertex = rectData.CurrQuad()[i];
           vertex.position = textOffset + rectPositions[i];
           vertex.color = background;
         }
@@ -144,7 +143,7 @@ void Renderer::RenderWindow(Win& win, Font& font, const HlTable& hlTable) {
 
         auto foreground = GetForeground(hlTable, hl);
         for (size_t i = 0; i < 4; i++) {
-          auto& vertex = textData.quads[textData.quadCount][i];
+          auto& vertex = textData.CurrQuad()[i];
           vertex.position = textQuadPos + font.positions[i];
           vertex.regionCoords = glyphInfo.region[i];
           vertex.foreground = foreground;
@@ -159,8 +158,8 @@ void Renderer::RenderWindow(Win& win, Font& font, const HlTable& hlTable) {
     textOffset.y += font.charSize.y;
   }
 
-  textData.WriteBuffers();
   rectData.WriteBuffers();
+  textData.WriteBuffers();
 
   font.UpdateTexture();
 
@@ -171,8 +170,7 @@ void Renderer::RenderWindow(Win& win, Font& font, const HlTable& hlTable) {
     RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&rectRPD);
     passEncoder.SetPipeline(ctx.pipeline.rectRPL);
     passEncoder.SetBindGroup(0, win.renderTexture.camera.viewProjBG);
-    rectData.SetBuffers(passEncoder);
-    passEncoder.DrawIndexed(rectData.indexCount);
+    rectData.Render(passEncoder);
     passEncoder.End();
   }
   // text
@@ -183,8 +181,7 @@ void Renderer::RenderWindow(Win& win, Font& font, const HlTable& hlTable) {
     passEncoder.SetPipeline(ctx.pipeline.textRPL);
     passEncoder.SetBindGroup(0, win.renderTexture.camera.viewProjBG);
     passEncoder.SetBindGroup(1, font.fontTextureBG);
-    textData.SetBuffers(passEncoder);
-    passEncoder.DrawIndexed(textData.indexCount);
+    textData.Render(passEncoder);
     passEncoder.End();
   }
 }
@@ -197,7 +194,7 @@ void Renderer::RenderWindows(const RangeOf<const Win*> auto& windows) {
   for (const Win* win : windows) {
     passEncoder.SetBindGroup(0, finalRenderTexture.camera.viewProjBG);
     passEncoder.SetBindGroup(1, win->renderTexture.textureBG);
-    win->renderTexture.Render(passEncoder);
+    win->renderTexture.renderData.Render(passEncoder);
   }
 
   passEncoder.End();
@@ -212,7 +209,7 @@ void Renderer::RenderFinalTexture() {
   passEncoder.SetPipeline(ctx.pipeline.textureRPL);
   passEncoder.SetBindGroup(0, camera.viewProjBG);
   passEncoder.SetBindGroup(1, finalRenderTexture.textureBG);
-  finalRenderTexture.Render(passEncoder);
+  finalRenderTexture.renderData.Render(passEncoder);
   passEncoder.End();
 }
 
@@ -225,8 +222,8 @@ void Renderer::RenderCursor(const Cursor& cursor, const HlTable& hlTable) {
 
   cursorData.ResetCounts();
   for (size_t i = 0; i < 4; i++) {
-    auto& vertex = cursorData.quads[0][i];
-    vertex.position = offset + cursor.pos + cursor.corners[i];
+    auto& vertex = cursorData.CurrQuad()[i];
+    vertex.position = cursor.pos + cursor.corners[i];
     vertex.foreground = foreground;
     vertex.background = background;
   }
@@ -239,8 +236,7 @@ void Renderer::RenderCursor(const Cursor& cursor, const HlTable& hlTable) {
   passEncoder.SetBindGroup(0, camera.viewProjBG);
   passEncoder.SetBindGroup(1, cursor.currMaskBG);
   passEncoder.SetBindGroup(2, maskOffsetBG);
-  cursorData.SetBuffers(passEncoder);
-  passEncoder.DrawIndexed(cursorData.indexCount);
+  cursorData.Render(passEncoder);
   passEncoder.End();
 }
 

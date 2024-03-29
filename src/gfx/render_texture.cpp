@@ -33,17 +33,7 @@ RenderTexture::RenderTexture(
   );
 
   renderData.CreateBuffers(1);
-
-  renderData.ResetCounts();
-  auto positions = MakeRegion(pos, size);
-  auto uvs = MakeRegion(0, 0, 1, 1);
-  for (size_t i = 0; i < 4; i++) {
-    auto& vertex = renderData.quads[0][i];
-    vertex.position = positions[i];
-    vertex.uv = uvs[i];
-  }
-  renderData.Increment();
-  renderData.WriteBuffers();
+  UpdateRegion(pos, size);
 }
 
 void RenderTexture::Update(glm::vec2 pos, glm::vec2 size, float dpiScale) {
@@ -78,15 +68,10 @@ void RenderTexture::UpdateRegion(glm::vec2 pos, glm::vec2 size) {
   auto positions = MakeRegion(pos, size);
   auto uvs = MakeRegion(0, 0, 1, 1);
   for (size_t i = 0; i < 4; i++) {
-    auto& vertex = renderData.quads[0][i];
+    auto& vertex = renderData.CurrQuad()[i];
     vertex.position = positions[i];
     vertex.uv = uvs[i];
   }
   renderData.Increment();
   renderData.WriteBuffers();
-}
-
-void RenderTexture::Render(const wgpu::RenderPassEncoder& pass) const {
-  renderData.SetBuffers(pass);
-  pass.DrawIndexed(renderData.indexCount);
 }

@@ -1,9 +1,6 @@
 #include "window.hpp"
 #include "utils/logger.hpp"
 
-#include <iostream>
-#include <ostream>
-
 static void
 KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
   Window& win = *reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));

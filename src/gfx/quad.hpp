@@ -30,6 +30,10 @@ struct QuadRenderData {
     indexCount = 0;
   }
 
+  Quad& CurrQuad() {
+    return quads[quadCount];
+  }
+
   void Increment() {
     indices[indexCount + 0] = vertexCount + 0;
     indices[indexCount + 1] = vertexCount + 1;
@@ -52,10 +56,11 @@ struct QuadRenderData {
     );
   }
 
-  void SetBuffers(const wgpu::RenderPassEncoder& passEncoder) const {
+  void Render(const wgpu::RenderPassEncoder& passEncoder) const {
     passEncoder.SetVertexBuffer(0, vertexBuffer, 0, sizeof(VertexType) * vertexCount);
     passEncoder.SetIndexBuffer(
       indexBuffer, wgpu::IndexFormat::Uint32, 0, indexCount * sizeof(uint32_t)
     );
+    passEncoder.DrawIndexed(indexCount);
   }
 };

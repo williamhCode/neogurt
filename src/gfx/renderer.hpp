@@ -41,8 +41,7 @@ struct Renderer {
   wgpu::utils::RenderPassDescriptor finalRPD;
 
   // cursor
-  glm::vec2 offset;
-  wgpu::Buffer offsetBuffer;
+  wgpu::Buffer maskOffsetBuffer;
   wgpu::BindGroup maskOffsetBG;
   QuadRenderData<CursorQuadVertex> cursorData;
   wgpu::utils::RenderPassDescriptor cursorRPD;
@@ -50,6 +49,7 @@ struct Renderer {
   Renderer(const SizeHandler& sizes);
 
   void Resize(const SizeHandler& sizes);
+  void SetClearColor(glm::vec4 color);
 
   void Begin();
   void RenderWindow(Win& win, Font& font, const HlTable& hlTable);

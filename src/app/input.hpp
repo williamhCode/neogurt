@@ -10,14 +10,13 @@ struct InputHandler {
   WinManager& winManager;
 
   // shared
-  glm::vec2 cursorPos;
   int mods = 0;
 
-  // mouse button
+  // mouse related
+  glm::vec2 cursorPos;
   std::optional<int> mouseButton;
   std::optional<int> currGrid;
 
-  // scroll related
   double yAccum = 0;
   double xAccum = 0;
   int scrollDir = 0;

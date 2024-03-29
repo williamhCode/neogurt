@@ -47,7 +47,7 @@ struct Cursor {
   Region startCorners;
   Region destCorners;
   Region corners;
-  float cornerTime = 0.06;
+  float cornerTime = 0.06; // transition time
   float cornerElasped;
 
   bool blink = false;
@@ -59,5 +59,5 @@ struct Cursor {
   void SetDestPos(glm::vec2 destPos);
   void SetMode(ModeInfo* modeInfo);
   void Update(float dt);
-  bool CanRender();
+  bool ShouldRender();
 };

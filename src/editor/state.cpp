@@ -62,7 +62,6 @@ void ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
           // LOG("chdir");
         },
         [&](ModeChange& e) {
-          editorState.modeIdx = e.modeIdx;
           editorState.cursor.SetMode(&editorState.modeInfoList[e.modeIdx]);
         },
         [&](MouseOn&) {
