@@ -25,7 +25,7 @@ struct Highlight {
   bool bold;
   bool strikethrough;
   std::optional<UnderlineType> underline;
-  int blend;
+  float bgAlpha = 1; // 0 - 1
 };
 
 inline glm::vec4 GetForeground(const HlTable& table, const Highlight& hl) {

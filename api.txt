@@ -1,3 +1,5 @@
+
+
 {
   error_types = {
     Exception = {
@@ -402,42 +404,49 @@
       return_type = "Object",
       since = 0
     }, {
+      deprecated_since = 11,
       method = false,
       name = "nvim_get_option_info",
       parameters = { { "String", "name" } },
       return_type = "Dictionary",
       since = 7
     }, {
+      deprecated_since = 11,
       method = false,
       name = "nvim_set_option",
       parameters = { { "String", "name" }, { "Object", "value" } },
       return_type = "void",
       since = 1
     }, {
+      deprecated_since = 11,
       method = false,
       name = "nvim_get_option",
       parameters = { { "String", "name" } },
       return_type = "Object",
       since = 1
     }, {
+      deprecated_since = 11,
       method = true,
       name = "nvim_buf_get_option",
       parameters = { { "Buffer", "buffer" }, { "String", "name" } },
       return_type = "Object",
       since = 1
     }, {
+      deprecated_since = 11,
       method = true,
       name = "nvim_buf_set_option",
       parameters = { { "Buffer", "buffer" }, { "String", "name" }, { "Object", "value" } },
       return_type = "void",
       since = 1
     }, {
+      deprecated_since = 11,
       method = true,
       name = "nvim_win_get_option",
       parameters = { { "Window", "window" }, { "String", "name" } },
       return_type = "Object",
       since = 1
     }, {
+      deprecated_since = 11,
       method = true,
       name = "nvim_win_set_option",
       parameters = { { "Window", "window" }, { "String", "name" }, { "Object", "value" } },
@@ -498,6 +507,24 @@
       return_type = "void",
       since = 7
     }, {
+      method = true,
+      name = "nvim_win_add_ns",
+      parameters = { { "Window", "window" }, { "Integer", "ns_id" } },
+      return_type = "Boolean",
+      since = 12
+    }, {
+      method = true,
+      name = "nvim_win_get_ns",
+      parameters = { { "Window", "window" } },
+      return_type = "ArrayOf(Integer)",
+      since = 12
+    }, {
+      method = true,
+      name = "nvim_win_remove_ns",
+      parameters = { { "Window", "window" }, { "Integer", "ns_id" } },
+      return_type = "Boolean",
+      since = 12
+    }, {
       method = false,
       name = "nvim_get_option_value",
       parameters = { { "String", "name" }, { "Dictionary", "opts" } },
@@ -551,6 +578,12 @@
       parameters = { { "Tabpage", "tabpage" } },
       return_type = "Window",
       since = 1
+    }, {
+      method = true,
+      name = "nvim_tabpage_set_win",
+      parameters = { { "Tabpage", "tabpage" }, { "Window", "win" } },
+      return_type = "void",
+      since = 12
     }, {
       method = true,
       name = "nvim_tabpage_get_number",
@@ -620,6 +653,12 @@
       since = 7
     }, {
       method = false,
+      name = "nvim_ui_term_event",
+      parameters = { { "String", "event" }, { "Object", "value" } },
+      return_type = "void",
+      since = 12
+    }, {
+      method = false,
       name = "nvim_get_hl_id_by_name",
       parameters = { { "String", "name" } },
       return_type = "Integer",
@@ -636,6 +675,12 @@
       parameters = { { "Integer", "ns_id" }, { "String", "name" }, { "Dictionary", "val" } },
       return_type = "void",
       since = 7
+    }, {
+      method = false,
+      name = "nvim_get_hl_ns",
+      parameters = { { "Dictionary", "opts" } },
+      return_type = "Integer",
+      since = 12
     }, {
       method = false,
       name = "nvim_set_hl_ns",
@@ -998,6 +1043,12 @@
       since = 8
     }, {
       method = false,
+      name = "nvim_complete_set",
+      parameters = { { "Integer", "index" }, { "Dictionary", "opts" } },
+      return_type = "Dictionary",
+      since = 12
+    }, {
+      method = false,
       name = "nvim_exec2",
       parameters = { { "String", "src" }, { "Dictionary", "opts" } },
       return_type = "Dictionary",
@@ -1164,6 +1215,12 @@
       parameters = { { "Window", "window" }, { "Integer", "ns_id" } },
       return_type = "void",
       since = 10
+    }, {
+      method = true,
+      name = "nvim_win_text_height",
+      parameters = { { "Window", "window" }, { "Dictionary", "opts" } },
+      return_type = "Dictionary",
+      since = 12
     }, {
       deprecated_since = 1,
       method = true,
@@ -1702,6 +1759,10 @@
       parameters = { { "String", "name" }, { "Object", "value" } },
       since = 4
     }, {
+      name = "chdir",
+      parameters = { { "String", "path" } },
+      since = 12
+    }, {
       name = "update_fg",
       parameters = { { "Integer", "fg" } },
       since = 3
@@ -1771,7 +1832,7 @@
       since = 5
     }, {
       name = "grid_line",
-      parameters = { { "Integer", "grid" }, { "Integer", "row" }, { "Integer", "col_start" }, { "Array", "data" } },
+      parameters = { { "Integer", "grid" }, { "Integer", "row" }, { "Integer", "col_start" }, { "Array", "data" }, { "Boolean", "wrap" } },
       since = 5
     }, {
       name = "grid_scroll",
@@ -1809,6 +1870,10 @@
       name = "win_viewport",
       parameters = { { "Integer", "grid" }, { "Window", "win" }, { "Integer", "topline" }, { "Integer", "botline" }, { "Integer", "curline" }, { "Integer", "curcol" }, { "Integer", "line_count" }, { "Integer", "scroll_delta" } },
       since = 7
+    }, {
+      name = "win_viewport_margins",
+      parameters = { { "Integer", "grid" }, { "Window", "win" }, { "Integer", "top" }, { "Integer", "bottom" }, { "Integer", "left" }, { "Integer", "right" } },
+      since = 12
     }, {
       name = "win_extmark",
       parameters = { { "Integer", "grid" }, { "Window", "win" }, { "Integer", "ns_id" }, { "Integer", "mark_id" }, { "Integer", "row" }, { "Integer", "col" } },
@@ -1897,12 +1962,17 @@
       name = "msg_history_clear",
       parameters = {},
       since = 10
+    }, {
+      name = "error_exit",
+      parameters = { { "Integer", "status" } },
+      since = 12
     } },
   ui_options = { "rgb", "ext_cmdline", "ext_popupmenu", "ext_tabline", "ext_wildmenu", "ext_messages", "ext_linegrid", "ext_multigrid", "ext_hlstate", "ext_termcolors" },
   version = {
     api_compatible = 0,
-    api_level = 11,
-    api_prerelease = false,
+    api_level = 12,
+    api_prerelease = true,
+    build = "g35239e977",
     major = 0,
     minor = 10,
     patch = 0,

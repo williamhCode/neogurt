@@ -15,6 +15,7 @@ struct EditorState {
   HlTable hlTable;
   Cursor cursor;
   std::vector<ModeInfo> modeInfoList;
+  // std::map<int, std::string> hlGroupTable;
 };
 
 void ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState);

@@ -33,5 +33,5 @@ struct Nvim {
   );
   void UiAttach(int width, int height, const std::map<std::string, variant>& options);
   void UiTryResize(int width, int height);
-  void ParseEvents();
+  void ParseRedrawEvents();
 };

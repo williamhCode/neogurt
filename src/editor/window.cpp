@@ -174,7 +174,8 @@ void WinManager::Close(const WinClose& e) {
   auto removed = windows.erase(e.grid);
   if (removed == 0) {
     // see editor/state.cpp GridDestroy
-    LOG_WARN("WinManager::Close: window {} not found - ignore due to nvim bug", e.grid);
+    // LOG_WARN("WinManager::Close: window {} not found - ignore due to nvim bug",
+    // e.grid);
   }
 }
 
@@ -201,6 +202,20 @@ void WinManager::MsgSet(const MsgSetPos& e) {
 void WinManager::Viewport(const WinViewport& e) {
 }
 
+void WinManager::ViewportMargins(const WinViewportMargins& e) {
+  auto it = windows.find(e.grid);
+  if (it == windows.end()) {
+    // LOG_ERR("WinManager::ViewportMargins: window {} not found", e.grid);
+    return;
+  }
+  auto& win = it->second;
+
+  win.margins.top = e.top;
+  win.margins.bottom = e.bottom;
+  win.margins.left = e.left;
+  win.margins.right = e.right;
+}
+
 void WinManager::Extmark(const WinExtmark& e) {
 }
 
@@ -224,8 +239,7 @@ MouseInfo WinManager::GetMouseInfo(glm::vec2 cursorPos) {
     int left = win.startCol;
     int right = win.startCol + win.width;
 
-    if (globalRow >= top && globalRow < bottom &&
-        globalCol >= left && globalCol < right) {
+    if (globalRow >= top && globalRow < bottom && globalCol >= left && globalCol < right) {
       grid = id;
       break;
     }

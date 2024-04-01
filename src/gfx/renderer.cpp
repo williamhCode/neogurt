@@ -124,6 +124,7 @@ void Renderer::RenderWindow(Win& win, Font& font, const HlTable& hlTable) {
         auto rectPositions = MakeRegion({0, 0}, font.charSize);
 
         auto background = *hl.background;
+        background.a = hl.bgAlpha;
         for (size_t i = 0; i < 4; i++) {
           auto& vertex = rectData.CurrQuad()[i];
           vertex.position = textOffset + rectPositions[i];

@@ -14,11 +14,12 @@ enum class CursorShape {
 
 struct ModeInfo {
   CursorShape cursorShape = CursorShape::None;
-  int cellPercentage = -1;
+
+  int cellPercentage = 0;
   int blinkwait = 0;
   int blinkon = 0;
   int blinkoff = 0;
-  int attrId = -1;
+  int attrId = 0;
 
   std::string ToString() {
     std::string str = "ModeInfo: ";

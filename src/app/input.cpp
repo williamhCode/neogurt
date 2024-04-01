@@ -132,6 +132,11 @@ void InputHandler::HandleMouseButtonAndCursorPos(int action) {
     info = winManager.GetMouseInfo(*currGrid, cursorPos);
   }
 
+  // auto cell = winManager.windows.at(info.grid).grid.lines[info.row][info.col];
+  // LOG_INFO("row: {} col: {}", info.row, info.col);
+  // LOG_INFO("hlGroup: {}", (*hlGroupTable)[cell.hlId]);
+  // LOG_INFO("hlId: {}", cell.hlId);
+
   nvim.InputMouse(buttonStr, actionStr, modStr, info.grid, info.row, info.col);
 }
 

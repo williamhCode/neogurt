@@ -10,6 +10,7 @@ struct Font {
   FT_Face face;
 
   int size; // font size
+  int trueSize; // font size in pixels
   float dpiScale;
 
   // texture related
@@ -28,20 +29,22 @@ struct Font {
   glm::vec2 textureSize;
   glm::vec2 bufferSize;
   glm::vec2 charSize;
+  glm::vec2 texCharSize;  // size in texture;
 
   Region positions; // positions of untranslated character quad
 
   struct GlyphInfo {
     // floats because of high dpi
-    glm::vec2 size;
+    // glm::vec2 size;
     glm::vec2 bearing;
-    float advance;
+    // float advance;
     Region region;
   };
   using GlyphInfoMap = std::unordered_map<uint32_t, GlyphInfo>;
   GlyphInfoMap glyphInfoMap;
   GlyphInfoMap nerdGlyphInfoMap;
 
+  Font() = default;
   Font(const std::string& path, int size, float dpiScale);
   const GlyphInfo& GetGlyphInfoOrAdd(FT_ULong charcode);
   void UpdateTexture();

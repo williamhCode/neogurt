@@ -69,7 +69,7 @@ static std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
   }},
 
   {"flush", [](const msgpack::object&, RedrawState& state) {
-    // LOG("flush ---------------------------- ");
+    LOG("flush ---------------------------- ");
     state.currEvents().push_back(Flush{});
     state.eventsQueue.emplace_back();
     state.numFlushes++;
@@ -184,6 +184,12 @@ static std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
     state.currEvents().push_back(args.as<WinViewport>());
   }},
 
+  {"win_viewport_margins", [](const msgpack::object& args, RedrawState& state) {
+    LOG("win_viewport_margins: {}", ToString(args));
+    // LOG_INFO("win_viewport_margins: {}", ToString(args));
+    state.currEvents().push_back(args.as<WinViewportMargins>());
+  }},
+
   {"win_extmark", [](const msgpack::object& args, RedrawState& state) {
     // LOG("win_extmark: {}", ToString(args));
     state.currEvents().push_back(args.as<WinExtmark>());
@@ -192,21 +198,15 @@ static std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
 
 static void ParseRedraw(const msgpack::object& params, RedrawState &state) {
   std::span<const msgpack::object> paramList(params.via.array);
-  static int count = 0;
-  // LOG("------------------------------------- {}", count);
-  // LOG("ParseRedraw: {}", ToString(params));
-  count++;
 
   for (const auto& param : paramList) {
     auto paramArr = param.via.array;
     std::string_view eventName(paramArr.ptr[0].convert());
     std::span<const msgpack::object> eventArgs(&paramArr.ptr[1], paramArr.size - 1);
 
-    // std::cout << eventName << std::endl;
     auto uiEventFunc = uiEventFuncs[eventName];
     if (uiEventFunc == nullptr) {
-      LOG("Unknown event: {}", eventName);
-      throw std::runtime_error("Unknown event: " + std::string(eventName));
+      LOG_WARN("Unknown event: {}", eventName);
       continue;
     }
     for (const auto& arg : eventArgs) {

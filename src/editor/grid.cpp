@@ -37,7 +37,7 @@ void GridManager::Resize(const GridResize& e) {
 void GridManager::Clear(const GridClear& e) {
   auto it = grids.find(e.grid);
   if (it == grids.end()) {
-    LOG_WARN("GridManager::Clear: grid {} not found", e.grid);
+    LOG_ERR("GridManager::Clear: grid {} not found", e.grid);
     return;
   }
   auto& grid = it->second;
@@ -53,7 +53,7 @@ void GridManager::Clear(const GridClear& e) {
 void GridManager::CursorGoto(const GridCursorGoto& e) {
   auto it = grids.find(e.grid);
   if (it == grids.end()) {
-    LOG_WARN("GridManager::CursorGoto: grid {} not found", e.grid);
+    LOG_ERR("GridManager::CursorGoto: grid {} not found", e.grid);
     return;
   }
   auto& grid = it->second;
@@ -65,7 +65,7 @@ void GridManager::CursorGoto(const GridCursorGoto& e) {
 void GridManager::Line(const GridLine& e) {
   auto it = grids.find(e.grid);
   if (it == grids.end()) {
-    LOG_WARN("GridManager::Line: grid {} not found", e.grid);
+    LOG_ERR("GridManager::Line: grid {} not found", e.grid);
     return;
   }
   auto& grid = it->second;
@@ -87,7 +87,7 @@ void GridManager::Line(const GridLine& e) {
 void GridManager::Scroll(const GridScroll& e) {
   auto it = grids.find(e.grid);
   if (it == grids.end()) {
-    LOG_WARN("GridManager::Scroll: grid {} not found", e.grid);
+    LOG_ERR("GridManager::Scroll: grid {} not found", e.grid);
     return;
   }
   auto& grid = it->second;
@@ -123,6 +123,6 @@ void GridManager::Scroll(const GridScroll& e) {
 void GridManager::Destroy(const GridDestroy& e) {
   auto removed = grids.erase(e.grid);
   if (removed == 0) {
-    LOG_WARN("GridManager::Destroy: grid {} not found", e.grid);
+    LOG_ERR("GridManager::Destroy: grid {} not found", e.grid);
   }
 }

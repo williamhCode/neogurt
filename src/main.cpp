@@ -14,6 +14,7 @@
 #include "utils/clock.hpp"
 #include "utils/logger.hpp"
 #include "utils/timer.hpp"
+#include "utils/unicode.hpp"
 
 #include <algorithm>
 #include <deque>
@@ -31,9 +32,15 @@ const WGPUContext& ctx = Window::_ctx;
 AppOptions options;
 
 int main() {
+  // ─	━	│	┃	┄	┅	┆	┇	┈	┉	┊	┋	┌	┍	┎	┏ 
+  // LOG_INFO("{}", UTF8ToUnicode(""));
+
   auto presentMode = options.vsync ? PresentMode::Fifo : PresentMode::Immediate;
   Window window({1600, 1000}, "Neovim GUI", presentMode);
-  Font font("/Library/Fonts/SF-Mono-Medium.otf", 15, window.dpiScale);
+  Font font("/Library/Fonts/SF-Mono-Medium.otf", 18, window.dpiScale);
+  // font = Font("/Library/Fonts/SF-Mono-Medium.otf", 18, window.dpiScale);
+  // Font font(ROOT_DIR "/res/Hack/HackNerdFont-Regular.ttf", 18, window.dpiScale);
+  // Font font(ROOT_DIR "/res/JetBrainsMono/JetBrainsMonoNerdFont-Regular.ttf", 18, window.dpiScale);
 
   SizeHandler sizes;
   sizes.UpdateSizes(window.size, window.dpiScale, font.charSize);
@@ -96,7 +103,7 @@ int main() {
 
   window.windowContentScaleCallback = [&](float xscale, float yscale) {
     std::scoped_lock lock(wgpuDeviceMutex);
-    font = Font("/Library/Fonts/SF-Mono-Medium.otf", 15, window.dpiScale);
+    font = Font(ROOT_DIR "/res/SFMono Regular Nerd Font Complete.otf", 18, window.dpiScale);
     editorState.cursor.fullSize = font.charSize;
   };
 
@@ -123,7 +130,7 @@ int main() {
         windowShouldClose = true;
         glfwPostEmptyEvent();
       };
-      nvim.ParseEvents();
+      nvim.ParseRedrawEvents();
 
       // process events ---------------------------------------
       {
@@ -138,7 +145,10 @@ int main() {
           glm::vec2{
             win->startCol + win->grid.cursorCol,
             win->startRow + win->grid.cursorRow,
-          } * sizes.charSize + sizes.offset;
+          } *
+            sizes.charSize + sizes.offset;
+        // LOG("cursorPos: {}, {}", cursorPos.x, cursorPos.y);
+        // LOG("cursor.pos: {}, {}", editorState.cursor.pos.x, editorState.cursor.pos.y);
         editorState.cursor.SetDestPos(cursorPos);
         currMaskBG = win->maskBG;
       }
@@ -186,6 +196,12 @@ int main() {
 
             // see editor/window.hpp comment for WinManager::windows
             std::ranges::reverse(floatingWindows);
+
+            // sort floating windows by zindex
+            // std::ranges::sort(floatingWindows, [](const Win* win, const Win* other) {
+            //   return win->floatData->zindex < other->floatData->zindex;
+            // });
+
             windows.insert(
               windows.end(), floatingWindows.begin(), floatingWindows.end()
             );

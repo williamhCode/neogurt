@@ -10,8 +10,9 @@
 #include "app/size.hpp"
 
 #include <map>
+#include <optional>
 
-enum class Anchor { NW, NE, SW, SE };
+// enum class Anchor { NW, NE, SW, SE };
 
 struct FloatData {
   // Win* anchorWin;
@@ -25,6 +26,13 @@ struct FloatData {
   int zindex;
 };
 
+struct Margins {
+  int top = 0;
+  int bottom = 0;
+  int left = 0;
+  int right = 0;
+};
+
 struct Win {
   Grid& grid;
 
@@ -35,6 +43,8 @@ struct Win {
   int height;
 
   int hidden;
+
+  Margins margins;
 
   // exists only if window is floating
   std::optional<FloatData> floatData;
@@ -79,6 +89,7 @@ struct WinManager {
   void Close(const WinClose& e);
   void MsgSet(const MsgSetPos& e);
   void Viewport(const WinViewport& e);
+  void ViewportMargins(const WinViewportMargins& e);
   void Extmark(const WinExtmark& e);
 
   int activeWinId = 0;

@@ -1,6 +1,7 @@
 #include "cursor.hpp"
 #include "glm/common.hpp"
 #include "glm/exponential.hpp"
+#include "utils/logger.hpp"
 #include "utils/region.hpp"
 
 void Cursor::SetDestPos(glm::vec2 _destPos) {
@@ -19,6 +20,8 @@ void Cursor::SetDestPos(glm::vec2 _destPos) {
 void Cursor::SetMode(ModeInfo* _modeInfo) {
   modeInfo = _modeInfo;
 
+  LOG_INFO("SetMode: {}", modeInfo->ToString());
+
   float ratio = modeInfo->cellPercentage / 100.0;
   glm::vec2 size = fullSize;
   glm::vec2 offset(0, 0);
@@ -29,7 +32,9 @@ void Cursor::SetMode(ModeInfo* _modeInfo) {
       offset.y = fullSize.y * (1 - ratio);
       break;
     case CursorShape::Vertical: size.x *= ratio; break;
-    case CursorShape::None: assert(false); break;
+    case CursorShape::None:
+      LOG_ERR("Invalid cursor shape");
+      break;
   }
 
   destCorners = MakeRegion(offset, size);
@@ -100,5 +105,6 @@ void Cursor::Update(float dt) {
 }
 
 bool Cursor::ShouldRender() {
-  return modeInfo != nullptr && blinkState != BlinkState::Off && currMaskBG != nullptr;
+  return modeInfo != nullptr && modeInfo->cursorShape != CursorShape::None &&
+         blinkState != BlinkState::Off && currMaskBG != nullptr;
 }

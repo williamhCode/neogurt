@@ -1,6 +1,7 @@
 #include "state.hpp"
 #include "glm/ext/vector_float4.hpp"
 #include "utils/variant.hpp"
+#include <deque>
 #include <vector>
 
 static auto IntToColor(uint32_t color) {
@@ -17,7 +18,7 @@ void ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
     auto& redrawEvents = redrawState.eventsQueue.front();
     // to process grid events first then window
     std::vector<RedrawEvent*> gridEvents;
-    std::vector<RedrawEvent*> winEvents;
+    std::deque<RedrawEvent*> winEvents;
     for (auto& event : redrawEvents) {
       std::visit(overloaded{
         [&](SetTitle& e) {
@@ -115,15 +116,16 @@ void ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
             } else if (key == "underdashed") {
               hl.underline = UnderlineType::Underdashed;
             } else if (key == "blend") {
-              hl.blend = value.as_uint64_t();
+              hl.bgAlpha = 1 - (value.as_uint64_t() / 100.0f);
             } else {
               LOG_WARN("unknown hl attr key: {}", key);
             }
           }
         },
-        [&](HlGroupSet&) {
-          // not needed to render grids, but used for rendering
-          // own elements with consistent highlighting
+        [&](HlGroupSet& e) {
+         // not needed to render grids, but used for rendering
+         // own elements with consistent highlighting
+          // editorState.hlGroupTable.emplace(e.id, e.name);
         },
         [&](Flush&) {
           // process grid and window events
@@ -182,6 +184,9 @@ void ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
               [&](WinViewport& e) {
                 editorState.winManager.Viewport(e);
               },
+              [&](WinViewportMargins& e) {
+                editorState.winManager.ViewportMargins(e);
+              },
               [&](WinExtmark& e) {
               },
               [&](auto&) {
@@ -213,9 +218,11 @@ void ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
         },
         [&](WinPos& e) {
           winEvents.push_back((RedrawEvent*)&e);
+          // winEvents.push_front((RedrawEvent*)&e);
         },
         [&](WinFloatPos& e) {
           winEvents.push_back((RedrawEvent*)&e);
+          // winEvents.push_front((RedrawEvent*)&e);
         },
         [&](WinExternalPos& e) {
           winEvents.push_back((RedrawEvent*)&e);
@@ -230,6 +237,9 @@ void ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
           winEvents.push_back((RedrawEvent*)&e);
         },
         [&](WinViewport& e) {
+          winEvents.push_back((RedrawEvent*)&e);
+        },
+        [&](WinViewportMargins& e) {
           winEvents.push_back((RedrawEvent*)&e);
         },
         [&](WinExtmark& e) {

@@ -151,6 +151,15 @@ struct WinViewport {
   int scrollDelta;
   MSGPACK_DEFINE(grid, win, topline, botline, curline, curcol, lineCount, scrollDelta);
 };
+struct WinViewportMargins {
+  int grid;
+  msgpack::type::ext win;
+  int top;
+  int bottom;
+  int left;
+  int right;
+  MSGPACK_DEFINE(grid, win, top, bottom, left, right);
+};
 struct WinExtmark {
   int grid;
   msgpack::type::ext win;
@@ -191,6 +200,7 @@ using RedrawEvent = std::variant<
   WinClose,
   MsgSetPos,
   WinViewport,
+  WinViewportMargins,
   WinExtmark
 >;
 // clang-format on

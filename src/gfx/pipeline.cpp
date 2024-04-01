@@ -65,8 +65,8 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
     ctx.device,
     {
       {0, ShaderStage::Vertex, BufferBindingType::Uniform},
-      {1, ShaderStage::Fragment, TextureSampleType::Float},
-      {2, ShaderStage::Fragment, SamplerBindingType::Filtering},
+      {1, ShaderStage::Fragment, TextureSampleType::UnfilterableFloat},
+      {2, ShaderStage::Fragment, SamplerBindingType::NonFiltering},
     }
   );
 

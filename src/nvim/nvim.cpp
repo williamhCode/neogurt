@@ -83,6 +83,6 @@ void Nvim::InputMouse(
   client.Send("nvim_input_mouse", button, action, modifier, grid, row, col);
 }
 
-void Nvim::ParseEvents() {
-  ParseRedrawEvents(client, redrawState);
+void Nvim::ParseRedrawEvents() {
+  ::ParseRedrawEvents(client, redrawState);
 }
