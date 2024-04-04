@@ -1,8 +1,7 @@
 #include "font.hpp"
 #include "glm/common.hpp"
-#include "utils/logger.hpp"
 #include "utils/region.hpp"
-#include "webgpu_utils/webgpu.hpp"
+#include "webgpu_tools/utils/webgpu.hpp"
 #include "gfx/instance.hpp"
 
 #include <vector>
@@ -44,7 +43,8 @@ Font::Font(const std::string& path, int _size, float _dpiScale)
   charSize.x = (face->size->metrics.max_advance >> 6) / dpiScale;
   charSize.y = (face->size->metrics.height >> 6) / dpiScale;
 
-  texCharSize = glm::max(charSize, glm::vec2(size, size)) + glm::vec2(1, 1);
+  texCharSize = glm::max(charSize, glm::vec2(size, size)) * glm::vec2(1, 1.2);
+  texCharSize = glm::ceil(texCharSize * dpiScale) / dpiScale;
 
   positions = MakeRegion({0, 0}, texCharSize);
 
@@ -121,7 +121,7 @@ const Font::GlyphInfo& Font::GetGlyphInfoOrAdd(FT_ULong charcode) {
 
   for (size_t yy = 0; yy < bitmap.rows; yy++) {
     for (size_t xx = 0; xx < bitmap.width; xx++) {
-      auto index = truePos.x + xx + (truePos.y + yy) * bufferSize.x;
+      size_t index = truePos.x + xx + (truePos.y + yy) * bufferSize.x;
       textureData[index].r = 255;
       textureData[index].g = 255;
       textureData[index].b = 255;

@@ -27,6 +27,8 @@ struct Window {
   Window() = default;
   Window(glm::uvec2 size, const std::string& title, wgpu::PresentMode presentMode);
   ~Window();
+  Window(const Window&) = delete;
+  Window& operator=(const Window&) = delete;
 
   void SetShouldClose(bool value);
   bool ShouldClose();

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "webgpu_utils/webgpu.hpp"
+#include "webgpu_tools/utils/webgpu.hpp"
 #include "gfx/instance.hpp"
 
 template <class VertexType>

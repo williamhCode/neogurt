@@ -1,10 +1,6 @@
 #include "grid.hpp"
-#include "gfx/instance.hpp"
 #include "utils/logger.hpp"
-#include "webgpu_utils/webgpu.hpp"
 #include <algorithm>
-
-using namespace wgpu;
 
 void GridManager::Resize(const GridResize& e) {
   auto [it, first] = grids.try_emplace(e.grid);
@@ -72,7 +68,7 @@ void GridManager::Line(const GridLine& e) {
 
   auto& line = grid.lines[e.row];
   int col = e.colStart;
-  for (auto& cell : e.cells) {
+  for (const auto& cell : e.cells) {
     for (int i = 0; i < cell.repeat; i++) {
       auto& lineCell = line[col];
       lineCell.text = cell.text;

@@ -111,8 +111,8 @@ void Renderer::RenderWindow(Win& win, Font& font, const HlTable& hlTable) {
 
   glm::vec2 textOffset(0, 0);
 
-  for (size_t i = 0; i < win.grid.lines.Size(); i++) {
-    auto& line = win.grid.lines[i];
+  for (size_t row = 0; row < win.grid.lines.Size(); row++) {
+    auto& line = win.grid.lines[row];
     textOffset.x = 0;
 
     for (auto& cell : line) {
@@ -135,7 +135,7 @@ void Renderer::RenderWindow(Win& win, Font& font, const HlTable& hlTable) {
       }
 
       if (cell.text != " ") {
-        auto& glyphInfo = font.GetGlyphInfoOrAdd(charcode);
+        const auto& glyphInfo = font.GetGlyphInfoOrAdd(charcode);
 
         glm::vec2 textQuadPos{
           textOffset.x + glyphInfo.bearing.x,
@@ -216,7 +216,7 @@ void Renderer::RenderFinalTexture() {
 
 void Renderer::RenderCursor(const Cursor& cursor, const HlTable& hlTable) {
   auto attrId = cursor.modeInfo->attrId;
-  auto& hl = hlTable.at(attrId);
+  const auto& hl = hlTable.at(attrId);
   auto foreground = GetForeground(hlTable, hl);
   auto background = GetBackground(hlTable, hl);
   if (attrId == 0) std::swap(foreground, background);

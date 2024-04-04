@@ -42,7 +42,7 @@ struct Win {
   int width;
   int height;
 
-  int hidden;
+  bool hidden;
 
   Margins margins;
 

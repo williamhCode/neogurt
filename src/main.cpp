@@ -90,18 +90,18 @@ int main() {
   };
 
   // resizing and dpi changed -------------------------------------
-  window.framebufferSizeCallback = [&](int width, int height) {
+  window.framebufferSizeCallback = [&](int /* width */, int /* height */) {
     std::scoped_lock lock(wgpuDeviceMutex);
     glm::vec2 size(window.fbSize / (unsigned int)window.dpiScale);
     sizes.UpdateSizes(size, window.dpiScale, font.charSize);
 
-    window._ctx.Resize(sizes.fbSize);
+    Window::_ctx.Resize(sizes.fbSize);
     renderer.Resize(sizes);
 
     nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight);
   };
 
-  window.windowContentScaleCallback = [&](float xscale, float yscale) {
+  window.windowContentScaleCallback = [&](float /* xscale */, float /* yscale */) {
     std::scoped_lock lock(wgpuDeviceMutex);
     font = Font(ROOT_DIR "/res/SFMono Regular Nerd Font Complete.otf", 18, window.dpiScale);
     editorState.cursor.fullSize = font.charSize;
@@ -140,7 +140,7 @@ int main() {
 
       // update ----------------------------------------------
       wgpu::BindGroup currMaskBG;
-      if (auto win = editorState.winManager.GetActiveWin()) {
+      if (auto *win = editorState.winManager.GetActiveWin()) {
         auto cursorPos =
           glm::vec2{
             win->startCol + win->grid.cursorCol,

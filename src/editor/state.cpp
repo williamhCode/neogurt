@@ -129,7 +129,7 @@ void ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
         },
         [&](Flush&) {
           // process grid and window events
-          for (auto event : gridEvents) {
+          for (auto *event : gridEvents) {
             std::visit(overloaded{
               [&](GridResize& e) {
                 editorState.gridManager.Resize(e);

@@ -1,11 +1,7 @@
 #pragma once
 
-#include "gfx/camera.hpp"
-#include "gfx/quad.hpp"
-#include "glm/ext/vector_float2.hpp"
 #include "nvim/parse.hpp"
 #include "utils/ring_buffer.hpp"
-#include "webgpu/webgpu_cpp.h"
 #include <vector>
 
 struct Win; // forward decl

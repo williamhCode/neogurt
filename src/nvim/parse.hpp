@@ -118,7 +118,9 @@ struct WinFloatPos {
   float anchorCol;
   bool focusable;
   int zindex;
-  MSGPACK_DEFINE(grid, win, anchor, anchorGrid, anchorRow, anchorCol, focusable, zindex);
+  MSGPACK_DEFINE(
+    grid, win, anchor, anchorGrid, anchorRow, anchorCol, focusable, zindex
+  );
 };
 struct WinExternalPos {
   int grid;

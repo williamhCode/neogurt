@@ -5,19 +5,19 @@
 
 void Logger::Log(const std::string& message) {
   if (!enabled) return;
-  std::cout << message << std::endl;
+  std::cout << message << '\n';
 }
 
 void Logger::LogInfo(const std::string& message) {
-  std::cout << "INFO: " << message << std::endl;
+  std::cout << "INFO: " << message << '\n';
 }
 
 void Logger::LogWarn(const std::string& message) {
-  std::cout << "WARNING: " << message << std::endl;
+  std::cout << "WARNING: " << message << '\n';
 }
 
 void Logger::LogErr(const std::string& message) {
-  std::cout << "ERROR: " << message << std::endl;
+  std::cerr << "ERROR: " << message << '\n';
 }
 
 std::string ToString(const msgpack::object& obj) {

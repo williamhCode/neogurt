@@ -1,9 +1,8 @@
 #include "context.hpp"
 #include <webgpu/webgpu_cpp.h>
 #include <webgpu/webgpu_glfw.h>
-#include "webgpu_utils/webgpu.hpp"
-
-#include <iostream>
+#include "utils/logger.hpp"
+#include "webgpu_tools/utils/webgpu.hpp"
 
 using namespace wgpu;
 
@@ -11,7 +10,7 @@ WGPUContext::WGPUContext(GLFWwindow* window, glm::uvec2 size, PresentMode presen
     : presentMode(presentMode) {
   instance = CreateInstance();
   if (!instance) {
-    std::cerr << "Could not initialize WebGPU!" << std::endl;
+    LOG_ERR("Could not initialize WebGPU!");
     std::exit(1);
   }
 

@@ -1,5 +1,4 @@
 #include "clock.hpp"
-#include "utils/logger.hpp"
 #include <numeric>
 #include <thread>
 

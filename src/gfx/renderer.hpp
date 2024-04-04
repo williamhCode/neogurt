@@ -10,7 +10,7 @@
 #include "gfx/pipeline.hpp"
 #include "gfx/quad.hpp"
 #include "webgpu/webgpu_cpp.h"
-#include "webgpu_utils/webgpu.hpp"
+#include "webgpu_tools/utils/webgpu.hpp"
 #include <ranges>
 
 template <typename R, typename V>

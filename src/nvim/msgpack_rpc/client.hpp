@@ -21,7 +21,7 @@ private:
   asio::ip::tcp::socket socket;
   std::thread contextThr;
   std::atomic_bool exit;
-  std::unordered_map<int, std::promise<msgpack::object_handle>> responses;
+  std::unordered_map<u_int32_t, std::promise<msgpack::object_handle>> responses;
   std::mutex responsesMutex;
 
 public:
@@ -146,7 +146,7 @@ private:
 
           msgpack::object_handle handle;
           while (unpacker.next(handle)) {
-            auto& obj = handle.get();
+            const auto& obj = handle.get();
             if (obj.type != msgpack::type::ARRAY) {
               LOG_ERR("Client::GetData: Not an array");
               continue;

@@ -20,8 +20,6 @@ void Cursor::SetDestPos(glm::vec2 _destPos) {
 void Cursor::SetMode(ModeInfo* _modeInfo) {
   modeInfo = _modeInfo;
 
-  LOG_INFO("SetMode: {}", modeInfo->ToString());
-
   float ratio = modeInfo->cellPercentage / 100.0;
   glm::vec2 size = fullSize;
   glm::vec2 offset(0, 0);
@@ -58,7 +56,7 @@ void Cursor::Update(float dt) {
     } else {
       // use smoothstep
       float t = jumpElasped / jumpTime;
-      float x = glm::pow(t, 1 / 2.8);
+      float x = glm::pow(t, 1 / 2.8f);
       pos = glm::mix(startPos, destPos, x);
     }
   }
@@ -72,7 +70,7 @@ void Cursor::Update(float dt) {
     } else {
       float t = cornerElasped / cornerTime;
       for (size_t i = 0; i < 4; i++) {
-        float x = glm::pow(t, 1 / 2.8);
+        float x = glm::pow(t, 1 / 2.8f);
         corners[i] = glm::mix(startCorners[i], destCorners[i], x);
       }
     }

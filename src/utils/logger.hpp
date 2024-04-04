@@ -8,6 +8,7 @@ struct Logger {
   bool enabled = true;
 
   void Log(const std::string& message);
+
   void LogInfo(const std::string& message);
   void LogWarn(const std::string& message);
   void LogErr(const std::string& message);

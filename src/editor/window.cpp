@@ -1,7 +1,7 @@
 #include "window.hpp"
 #include "gfx/instance.hpp"
 #include "glm/ext/vector_float2.hpp"
-#include "webgpu_utils/webgpu.hpp"
+#include "webgpu_tools/utils/webgpu.hpp"
 
 using namespace wgpu;
 

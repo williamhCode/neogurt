@@ -1,6 +1,6 @@
 #include "render_texture.hpp"
 
-#include "webgpu_utils/webgpu.hpp"
+#include "webgpu_tools/utils/webgpu.hpp"
 #include "utils/region.hpp"
 #include "gfx/instance.hpp"
 

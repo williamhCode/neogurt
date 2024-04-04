@@ -1,7 +1,6 @@
 #pragma once
 
 #include "glm/ext/vector_float2.hpp"
-#include <tuple>
 
 struct SizeHandler {
   glm::vec2 size;

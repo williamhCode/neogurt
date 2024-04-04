@@ -1,7 +1,7 @@
 #include "camera.hpp"
 
 #include "gfx/instance.hpp"
-#include "webgpu_utils/webgpu.hpp"
+#include "webgpu_tools/utils/webgpu.hpp"
 #include "glm/ext/matrix_clip_space.hpp"
 #include "glm/ext/matrix_float4x4.hpp"
 
