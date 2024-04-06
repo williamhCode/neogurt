@@ -43,12 +43,12 @@ struct Margins {
     return top == 0 && bottom == 0 && left == 0 && right == 0;
   }
 
-  [[nodiscard]] FMargins ToFloat() const {
+  [[nodiscard]] FMargins ToFloat(glm::vec2 size) const {
     return {
-      static_cast<float>(top),
-      static_cast<float>(bottom),
-      static_cast<float>(left),
-      static_cast<float>(right),
+      top * size.y,
+      bottom * size.y,
+      left * size.x,
+      right * size.x,
     };
   }
 };
@@ -65,7 +65,6 @@ struct Win {
   bool hidden;
 
   Margins margins;
-  FMargins fmargins;
 
   // exists only if window is floating
   std::optional<FloatData> floatData;
@@ -84,9 +83,10 @@ struct Win {
   QuadRenderData<TextQuadVertex> textData;
 
   // scroll related
+  FMargins fmargins; // margin size in pixels
+
   bool scrolling;
   float scrollDist;
-  // float scrollTime = 0.08; // transition time
   float scrollTime = 0.08; // transition time
   float scrollElapsed;
 

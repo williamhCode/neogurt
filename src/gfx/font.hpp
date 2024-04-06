@@ -10,7 +10,7 @@ struct Font {
   FT_Face face;
 
   int size;     // font size
-  int trueSize; // font size in pixels
+  int trueSize; // font size * dpiScale
   float dpiScale;
 
   // texture related

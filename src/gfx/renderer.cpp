@@ -203,6 +203,10 @@ void Renderer::RenderWindows(const RangeOf<const Win*> auto& windows) {
       win->prevRenderTexture.renderData.Render(passEncoder);
 
       // draw window borders
+      if (!win->margins.Empty()) {
+        passEncoder.SetBindGroup(1, win->renderTexture.textureBG);
+        win->marginsData.Render(passEncoder);
+      }
     }
   }
 

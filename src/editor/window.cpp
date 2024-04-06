@@ -235,25 +235,6 @@ void WinManager::Viewport(const WinViewport& e) {
     win.scrollElapsed = 0;
 
     std::swap(win.prevRenderTexture, win.renderTexture);
-
-    win.marginsData.CreateBuffers(4);
-    win.marginsData.ResetCounts();
-
-    if (win.margins.top != 0) {
-      // auto positions = MakeRegion({0, 0}, {
-
-      for (size_t i = 0; i < 4; i++) {
-        auto& vertex = win.marginsData.CurrQuad()[i];
-        vertex.position = {0, 0};
-        vertex.uv = {0, 0};
-      }
-    }
-    if (win.margins.bottom != 0) {
-    }
-    if (win.margins.left != 0) {
-    }
-    if (win.margins.right != 0) {
-    }
   }
 }
 
@@ -348,7 +329,42 @@ void WinManager::ViewportMargins(const WinViewportMargins& e) {
   win.margins.left = e.left;
   win.margins.right = e.right;
 
-  win.fmargins = win.margins.ToFloat();
+  win.fmargins = win.margins.ToFloat(sizes.charSize);
+
+  win.marginsData.CreateBuffers(4);
+  win.marginsData.ResetCounts();
+
+  auto SetData = [&](glm::vec2 pos, glm::vec2 size) {
+    auto positions = MakeRegion(pos, size);
+    auto uvs = MakeRegion(pos, size / win.size);
+
+    for (size_t i = 0; i < 4; i++) {
+      auto& vertex = win.marginsData.CurrQuad()[i];
+      vertex.position = win.pos + positions[i];
+      vertex.uv = uvs[i];
+    }
+    win.marginsData.Increment();
+  };
+
+  if (win.margins.top != 0) {
+    SetData({0, 0}, {win.size.x, win.fmargins.top});
+  }
+  if (win.margins.bottom != 0) {
+    SetData({0, win.size.y - win.fmargins.bottom}, {win.size.x, win.fmargins.bottom});
+  }
+  if (win.margins.left != 0) {
+    SetData(
+      {0, win.fmargins.top},
+      {win.fmargins.left, win.size.y - win.fmargins.top - win.fmargins.bottom}
+    );
+  }
+  if (win.margins.right != 0) {
+    SetData(
+      {win.size.x - win.fmargins.right, win.fmargins.top},
+      {win.fmargins.right, win.size.y - win.fmargins.top - win.fmargins.bottom}
+    );
+  }
+  win.marginsData.WriteBuffers();
 }
 
 void WinManager::Extmark(const WinExtmark& e) {
