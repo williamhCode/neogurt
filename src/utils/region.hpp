@@ -22,3 +22,12 @@ inline Region MakeRegion(glm::vec2 pos, glm::vec2 size) {
     pos + glm::vec2(0, size.y),
   };
 }
+
+struct RegionHandle {
+  glm::vec2 pos;
+  glm::vec2 size;
+
+  [[nodiscard]] Region Get() const {
+    return MakeRegion(pos, size);
+  }
+};

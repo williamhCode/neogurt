@@ -7,8 +7,9 @@
 using namespace wgpu;
 
 RenderTexture::RenderTexture(
-  glm::vec2 pos, glm::vec2 size, float dpiScale, wgpu::TextureFormat format
-) {
+  glm::vec2 _size, float dpiScale, wgpu::TextureFormat format
+)
+    : size(_size) {
   camera = Ortho2D(size);
 
   Extent3D textureSize{
@@ -33,43 +34,26 @@ RenderTexture::RenderTexture(
   );
 
   renderData.CreateBuffers(1);
-  UpdateRegion(pos, size);
 }
 
-void RenderTexture::Update(glm::vec2 pos, glm::vec2 size, float dpiScale) {
-  camera.Resize(size);
-
-  Extent3D textureSize{
-    static_cast<uint32_t>(size.x * dpiScale), static_cast<uint32_t>(size.y * dpiScale)
-  };
-  texture = utils::CreateRenderTexture(ctx.device, textureSize, texture.GetFormat());
-  textureView = texture.CreateView();
-
-  auto textureSampler = ctx.device.CreateSampler(ToPtr(SamplerDescriptor{
-    .addressModeU = AddressMode::ClampToEdge,
-    .addressModeV = AddressMode::ClampToEdge,
-    .magFilter = FilterMode::Nearest,
-    .minFilter = FilterMode::Nearest,
-  }));
-
-  textureBG = utils::MakeBindGroup(
-    ctx.device, ctx.pipeline.textureBGL,
-    {
-      {0, textureView},
-      {1, textureSampler},
-    }
-  );
-
-  UpdateRegion(pos, size);
-}
-
-void RenderTexture::UpdateRegion(glm::vec2 pos, glm::vec2 size) {
+void RenderTexture::UpdateRegion(glm::vec2 pos, std::optional<RegionHandle> region) {
   renderData.ResetCounts();
-  auto positions = MakeRegion(pos, size);
-  auto uvs = MakeRegion(0, 0, 1, 1);
+
+  Region positions;
+  Region uvs;
+
+  if (region == std::nullopt) {
+    positions = MakeRegion({0, 0}, size);
+    uvs = MakeRegion(0, 0, 1, 1);
+  } else {
+    positions = region->Get();
+    region->pos /= size, region->size /= size;
+    uvs = region->Get();
+  }
+
   for (size_t i = 0; i < 4; i++) {
     auto& vertex = renderData.CurrQuad()[i];
-    vertex.position = positions[i];
+    vertex.position = pos + positions[i];
     vertex.uv = uvs[i];
   }
   renderData.Increment();

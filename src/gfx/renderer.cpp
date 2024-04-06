@@ -14,9 +14,9 @@ Renderer::Renderer(const SizeHandler& sizes) {
   // shared
   camera = Ortho2D(sizes.size);
 
-  finalRenderTexture = RenderTexture(
-    sizes.offset, sizes.uiSize, sizes.dpiScale, TextureFormat::BGRA8Unorm
-  );
+  finalRenderTexture =
+    RenderTexture(sizes.uiSize, sizes.dpiScale, TextureFormat::BGRA8Unorm);
+  finalRenderTexture.UpdateRegion(sizes.offset);
 
   // rect
   rectRPD = utils::RenderPassDescriptor({
@@ -80,7 +80,9 @@ Renderer::Renderer(const SizeHandler& sizes) {
 void Renderer::Resize(const SizeHandler& sizes) {
   camera.Resize(sizes.size);
 
-  finalRenderTexture.Update(sizes.offset, sizes.uiSize, sizes.dpiScale);
+  finalRenderTexture =
+    RenderTexture(sizes.uiSize, sizes.dpiScale, TextureFormat::BGRA8Unorm);
+  finalRenderTexture.UpdateRegion(sizes.offset);
   windowsRPD = utils::RenderPassDescriptor({
     RenderPassColorAttachment{
       .view = finalRenderTexture.textureView,
@@ -196,6 +198,10 @@ void Renderer::RenderWindows(const RangeOf<const Win*> auto& windows) {
     passEncoder.SetBindGroup(0, finalRenderTexture.camera.viewProjBG);
     passEncoder.SetBindGroup(1, win->renderTexture.textureBG);
     win->renderTexture.renderData.Render(passEncoder);
+    if (win->scrolling) {
+      passEncoder.SetBindGroup(1, win->prevRenderTexture.textureBG);
+      win->prevRenderTexture.renderData.Render(passEncoder);
+    }
   }
 
   passEncoder.End();

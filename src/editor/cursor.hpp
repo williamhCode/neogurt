@@ -42,7 +42,7 @@ struct Cursor {
   float jumpTime = 0.06;
   float jumpElasped;
 
-  ModeInfo* modeInfo = nullptr;
+  ModeInfo* modeInfo;
 
   glm::vec2 fullSize;
   Region startCorners;
@@ -51,8 +51,8 @@ struct Cursor {
   float cornerTime = 0.06; // transition time
   float cornerElasped;
 
-  bool blink = false;
-  float blinkElasped;
+  bool blink;
+  float blinkElasped; // in milliseconds
   BlinkState blinkState;
 
   wgpu::BindGroup currMaskBG;

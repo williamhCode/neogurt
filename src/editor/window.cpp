@@ -1,7 +1,10 @@
 #include "window.hpp"
 #include "gfx/instance.hpp"
+#include "glm/common.hpp"
+#include "glm/exponential.hpp"
 #include "glm/ext/vector_float2.hpp"
 #include "webgpu_tools/utils/webgpu.hpp"
+#include <cstdlib>
 
 using namespace wgpu;
 
@@ -9,8 +12,11 @@ void WinManager::InitRenderData(Win& win) {
   auto pos = glm::vec2(win.startCol, win.startRow) * sizes.charSize;
   auto size = glm::vec2(win.width, win.height) * sizes.charSize;
 
-  win.renderTexture =
-    RenderTexture(pos, size, sizes.dpiScale, TextureFormat::BGRA8Unorm);
+  win.renderTexture = RenderTexture(size, sizes.dpiScale, TextureFormat::BGRA8Unorm);
+  win.renderTexture.UpdateRegion(pos);
+  win.prevRenderTexture =
+    RenderTexture(size, sizes.dpiScale, TextureFormat::BGRA8Unorm);
+  win.prevRenderTexture.UpdateRegion(pos);
 
   auto fbSize = size * sizes.dpiScale;
   Extent3D maskSize{(uint32_t)fbSize.x, (uint32_t)fbSize.y};
@@ -51,9 +57,14 @@ void WinManager::UpdateRenderData(Win& win) {
   }
 
   if (sizeChanged) {
-    win.renderTexture.Update(pos, size, sizes.dpiScale);
+    win.renderTexture = RenderTexture(size, sizes.dpiScale, TextureFormat::BGRA8Unorm);
+    win.renderTexture.UpdateRegion(pos);
+    win.prevRenderTexture =
+      RenderTexture(size, sizes.dpiScale, TextureFormat::BGRA8Unorm);
+    win.prevRenderTexture.UpdateRegion(pos);
   } else {
-    win.renderTexture.UpdateRegion(pos, size);
+    win.renderTexture.UpdateRegion(pos);
+    win.prevRenderTexture.UpdateRegion(pos);
   }
 
   if (sizeChanged) {
@@ -162,11 +173,18 @@ void WinManager::ExternalPos(const WinExternalPos& e) {
 }
 
 void WinManager::Hide(const WinHide& e) {
-  // NOTE: temporary to fix nvim issue
-  if (auto it = windows.find(e.grid); it != windows.end()) {
-    auto& win = it->second;
-    win.hidden = true;
-  } else {
+  // auto it = windows.find(e.grid);
+  // if (it == windows.end()) {
+  //   LOG_ERR("WinManager::Hide: window {} not found", e.grid);
+  //   return;
+  // }
+  // auto& win = it->second;
+  // win.hidden = true;
+
+  // save memory because tabs get hidden
+  auto removed = windows.erase(e.grid);
+  if (removed == 0) {
+    LOG_ERR("WinManager::Hide: window {} not found", e.grid);
   }
 }
 
@@ -200,6 +218,99 @@ void WinManager::MsgSet(const MsgSetPos& e) {
 }
 
 void WinManager::Viewport(const WinViewport& e) {
+  auto it = windows.find(e.grid);
+  if (it == windows.end()) {
+    LOG_ERR("WinManager::Viewport: window {} not found", e.grid);
+    return;
+  }
+  auto& win = it->second;
+
+  bool shouldScroll =              //
+    std::abs(e.scrollDelta) > 0 && //
+    std::abs(e.scrollDelta) <=
+      win.height - (win.margins.top + win.margins.bottom);
+  if (shouldScroll) {
+    win.scrolling = true;
+    win.scrollDist = e.scrollDelta * sizes.charSize.y;
+    win.scrollElapsed = 0;
+
+    std::swap(win.prevRenderTexture, win.renderTexture);
+  }
+}
+
+void WinManager::UpdateScrolling(float dt) {
+  for (auto& [id, win] : windows) {
+    if (!win.scrolling) continue;
+
+    auto pos = glm::vec2(win.startCol, win.startRow) * sizes.charSize;
+    auto size = glm::vec2(win.width, win.height) * sizes.charSize;
+    auto marginLeft = win.margins.left * sizes.charSize.x;
+    auto marginTop = win.margins.top * sizes.charSize.y;
+    auto marginRight = win.margins.right * sizes.charSize.x;
+    auto marginBottom = win.margins.bottom * sizes.charSize.y;
+
+    win.dirty = true;
+    win.scrollElapsed += dt;
+    if (win.scrollElapsed >= win.scrollTime) {
+      win.scrolling = false;
+      win.scrollElapsed = 0;
+
+      win.renderTexture.UpdateRegion(pos);
+
+    } else {
+      float t = win.scrollElapsed / win.scrollTime;
+      float x = glm::pow(t, 1 / 2.8f);
+      float scrollCurr = glm::mix(0.0f, glm::abs(win.scrollDist), x);
+
+      if (glm::sign(win.scrollDist) == 1) {
+        pos.y -= scrollCurr;
+        auto scrollDist = win.scrollDist;
+
+        RegionHandle prevRegion{
+          .pos = {marginLeft, marginTop + scrollCurr},
+          .size =
+            {
+              size.x - marginLeft - marginRight,
+              scrollDist - scrollCurr,
+            },
+        };
+        win.prevRenderTexture.UpdateRegion(pos, prevRegion);
+
+        RegionHandle region{
+          .pos = {marginLeft, marginTop},
+          .size =
+            {
+              size.x - marginLeft - marginRight,
+              size.y - marginTop - marginBottom - (scrollDist - scrollCurr),
+            },
+        };
+        win.renderTexture.UpdateRegion(pos + glm::vec2(0, scrollDist), region);
+      } else {
+        pos.y += scrollCurr;
+        auto scrollDist = -win.scrollDist;
+
+        RegionHandle region{
+          .pos = {marginLeft, marginTop + (scrollDist - scrollCurr)},
+          .size =
+            {
+              size.x - marginLeft - marginRight,
+              size.y - marginTop - marginBottom - (scrollDist - scrollCurr),
+            },
+        };
+        win.renderTexture.UpdateRegion(pos + glm::vec2(0, -scrollDist), region);
+
+        RegionHandle prevRegion{
+          .pos = {marginLeft, size.y - scrollDist - marginBottom},
+          .size =
+            {
+              size.x - marginLeft - marginRight,
+              scrollDist - scrollCurr,
+            },
+        };
+        win.prevRenderTexture.UpdateRegion(pos, prevRegion);
+      }
+    }
+  }
 }
 
 void WinManager::ViewportMargins(const WinViewportMargins& e) {

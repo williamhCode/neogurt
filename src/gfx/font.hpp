@@ -9,7 +9,7 @@
 struct Font {
   FT_Face face;
 
-  int size; // font size
+  int size;     // font size
   int trueSize; // font size in pixels
   float dpiScale;
 
@@ -29,7 +29,7 @@ struct Font {
   glm::vec2 textureSize;
   glm::vec2 bufferSize;
   glm::vec2 charSize;
-  glm::vec2 texCharSize;  // size in texture;
+  glm::vec2 texCharSize; // size in texture;
 
   Region positions; // positions of untranslated character quad
 

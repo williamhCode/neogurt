@@ -61,6 +61,17 @@ struct Win {
 
   QuadRenderData<RectQuadVertex> rectData;
   QuadRenderData<TextQuadVertex> textData;
+
+  // scroll related
+  bool dirty;
+
+  bool scrolling;
+  float scrollDist;
+  // float scrollTime = 0.08; // transition time
+  float scrollTime = 0.08; // transition time
+  float scrollElapsed;
+
+  RenderTexture prevRenderTexture;
 };
 
 // for input handler
@@ -89,6 +100,7 @@ struct WinManager {
   void Close(const WinClose& e);
   void MsgSet(const MsgSetPos& e);
   void Viewport(const WinViewport& e);
+  void UpdateScrolling(float dt);
   void ViewportMargins(const WinViewportMargins& e);
   void Extmark(const WinExtmark& e);
 

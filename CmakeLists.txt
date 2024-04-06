@@ -43,6 +43,7 @@ set(APP_SRC
   src/utils/unicode.cpp
   src/utils/clock.cpp
   src/utils/logger.cpp
+  src/utils/timer.cpp
 )
 
 add_executable(neogui ${APP_SRC})

@@ -2,7 +2,7 @@
 
 #include <numeric>
 
-Timer::Timer(size_t bufferSize) : bufferSize(bufferSize) {
+Timer::Timer(size_t _bufferSize) : bufferSize(_bufferSize) {
 }
 
 void Timer::Start() {

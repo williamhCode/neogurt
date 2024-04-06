@@ -217,12 +217,12 @@ void ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
           gridEvents.push_back((RedrawEvent*)&e);
         },
         [&](WinPos& e) {
-          winEvents.push_back((RedrawEvent*)&e);
-          // winEvents.push_front((RedrawEvent*)&e);
+          // winEvents.push_back((RedrawEvent*)&e);
+          winEvents.push_front((RedrawEvent*)&e);
         },
         [&](WinFloatPos& e) {
-          winEvents.push_back((RedrawEvent*)&e);
-          // winEvents.push_front((RedrawEvent*)&e);
+          // winEvents.push_back((RedrawEvent*)&e);
+          winEvents.push_front((RedrawEvent*)&e);
         },
         [&](WinExternalPos& e) {
           winEvents.push_back((RedrawEvent*)&e);

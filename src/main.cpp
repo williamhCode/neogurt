@@ -32,15 +32,16 @@ const WGPUContext& ctx = Window::_ctx;
 AppOptions options;
 
 int main() {
-  // ─	━	│	┃	┄	┅	┆	┇	┈	┉	┊	┋	┌	┍	┎	┏ 
-  // LOG_INFO("{}", UTF8ToUnicode(""));
+  // ─	━	│	┃	┄	┅	┆	┇	┈	┉	┊ ┋
+  // ┌	┍	┎	┏  LOG_INFO("{}", UTF8ToUnicode(""));
 
-  auto presentMode = options.vsync ? PresentMode::Fifo : PresentMode::Immediate;
+  auto presentMode = options.vsync ? PresentMode::Mailbox : PresentMode::Immediate;
   Window window({1600, 1000}, "Neovim GUI", presentMode);
-  Font font("/Library/Fonts/SF-Mono-Medium.otf", 18, window.dpiScale);
+  Font font("/Library/Fonts/SF-Mono-Medium.otf", 15, window.dpiScale);
   // font = Font("/Library/Fonts/SF-Mono-Medium.otf", 18, window.dpiScale);
   // Font font(ROOT_DIR "/res/Hack/HackNerdFont-Regular.ttf", 18, window.dpiScale);
-  // Font font(ROOT_DIR "/res/JetBrainsMono/JetBrainsMonoNerdFont-Regular.ttf", 18, window.dpiScale);
+  // Font font(ROOT_DIR "/res/JetBrainsMono/JetBrainsMonoNerdFont-Regular.ttf", 18,
+  // window.dpiScale);
 
   SizeHandler sizes;
   sizes.UpdateSizes(window.size, window.dpiScale, font.charSize);
@@ -103,7 +104,7 @@ int main() {
 
   window.windowContentScaleCallback = [&](float /* xscale */, float /* yscale */) {
     std::scoped_lock lock(wgpuDeviceMutex);
-    font = Font(ROOT_DIR "/res/SFMono Regular Nerd Font Complete.otf", 18, window.dpiScale);
+    font = Font("/Library/Fonts/SF-Mono-Medium.otf", 18, window.dpiScale);
     editorState.cursor.fullSize = font.charSize;
   };
 
@@ -116,6 +117,7 @@ int main() {
 
   std::thread renderThread([&] {
     Clock clock;
+    Timer timer(30);
 
     while (!windowShouldClose) {
       auto dt = clock.Tick(60);
@@ -124,12 +126,16 @@ int main() {
       // auto fps = clock.GetFps();
       // auto fpsStr = std::format("fps: {:.2f}", fps);
       // std::cout << '\r' << fpsStr << std::string(10, ' ') << std::flush;
+      // std::cout << fpsStr << std::string(10, ' ') << '\n';
+
+      // timer.Start();
 
       // nvim events -------------------------------------------
       if (!nvim.client.IsConnected()) {
         windowShouldClose = true;
         glfwPostEmptyEvent();
       };
+
       nvim.ParseRedrawEvents();
 
       // process events ---------------------------------------
@@ -140,20 +146,21 @@ int main() {
 
       // update ----------------------------------------------
       wgpu::BindGroup currMaskBG;
-      if (auto *win = editorState.winManager.GetActiveWin()) {
+      if (auto* win = editorState.winManager.GetActiveWin()) {
         auto cursorPos =
           glm::vec2{
             win->startCol + win->grid.cursorCol,
             win->startRow + win->grid.cursorRow,
           } *
-            sizes.charSize + sizes.offset;
-        // LOG("cursorPos: {}, {}", cursorPos.x, cursorPos.y);
-        // LOG("cursor.pos: {}, {}", editorState.cursor.pos.x, editorState.cursor.pos.y);
+            sizes.charSize +
+          sizes.offset;
         editorState.cursor.SetDestPos(cursorPos);
         currMaskBG = win->maskBG;
       }
       editorState.cursor.currMaskBG = std::move(currMaskBG);
       editorState.cursor.Update(dt);
+
+      editorState.winManager.UpdateScrolling(dt);
 
       // render ----------------------------------------------
       if (auto hlIter = editorState.hlTable.find(0);
@@ -165,48 +172,47 @@ int main() {
         std::scoped_lock lock(wgpuDeviceMutex);
         renderer.Begin();
 
-        if (nvim.redrawState.numFlushes != 0) {
-          bool renderWindows = false;
-          for (auto& [id, win] : editorState.winManager.windows) {
-            if (win.grid.dirty) {
-              renderer.RenderWindow(win, font, editorState.hlTable);
-              win.grid.dirty = false;
-              renderWindows = true;
-            }
+        bool renderWindows = false;
+        for (auto& [id, win] : editorState.winManager.windows) {
+          if (win.grid.dirty) {
+            renderer.RenderWindow(win, font, editorState.hlTable);
+            win.grid.dirty = false;
+            renderWindows = true;
+          } else if (win.dirty) {
+            win.dirty = false;
+            renderWindows = true;
           }
+        }
 
-          if (renderWindows) {
-            std::deque<const Win*> windows;
-            std::vector<const Win*> floatingWindows;
-            for (auto& [id, win] : editorState.winManager.windows) {
-              if (id == editorState.winManager.msgWinId) {
-                windows.push_front(&win);
-              } else if (!win.hidden) {
-                if (win.floatData.has_value()) {
-                  floatingWindows.push_back(&win);
-                } else {
-                  windows.push_back(&win);
-                }
+        if (renderWindows) {
+          std::deque<const Win*> windows;
+          std::vector<const Win*> floatingWindows;
+          for (auto& [id, win] : editorState.winManager.windows) {
+            if (id == editorState.winManager.msgWinId) {
+              windows.push_front(&win);
+            } else if (!win.hidden) {
+              if (win.floatData.has_value()) {
+                floatingWindows.push_back(&win);
+              } else {
+                windows.push_back(&win);
               }
             }
-            if (auto winIt = editorState.winManager.windows.find(1);
-                winIt != editorState.winManager.windows.end()) {
-              windows.push_front(&winIt->second);
-            }
-
-            // see editor/window.hpp comment for WinManager::windows
-            std::ranges::reverse(floatingWindows);
-
-            // sort floating windows by zindex
-            // std::ranges::sort(floatingWindows, [](const Win* win, const Win* other) {
-            //   return win->floatData->zindex < other->floatData->zindex;
-            // });
-
-            windows.insert(
-              windows.end(), floatingWindows.begin(), floatingWindows.end()
-            );
-            renderer.RenderWindows(windows);
           }
+          if (auto winIt = editorState.winManager.windows.find(1);
+              winIt != editorState.winManager.windows.end()) {
+            windows.push_front(&winIt->second);
+          }
+
+          // see editor/window.hpp comment for WinManager::windows
+          std::ranges::reverse(floatingWindows);
+
+          // sort floating windows by zindex
+          // std::ranges::sort(floatingWindows, [](const Win* win, const Win* other) {
+          //   return win->floatData->zindex < other->floatData->zindex;
+          // });
+
+          windows.insert(windows.end(), floatingWindows.begin(), floatingWindows.end());
+          renderer.RenderWindows(windows);
         }
 
         renderer.RenderFinalTexture();
@@ -220,6 +226,10 @@ int main() {
 
         ctx.device.Tick();
       }
+
+      // timer.End();
+      // auto avgDuration = duration_cast<microseconds>(timer.GetAverageDuration());
+      // std::cout << '\r' << avgDuration << std::string(10, ' ') << std::flush;
     }
   });
 
