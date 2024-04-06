@@ -26,11 +26,31 @@ struct FloatData {
   int zindex;
 };
 
+struct FMargins {
+  float top = 0;
+  float bottom = 0;
+  float left = 0;
+  float right = 0;
+};
+
 struct Margins {
   int top = 0;
   int bottom = 0;
   int left = 0;
   int right = 0;
+
+  [[nodiscard]] bool Empty() const {
+    return top == 0 && bottom == 0 && left == 0 && right == 0;
+  }
+
+  [[nodiscard]] FMargins ToFloat() const {
+    return {
+      static_cast<float>(top),
+      static_cast<float>(bottom),
+      static_cast<float>(left),
+      static_cast<float>(right),
+    };
+  }
 };
 
 struct Win {
@@ -45,6 +65,7 @@ struct Win {
   bool hidden;
 
   Margins margins;
+  FMargins fmargins;
 
   // exists only if window is floating
   std::optional<FloatData> floatData;
@@ -63,8 +84,6 @@ struct Win {
   QuadRenderData<TextQuadVertex> textData;
 
   // scroll related
-  bool dirty;
-
   bool scrolling;
   float scrollDist;
   // float scrollTime = 0.08; // transition time
@@ -72,6 +91,8 @@ struct Win {
   float scrollElapsed;
 
   RenderTexture prevRenderTexture;
+
+  QuadRenderData<TextureQuadVertex> marginsData;
 };
 
 // for input handler
@@ -84,6 +105,7 @@ struct MouseInfo {
 struct WinManager {
   GridManager* gridManager;
   const SizeHandler& sizes;
+  bool dirty; // true if window pos updated from scrolling
 
   // not unordered because telescope float background overlaps text
   // so have to render floats in reverse order else text will be covered
@@ -106,7 +128,7 @@ struct WinManager {
 
   int activeWinId = 0;
   Win* GetActiveWin();
-  
+
   MouseInfo GetMouseInfo(glm::vec2 cursorPos);
   MouseInfo GetMouseInfo(int grid, glm::vec2 cursorPos);
 };

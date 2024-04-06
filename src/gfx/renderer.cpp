@@ -16,7 +16,7 @@ Renderer::Renderer(const SizeHandler& sizes) {
 
   finalRenderTexture =
     RenderTexture(sizes.uiSize, sizes.dpiScale, TextureFormat::BGRA8Unorm);
-  finalRenderTexture.UpdateRegion(sizes.offset);
+  finalRenderTexture.UpdatePos(sizes.offset);
 
   // rect
   rectRPD = utils::RenderPassDescriptor({
@@ -82,7 +82,7 @@ void Renderer::Resize(const SizeHandler& sizes) {
 
   finalRenderTexture =
     RenderTexture(sizes.uiSize, sizes.dpiScale, TextureFormat::BGRA8Unorm);
-  finalRenderTexture.UpdateRegion(sizes.offset);
+  finalRenderTexture.UpdatePos(sizes.offset);
   windowsRPD = utils::RenderPassDescriptor({
     RenderPassColorAttachment{
       .view = finalRenderTexture.textureView,
@@ -193,14 +193,16 @@ void Renderer::RenderWindow(Win& win, Font& font, const HlTable& hlTable) {
 void Renderer::RenderWindows(const RangeOf<const Win*> auto& windows) {
   auto passEncoder = commandEncoder.BeginRenderPass(&windowsRPD);
   passEncoder.SetPipeline(ctx.pipeline.textureRPL);
+  passEncoder.SetBindGroup(0, finalRenderTexture.camera.viewProjBG);
 
   for (const Win* win : windows) {
-    passEncoder.SetBindGroup(0, finalRenderTexture.camera.viewProjBG);
     passEncoder.SetBindGroup(1, win->renderTexture.textureBG);
     win->renderTexture.renderData.Render(passEncoder);
     if (win->scrolling) {
       passEncoder.SetBindGroup(1, win->prevRenderTexture.textureBG);
       win->prevRenderTexture.renderData.Render(passEncoder);
+
+      // draw window borders
     }
   }
 

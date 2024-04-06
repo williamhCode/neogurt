@@ -104,7 +104,7 @@ int main() {
 
   window.windowContentScaleCallback = [&](float /* xscale */, float /* yscale */) {
     std::scoped_lock lock(wgpuDeviceMutex);
-    font = Font("/Library/Fonts/SF-Mono-Medium.otf", 18, window.dpiScale);
+    font = Font("/Library/Fonts/SF-Mono-Medium.otf", 15, window.dpiScale);
     editorState.cursor.fullSize = font.charSize;
   };
 
@@ -178,13 +178,10 @@ int main() {
             renderer.RenderWindow(win, font, editorState.hlTable);
             win.grid.dirty = false;
             renderWindows = true;
-          } else if (win.dirty) {
-            win.dirty = false;
-            renderWindows = true;
           }
         }
 
-        if (renderWindows) {
+        if (renderWindows || editorState.winManager.dirty) {
           std::deque<const Win*> windows;
           std::vector<const Win*> floatingWindows;
           for (auto& [id, win] : editorState.winManager.windows) {

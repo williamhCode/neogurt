@@ -4,6 +4,7 @@
 #include "glm/exponential.hpp"
 #include "glm/ext/vector_float2.hpp"
 #include "webgpu_tools/utils/webgpu.hpp"
+#include <algorithm>
 #include <cstdlib>
 
 using namespace wgpu;
@@ -13,10 +14,10 @@ void WinManager::InitRenderData(Win& win) {
   auto size = glm::vec2(win.width, win.height) * sizes.charSize;
 
   win.renderTexture = RenderTexture(size, sizes.dpiScale, TextureFormat::BGRA8Unorm);
-  win.renderTexture.UpdateRegion(pos);
+  win.renderTexture.UpdatePos(pos);
   win.prevRenderTexture =
     RenderTexture(size, sizes.dpiScale, TextureFormat::BGRA8Unorm);
-  win.prevRenderTexture.UpdateRegion(pos);
+  win.prevRenderTexture.UpdatePos(pos);
 
   auto fbSize = size * sizes.dpiScale;
   Extent3D maskSize{(uint32_t)fbSize.x, (uint32_t)fbSize.y};
@@ -58,13 +59,13 @@ void WinManager::UpdateRenderData(Win& win) {
 
   if (sizeChanged) {
     win.renderTexture = RenderTexture(size, sizes.dpiScale, TextureFormat::BGRA8Unorm);
-    win.renderTexture.UpdateRegion(pos);
+    win.renderTexture.UpdatePos(pos);
     win.prevRenderTexture =
       RenderTexture(size, sizes.dpiScale, TextureFormat::BGRA8Unorm);
-    win.prevRenderTexture.UpdateRegion(pos);
+    win.prevRenderTexture.UpdatePos(pos);
   } else {
-    win.renderTexture.UpdateRegion(pos);
-    win.prevRenderTexture.UpdateRegion(pos);
+    win.renderTexture.UpdatePos(pos);
+    win.prevRenderTexture.UpdatePos(pos);
   }
 
   if (sizeChanged) {
@@ -227,14 +228,32 @@ void WinManager::Viewport(const WinViewport& e) {
 
   bool shouldScroll =              //
     std::abs(e.scrollDelta) > 0 && //
-    std::abs(e.scrollDelta) <=
-      win.height - (win.margins.top + win.margins.bottom);
+    std::abs(e.scrollDelta) <= win.height - (win.margins.top + win.margins.bottom);
   if (shouldScroll) {
     win.scrolling = true;
     win.scrollDist = e.scrollDelta * sizes.charSize.y;
     win.scrollElapsed = 0;
 
     std::swap(win.prevRenderTexture, win.renderTexture);
+
+    win.marginsData.CreateBuffers(4);
+    win.marginsData.ResetCounts();
+
+    if (win.margins.top != 0) {
+      // auto positions = MakeRegion({0, 0}, {
+
+      for (size_t i = 0; i < 4; i++) {
+        auto& vertex = win.marginsData.CurrQuad()[i];
+        vertex.position = {0, 0};
+        vertex.uv = {0, 0};
+      }
+    }
+    if (win.margins.bottom != 0) {
+    }
+    if (win.margins.left != 0) {
+    }
+    if (win.margins.right != 0) {
+    }
   }
 }
 
@@ -242,22 +261,21 @@ void WinManager::UpdateScrolling(float dt) {
   for (auto& [id, win] : windows) {
     if (!win.scrolling) continue;
 
-    auto pos = glm::vec2(win.startCol, win.startRow) * sizes.charSize;
-    auto size = glm::vec2(win.width, win.height) * sizes.charSize;
-    auto marginLeft = win.margins.left * sizes.charSize.x;
-    auto marginTop = win.margins.top * sizes.charSize.y;
-    auto marginRight = win.margins.right * sizes.charSize.x;
-    auto marginBottom = win.margins.bottom * sizes.charSize.y;
-
-    win.dirty = true;
     win.scrollElapsed += dt;
+    dirty = true;
+
+    auto pos = win.pos;
+
     if (win.scrollElapsed >= win.scrollTime) {
       win.scrolling = false;
       win.scrollElapsed = 0;
 
-      win.renderTexture.UpdateRegion(pos);
+      win.renderTexture.UpdatePos(pos);
 
     } else {
+      auto size = win.size;
+      auto& margins = win.fmargins;
+
       float t = win.scrollElapsed / win.scrollTime;
       float x = glm::pow(t, 1 / 2.8f);
       float scrollCurr = glm::mix(0.0f, glm::abs(win.scrollDist), x);
@@ -267,47 +285,51 @@ void WinManager::UpdateScrolling(float dt) {
         auto scrollDist = win.scrollDist;
 
         RegionHandle prevRegion{
-          .pos = {marginLeft, marginTop + scrollCurr},
+          .pos = {margins.left, margins.top + scrollCurr},
           .size =
             {
-              size.x - marginLeft - marginRight,
+              size.x - margins.left - margins.right,
               scrollDist - scrollCurr,
             },
         };
-        win.prevRenderTexture.UpdateRegion(pos, prevRegion);
+        win.prevRenderTexture.UpdatePos(pos + prevRegion.pos, prevRegion);
 
         RegionHandle region{
-          .pos = {marginLeft, marginTop},
+          .pos = {margins.left, margins.top},
           .size =
             {
-              size.x - marginLeft - marginRight,
-              size.y - marginTop - marginBottom - (scrollDist - scrollCurr),
+              size.x - margins.left - margins.right,
+              size.y - margins.top - margins.bottom - (scrollDist - scrollCurr),
             },
         };
-        win.renderTexture.UpdateRegion(pos + glm::vec2(0, scrollDist), region);
+        win.renderTexture.UpdatePos(
+          pos + glm::vec2(0, scrollDist) + region.pos, region
+        );
       } else {
         pos.y += scrollCurr;
         auto scrollDist = -win.scrollDist;
 
         RegionHandle region{
-          .pos = {marginLeft, marginTop + (scrollDist - scrollCurr)},
+          .pos = {margins.left, margins.top + (scrollDist - scrollCurr)},
           .size =
             {
-              size.x - marginLeft - marginRight,
-              size.y - marginTop - marginBottom - (scrollDist - scrollCurr),
+              size.x - margins.left - margins.right,
+              size.y - margins.top - margins.bottom - (scrollDist - scrollCurr),
             },
         };
-        win.renderTexture.UpdateRegion(pos + glm::vec2(0, -scrollDist), region);
+        win.renderTexture.UpdatePos(
+          pos + glm::vec2(0, -scrollDist) + region.pos, region
+        );
 
         RegionHandle prevRegion{
-          .pos = {marginLeft, size.y - scrollDist - marginBottom},
+          .pos = {margins.left, size.y - scrollDist - margins.bottom},
           .size =
             {
-              size.x - marginLeft - marginRight,
+              size.x - margins.left - margins.right,
               scrollDist - scrollCurr,
             },
         };
-        win.prevRenderTexture.UpdateRegion(pos, prevRegion);
+        win.prevRenderTexture.UpdatePos(pos + prevRegion.pos, prevRegion);
       }
     }
   }
@@ -325,6 +347,8 @@ void WinManager::ViewportMargins(const WinViewportMargins& e) {
   win.margins.bottom = e.bottom;
   win.margins.left = e.left;
   win.margins.right = e.right;
+
+  win.fmargins = win.margins.ToFloat();
 }
 
 void WinManager::Extmark(const WinExtmark& e) {

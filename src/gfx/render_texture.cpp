@@ -36,7 +36,7 @@ RenderTexture::RenderTexture(
   renderData.CreateBuffers(1);
 }
 
-void RenderTexture::UpdateRegion(glm::vec2 pos, std::optional<RegionHandle> region) {
+void RenderTexture::UpdatePos(glm::vec2 pos, std::optional<RegionHandle> region) {
   renderData.ResetCounts();
 
   Region positions;
@@ -44,9 +44,9 @@ void RenderTexture::UpdateRegion(glm::vec2 pos, std::optional<RegionHandle> regi
 
   if (region == std::nullopt) {
     positions = MakeRegion({0, 0}, size);
-    uvs = MakeRegion(0, 0, 1, 1);
+    uvs = MakeRegion({0, 0}, {1, 1});
   } else {
-    positions = region->Get();
+    positions = MakeRegion({0, 0}, region->size);
     region->pos /= size, region->size /= size;
     uvs = region->Get();
   }

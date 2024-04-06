@@ -21,5 +21,5 @@ struct RenderTexture {
   RenderTexture(glm::vec2 size, float dpiScale, wgpu::TextureFormat format);
 
   // region is the subregion of the texture to draw
-  void UpdateRegion(glm::vec2 pos, std::optional<RegionHandle> region = std::nullopt);
+  void UpdatePos(glm::vec2 pos, std::optional<RegionHandle> region = std::nullopt);
 };
