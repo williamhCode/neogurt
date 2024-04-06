@@ -182,6 +182,8 @@ int main() {
         }
 
         if (renderWindows || editorState.winManager.dirty) {
+          editorState.winManager.dirty = false;
+
           std::deque<const Win*> windows;
           std::vector<const Win*> floatingWindows;
           for (auto& [id, win] : editorState.winManager.windows) {

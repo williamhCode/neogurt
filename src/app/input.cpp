@@ -78,6 +78,7 @@ void InputHandler::HandleChar(unsigned int codepoint) {
   if (codepoint == GLFW_KEY_SPACE) return;
 
   auto inputStr = UnicodeToUTF8(codepoint);
+  if (inputStr == "<") inputStr = "<lt>";
   nvim.Input(inputStr);
 }
 

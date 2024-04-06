@@ -87,7 +87,7 @@ struct Win {
 
   bool scrolling;
   float scrollDist;
-  float scrollTime = 0.08; // transition time
+  float scrollTime = 0.06; // transition time
   float scrollElapsed;
 
   RenderTexture prevRenderTexture;

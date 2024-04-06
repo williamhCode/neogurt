@@ -6,6 +6,7 @@
 #include "webgpu_tools/utils/webgpu.hpp"
 #include <algorithm>
 #include <cstdlib>
+#include <utility>
 
 using namespace wgpu;
 
@@ -40,6 +41,8 @@ void WinManager::InitRenderData(Win& win) {
   const size_t maxTextQuads = win.width * win.height;
   win.rectData.CreateBuffers(maxTextQuads);
   win.textData.CreateBuffers(maxTextQuads);
+
+  win.marginsData.CreateBuffers(4);
 
   win.grid.dirty = true;
 
@@ -331,7 +334,6 @@ void WinManager::ViewportMargins(const WinViewportMargins& e) {
 
   win.fmargins = win.margins.ToFloat(sizes.charSize);
 
-  win.marginsData.CreateBuffers(4);
   win.marginsData.ResetCounts();
 
   auto SetData = [&](glm::vec2 pos, glm::vec2 size) {
@@ -381,14 +383,27 @@ MouseInfo WinManager::GetMouseInfo(glm::vec2 cursorPos) {
   int globalRow = cursorPos.y / sizes.charSize.y;
   int globalCol = cursorPos.x / sizes.charSize.x;
 
-  int grid = 1; // default grid number
+  std::vector<std::pair<int, const Win*>> sortedWins;
   for (auto& [id, win] : windows) {
     if (win.hidden || id == 1) continue;
+    sortedWins.emplace_back(id, &win);
+  }
 
-    int top = win.startRow;
-    int bottom = win.startRow + win.height;
-    int left = win.startCol;
-    int right = win.startCol + win.width;
+  std::ranges::sort(sortedWins, [](const auto& a, const auto& b) {
+    return a.second->floatData.value_or(FloatData{.zindex = 0}).zindex >
+           b.second->floatData.value_or(FloatData{.zindex = 0}).zindex;
+  });
+
+  int grid = 1; // default grid number
+  for (auto [id, win] : sortedWins) {
+    if (win->hidden || id == 1 || (win->floatData && !win->floatData->focusable)) {
+      continue;
+    }
+
+    int top = win->startRow;
+    int bottom = win->startRow + win->height;
+    int left = win->startCol;
+    int right = win->startCol + win->width;
 
     if (globalRow >= top && globalRow < bottom && globalCol >= left && globalCol < right) {
       grid = id;
