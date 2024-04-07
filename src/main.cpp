@@ -65,10 +65,14 @@ int main() {
 
   // main thread -----------------------------------
   std::atomic_bool exitWindow = false;
+  std::atomic_bool inactive = false;
 
   std::thread renderThread([&] {
     Clock clock;
     Timer timer(30);
+
+    float inactiveTime = 10;
+    float inactiveElasped = 0;
 
     while (!exitWindow) {
       auto dt = clock.Tick(60);
@@ -92,7 +96,10 @@ int main() {
       // process events ---------------------------------------
       {
         std::scoped_lock lock(wgpuDeviceMutex);
-        ProcessRedrawEvents(nvim.redrawState, editorState);
+        if (ProcessRedrawEvents(nvim.redrawState, editorState)) {
+          inactive = false;
+          inactiveElasped = 0;
+        }
       }
 
       // update ----------------------------------------------
@@ -102,14 +109,12 @@ int main() {
           glm::vec2{
             win->startCol + win->grid.cursorCol,
             win->startRow + win->grid.cursorRow,
-          } *
-            sizes.charSize +
-          sizes.offset;
+          } * sizes.charSize + sizes.offset;
         editorState.cursor.SetDestPos(cursorPos);
 
-        editorState.cursor.offset = win->scrolling
-                                      ? glm::vec2(0, win->scrollDist - win->scrollCurr)
-                                      : glm::vec2(0);
+        editorState.cursor.winOffset =
+          win->scrolling ? glm::vec2(0, win->scrollDist - win->scrollCurr)
+                         : glm::vec2(0);
 
         currMaskBG = win->maskBG;
       }
@@ -119,11 +124,19 @@ int main() {
       editorState.winManager.UpdateScrolling(dt);
 
       // render ----------------------------------------------
+
       if (auto hlIter = editorState.hlTable.find(0);
           hlIter != editorState.hlTable.end()) {
         renderer.SetClearColor(hlIter->second.background.value());
+        // renderer.SetClearColor({1, 0.7, 0.8, 0.5});
       }
 
+      if (inactive) continue;
+      inactiveElasped += dt;
+      if (inactiveElasped >= inactiveTime || !window.focused) {
+        inactive = true;
+        editorState.cursor.blinkState = BlinkState::On;
+      }
       {
         std::scoped_lock lock(wgpuDeviceMutex);
         renderer.Begin();
@@ -195,7 +208,8 @@ int main() {
   SDL_StartTextInput();
   SDL_SetTextInputRect(&rect);
 
-  window.AddEventWatch([&](SDL_Event& event)  {
+  // resize handling
+  window.AddEventWatch([&](SDL_Event& event) {
     switch (event.type) {
       case SDL_EVENT_WINDOW_RESIZED:
         window.size = {event.window.data1, event.window.data2};
@@ -204,7 +218,6 @@ int main() {
         window.fbSize = {event.window.data1, event.window.data2};
         window.dpiScale = SDL_GetWindowPixelDensity(window.window);
 
-        // LOG("window pixel size changed");
         std::scoped_lock lock(wgpuDeviceMutex);
         sizes.UpdateSizes(window.size, window.dpiScale, font.charSize);
 
@@ -214,7 +227,6 @@ int main() {
         break;
       }
       case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED: {
-        // LOG("window display scale changed");
         std::scoped_lock lock(wgpuDeviceMutex);
         font = Font("/Library/Fonts/SF-Mono-Medium.otf", 15, window.dpiScale);
         editorState.cursor.fullSize = font.charSize;
@@ -257,9 +269,17 @@ int main() {
       case SDL_EVENT_MOUSE_WHEEL:
         input.HandleMouseWheel(event.wheel);
         break;
+
+      // window handling -----------------------
+      case SDL_EVENT_WINDOW_FOCUS_GAINED:
+        window.focused = true;
+        break;
+      case SDL_EVENT_WINDOW_FOCUS_LOST:
+        window.focused = false;
+        break;
     }
 
-    std::this_thread::sleep_for(1ms);
+    // std::this_thread::sleep_for(1ms);
   }
 
   renderThread.join();

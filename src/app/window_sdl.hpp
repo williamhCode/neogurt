@@ -15,6 +15,8 @@ struct Window {
   float dpiScale;
   // float contentScale;
 
+  std::atomic_bool focused = true;
+
   Window() = default;
   Window(glm::uvec2 size, const std::string& title, wgpu::PresentMode presentMode);
   ~Window();

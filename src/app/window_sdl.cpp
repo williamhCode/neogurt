@@ -13,7 +13,7 @@ Window::Window(
   }
 
   // window ---------------------------------
-  int flags = SDL_WINDOW_HIGH_PIXEL_DENSITY | SDL_WINDOW_RESIZABLE;
+  int flags = SDL_WINDOW_HIGH_PIXEL_DENSITY | SDL_WINDOW_RESIZABLE | SDL_WINDOW_TRANSPARENT;
   window = SDL_CreateWindow(title.c_str(), size.x, size.y, flags);
   if (window == nullptr) {
     LOG_ERR("Unable to create window: {}", SDL_GetError());

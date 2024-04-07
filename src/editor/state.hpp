@@ -18,4 +18,5 @@ struct EditorState {
   // std::map<int, std::string> hlGroupTable;
 };
 
-void ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState);
+// returns true if there are events to process
+bool ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState);

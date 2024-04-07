@@ -33,7 +33,6 @@ Renderer::Renderer(const SizeHandler& sizes) {
       .storeOp = StoreOp::Store,
     },
     RenderPassColorAttachment{
-      // .view = maskTextureView,
       .loadOp = LoadOp::Clear,
       .storeOp = StoreOp::Store,
       .clearValue = {0.0, 0.0, 0.0, 0.0},
@@ -219,7 +218,8 @@ template void Renderer::RenderWindows(const std::deque<const Win*>& windows);
 
 void Renderer::RenderFinalTexture() {
   finalRPD.cColorAttachments[0].view = nextTextureView;
-  finalRPD.cColorAttachments[0].clearValue = clearColor;
+  // finalRPD.cColorAttachments[0].clearValue = clearColor;
+  finalRPD.cColorAttachments[0].clearValue = {0.0, 0.0, 0.0, 0.0};
   auto passEncoder = commandEncoder.BeginRenderPass(&finalRPD);
   passEncoder.SetPipeline(ctx.pipeline.textureRPL);
   passEncoder.SetBindGroup(0, camera.viewProjBG);
@@ -238,7 +238,7 @@ void Renderer::RenderCursor(const Cursor& cursor, const HlTable& hlTable) {
   cursorData.ResetCounts();
   for (size_t i = 0; i < 4; i++) {
     auto& vertex = cursorData.CurrQuad()[i];
-    vertex.position = cursor.pos + cursor.offset + cursor.corners[i];
+    vertex.position = cursor.pos + cursor.winOffset + cursor.corners[i];
     vertex.foreground = foreground;
     vertex.background = background;
   }
