@@ -164,6 +164,8 @@ void Renderer::RenderWindow(Win& win, Font& font, const HlTable& hlTable) {
   rectData.WriteBuffers();
   textData.WriteBuffers();
 
+  // updates texture if new glyphs added, old font texture from previous renders
+  // is not owned by font anymore but still referenced by command encoder
   font.UpdateTexture();
 
   // background
@@ -236,7 +238,7 @@ void Renderer::RenderCursor(const Cursor& cursor, const HlTable& hlTable) {
   cursorData.ResetCounts();
   for (size_t i = 0; i < 4; i++) {
     auto& vertex = cursorData.CurrQuad()[i];
-    vertex.position = cursor.pos + cursor.corners[i];
+    vertex.position = cursor.pos + cursor.offset + cursor.corners[i];
     vertex.foreground = foreground;
     vertex.background = background;
   }

@@ -47,6 +47,8 @@ const std::unordered_map<int, std::string> specialKeys{
 void InputHandler::HandleKey(int key, int /* scancode */, int action, int _mods) {
   mods = _mods;
 
+  // auto name = glfwGetKeyName(key, 0);
+  // LOG_INFO("key: {}", name ? name : "null");
   if (action == GLFW_PRESS || action == GLFW_REPEAT) {
     bool isSpecialKey =
       (key >= GLFW_KEY_ESCAPE && key < GLFW_KEY_LEFT_SHIFT) || key == GLFW_KEY_SPACE;
@@ -65,12 +67,14 @@ void InputHandler::HandleKey(int key, int /* scancode */, int action, int _mods)
     if (mods & GLFW_MOD_SUPER) inputStr += "D-";
     if (mods & GLFW_MOD_SHIFT) inputStr += "S-";
     inputStr += keyName + ">";
-
     nvim.Input(inputStr);
   }
 }
 
 void InputHandler::HandleChar(unsigned int codepoint) {
+  // auto testStr = UnicodeToUTF8(codepoint);
+  // LOG_INFO("testStr: {}", testStr);
+
   // don't process characters when options pressed if using opt as alt
   if (options.macOptAsAlt && (mods & GLFW_MOD_ALT)) return;
 

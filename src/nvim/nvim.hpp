@@ -14,6 +14,9 @@ struct Nvim {
 
   Nvim(bool debug);
   ~Nvim();
+  Nvim(const Nvim&) = delete;
+  Nvim& operator=(const Nvim&) = delete;
+
   void SetClientInfo(
     const std::string& name,
     const std::map<std::string, variant>& version,

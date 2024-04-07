@@ -18,7 +18,7 @@ namespace rpc {
 struct Client {
 private:
   asio::io_context context;
-  asio::ip::tcp::socket socket;
+  asio::ip::tcp::socket socket{context};
   std::thread contextThr;
   std::atomic_bool exit;
   std::unordered_map<u_int32_t, std::promise<msgpack::object_handle>> responses;
@@ -30,9 +30,6 @@ public:
     msgpack::object params;
     msgpack::unique_ptr<msgpack::zone> _zone; // holds the lifetime of the data
   };
-
-  Client() : socket(context) {
-  }
 
   ~Client() {
     if (socket.is_open()) socket.close();

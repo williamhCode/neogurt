@@ -155,6 +155,12 @@ int main() {
             sizes.charSize +
           sizes.offset;
         editorState.cursor.SetDestPos(cursorPos);
+
+        editorState.cursor.offset =
+          win->scrolling
+          ? glm::vec2(0, win->scrollDist - win->scrollCurr)
+          : glm::vec2(0);
+
         currMaskBG = win->maskBG;
       }
       editorState.cursor.currMaskBG = std::move(currMaskBG);
