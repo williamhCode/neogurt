@@ -2,7 +2,7 @@
 
 struct AppOptions {
   bool multigrid = true;
-  bool vsync = false;
+  bool vsync = true;
   // bool highDpi = true;
   bool macOptAsAlt = true;
 };

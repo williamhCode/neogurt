@@ -22,9 +22,9 @@ Font::Font(const std::string& path, int _size, float _dpiScale)
     ftInitialized = true;
 
     std::string nerdFontPath(
-      ROOT_DIR "/res/Hack/HackNerdFont-Regular.ttf"
+      // ROOT_DIR "/res/Hack/HackNerdFont-Regular.ttf"
       // ROOT_DIR "/res/Hack/HackNerdFontMono-Regular.ttf"
-      // ROOT_DIR "/res/NerdFontsSymbolsOnly/SymbolsNerdFont-Regular.ttf"
+      ROOT_DIR "/res/NerdFontsSymbolsOnly/SymbolsNerdFont-Regular.ttf"
       // ROOT_DIR "/res/NerdFontsSymbolsOnly/SymbolsNerdFontMono-Regular.ttf"
     );
     if (FT_New_Face(library, nerdFontPath.c_str(), 0, &nerdFace)) {
@@ -90,7 +90,7 @@ const Font::GlyphInfo& Font::GetGlyphInfoOrAdd(FT_ULong charcode) {
 
     // isNerd = true;
     // TODO: make nerdfont vertical offset an option
-    // vertOffset = charSize.y / 12;
+    vertOffset = charSize.y / 12;
   }
   // if (charcode >= 0x2500 && charcode <= 0x25FF) {
   //   vertOffset = charSize.y * 0.2;

@@ -94,16 +94,16 @@ void InputHandler::HandleMouseButton(int button, int action, int /* mods */) {
     currGrid = std::nullopt;
   }
 
-  HandleMouseButtonAndCursorPos(action);
+  HandleMouseButtonAndMotion(action);
 }
 
 void InputHandler::HandleCursorPos(double xpos, double ypos) {
   cursorPos = {xpos, ypos};
 
-  HandleMouseButtonAndCursorPos(-1);
+  HandleMouseButtonAndMotion(-1);
 }
 
-void InputHandler::HandleMouseButtonAndCursorPos(int action) {
+void InputHandler::HandleMouseButtonAndMotion(int action) {
   if (!mouseButton.has_value()) return;
 
   int button = *mouseButton;

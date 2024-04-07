@@ -1,110 +1,175 @@
 #include "input.hpp"
 
-#include <cctype>
-#include <optional>
-#include <unordered_map>
 #include "SDL_events.h"
 #include "app/options.hpp"
 #include "editor/window.hpp"
-#include "utils/unicode.hpp"
+#include <algorithm>
+#include <set>
+#include <tuple>
 
-InputHandler::InputHandler(Nvim& nvim, WinManager& winManager, glm::vec2 cursorPos)
-    : nvim(nvim), winManager(winManager), cursorPos(cursorPos) {
+InputHandler::InputHandler(Nvim& nvim, WinManager& winManager)
+    : nvim(nvim), winManager(winManager) {
 }
 
-// clang-format off
-const std::unordered_map<int, std::string> specialKeys{
-  {SDLK_SPACE, "Space"},
-  {SDLK_UP, "Up"},
-  {SDLK_DOWN, "Down"},
-  {SDLK_LEFT, "Left"},
-  {SDLK_RIGHT, "Right"},
-  {SDLK_BACKSPACE, "BS"},
-  {SDLK_DELETE, "Del"},
-  {SDLK_END, "End"},
-  {SDLK_RETURN, "CR"},
-  {SDLK_ESCAPE, "ESC"},
-  {SDLK_TAB, "Tab"},
-  {SDLK_F1, "F1"},
-  {SDLK_F2, "F2"},
-  {SDLK_F3, "F3"},
-  {SDLK_F4, "F4"},
-  {SDLK_F5, "F5"},
-  {SDLK_F6, "F6"},
-  {SDLK_F7, "F7"},
-  {SDLK_F8, "F8"},
-  {SDLK_F9, "F9"},
-  {SDLK_F10, "F10"},
-  {SDLK_F11, "F11"},
-  {SDLK_F12, "F12"},
-  {SDLK_HOME, "Home"},
-  {SDLK_INSERT, "Insert"},
-  {SDLK_PAGEUP, "PageUp"},
-  {SDLK_PAGEDOWN, "PageDown"},
-  {SDLK_KP_ENTER, "kEnter"},
+const std::set<SDL_Keycode> specialKeys{
+  SDLK_SPACE,  SDLK_UP,     SDLK_DOWN,     SDLK_LEFT,     SDLK_RIGHT, SDLK_BACKSPACE,
+  SDLK_DELETE, SDLK_END,    SDLK_RETURN,   SDLK_ESCAPE,   SDLK_TAB,   SDLK_F1,
+  SDLK_F2,     SDLK_F3,     SDLK_F4,       SDLK_F5,       SDLK_F6,    SDLK_F7,
+  SDLK_F8,     SDLK_F9,     SDLK_F10,      SDLK_F11,      SDLK_F12,   SDLK_HOME,
+  SDLK_INSERT, SDLK_PAGEUP, SDLK_PAGEDOWN, SDLK_KP_ENTER,
 };
-// clang-format on
 
-void InputHandler::HandleKey(SDL_KeyboardEvent event) {
+void InputHandler::HandleKeyboard(const SDL_KeyboardEvent& event) {
   auto key = event.keysym.sym;
-  auto mod = event.keysym.mod;
+  mod = (SDL_Keymod)event.keysym.mod;
 
   if (event.state == SDL_PRESSED) {
-    bool isSpecialKey = specialKeys.contains(key);
+    bool isText = !specialKeys.contains(key);
+    bool onlyShift = (mod ^ SDL_KMOD_LSHIFT) == 0 || (mod ^ SDL_KMOD_RSHIFT) == 0;
+    bool onlyMod = key >= SDLK_LCTRL && key <= SDLK_RGUI;
 
-    bool onlyMod = key & SDLK_SCANCODE_MASK;
-    if (onlyMod) return;
+    // dont process keys if
+    // 1. is text with no mod keys
+    // 2. is text with only shift mod
+    // 3. only mod keys are pressed
+    if ((isText && (!mod || onlyShift)) || onlyMod) return;
 
-    bool noMod = mod == 0;
+    if (!options.macOptAsAlt && (mod & SDL_KMOD_ALT) && isText) return;
 
-    // bool onlyShift = (mod ^ GLFW_MOD_SHIFT) == 0;
-    // if ((!mod && !isSpecialKey) || onlyMod || (onlyShift && !isSpecialKey)) return;
-
-    // don't process keys when options pressed if not using opt as alt
-    // if (!options.macOptAsAlt && (mod & GLFW_MOD_ALT) && !isSpecialKey) return;
-
-    auto keyName = isSpecialKey ? specialKeys.at(key) : SDL_GetKeyName(key);
-    // std::string keyName = SDL_GetKeyName(key);
+    std::string keyName = SDL_GetKeyName(key);
     if (keyName.empty()) return;
 
-    std::string inputStr = keyName;
-    if (!noMod) {
-      auto temp = inputStr;
-      inputStr = "<";
-      if (mod & SDL_KMOD_CTRL) inputStr += "C-";
-      if (mod & SDL_KMOD_ALT) inputStr += "M-";
-      if (mod & SDL_KMOD_GUI) inputStr += "D-";
-      if (mod & SDL_KMOD_SHIFT) inputStr += "S-";
-      inputStr += temp + ">";
-    } else if (isSpecialKey) {
-      inputStr = "<" + inputStr + ">";
-    }
-    if (inputStr.size() == 1) {
-      inputStr = std::tolower(inputStr[0]);
-    }
+    std::ranges::transform(keyName, keyName.begin(), [](unsigned char c) {
+      return std::tolower(c);
+    });
 
-    LOG_INFO("inputStr: {}", inputStr);
+    std::string inputStr = "<";
+    if (mod & SDL_KMOD_CTRL) inputStr += "C-";
+    if (mod & SDL_KMOD_ALT) inputStr += "M-";
+    if (mod & SDL_KMOD_GUI) inputStr += "D-";
+    if (mod & SDL_KMOD_SHIFT) inputStr += "S-";
+    inputStr += keyName + ">";
 
+    // LOG_INFO("inputStr: {}", inputStr);
     nvim.Input(inputStr);
   }
 }
 
-void InputHandler::HandleChar(unsigned int codepoint) {
-  
+void InputHandler::HandleTextInput(const SDL_TextInputEvent& event) {
+  if (options.macOptAsAlt && (mod & SDL_KMOD_ALT)) return;
+
+  std::string inputStr = event.text;
+  if (inputStr == " ") return;
+  if (inputStr == "<") inputStr = "<lt>";
+
+  // LOG_INFO("inputStr: {}", inputStr);
+  nvim.Input(inputStr);
 }
 
-void InputHandler::HandleMouseButton(int button, int action, int /* mods */) {
-  
+void InputHandler::HandleMouseButton(const SDL_MouseButtonEvent& event) {
+  if (event.state == SDL_PRESSED) {
+    mouseButton = event.button;
+  } else {
+    mouseButton.reset();
+    currGrid.reset();
+  }
+  HandleMouseButtonAndMotion(event.state, {event.x, event.y});
 }
 
-void InputHandler::HandleCursorPos(double xpos, double ypos) {
-  
+void InputHandler::HandleMouseMotion(const SDL_MouseMotionEvent& event) {
+  HandleMouseButtonAndMotion(-1, {event.x, event.y});
 }
 
-void InputHandler::HandleMouseButtonAndCursorPos(int action) {
-  
+void InputHandler::HandleMouseButtonAndMotion(int state, glm::vec2 mousePos) {
+  if (!mouseButton.has_value()) return;
+
+  int button = *mouseButton;
+  std::string buttonStr;
+  switch (button) {
+    case SDL_BUTTON_LEFT: buttonStr = "left"; break;
+    case SDL_BUTTON_MIDDLE: buttonStr = "middle"; break;
+    case SDL_BUTTON_RIGHT: buttonStr = "right"; break;
+    default: return;
+  }
+
+  std::string actionStr;
+  switch (state) {
+    case SDL_PRESSED: actionStr = "press"; break;
+    case SDL_RELEASED: actionStr = "release"; break;
+    case -1: actionStr = "drag"; break;
+    default: return;
+  }
+
+  std::string modStr;
+  if (mod & SDL_KMOD_CTRL) modStr += "C-";
+  if (mod & SDL_KMOD_ALT) modStr += "M-";
+  if (mod & SDL_KMOD_GUI) modStr += "D-";
+  if (mod & SDL_KMOD_SHIFT) modStr += "S-";
+
+  MouseInfo info;
+  if (!currGrid.has_value()) {
+    info = winManager.GetMouseInfo(mousePos);
+    currGrid = info.grid;
+  } else {
+    info = winManager.GetMouseInfo(*currGrid, mousePos);
+  }
+
+  nvim.InputMouse(buttonStr, actionStr, modStr, info.grid, info.row, info.col);
 }
 
-void InputHandler::HandleScroll(double xoffset, double yoffset) {
-  
+void InputHandler::HandleMouseWheel(const SDL_MouseWheelEvent& event) {
+  std::string modStr;
+  if (mod & SDL_KMOD_CTRL) modStr += "C-";
+  if (mod & SDL_KMOD_ALT) modStr += "M-";
+  if (mod & SDL_KMOD_GUI) modStr += "D-";
+  if (mod & SDL_KMOD_SHIFT) modStr += "S-";
+
+  MouseInfo info;
+  glm::vec2 mousePos(event.mouse_x, event.mouse_y);
+  if (!currGrid.has_value()) {
+    info = winManager.GetMouseInfo(mousePos);
+  } else {
+    info = winManager.GetMouseInfo(*currGrid, mousePos);
+  }
+
+  double scrollSpeed = 1;
+  double scrollUnit = 1 / scrollSpeed;
+
+  double yAbs = std::abs(event.y);
+  double xAbs = std::abs(event.x);
+
+  bool ypositive = event.y > 0;
+  bool xpositive = event.x > 0;
+
+  if (yAbs > xAbs) {
+    xAccum = 0;
+    if ((ypositive && scrollDir == -1) || (!ypositive && scrollDir == 1)) {
+      yAccum = 0;
+    }
+    scrollDir = ypositive ? 1 : -1;
+
+    yAccum += yAbs;
+    yAccum = std::min(yAccum, 100.0);
+
+    std::string actionStr = ypositive ? "up" : "down";
+    while (yAccum >= scrollUnit) {
+      nvim.InputMouse("wheel", actionStr, modStr, info.grid, info.row, info.col);
+      yAccum -= scrollUnit;
+    }
+  } else if (xAbs > yAbs) {
+    yAccum = 0;
+    if ((xpositive && scrollDir == -1) || (!xpositive && scrollDir == 1)) {
+      xAccum = 0;
+    }
+    scrollDir = xpositive ? 1 : -1;
+
+    xAccum += xAbs;
+    xAccum = std::min(xAccum, 100.0);
+
+    std::string actionStr = xpositive ? "right" : "left";
+    while (xAccum >= scrollUnit) {
+      nvim.InputMouse("wheel", actionStr, modStr, info.grid, info.row, info.col);
+      xAccum -= scrollUnit;
+    }
+  }
 }

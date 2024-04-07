@@ -63,53 +63,8 @@ int main() {
   // lock whenever ctx.device is used
   std::mutex wgpuDeviceMutex;
 
-  // input -----------------------------------------------------------
-  // InputHandler input(nvim, editorState.winManager, window.GetCursorPos());
-
-  // window.keyCallback = [&](int key, int scancode, int action, int mods) {
-  //   input.HandleKey(key, scancode, action, mods);
-  // };
-
-  // window.charCallback = [&](unsigned int codepoint) {
-  //   input.HandleChar(codepoint);
-  // };
-
-  // window.mouseButtonCallback = [&](int button, int action, int mods) {
-  //   input.HandleMouseButton(button, action, mods);
-  // };
-
-  // window.cursorPosCallback = [&](double xpos, double ypos) {
-  //   input.HandleCursorPos(xpos, ypos);
-  // };
-
-  // window.scrollCallback = [&](double xoffset, double yoffset) {
-  //   input.HandleScroll(xoffset, yoffset);
-  // };
-
-  // // resizing and dpi changed -------------------------------------
-  // window.framebufferSizeCallback = [&](int /* width */, int /* height */) {
-  //   std::scoped_lock lock(wgpuDeviceMutex);
-  //   glm::vec2 size(window.fbSize / (unsigned int)window.dpiScale);
-  //   sizes.UpdateSizes(size, window.dpiScale, font.charSize);
-
-  //   glfw::Window::_ctx.Resize(sizes.fbSize);
-  //   renderer.Resize(sizes);
-
-  //   nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight);
-  // };
-
-  // window.windowContentScaleCallback = [&](float /* xscale */, float /* yscale */) {
-  //   std::scoped_lock lock(wgpuDeviceMutex);
-  //   font = Font("/Library/Fonts/SF-Mono-Medium.otf", 15, window.dpiScale);
-  //   editorState.cursor.fullSize = font.charSize;
-  // };
-
   // main thread -----------------------------------
   std::atomic_bool exitWindow = false;
-
-  // window.windowCloseCallback = [&] {
-  //   windowShouldClose = true;
-  // };
 
   std::thread renderThread([&] {
     Clock clock;
@@ -233,34 +188,74 @@ int main() {
     }
   });
 
-  float x, y;
-  SDL_GetMouseState(&x, &y);
-  InputHandler input(nvim, editorState.winManager, {x, y});
+  InputHandler input(nvim, editorState.winManager);
+
+  SDL_Rect rect{0, 0, 100, 100};
+
+  SDL_StartTextInput();
+  SDL_SetTextInputRect(&rect);
+
+  window.AddEventWatch([&](SDL_Event& event)  {
+    switch (event.type) {
+      case SDL_EVENT_WINDOW_RESIZED:
+        window.size = {event.window.data1, event.window.data2};
+        break;
+      case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: {
+        window.fbSize = {event.window.data1, event.window.data2};
+        window.dpiScale = SDL_GetWindowPixelDensity(window.window);
+
+        // LOG("window pixel size changed");
+        std::scoped_lock lock(wgpuDeviceMutex);
+        sizes.UpdateSizes(window.size, window.dpiScale, font.charSize);
+
+        sdl::Window::_ctx.Resize(sizes.fbSize);
+        renderer.Resize(sizes);
+        nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight);
+        break;
+      }
+      case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED: {
+        // LOG("window display scale changed");
+        std::scoped_lock lock(wgpuDeviceMutex);
+        font = Font("/Library/Fonts/SF-Mono-Medium.otf", 15, window.dpiScale);
+        editorState.cursor.fullSize = font.charSize;
+        break;
+      }
+    }
+  });
 
   SDL_Event event;
-  while (!exitWindow && SDL_WaitEvent(&event)) {
+  while (!exitWindow) {
+    auto success = SDL_WaitEvent(&event);
+    if (!success) {
+      LOG_ERR("SDL_WaitEvent error: {}", SDL_GetError());
+    }
+
     switch (event.type) {
       case SDL_EVENT_QUIT:
         exitWindow = true;
         break;
 
-      // case
+      // keyboard handling ----------------------
       case SDL_EVENT_KEY_DOWN:
       case SDL_EVENT_KEY_UP:
-        // LOG_INFO("key {}: ", event.key.keysym.sym);
-        // LOG_INFO("state {}: ", event.key.state);
-        input.HandleKey(event.key);
+        input.HandleKeyboard(event.key);
         break;
-
       case SDL_EVENT_TEXT_EDITING:
-        LOG_INFO("text editing: {}", event.edit.text);
         break;
-
       case SDL_EVENT_TEXT_INPUT:
-        LOG_INFO("text input: {}", event.text.text);
+        input.HandleTextInput(event.text);
         break;
 
-      default:
+      // mouse handling ------------------------
+      case SDL_EVENT_MOUSE_BUTTON_DOWN:
+      case SDL_EVENT_MOUSE_BUTTON_UP:
+        input.HandleMouseButton(event.button);
+        break;
+      case SDL_EVENT_MOUSE_MOTION:
+        input.HandleMouseMotion(event.motion);
+        break;
+      case SDL_EVENT_MOUSE_WHEEL:
+        input.HandleMouseWheel(event.wheel);
         break;
     }
 

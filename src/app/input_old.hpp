@@ -29,5 +29,5 @@ struct InputHandler {
   void HandleCursorPos(double xpos, double ypos);
   void HandleScroll(double xoffset, double yoffset);
 
-  void HandleMouseButtonAndCursorPos(int action);
+  void HandleMouseButtonAndMotion(int action);
 };

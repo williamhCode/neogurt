@@ -385,10 +385,10 @@ Win* WinManager::GetActiveWin() {
   return &it->second;
 }
 
-MouseInfo WinManager::GetMouseInfo(glm::vec2 cursorPos) {
-  cursorPos -= sizes.offset;
-  int globalRow = cursorPos.y / sizes.charSize.y;
-  int globalCol = cursorPos.x / sizes.charSize.x;
+MouseInfo WinManager::GetMouseInfo(glm::vec2 mousePos) {
+  mousePos -= sizes.offset;
+  int globalRow = mousePos.y / sizes.charSize.y;
+  int globalCol = mousePos.x / sizes.charSize.x;
 
   std::vector<std::pair<int, const Win*>> sortedWins;
   for (auto& [id, win] : windows) {
@@ -425,12 +425,12 @@ MouseInfo WinManager::GetMouseInfo(glm::vec2 cursorPos) {
   return {grid, row, col};
 }
 
-MouseInfo WinManager::GetMouseInfo(int grid, glm::vec2 cursorPos) {
+MouseInfo WinManager::GetMouseInfo(int grid, glm::vec2 mousePos) {
   auto& win = windows.at(grid);
 
-  cursorPos -= sizes.offset;
-  int globalRow = cursorPos.y / sizes.charSize.y;
-  int globalCol = cursorPos.x / sizes.charSize.x;
+  mousePos -= sizes.offset;
+  int globalRow = mousePos.y / sizes.charSize.y;
+  int globalCol = mousePos.x / sizes.charSize.x;
 
   int row = std::max(globalRow - win.startRow, 0);
   int col = std::max(globalCol - win.startCol, 0);

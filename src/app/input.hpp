@@ -10,10 +10,9 @@ struct InputHandler {
   WinManager& winManager;
 
   // shared
-  // int mods = 0;
+  SDL_Keymod mod = SDL_KMOD_NONE;
 
   // mouse related
-  glm::vec2 cursorPos;
   std::optional<int> mouseButton;
   std::optional<int> currGrid;
 
@@ -21,13 +20,12 @@ struct InputHandler {
   double xAccum = 0;
   int scrollDir = 0;
 
-  InputHandler(Nvim& nvim, WinManager& winManager, glm::vec2 cursorPos);
+  InputHandler(Nvim& nvim, WinManager& winManager);
 
-  void HandleKey(SDL_KeyboardEvent event);
-  void HandleChar(unsigned int codepoint);
-  void HandleMouseButton(int button, int action, int mods);
-  void HandleCursorPos(double xpos, double ypos);
-  void HandleScroll(double xoffset, double yoffset);
-
-  void HandleMouseButtonAndCursorPos(int action);
+  void HandleKeyboard(const SDL_KeyboardEvent& event);
+  void HandleTextInput(const SDL_TextInputEvent& event);
+  void HandleMouseButton(const SDL_MouseButtonEvent& event);
+  void HandleMouseMotion(const SDL_MouseMotionEvent& event);
+  void HandleMouseButtonAndMotion(int state, glm::vec2 pos);
+  void HandleMouseWheel(const SDL_MouseWheelEvent& event);
 };

@@ -21,6 +21,10 @@ struct Window {
   Window(const Window&) = delete;
   Window& operator=(const Window&) = delete;
 
+
+  using EventFilter = std::function<void(SDL_Event&)>;
+  std::vector<EventFilter> eventFilters;
+  void AddEventWatch(EventFilter&& callback);
 };
 
 } // namespace sdl
