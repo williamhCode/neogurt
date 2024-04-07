@@ -1,9 +1,11 @@
-cmake_minimum_required(VERSION 3.0...3.28)
+# fix https://gitlab.kitware.com/cmake/cmake/-/issues/24104
+enable_language(OBJC) 
+cmake_minimum_required(VERSION 3.5...3.28)
 
 project(
   Neogui
   VERSION 0.1.0
-  LANGUAGES CXX C
+  LANGUAGES C CXX
 )
 
 set(CMAKE_CXX_STANDARD 20)
@@ -21,7 +23,8 @@ add_subdirectory(deps/freetype)
 set(APP_SRC
 	src/main.cpp
 
-  src/app/window.cpp
+  src/app/window_glfw.cpp
+  src/app/window_sdl.cpp
   src/app/input.cpp
   src/app/size.cpp
 

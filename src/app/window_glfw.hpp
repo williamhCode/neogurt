@@ -6,6 +6,8 @@
 
 #include <string>
 
+namespace glfw {
+
 struct Window {
   static inline WGPUContext _ctx;
   GLFWwindow* window;
@@ -41,3 +43,5 @@ struct Window {
   bool MouseButtonReleased(int button);
   glm::vec2 GetCursorPos();
 };
+
+} // namespace glfw

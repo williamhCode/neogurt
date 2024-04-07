@@ -3,11 +3,14 @@
 #include <webgpu/webgpu_glfw.h>
 #include "utils/logger.hpp"
 #include "webgpu_tools/utils/webgpu.hpp"
+#include "webgpu_tools/utils/sdl3webgpu.h"
+
+#include <iostream>
 
 using namespace wgpu;
 
-WGPUContext::WGPUContext(GLFWwindow* window, glm::uvec2 size, PresentMode presentMode)
-    : presentMode(presentMode) {
+WGPUContext::WGPUContext(GLFWwindow* window, glm::uvec2 _size, PresentMode _presentMode)
+    : size(_size), presentMode(_presentMode) {
   instance = CreateInstance();
   if (!instance) {
     LOG_ERR("Could not initialize WebGPU!");
@@ -15,7 +18,22 @@ WGPUContext::WGPUContext(GLFWwindow* window, glm::uvec2 size, PresentMode presen
   }
 
   surface = glfw::CreateSurfaceForWindow(instance, window);
+  Init();
+}
 
+WGPUContext::WGPUContext(SDL_Window* window, glm::uvec2 _size, PresentMode _presentMode)
+    : size(_size), presentMode(_presentMode) {
+  instance = CreateInstance();
+  if (!instance) {
+    LOG_ERR("Could not initialize WebGPU!");
+    std::exit(1);
+  }
+
+  surface = Surface::Acquire(SDL_GetWGPUSurface(instance.Get(), window));
+  Init();
+}
+
+void WGPUContext::Init() {
   RequestAdapterOptions adapterOpts{
     .compatibleSurface = surface,
     .powerPreference = PowerPreference::HighPerformance,
@@ -58,7 +76,9 @@ WGPUContext::WGPUContext(GLFWwindow* window, glm::uvec2 size, PresentMode presen
   pipeline = Pipeline(*this);
 }
 
-void WGPUContext::Resize(glm::uvec2 size) {
+void WGPUContext::Resize(glm::uvec2 _size) {
+  size = _size;
+
   SwapChainDescriptor swapChainDesc{
     .usage = TextureUsage::RenderAttachment,
     .format = swapChainFormat,
