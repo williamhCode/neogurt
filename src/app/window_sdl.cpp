@@ -24,6 +24,8 @@ Window::Window(glm::uvec2 _size, const std::string& title, wgpu::PresentMode pre
   // contentScale = SDL_GetDisplayContentScale(displayId);
   // LOG_INFO("contentScale: {}", contentScale);
 
+  SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
+
   // webgpu ------------------------------------
   _ctx = WGPUContext(window, fbSize, presentMode);
   LOG_INFO("WGPUContext created with size: {}, {}", fbSize.x, fbSize.y);

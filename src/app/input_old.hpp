@@ -10,7 +10,7 @@ struct InputHandler {
   WinManager& winManager;
 
   // shared
-  // int mods = 0;
+  int mods = 0;
 
   // mouse related
   glm::vec2 cursorPos;
@@ -23,7 +23,7 @@ struct InputHandler {
 
   InputHandler(Nvim& nvim, WinManager& winManager, glm::vec2 cursorPos);
 
-  void HandleKey(SDL_KeyboardEvent event);
+  void HandleKey(int key, int scancode, int action, int mods);
   void HandleChar(unsigned int codepoint);
   void HandleMouseButton(int button, int action, int mods);
   void HandleCursorPos(double xpos, double ypos);
