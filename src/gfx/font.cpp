@@ -8,37 +8,49 @@
 
 using namespace wgpu;
 
-static FT_Library library;
-static bool ftInitialized = false;
+static FT_FacePtr
+CreateFace(FT_Library library, const char* filepath, FT_Long face_index) {
+  FT_Face face;
+  if (FT_New_Face(library, filepath, face_index, &face)) {
+    return nullptr;
+  }
+  return FT_FacePtr(face);
+}
 
+static FT_Library library;
 static FT_Face nerdFace;
+
+void FtInit() {
+  if (FT_Init_FreeType(&library)) {
+    throw std::runtime_error("Failed to initialize FreeType library");
+  }
+
+  std::string nerdFontPath(
+    // ROOT_DIR "/res/Hack/HackNerdFont-Regular.ttf"
+    // ROOT_DIR "/res/Hack/HackNerdFontMono-Regular.ttf"
+    ROOT_DIR "/res/NerdFontsSymbolsOnly/SymbolsNerdFont-Regular.ttf"
+    // ROOT_DIR "/res/NerdFontsSymbolsOnly/SymbolsNerdFontMono-Regular.ttf"
+  );
+
+  if (FT_New_Face(library, nerdFontPath.c_str(), 0, &nerdFace)) {
+    throw std::runtime_error("Failed to load nerd font");
+  }
+}
+
+void FtDone() {
+  FT_Done_Face(nerdFace);
+  FT_Done_FreeType(library);
+}
 
 Font::Font(const std::string& path, int _size, float _dpiScale)
     : size(_size), dpiScale(_dpiScale) {
-  if (!ftInitialized) {
-    if (FT_Init_FreeType(&library)) {
-      throw std::runtime_error("Failed to initialize FreeType library");
-    }
-    ftInitialized = true;
-
-    std::string nerdFontPath(
-      // ROOT_DIR "/res/Hack/HackNerdFont-Regular.ttf"
-      // ROOT_DIR "/res/Hack/HackNerdFontMono-Regular.ttf"
-      ROOT_DIR "/res/NerdFontsSymbolsOnly/SymbolsNerdFont-Regular.ttf"
-      // ROOT_DIR "/res/NerdFontsSymbolsOnly/SymbolsNerdFontMono-Regular.ttf"
-    );
-    if (FT_New_Face(library, nerdFontPath.c_str(), 0, &nerdFace)) {
-      throw std::runtime_error("Failed to load nerd font");
-    }
-  }
-
-  if (FT_New_Face(library, path.c_str(), 0, &face)) {
+  if (face = CreateFace(library, path.c_str(), 0); face == nullptr) {
     throw std::runtime_error("Failed to load font");
   }
 
   // winding order is clockwise starting from top left
   trueSize = size * dpiScale;
-  FT_Set_Pixel_Sizes(face, 0, trueSize);
+  FT_Set_Pixel_Sizes(face.get(), 0, trueSize);
 
   charSize.x = (face->size->metrics.max_advance >> 6) / dpiScale;
   charSize.y = (face->size->metrics.height >> 6) / dpiScale;
@@ -59,7 +71,7 @@ Font::Font(const std::string& path, int _size, float _dpiScale)
 }
 
 const Font::GlyphInfo& Font::GetGlyphInfoOrAdd(FT_ULong charcode) {
-  auto glyphIndex = FT_Get_Char_Index(face, charcode);
+  auto glyphIndex = FT_Get_Char_Index(face.get(), charcode);
 
   FT_Face currFace;
   GlyphInfoMap* currMap;
@@ -72,7 +84,7 @@ const Font::GlyphInfo& Font::GetGlyphInfoOrAdd(FT_ULong charcode) {
       return it->second;
     }
 
-    currFace = face;
+    currFace = face.get();
     currMap = &glyphInfoMap;
 
   } else {

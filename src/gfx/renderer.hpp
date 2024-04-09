@@ -46,6 +46,7 @@ struct Renderer {
   QuadRenderData<CursorQuadVertex> cursorData;
   wgpu::utils::RenderPassDescriptor cursorRPD;
 
+  Renderer() = default;
   Renderer(const SizeHandler& sizes);
 
   void Resize(const SizeHandler& sizes);

@@ -6,8 +6,18 @@
 #include "webgpu/webgpu_cpp.h"
 #include <vector>
 
+void FtInit();
+void FtDone();
+
+struct FT_FaceDeleter {
+  void operator()(FT_Face face) {
+    FT_Done_Face(face);
+  }
+};
+using FT_FacePtr = std::unique_ptr<FT_FaceRec, FT_FaceDeleter>;
+
 struct Font {
-  FT_Face face;
+  FT_FacePtr face;
 
   int size;     // font size
   int trueSize; // font size * dpiScale
@@ -46,6 +56,7 @@ struct Font {
 
   Font() = default;
   Font(const std::string& path, int size, float dpiScale);
+
   const GlyphInfo& GetGlyphInfoOrAdd(FT_ULong charcode);
   void UpdateTexture();
   void DpiChanged(float ratio);

@@ -1,6 +1,7 @@
 #include "sdl_window.hpp"
 #include "app/options.hpp"
-#include "utils/logger.hpp"
+#include <stdexcept>
+#include <format>
 
 namespace sdl {
 
@@ -8,26 +9,22 @@ Window::Window(
   glm::uvec2 _size, const std::string& title, wgpu::PresentMode presentMode
 )
     : size(_size) {
-  if (SDL_Init(SDL_INIT_VIDEO) != 0) {
-    LOG_ERR("Unable to initialize SDL: {}", SDL_GetError());
-    std::exit(1);
-  }
-
   // window ---------------------------------
   int flags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_TRANSPARENT;
   if (appOpts.highDpi) flags |= SDL_WINDOW_HIGH_PIXEL_DENSITY;
   if (appOpts.borderless) flags |= SDL_WINDOW_BORDERLESS;
 
-  window = SDL_CreateWindow(title.c_str(), size.x, size.y, flags);
+  window = SDL_WindowPtr(SDL_CreateWindow(title.c_str(), size.x, size.y, flags));
   if (window == nullptr) {
-    LOG_ERR("Unable to create window: {}", SDL_GetError());
-    std::exit(1);
+    throw std::runtime_error(
+      std::format("Unable to Create SDL_Window: {}", SDL_GetError())
+    );
   }
 
   SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
 
   // sizing ---------------------------------
-  dpiScale = SDL_GetWindowPixelDensity(window);
+  dpiScale = SDL_GetWindowPixelDensity(Get());
   fbSize = size * (unsigned int)dpiScale;
 
   // auto displayId = SDL_GetPrimaryDisplay();
@@ -35,13 +32,12 @@ Window::Window(
   // LOG_INFO("contentScale: {}", contentScale);
 
   // webgpu ------------------------------------
-  _ctx = WGPUContext(window, fbSize, presentMode);
+  _ctx = WGPUContext(Get(), fbSize, presentMode);
   // LOG_INFO("WGPUContext created with size: {}, {}", fbSize.x, fbSize.y);
 }
 
-Window::~Window() {
-  SDL_DestroyWindow(window);
-  SDL_Quit();
+SDL_Window* Window::Get() {
+  return window.get();
 }
 
 void Window::AddEventWatch(EventFilter&& _callback) {

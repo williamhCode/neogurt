@@ -31,6 +31,10 @@ public:
     msgpack::unique_ptr<msgpack::zone> _zone; // holds the lifetime of the data
   };
 
+  Client() = default;
+  Client(const Client&) = delete;
+  Client& operator=(const Client&) = delete;
+
   ~Client() {
     if (socket.is_open()) socket.close();
 
@@ -53,9 +57,7 @@ public:
 
     unpacker.reserve_buffer(readSize);
     GetData();
-    contextThr = std::thread([this]() {
-      context.run();
-    });
+    contextThr = std::thread([this]() { context.run(); });
 
     return true;
   }
@@ -179,7 +181,9 @@ private:
                 }
 
               } else {
-                LOG_WARN("Client::GetData: Response not found for msgid: {}", msg.msgid);
+                LOG_WARN(
+                  "Client::GetData: Response not found for msgid: {}", msg.msgid
+                );
               }
 
             } else if (type == MessageType::Notification) {

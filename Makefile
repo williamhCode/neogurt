@@ -1,6 +1,7 @@
 .PHONY: build
 
-TYPE = release
+# TYPE = release
+TYPE = debug
 
 build:
 	cmake --build build/$(TYPE) --target neogui
@@ -11,7 +12,7 @@ build-tint:
 	cp build/release/_deps/dawn-build/tint .
 
 build-setup:
-	cmake . -B build/debug -DCMAKE_BUILD_TYPE=RelWithDebInfo -GNinja -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
+	cmake . -B build/debug -DCMAKE_BUILD_TYPE=Debug -GNinja -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
 	cmake . -B build/release -DCMAKE_BUILD_TYPE=Release -GNinja -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
 
 xcode-setup:

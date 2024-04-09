@@ -30,6 +30,18 @@ const WGPUContext& ctx = sdl::Window::_ctx;
 AppOptions appOpts;
 
 int main() {
+  if (SDL_Init(SDL_INIT_VIDEO)) {
+    LOG_ERR("Unable to initialize SDL: {}", SDL_GetError());
+    return 1;
+  }
+
+  try {
+    FtInit();
+  } catch (const std::exception& e) {
+    LOG_ERR("{}", e.what());
+    return 1;
+  }
+
   appOpts = {
     .multigrid = true,
     .vsync = true,
@@ -37,8 +49,14 @@ int main() {
     .borderless = false,
   };
 
-  auto presentMode = appOpts.vsync ? PresentMode::Mailbox : PresentMode::Immediate;
-  sdl::Window window({1600, 1000}, "Neovim GUI", presentMode);
+  sdl::Window window;
+  try {
+    auto presentMode = appOpts.vsync ? PresentMode::Mailbox : PresentMode::Immediate;
+    window = sdl::Window({1600, 1000}, "Neovim GUI", presentMode);
+  } catch (const std::exception& e) {
+    LOG_ERR("{}", e.what());
+    return 1;
+  }
 
   Font font("/Library/Fonts/SF-Mono-Medium.otf", 15, window.dpiScale);
 
@@ -68,6 +86,7 @@ int main() {
 
   // main thread -----------------------------------
   std::atomic_bool exitWindow = false;
+  std::atomic_bool windowFocused = true;
   std::atomic_bool idle = false;
 
   std::thread renderThread([&] {
@@ -135,7 +154,7 @@ int main() {
 
       if (idle) continue;
       idleElasped += dt;
-      if (idleElasped >= appOpts.cursorIdleTime || !window.focused) {
+      if (idleElasped >= appOpts.cursorIdleTime || !windowFocused) {
         idle = true;
         editorState.cursor.blinkState = BlinkState::On;
       }
@@ -218,7 +237,7 @@ int main() {
         break;
       case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: {
         window.fbSize = {event.window.data1, event.window.data2};
-        window.dpiScale = SDL_GetWindowPixelDensity(window.window);
+        window.dpiScale = SDL_GetWindowPixelDensity(window.Get());
 
         std::scoped_lock lock(wgpuDeviceMutex);
         sizes.UpdateSizes(window.size, window.dpiScale, font.charSize);
@@ -274,10 +293,10 @@ int main() {
 
       // window handling -----------------------
       case SDL_EVENT_WINDOW_FOCUS_GAINED:
-        window.focused = true;
+        windowFocused = true;
         break;
       case SDL_EVENT_WINDOW_FOCUS_LOST:
-        window.focused = false;
+        windowFocused = false;
         break;
     }
 
@@ -286,4 +305,8 @@ int main() {
 
   renderThread.join();
   nvim.client.Disconnect();
+  FtDone();
+  SDL_Quit();
+
+  return 0;
 }
