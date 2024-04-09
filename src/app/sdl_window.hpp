@@ -5,6 +5,7 @@
 #include "gfx/context.hpp"
 #include <vector>
 #include <functional>
+#include <utility>
 
 namespace sdl {
 
@@ -26,10 +27,15 @@ struct Window {
   float contentScale;
 
   using EventFilter = std::function<void(SDL_Event&)>;
-  std::vector<EventFilter> eventFilters;
+  std::vector<std::pair<SDL_EventFilter, EventFilter>> eventFilters;
 
   Window() = default;
   Window(glm::uvec2 size, const std::string& title, wgpu::PresentMode presentMode);
+  Window(const Window&) = delete;
+  Window& operator=(const Window&) = delete;
+  Window(Window&&) = default;
+  Window& operator=(Window&&) = default;
+  ~Window();
 
   SDL_Window* Get();
 
