@@ -14,6 +14,7 @@ struct AppOptions {
   } windowMargins;
 
   bool borderless = false;
+  float cursorIdleTime = 10;
 };
 
 extern AppOptions appOpts;

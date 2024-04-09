@@ -33,8 +33,7 @@ int main() {
   appOpts = {
     .multigrid = true,
     .vsync = true,
-    .highDpi = true,
-    .windowMargins = {5, 5, 5, 5},
+    .windowMargins{5, 5, 5, 5},
     .borderless = false,
   };
 
@@ -69,14 +68,13 @@ int main() {
 
   // main thread -----------------------------------
   std::atomic_bool exitWindow = false;
-  std::atomic_bool inactive = false;
+  std::atomic_bool idle = false;
 
   std::thread renderThread([&] {
     Clock clock;
     Timer timer(30);
 
-    float inactiveTime = 10;
-    float inactiveElasped = 0;
+    float idleElasped = 0;
 
     while (!exitWindow) {
       auto dt = clock.Tick(60);
@@ -99,12 +97,14 @@ int main() {
       {
         std::scoped_lock lock(wgpuDeviceMutex);
         if (ProcessRedrawEvents(nvim.redrawState, editorState)) {
-          inactive = false;
-          inactiveElasped = 0;
+          idle = false;
+          idleElasped = 0;
         }
       }
 
       // update ----------------------------------------------
+      editorState.winManager.UpdateScrolling(dt);
+
       wgpu::BindGroup currMaskBG;
       if (auto* win = editorState.winManager.GetActiveWin()) {
         auto cursorPos =
@@ -125,8 +125,6 @@ int main() {
       editorState.cursor.currMaskBG = std::move(currMaskBG);
       editorState.cursor.Update(dt);
 
-      editorState.winManager.UpdateScrolling(dt);
-
       // render ----------------------------------------------
 
       if (auto hlIter = editorState.hlTable.find(0);
@@ -135,10 +133,10 @@ int main() {
         // renderer.SetClearColor({1, 0.7, 0.8, 0.5});
       }
 
-      if (inactive) continue;
-      inactiveElasped += dt;
-      if (inactiveElasped >= inactiveTime || !window.focused) {
-        inactive = true;
+      if (idle) continue;
+      idleElasped += dt;
+      if (idleElasped >= appOpts.cursorIdleTime || !window.focused) {
+        idle = true;
         editorState.cursor.blinkState = BlinkState::On;
       }
       {

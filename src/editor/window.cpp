@@ -277,16 +277,18 @@ void WinManager::UpdateScrolling(float dt) {
       bool scrollPositive = win.scrollDist > 0;
 
       RegionHandle prevRegion{
-        .pos =
-          {margins.left, scrollPositive ? margins.top + scrollCurrAbs
-                                        : size.y - margins.bottom - scrollDistAbs},
-        .size = {innerWidth, toScroll},
+        .pos{
+          margins.left,
+          scrollPositive ? margins.top + scrollCurrAbs
+                         : size.y - margins.bottom - scrollDistAbs,
+        },
+        .size{innerWidth, toScroll},
       };
       win.prevRenderTexture.UpdatePos(pos + prevRegion.pos, prevRegion);
 
       RegionHandle region{
-        .pos = {margins.left, scrollPositive ? margins.top : margins.top + toScroll},
-        .size = {innerWidth, innerHeight - toScroll},
+        .pos{margins.left, scrollPositive ? margins.top : margins.top + toScroll},
+        .size{innerWidth, innerHeight - toScroll},
       };
       pos += glm::vec2(0, win.scrollDist);
       win.renderTexture.UpdatePos(pos + region.pos, region);

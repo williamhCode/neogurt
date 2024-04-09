@@ -46,11 +46,14 @@ Window::~Window() {
 
 void Window::AddEventWatch(EventFilter&& _callback) {
   auto& callback = eventFilters.emplace_back(std::move(_callback));
-  SDL_AddEventWatch([](void* userdata, SDL_Event* event) {
-    auto& callback = *static_cast<EventFilter*>(userdata);
-    callback(*event);
-    return 0;
-  }, &callback);
+  SDL_AddEventWatch(
+    [](void* userdata, SDL_Event* event) {
+      auto& callback = *static_cast<EventFilter*>(userdata);
+      callback(*event);
+      return 0;
+    },
+    &callback
+  );
 }
 
 } // namespace sdl

@@ -21,7 +21,7 @@ WGPUContext::WGPUContext(SDL_Window* window, glm::uvec2 _size, PresentMode _pres
 void WGPUContext::Init() {
   RequestAdapterOptions adapterOpts{
     .compatibleSurface = surface,
-    .powerPreference = PowerPreference::LowPower,
+    .powerPreference = PowerPreference::HighPerformance,
   };
   adapter = utils::RequestAdapter(instance, &adapterOpts);
 
