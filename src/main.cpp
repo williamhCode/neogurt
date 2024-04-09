@@ -1,8 +1,7 @@
-#include "GLFW/glfw3.h"
 #include "app/options.hpp"
 #include "app/size.hpp"
 #include "app/input.hpp"
-#include "app/window_sdl.hpp"
+#include "app/sdl_window.hpp"
 #include "editor/grid.hpp"
 #include "editor/state.hpp"
 #include "gfx/font.hpp"
@@ -92,7 +91,6 @@ int main() {
       // nvim events -------------------------------------------
       if (!nvim.client.IsConnected()) {
         exitWindow = true;
-        glfwPostEmptyEvent();
       };
 
       nvim.ParseRedrawEvents();

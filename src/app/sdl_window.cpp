@@ -1,4 +1,4 @@
-#include "window_sdl.hpp"
+#include "sdl_window.hpp"
 #include "app/options.hpp"
 #include "utils/logger.hpp"
 

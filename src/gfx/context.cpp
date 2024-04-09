@@ -1,25 +1,10 @@
 #include "context.hpp"
 #include <webgpu/webgpu_cpp.h>
-#include <webgpu/webgpu_glfw.h>
 #include "utils/logger.hpp"
 #include "webgpu_tools/utils/webgpu.hpp"
 #include "webgpu_tools/utils/sdl3webgpu.h"
 
-#include <iostream>
-
 using namespace wgpu;
-
-WGPUContext::WGPUContext(GLFWwindow* window, glm::uvec2 _size, PresentMode _presentMode)
-    : size(_size), presentMode(_presentMode) {
-  instance = CreateInstance();
-  if (!instance) {
-    LOG_ERR("Could not initialize WebGPU!");
-    std::exit(1);
-  }
-
-  surface = glfw::CreateSurfaceForWindow(instance, window);
-  Init();
-}
 
 WGPUContext::WGPUContext(SDL_Window* window, glm::uvec2 _size, PresentMode _presentMode)
     : size(_size), presentMode(_presentMode) {

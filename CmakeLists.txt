@@ -23,8 +23,7 @@ add_subdirectory(deps/freetype)
 set(APP_SRC
 	src/main.cpp
 
-  src/app/window_glfw.cpp
-  src/app/window_sdl.cpp
+  src/app/sdl_window.cpp
   src/app/input.cpp
   src/app/size.cpp
 
