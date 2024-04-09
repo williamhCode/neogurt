@@ -23,10 +23,10 @@ bool ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
     for (auto& event : redrawEvents) {
       std::visit(overloaded{
         [&](SetTitle& e) {
-          LOG("set_title");
+          // LOG("set_title");
         },
         [&](SetIcon& e) {
-          LOG("set_icon");
+          // LOG("set_icon");
         },
         [&](ModeInfoSet& e) {
           for (auto& elem : e.modeInfo) {

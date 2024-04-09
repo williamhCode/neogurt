@@ -218,8 +218,8 @@ template void Renderer::RenderWindows(const std::deque<const Win*>& windows);
 
 void Renderer::RenderFinalTexture() {
   finalRPD.cColorAttachments[0].view = nextTextureView;
-  // finalRPD.cColorAttachments[0].clearValue = clearColor;
-  finalRPD.cColorAttachments[0].clearValue = {0.0, 0.0, 0.0, 0.0};
+  finalRPD.cColorAttachments[0].clearValue = clearColor;
+  // finalRPD.cColorAttachments[0].clearValue = {0.0, 0.0, 0.0, 0.0};
   auto passEncoder = commandEncoder.BeginRenderPass(&finalRPD);
   passEncoder.SetPipeline(ctx.pipeline.textureRPL);
   passEncoder.SetBindGroup(0, camera.viewProjBG);

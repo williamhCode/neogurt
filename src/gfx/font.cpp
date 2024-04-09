@@ -92,6 +92,7 @@ const Font::GlyphInfo& Font::GetGlyphInfoOrAdd(FT_ULong charcode) {
     // TODO: make nerdfont vertical offset an option
     vertOffset = charSize.y / 12;
   }
+  // TODO: implement custom box drawing characters
   // if (charcode >= 0x2500 && charcode <= 0x25FF) {
   //   vertOffset = charSize.y * 0.2;
   //   vertOffset = floor(vertOffset * dpiScale) / dpiScale;

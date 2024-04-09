@@ -1,7 +1,6 @@
 #include "GLFW/glfw3.h"
 #include "app/options.hpp"
 #include "app/size.hpp"
-#include "app/window_glfw.hpp"
 #include "app/input.hpp"
 #include "app/window_sdl.hpp"
 #include "editor/grid.hpp"
@@ -15,26 +14,32 @@
 #include "utils/clock.hpp"
 #include "utils/logger.hpp"
 #include "utils/timer.hpp"
-#include "utils/unicode.hpp"
 
 #include <algorithm>
+#include <vector>
 #include <deque>
+#include <atomic>
 #include <iostream>
 #include <format>
-#include <atomic>
 #include <chrono>
-#include <vector>
 
 using namespace wgpu;
 using namespace std::chrono_literals;
 using namespace std::chrono;
 
-// const WGPUContext& ctx = glfw::Window::_ctx;
 const WGPUContext& ctx = sdl::Window::_ctx;
-AppOptions options;
+AppOptions appOpts;
 
 int main() {
-  auto presentMode = options.vsync ? PresentMode::Mailbox : PresentMode::Immediate;
+  appOpts = {
+    .multigrid = true,
+    .vsync = true,
+    .highDpi = true,
+    .windowMargins = {5, 5, 5, 5},
+    .borderless = false,
+  };
+
+  auto presentMode = appOpts.vsync ? PresentMode::Mailbox : PresentMode::Immediate;
   sdl::Window window({1600, 1000}, "Neovim GUI", presentMode);
 
   Font font("/Library/Fonts/SF-Mono-Medium.otf", 15, window.dpiScale);
@@ -49,7 +54,7 @@ int main() {
     sizes.uiWidth, sizes.uiHeight,
     {
       {"rgb", true},
-      {"ext_multigrid", options.multigrid},
+      {"ext_multigrid", appOpts.multigrid},
       {"ext_linegrid", true},
     }
   );
@@ -81,7 +86,6 @@ int main() {
       // auto fps = clock.GetFps();
       // auto fpsStr = std::format("fps: {:.2f}", fps);
       // std::cout << '\r' << fpsStr << std::string(10, ' ') << std::flush;
-      // std::cout << fpsStr << std::string(10, ' ') << '\n';
 
       // timer.Start();
 
@@ -109,7 +113,9 @@ int main() {
           glm::vec2{
             win->startCol + win->grid.cursorCol,
             win->startRow + win->grid.cursorRow,
-          } * sizes.charSize + sizes.offset;
+          } *
+            sizes.charSize +
+          sizes.offset;
         editorState.cursor.SetDestPos(cursorPos);
 
         editorState.cursor.winOffset =

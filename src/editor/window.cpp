@@ -265,62 +265,33 @@ void WinManager::UpdateScrolling(float dt) {
 
       float t = win.scrollElapsed / win.scrollTime;
       float x = glm::pow(t, 1 / 2.8f);
-      float scrollCurrAbs = glm::mix(0.0f, glm::abs(win.scrollDist), x);
-      win.scrollCurr = glm::sign(win.scrollDist) * scrollCurrAbs;
-      auto scrollDistAbs = glm::abs(win.scrollDist);
+      win.scrollCurr =
+        glm::sign(win.scrollDist) * glm::mix(0.0f, glm::abs(win.scrollDist), x);
+      pos.y -= win.scrollCurr;
 
-      if (glm::sign(win.scrollDist) == 1) {
-        pos.y -= scrollCurrAbs;
+      float scrollCurrAbs = glm::abs(win.scrollCurr);
+      float scrollDistAbs = glm::abs(win.scrollDist);
+      float innerWidth = size.x - margins.left - margins.right;
+      float innerHeight = size.y - margins.top - margins.bottom;
+      auto toScroll = scrollDistAbs - scrollCurrAbs;
+      bool scrollPositive = win.scrollDist > 0;
 
-        RegionHandle prevRegion{
-          .pos = {margins.left, margins.top + scrollCurrAbs},
-          .size =
-            {
-              size.x - margins.left - margins.right,
-              scrollDistAbs - scrollCurrAbs,
-            },
-        };
-        win.prevRenderTexture.UpdatePos(pos + prevRegion.pos, prevRegion);
+      RegionHandle prevRegion{
+        .pos =
+          {margins.left, scrollPositive ? margins.top + scrollCurrAbs
+                                        : size.y - margins.bottom - scrollDistAbs},
+        .size = {innerWidth, toScroll},
+      };
+      win.prevRenderTexture.UpdatePos(pos + prevRegion.pos, prevRegion);
 
-        RegionHandle region{
-          .pos = {margins.left, margins.top},
-          .size =
-            {
-              size.x - margins.left - margins.right,
-              size.y - margins.top - margins.bottom - (scrollDistAbs - scrollCurrAbs),
-            },
-        };
-        win.renderTexture.UpdatePos(
-          pos + glm::vec2(0, scrollDistAbs) + region.pos, region
-        );
+      RegionHandle region{
+        .pos = {margins.left, scrollPositive ? margins.top : margins.top + toScroll},
+        .size = {innerWidth, innerHeight - toScroll},
+      };
+      pos += glm::vec2(0, win.scrollDist);
+      win.renderTexture.UpdatePos(pos + region.pos, region);
 
-      } else {
-        pos.y += scrollCurrAbs;
-
-        RegionHandle region{
-          .pos = {margins.left, margins.top + (scrollDistAbs - scrollCurrAbs)},
-          .size =
-            {
-              size.x - margins.left - margins.right,
-              size.y - margins.top - margins.bottom - (scrollDistAbs - scrollCurrAbs),
-            },
-        };
-        win.renderTexture.UpdatePos(
-          pos + glm::vec2(0, -scrollDistAbs) + region.pos, region
-        );
-
-        RegionHandle prevRegion{
-          .pos = {margins.left, size.y - scrollDistAbs - margins.bottom},
-          .size =
-            {
-              size.x - margins.left - margins.right,
-              scrollDistAbs - scrollCurrAbs,
-            },
-        };
-        win.prevRenderTexture.UpdatePos(pos + prevRegion.pos, prevRegion);
-      }
-
-      auto maskPos = (pos + glm::vec2(0, win.scrollDist)) * sizes.dpiScale;
+      auto maskPos = pos * sizes.dpiScale;
       ctx.queue.WriteBuffer(win.maskPosBuffer, 0, &maskPos, sizeof(glm::vec2));
     }
   }

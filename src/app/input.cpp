@@ -5,7 +5,6 @@
 #include "editor/window.hpp"
 #include <algorithm>
 #include <set>
-#include <tuple>
 
 InputHandler::InputHandler(Nvim& nvim, WinManager& winManager)
     : nvim(nvim), winManager(winManager) {
@@ -34,7 +33,7 @@ void InputHandler::HandleKeyboard(const SDL_KeyboardEvent& event) {
     // 3. only mod keys are pressed
     if ((isText && (!mod || onlyShift)) || onlyMod) return;
 
-    if (!options.macOptAsAlt && (mod & SDL_KMOD_ALT) && isText) return;
+    if (!appOpts.macOptAsAlt && (mod & SDL_KMOD_ALT) && isText) return;
 
     std::string keyName = SDL_GetKeyName(key);
     if (keyName.empty()) return;
@@ -56,7 +55,7 @@ void InputHandler::HandleKeyboard(const SDL_KeyboardEvent& event) {
 }
 
 void InputHandler::HandleTextInput(const SDL_TextInputEvent& event) {
-  if (options.macOptAsAlt && (mod & SDL_KMOD_ALT)) return;
+  if (appOpts.macOptAsAlt && (mod & SDL_KMOD_ALT)) return;
 
   std::string inputStr = event.text;
   if (inputStr == " ") return;
@@ -113,6 +112,7 @@ void InputHandler::HandleMouseButtonAndMotion(int state, glm::vec2 mousePos) {
   } else {
     info = winManager.GetMouseInfo(*currGrid, mousePos);
   }
+  if (!appOpts.multigrid) info.grid = 0;
 
   nvim.InputMouse(buttonStr, actionStr, modStr, info.grid, info.row, info.col);
 }
@@ -131,6 +131,7 @@ void InputHandler::HandleMouseWheel(const SDL_MouseWheelEvent& event) {
   } else {
     info = winManager.GetMouseInfo(*currGrid, mousePos);
   }
+  if (!appOpts.multigrid) info.grid = 0;
 
   double scrollSpeed = 1;
   double scrollUnit = 1 / scrollSpeed;

@@ -1,4 +1,5 @@
 #include "window_sdl.hpp"
+#include "app/options.hpp"
 #include "utils/logger.hpp"
 
 namespace sdl {
@@ -13,7 +14,10 @@ Window::Window(
   }
 
   // window ---------------------------------
-  int flags = SDL_WINDOW_HIGH_PIXEL_DENSITY | SDL_WINDOW_RESIZABLE | SDL_WINDOW_TRANSPARENT;
+  int flags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_TRANSPARENT;
+  if (appOpts.highDpi) flags |= SDL_WINDOW_HIGH_PIXEL_DENSITY;
+  if (appOpts.borderless) flags |= SDL_WINDOW_BORDERLESS;
+
   window = SDL_CreateWindow(title.c_str(), size.x, size.y, flags);
   if (window == nullptr) {
     LOG_ERR("Unable to create window: {}", SDL_GetError());
@@ -32,7 +36,7 @@ Window::Window(
 
   // webgpu ------------------------------------
   _ctx = WGPUContext(window, fbSize, presentMode);
-  LOG_INFO("WGPUContext created with size: {}, {}", fbSize.x, fbSize.y);
+  // LOG_INFO("WGPUContext created with size: {}, {}", fbSize.x, fbSize.y);
 }
 
 Window::~Window() {
