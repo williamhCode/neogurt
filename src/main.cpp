@@ -1,8 +1,8 @@
 #include "GLFW/glfw3.h"
 #include "app/options.hpp"
 #include "app/size.hpp"
-#include "app/window.hpp"
 #include "app/input.hpp"
+#include "app/window_sdl.hpp"
 #include "editor/grid.hpp"
 #include "editor/state.hpp"
 #include "gfx/font.hpp"
@@ -14,34 +14,35 @@
 #include "utils/clock.hpp"
 #include "utils/logger.hpp"
 #include "utils/timer.hpp"
-#include "utils/unicode.hpp"
 
 #include <algorithm>
+#include <vector>
 #include <deque>
+#include <atomic>
 #include <iostream>
 #include <format>
-#include <atomic>
 #include <chrono>
-#include <vector>
 
 using namespace wgpu;
 using namespace std::chrono_literals;
 using namespace std::chrono;
 
-const WGPUContext& ctx = Window::_ctx;
-AppOptions options;
+const WGPUContext& ctx = sdl::Window::_ctx;
+AppOptions appOpts;
 
 int main() {
-  // ─	━	│	┃	┄	┅	┆	┇	┈	┉	┊ ┋
-  // ┌	┍	┎	┏  LOG_INFO("{}", UTF8ToUnicode(""));
+  appOpts = {
+    .multigrid = true,
+    .vsync = true,
+    .highDpi = true,
+    .windowMargins = {5, 5, 5, 5},
+    .borderless = false,
+  };
 
-  auto presentMode = options.vsync ? PresentMode::Mailbox : PresentMode::Immediate;
-  Window window({1600, 1000}, "Neovim GUI", presentMode);
+  auto presentMode = appOpts.vsync ? PresentMode::Mailbox : PresentMode::Immediate;
+  sdl::Window window({1600, 1000}, "Neovim GUI", presentMode);
+
   Font font("/Library/Fonts/SF-Mono-Medium.otf", 15, window.dpiScale);
-  // font = Font("/Library/Fonts/SF-Mono-Medium.otf", 18, window.dpiScale);
-  // Font font(ROOT_DIR "/res/Hack/HackNerdFont-Regular.ttf", 18, window.dpiScale);
-  // Font font(ROOT_DIR "/res/JetBrainsMono/JetBrainsMonoNerdFont-Regular.ttf", 18,
-  // window.dpiScale);
 
   SizeHandler sizes;
   sizes.UpdateSizes(window.size, window.dpiScale, font.charSize);
@@ -53,7 +54,7 @@ int main() {
     sizes.uiWidth, sizes.uiHeight,
     {
       {"rgb", true},
-      {"ext_multigrid", options.multigrid},
+      {"ext_multigrid", appOpts.multigrid},
       {"ext_linegrid", true},
     }
   );
@@ -67,72 +68,30 @@ int main() {
   // lock whenever ctx.device is used
   std::mutex wgpuDeviceMutex;
 
-  // input -----------------------------------------------------------
-  InputHandler input(nvim, editorState.winManager, window.GetCursorPos());
-
-  window.keyCallback = [&](int key, int scancode, int action, int mods) {
-    input.HandleKey(key, scancode, action, mods);
-  };
-
-  window.charCallback = [&](unsigned int codepoint) {
-    input.HandleChar(codepoint);
-  };
-
-  window.mouseButtonCallback = [&](int button, int action, int mods) {
-    input.HandleMouseButton(button, action, mods);
-  };
-
-  window.cursorPosCallback = [&](double xpos, double ypos) {
-    input.HandleCursorPos(xpos, ypos);
-  };
-
-  window.scrollCallback = [&](double xoffset, double yoffset) {
-    input.HandleScroll(xoffset, yoffset);
-  };
-
-  // resizing and dpi changed -------------------------------------
-  window.framebufferSizeCallback = [&](int /* width */, int /* height */) {
-    std::scoped_lock lock(wgpuDeviceMutex);
-    glm::vec2 size(window.fbSize / (unsigned int)window.dpiScale);
-    sizes.UpdateSizes(size, window.dpiScale, font.charSize);
-
-    Window::_ctx.Resize(sizes.fbSize);
-    renderer.Resize(sizes);
-
-    nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight);
-  };
-
-  window.windowContentScaleCallback = [&](float /* xscale */, float /* yscale */) {
-    std::scoped_lock lock(wgpuDeviceMutex);
-    font = Font("/Library/Fonts/SF-Mono-Medium.otf", 15, window.dpiScale);
-    editorState.cursor.fullSize = font.charSize;
-  };
-
   // main thread -----------------------------------
-  std::atomic_bool windowShouldClose = false;
-
-  window.windowCloseCallback = [&] {
-    windowShouldClose = true;
-  };
+  std::atomic_bool exitWindow = false;
+  std::atomic_bool inactive = false;
 
   std::thread renderThread([&] {
     Clock clock;
     Timer timer(30);
 
-    while (!windowShouldClose) {
+    float inactiveTime = 10;
+    float inactiveElasped = 0;
+
+    while (!exitWindow) {
       auto dt = clock.Tick(60);
       // LOG("dt: {}", dt);
 
       // auto fps = clock.GetFps();
       // auto fpsStr = std::format("fps: {:.2f}", fps);
       // std::cout << '\r' << fpsStr << std::string(10, ' ') << std::flush;
-      // std::cout << fpsStr << std::string(10, ' ') << '\n';
 
       // timer.Start();
 
       // nvim events -------------------------------------------
       if (!nvim.client.IsConnected()) {
-        windowShouldClose = true;
+        exitWindow = true;
         glfwPostEmptyEvent();
       };
 
@@ -141,7 +100,10 @@ int main() {
       // process events ---------------------------------------
       {
         std::scoped_lock lock(wgpuDeviceMutex);
-        ProcessRedrawEvents(nvim.redrawState, editorState);
+        if (ProcessRedrawEvents(nvim.redrawState, editorState)) {
+          inactive = false;
+          inactiveElasped = 0;
+        }
       }
 
       // update ----------------------------------------------
@@ -156,10 +118,9 @@ int main() {
           sizes.offset;
         editorState.cursor.SetDestPos(cursorPos);
 
-        editorState.cursor.offset =
-          win->scrolling
-          ? glm::vec2(0, win->scrollDist - win->scrollCurr)
-          : glm::vec2(0);
+        editorState.cursor.winOffset =
+          win->scrolling ? glm::vec2(0, win->scrollDist - win->scrollCurr)
+                         : glm::vec2(0);
 
         currMaskBG = win->maskBG;
       }
@@ -169,11 +130,19 @@ int main() {
       editorState.winManager.UpdateScrolling(dt);
 
       // render ----------------------------------------------
+
       if (auto hlIter = editorState.hlTable.find(0);
           hlIter != editorState.hlTable.end()) {
         renderer.SetClearColor(hlIter->second.background.value());
+        // renderer.SetClearColor({1, 0.7, 0.8, 0.5});
       }
 
+      if (inactive) continue;
+      inactiveElasped += dt;
+      if (inactiveElasped >= inactiveTime || !window.focused) {
+        inactive = true;
+        editorState.cursor.blinkState = BlinkState::On;
+      }
       {
         std::scoped_lock lock(wgpuDeviceMutex);
         renderer.Begin();
@@ -212,9 +181,9 @@ int main() {
           std::ranges::reverse(floatingWindows);
 
           // sort floating windows by zindex
-          // std::ranges::sort(floatingWindows, [](const Win* win, const Win* other) {
-          //   return win->floatData->zindex < other->floatData->zindex;
-          // });
+          std::ranges::sort(floatingWindows, [](const Win* win, const Win* other) {
+            return win->floatData->zindex < other->floatData->zindex;
+          });
 
           windows.insert(windows.end(), floatingWindows.begin(), floatingWindows.end());
           renderer.RenderWindows(windows);
@@ -238,9 +207,85 @@ int main() {
     }
   });
 
-  while (!windowShouldClose) {
-    window.WaitEvents();
-    std::this_thread::sleep_for(1ms);
+  InputHandler input(nvim, editorState.winManager);
+
+  SDL_Rect rect{0, 0, 100, 100};
+
+  SDL_StartTextInput();
+  SDL_SetTextInputRect(&rect);
+
+  // resize handling
+  window.AddEventWatch([&](SDL_Event& event) {
+    switch (event.type) {
+      case SDL_EVENT_WINDOW_RESIZED:
+        window.size = {event.window.data1, event.window.data2};
+        break;
+      case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: {
+        window.fbSize = {event.window.data1, event.window.data2};
+        window.dpiScale = SDL_GetWindowPixelDensity(window.window);
+
+        std::scoped_lock lock(wgpuDeviceMutex);
+        sizes.UpdateSizes(window.size, window.dpiScale, font.charSize);
+
+        sdl::Window::_ctx.Resize(sizes.fbSize);
+        renderer.Resize(sizes);
+        nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight);
+        break;
+      }
+      case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED: {
+        std::scoped_lock lock(wgpuDeviceMutex);
+        font = Font("/Library/Fonts/SF-Mono-Medium.otf", 15, window.dpiScale);
+        editorState.cursor.fullSize = font.charSize;
+        break;
+      }
+    }
+  });
+
+  SDL_Event event;
+  while (!exitWindow) {
+    auto success = SDL_WaitEvent(&event);
+    if (!success) {
+      LOG_ERR("SDL_WaitEvent error: {}", SDL_GetError());
+    }
+
+    switch (event.type) {
+      case SDL_EVENT_QUIT:
+        exitWindow = true;
+        break;
+
+      // keyboard handling ----------------------
+      case SDL_EVENT_KEY_DOWN:
+      case SDL_EVENT_KEY_UP:
+        input.HandleKeyboard(event.key);
+        break;
+      case SDL_EVENT_TEXT_EDITING:
+        break;
+      case SDL_EVENT_TEXT_INPUT:
+        input.HandleTextInput(event.text);
+        break;
+
+      // mouse handling ------------------------
+      case SDL_EVENT_MOUSE_BUTTON_DOWN:
+      case SDL_EVENT_MOUSE_BUTTON_UP:
+        input.HandleMouseButton(event.button);
+        break;
+      case SDL_EVENT_MOUSE_MOTION:
+        input.HandleMouseMotion(event.motion);
+        break;
+      case SDL_EVENT_MOUSE_WHEEL:
+        input.HandleMouseWheel(event.wheel);
+        break;
+
+      // window handling -----------------------
+      case SDL_EVENT_WINDOW_FOCUS_GAINED:
+        window.focused = true;
+        break;
+      case SDL_EVENT_WINDOW_FOCUS_LOST:
+        window.focused = false;
+        break;
+    }
+
+    // std::this_thread::sleep_for(1ms);
   }
 
   renderThread.join();

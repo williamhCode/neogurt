@@ -265,62 +265,33 @@ void WinManager::UpdateScrolling(float dt) {
 
       float t = win.scrollElapsed / win.scrollTime;
       float x = glm::pow(t, 1 / 2.8f);
-      float scrollCurrAbs = glm::mix(0.0f, glm::abs(win.scrollDist), x);
-      win.scrollCurr = glm::sign(win.scrollDist) * scrollCurrAbs;
-      auto scrollDistAbs = glm::abs(win.scrollDist);
+      win.scrollCurr =
+        glm::sign(win.scrollDist) * glm::mix(0.0f, glm::abs(win.scrollDist), x);
+      pos.y -= win.scrollCurr;
 
-      if (glm::sign(win.scrollDist) == 1) {
-        pos.y -= scrollCurrAbs;
+      float scrollCurrAbs = glm::abs(win.scrollCurr);
+      float scrollDistAbs = glm::abs(win.scrollDist);
+      float innerWidth = size.x - margins.left - margins.right;
+      float innerHeight = size.y - margins.top - margins.bottom;
+      auto toScroll = scrollDistAbs - scrollCurrAbs;
+      bool scrollPositive = win.scrollDist > 0;
 
-        RegionHandle prevRegion{
-          .pos = {margins.left, margins.top + scrollCurrAbs},
-          .size =
-            {
-              size.x - margins.left - margins.right,
-              scrollDistAbs - scrollCurrAbs,
-            },
-        };
-        win.prevRenderTexture.UpdatePos(pos + prevRegion.pos, prevRegion);
+      RegionHandle prevRegion{
+        .pos =
+          {margins.left, scrollPositive ? margins.top + scrollCurrAbs
+                                        : size.y - margins.bottom - scrollDistAbs},
+        .size = {innerWidth, toScroll},
+      };
+      win.prevRenderTexture.UpdatePos(pos + prevRegion.pos, prevRegion);
 
-        RegionHandle region{
-          .pos = {margins.left, margins.top},
-          .size =
-            {
-              size.x - margins.left - margins.right,
-              size.y - margins.top - margins.bottom - (scrollDistAbs - scrollCurrAbs),
-            },
-        };
-        win.renderTexture.UpdatePos(
-          pos + glm::vec2(0, scrollDistAbs) + region.pos, region
-        );
+      RegionHandle region{
+        .pos = {margins.left, scrollPositive ? margins.top : margins.top + toScroll},
+        .size = {innerWidth, innerHeight - toScroll},
+      };
+      pos += glm::vec2(0, win.scrollDist);
+      win.renderTexture.UpdatePos(pos + region.pos, region);
 
-      } else {
-        pos.y += scrollCurrAbs;
-
-        RegionHandle region{
-          .pos = {margins.left, margins.top + (scrollDistAbs - scrollCurrAbs)},
-          .size =
-            {
-              size.x - margins.left - margins.right,
-              size.y - margins.top - margins.bottom - (scrollDistAbs - scrollCurrAbs),
-            },
-        };
-        win.renderTexture.UpdatePos(
-          pos + glm::vec2(0, -scrollDistAbs) + region.pos, region
-        );
-
-        RegionHandle prevRegion{
-          .pos = {margins.left, size.y - scrollDistAbs - margins.bottom},
-          .size =
-            {
-              size.x - margins.left - margins.right,
-              scrollDistAbs - scrollCurrAbs,
-            },
-        };
-        win.prevRenderTexture.UpdatePos(pos + prevRegion.pos, prevRegion);
-      }
-
-      auto maskPos = (pos + glm::vec2(0, win.scrollDist)) * sizes.dpiScale;
+      auto maskPos = pos * sizes.dpiScale;
       ctx.queue.WriteBuffer(win.maskPosBuffer, 0, &maskPos, sizeof(glm::vec2));
     }
   }
@@ -385,10 +356,10 @@ Win* WinManager::GetActiveWin() {
   return &it->second;
 }
 
-MouseInfo WinManager::GetMouseInfo(glm::vec2 cursorPos) {
-  cursorPos -= sizes.offset;
-  int globalRow = cursorPos.y / sizes.charSize.y;
-  int globalCol = cursorPos.x / sizes.charSize.x;
+MouseInfo WinManager::GetMouseInfo(glm::vec2 mousePos) {
+  mousePos -= sizes.offset;
+  int globalRow = mousePos.y / sizes.charSize.y;
+  int globalCol = mousePos.x / sizes.charSize.x;
 
   std::vector<std::pair<int, const Win*>> sortedWins;
   for (auto& [id, win] : windows) {
@@ -425,12 +396,12 @@ MouseInfo WinManager::GetMouseInfo(glm::vec2 cursorPos) {
   return {grid, row, col};
 }
 
-MouseInfo WinManager::GetMouseInfo(int grid, glm::vec2 cursorPos) {
+MouseInfo WinManager::GetMouseInfo(int grid, glm::vec2 mousePos) {
   auto& win = windows.at(grid);
 
-  cursorPos -= sizes.offset;
-  int globalRow = cursorPos.y / sizes.charSize.y;
-  int globalCol = cursorPos.x / sizes.charSize.x;
+  mousePos -= sizes.offset;
+  int globalRow = mousePos.y / sizes.charSize.y;
+  int globalCol = mousePos.x / sizes.charSize.x;
 
   int row = std::max(globalRow - win.startRow, 0);
   int col = std::max(globalCol - win.startCol, 0);

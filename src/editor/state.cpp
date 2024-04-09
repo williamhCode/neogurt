@@ -13,7 +13,8 @@ static auto IntToColor(uint32_t color) {
   );
 };
 
-void ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
+bool ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
+  bool processedEvents = redrawState.numFlushes > 0;
   for (int i = 0; i < redrawState.numFlushes; i++) {
     auto& redrawEvents = redrawState.eventsQueue.front();
     // to process grid events first then window
@@ -128,6 +129,9 @@ void ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
           // editorState.hlGroupTable.emplace(e.id, e.name);
         },
         [&](Flush&) {
+          if (redrawEvents.size() <= 1 && redrawState.numFlushes == 1) {
+            processedEvents = false;
+          }
           // process grid and window events
           for (auto *event : gridEvents) {
             std::visit(overloaded{
@@ -252,4 +256,6 @@ void ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
     }
     redrawState.eventsQueue.pop_front();
   }
+
+  return processedEvents;
 }

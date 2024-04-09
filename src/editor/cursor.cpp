@@ -4,8 +4,8 @@
 #include "utils/logger.hpp"
 #include "utils/region.hpp"
 
-void Cursor::SetDestPos(glm::vec2 _destPos) {
-  if (_destPos == destPos) return;
+bool Cursor::SetDestPos(glm::vec2 _destPos) {
+  if (_destPos == destPos) return false;
 
   destPos = _destPos;
   startPos = pos;
@@ -15,6 +15,8 @@ void Cursor::SetDestPos(glm::vec2 _destPos) {
     blinkState = BlinkState::Wait;
     blinkElasped = 0.0;
   }
+
+  return true;
 }
 
 void Cursor::SetMode(ModeInfo* _modeInfo) {

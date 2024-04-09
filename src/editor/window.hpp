@@ -130,6 +130,6 @@ struct WinManager {
   int activeWinId = 0;
   Win* GetActiveWin();
 
-  MouseInfo GetMouseInfo(glm::vec2 cursorPos);
-  MouseInfo GetMouseInfo(int grid, glm::vec2 cursorPos);
+  MouseInfo GetMouseInfo(glm::vec2 mousePos);
+  MouseInfo GetMouseInfo(int grid, glm::vec2 mousePos);
 };

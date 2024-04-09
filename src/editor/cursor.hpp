@@ -36,8 +36,7 @@ struct ModeInfo {
 enum class BlinkState { Wait, On, Off };
 
 struct Cursor {
-  glm::vec2 offset; // window smooth scroll offset
-  
+  glm::vec2 winOffset; // window smooth scroll offset
 
   glm::vec2 startPos;
   glm::vec2 destPos;
@@ -60,7 +59,7 @@ struct Cursor {
 
   wgpu::BindGroup currMaskBG;
 
-  void SetDestPos(glm::vec2 destPos);
+  bool SetDestPos(glm::vec2 destPos);
   void SetMode(ModeInfo* modeInfo);
   void Update(float dt);
   bool ShouldRender();

@@ -21,7 +21,7 @@ AllowShortFunctionsOnASingleLine: None
 AllowShortIfStatementsOnASingleLine: WithoutElse
 # PenaltyReturnTypeOnItsOwnLine: 10000
 AlwaysBreakTemplateDeclarations: Yes
-AllowShortCaseLabelsOnASingleLine: true
+# AllowShortCaseLabelsOnASingleLine: true
 ...
 
 

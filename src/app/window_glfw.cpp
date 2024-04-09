@@ -1,5 +1,7 @@
-#include "window.hpp"
+#include "window_glfw.hpp"
 #include "utils/logger.hpp"
+
+namespace glfw {
 
 static void
 KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
@@ -140,3 +142,5 @@ glm::vec2 Window::GetCursorPos() {
   glfwGetCursorPos(window, &xpos, &ypos);
   return {xpos, ypos};
 }
+
+} // namespace glfw

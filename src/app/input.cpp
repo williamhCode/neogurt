@@ -1,172 +1,146 @@
 #include "input.hpp"
 
-#include "GLFW/glfw3.h"
-#include <optional>
-#include <unordered_map>
+#include "SDL_events.h"
 #include "app/options.hpp"
 #include "editor/window.hpp"
-#include "utils/unicode.hpp"
+#include <algorithm>
+#include <set>
 
-InputHandler::InputHandler(Nvim& nvim, WinManager& winManager, glm::vec2 cursorPos)
-    : nvim(nvim), winManager(winManager), cursorPos(cursorPos) {
+InputHandler::InputHandler(Nvim& nvim, WinManager& winManager)
+    : nvim(nvim), winManager(winManager) {
 }
 
-// clang-format off
-const std::unordered_map<int, std::string> specialKeys{
-  {GLFW_KEY_SPACE, "Space"},
-  {GLFW_KEY_UP, "Up"},
-  {GLFW_KEY_DOWN, "Down"},
-  {GLFW_KEY_LEFT, "Left"},
-  {GLFW_KEY_RIGHT, "Right"},
-  {GLFW_KEY_BACKSPACE, "BS"},
-  {GLFW_KEY_DELETE, "Del"},
-  {GLFW_KEY_END, "End"},
-  {GLFW_KEY_ENTER, "CR"},
-  {GLFW_KEY_ESCAPE, "ESC"},
-  {GLFW_KEY_TAB, "Tab"},
-  {GLFW_KEY_F1, "F1"},
-  {GLFW_KEY_F2, "F2"},
-  {GLFW_KEY_F3, "F3"},
-  {GLFW_KEY_F4, "F4"},
-  {GLFW_KEY_F5, "F5"},
-  {GLFW_KEY_F6, "F6"},
-  {GLFW_KEY_F7, "F7"},
-  {GLFW_KEY_F8, "F8"},
-  {GLFW_KEY_F9, "F9"},
-  {GLFW_KEY_F10, "F10"},
-  {GLFW_KEY_F11, "F11"},
-  {GLFW_KEY_F12, "F12"},
-  {GLFW_KEY_HOME, "Home"},
-  {GLFW_KEY_INSERT, "Insert"},
-  {GLFW_KEY_PAGE_UP, "PageUp"},
-  {GLFW_KEY_PAGE_DOWN, "PageDown"},
-  {GLFW_KEY_KP_ENTER, "kEnter"},
+const std::set<SDL_Keycode> specialKeys{
+  SDLK_SPACE,  SDLK_UP,     SDLK_DOWN,     SDLK_LEFT,     SDLK_RIGHT, SDLK_BACKSPACE,
+  SDLK_DELETE, SDLK_END,    SDLK_RETURN,   SDLK_ESCAPE,   SDLK_TAB,   SDLK_F1,
+  SDLK_F2,     SDLK_F3,     SDLK_F4,       SDLK_F5,       SDLK_F6,    SDLK_F7,
+  SDLK_F8,     SDLK_F9,     SDLK_F10,      SDLK_F11,      SDLK_F12,   SDLK_HOME,
+  SDLK_INSERT, SDLK_PAGEUP, SDLK_PAGEDOWN, SDLK_KP_ENTER,
 };
-// clang-format on
 
-void InputHandler::HandleKey(int key, int /* scancode */, int action, int _mods) {
-  mods = _mods;
+void InputHandler::HandleKeyboard(const SDL_KeyboardEvent& event) {
+  auto key = event.keysym.sym;
+  mod = (SDL_Keymod)event.keysym.mod;
 
-  // auto name = glfwGetKeyName(key, 0);
-  // LOG_INFO("key: {}", name ? name : "null");
-  if (action == GLFW_PRESS || action == GLFW_REPEAT) {
-    bool isSpecialKey =
-      (key >= GLFW_KEY_ESCAPE && key < GLFW_KEY_LEFT_SHIFT) || key == GLFW_KEY_SPACE;
-    bool onlyMod = key >= GLFW_KEY_LEFT_SHIFT && key <= GLFW_KEY_RIGHT_SUPER;
-    bool onlyShift = (mods ^ GLFW_MOD_SHIFT) == 0;
-    if ((!mods && !isSpecialKey) || onlyMod || (onlyShift && !isSpecialKey)) return;
-    // don't process keys when options pressed if not using opt as alt
-    if (!options.macOptAsAlt && (mods & GLFW_MOD_ALT) && !isSpecialKey) return;
+  if (event.state == SDL_PRESSED) {
+    bool isText = !specialKeys.contains(key);
+    bool onlyShift = (mod ^ SDL_KMOD_LSHIFT) == 0 || (mod ^ SDL_KMOD_RSHIFT) == 0;
+    bool onlyMod = key >= SDLK_LCTRL && key <= SDLK_RGUI;
 
-    auto keyName = isSpecialKey ? specialKeys.at(key) : glfwGetKeyName(key, 0);
+    // dont process keys if
+    // 1. is text with no mod keys
+    // 2. is text with only shift mod
+    // 3. only mod keys are pressed
+    if ((isText && (!mod || onlyShift)) || onlyMod) return;
+
+    if (!appOpts.macOptAsAlt && (mod & SDL_KMOD_ALT) && isText) return;
+
+    std::string keyName = SDL_GetKeyName(key);
     if (keyName.empty()) return;
 
+    std::ranges::transform(keyName, keyName.begin(), [](unsigned char c) {
+      return std::tolower(c);
+    });
+
     std::string inputStr = "<";
-    if (mods & GLFW_MOD_CONTROL) inputStr += "C-";
-    if (mods & GLFW_MOD_ALT) inputStr += "M-";
-    if (mods & GLFW_MOD_SUPER) inputStr += "D-";
-    if (mods & GLFW_MOD_SHIFT) inputStr += "S-";
+    if (mod & SDL_KMOD_CTRL) inputStr += "C-";
+    if (mod & SDL_KMOD_ALT) inputStr += "M-";
+    if (mod & SDL_KMOD_GUI) inputStr += "D-";
+    if (mod & SDL_KMOD_SHIFT) inputStr += "S-";
     inputStr += keyName + ">";
+
+    // LOG_INFO("inputStr: {}", inputStr);
     nvim.Input(inputStr);
   }
 }
 
-void InputHandler::HandleChar(unsigned int codepoint) {
-  // auto testStr = UnicodeToUTF8(codepoint);
-  // LOG_INFO("testStr: {}", testStr);
+void InputHandler::HandleTextInput(const SDL_TextInputEvent& event) {
+  if (appOpts.macOptAsAlt && (mod & SDL_KMOD_ALT)) return;
 
-  // don't process characters when options pressed if using opt as alt
-  if (options.macOptAsAlt && (mods & GLFW_MOD_ALT)) return;
-
-  // handle space in KeyInput
-  if (codepoint == GLFW_KEY_SPACE) return;
-
-  auto inputStr = UnicodeToUTF8(codepoint);
+  std::string inputStr = event.text;
+  if (inputStr == " ") return;
   if (inputStr == "<") inputStr = "<lt>";
+
+  // LOG_INFO("inputStr: {}", inputStr);
   nvim.Input(inputStr);
 }
 
-void InputHandler::HandleMouseButton(int button, int action, int /* mods */) {
-  if (action == GLFW_PRESS) {
-    mouseButton = button;
-  } else if (action == GLFW_RELEASE) {
-    mouseButton = std::nullopt;
-    currGrid = std::nullopt;
+void InputHandler::HandleMouseButton(const SDL_MouseButtonEvent& event) {
+  if (event.state == SDL_PRESSED) {
+    mouseButton = event.button;
+  } else {
+    mouseButton.reset();
+    currGrid.reset();
   }
-
-  HandleMouseButtonAndCursorPos(action);
+  HandleMouseButtonAndMotion(event.state, {event.x, event.y});
 }
 
-void InputHandler::HandleCursorPos(double xpos, double ypos) {
-  cursorPos = {xpos, ypos};
-
-  HandleMouseButtonAndCursorPos(-1);
+void InputHandler::HandleMouseMotion(const SDL_MouseMotionEvent& event) {
+  HandleMouseButtonAndMotion(-1, {event.x, event.y});
 }
 
-void InputHandler::HandleMouseButtonAndCursorPos(int action) {
+void InputHandler::HandleMouseButtonAndMotion(int state, glm::vec2 mousePos) {
   if (!mouseButton.has_value()) return;
 
   int button = *mouseButton;
   std::string buttonStr;
   switch (button) {
-    case GLFW_MOUSE_BUTTON_LEFT: buttonStr = "left"; break;
-    case GLFW_MOUSE_BUTTON_RIGHT: buttonStr = "right"; break;
-    case GLFW_MOUSE_BUTTON_MIDDLE: buttonStr = "middle"; break;
+    case SDL_BUTTON_LEFT: buttonStr = "left"; break;
+    case SDL_BUTTON_MIDDLE: buttonStr = "middle"; break;
+    case SDL_BUTTON_RIGHT: buttonStr = "right"; break;
     default: return;
   }
 
   std::string actionStr;
-  switch (action) {
-    case GLFW_PRESS: actionStr = "press"; break;
-    case GLFW_RELEASE: actionStr = "release"; break;
+  switch (state) {
+    case SDL_PRESSED: actionStr = "press"; break;
+    case SDL_RELEASED: actionStr = "release"; break;
     case -1: actionStr = "drag"; break;
-    default: assert(false);
+    default: return;
   }
 
   std::string modStr;
-  if (mods & GLFW_MOD_CONTROL) modStr += "C-";
-  if (mods & GLFW_MOD_ALT) modStr += "M-";
-  if (mods & GLFW_MOD_SUPER) modStr += "D-";
-  if (mods & GLFW_MOD_SHIFT) modStr += "S-";
+  if (mod & SDL_KMOD_CTRL) modStr += "C-";
+  if (mod & SDL_KMOD_ALT) modStr += "M-";
+  if (mod & SDL_KMOD_GUI) modStr += "D-";
+  if (mod & SDL_KMOD_SHIFT) modStr += "S-";
 
   MouseInfo info;
   if (!currGrid.has_value()) {
-    info = winManager.GetMouseInfo(cursorPos);
+    info = winManager.GetMouseInfo(mousePos);
     currGrid = info.grid;
   } else {
-    info = winManager.GetMouseInfo(*currGrid, cursorPos);
+    info = winManager.GetMouseInfo(*currGrid, mousePos);
   }
-
-  // auto cell = winManager.windows.at(info.grid).grid.lines[info.row][info.col];
-  // LOG_INFO("row: {} col: {}", info.row, info.col);
-  // LOG_INFO("hlGroup: {}", (*hlGroupTable)[cell.hlId]);
-  // LOG_INFO("hlId: {}", cell.hlId);
+  if (!appOpts.multigrid) info.grid = 0;
 
   nvim.InputMouse(buttonStr, actionStr, modStr, info.grid, info.row, info.col);
 }
 
-void InputHandler::HandleScroll(double xoffset, double yoffset) {
+void InputHandler::HandleMouseWheel(const SDL_MouseWheelEvent& event) {
   std::string modStr;
-  if (mods & GLFW_MOD_CONTROL) modStr += "C-";
-  if (mods & GLFW_MOD_ALT) modStr += "M-";
-  if (mods & GLFW_MOD_SUPER) modStr += "D-";
-  if (mods & GLFW_MOD_SHIFT) modStr += "S-";
+  if (mod & SDL_KMOD_CTRL) modStr += "C-";
+  if (mod & SDL_KMOD_ALT) modStr += "M-";
+  if (mod & SDL_KMOD_GUI) modStr += "D-";
+  if (mod & SDL_KMOD_SHIFT) modStr += "S-";
 
   MouseInfo info;
+  glm::vec2 mousePos(event.mouse_x, event.mouse_y);
   if (!currGrid.has_value()) {
-    info = winManager.GetMouseInfo(cursorPos);
+    info = winManager.GetMouseInfo(mousePos);
   } else {
-    info = winManager.GetMouseInfo(*currGrid, cursorPos);
+    info = winManager.GetMouseInfo(*currGrid, mousePos);
   }
+  if (!appOpts.multigrid) info.grid = 0;
 
   double scrollSpeed = 1;
   double scrollUnit = 1 / scrollSpeed;
 
-  double xAbs = std::abs(xoffset);
-  double yAbs = std::abs(yoffset);
+  double yAbs = std::abs(event.y);
+  double xAbs = std::abs(event.x);
 
-  bool ypositive = yoffset > 0;
-  bool xpositive = xoffset > 0;
+  bool ypositive = event.y > 0;
+  bool xpositive = event.x > 0;
 
   if (yAbs > xAbs) {
     xAccum = 0;
@@ -193,7 +167,7 @@ void InputHandler::HandleScroll(double xoffset, double yoffset) {
     xAccum += xAbs;
     xAccum = std::min(xAccum, 100.0);
 
-    std::string actionStr = xpositive ? "left" : "right";
+    std::string actionStr = xpositive ? "right" : "left";
     while (xAccum >= scrollUnit) {
       nvim.InputMouse("wheel", actionStr, modStr, info.grid, info.row, info.col);
       xAccum -= scrollUnit;
