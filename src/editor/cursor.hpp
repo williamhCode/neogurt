@@ -36,7 +36,7 @@ struct ModeInfo {
 enum class BlinkState { Wait, On, Off };
 
 struct Cursor {
-  glm::vec2 winOffset; // window smooth scroll offset
+  glm::vec2 winScrollOffset; // window smooth scroll offset
 
   glm::vec2 startPos;
   glm::vec2 destPos;

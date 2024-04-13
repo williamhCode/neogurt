@@ -58,5 +58,4 @@ struct Renderer {
   void RenderFinalTexture();
   void RenderCursor(const Cursor& cursor, const HlTable& hlTable);
   void End();
-  void Present();
 };

@@ -143,7 +143,7 @@ void Renderer::RenderWindow(Win& win, Font& font, const HlTable& hlTable) {
           textOffset.y - glyphInfo.bearing.y + font.size,
         };
 
-        auto foreground = GetForeground(hlTable, hl);
+        glm::vec4 foreground = GetForeground(hlTable, hl);
         for (size_t i = 0; i < 4; i++) {
           auto& vertex = textData.CurrQuad()[i];
           vertex.position = textQuadPos + font.positions[i];
@@ -238,7 +238,7 @@ void Renderer::RenderCursor(const Cursor& cursor, const HlTable& hlTable) {
   cursorData.ResetCounts();
   for (size_t i = 0; i < 4; i++) {
     auto& vertex = cursorData.CurrQuad()[i];
-    vertex.position = cursor.pos + cursor.winOffset + cursor.corners[i];
+    vertex.position = cursor.pos + cursor.winScrollOffset + cursor.corners[i];
     vertex.foreground = foreground;
     vertex.background = background;
   }
@@ -258,8 +258,4 @@ void Renderer::RenderCursor(const Cursor& cursor, const HlTable& hlTable) {
 void Renderer::End() {
   auto commandBuffer = commandEncoder.Finish();
   ctx.queue.Submit(1, &commandBuffer);
-}
-
-void Renderer::Present() {
-  ctx.swapChain.Present();
 }

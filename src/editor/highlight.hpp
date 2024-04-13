@@ -12,10 +12,6 @@ enum class UnderlineType : uint8_t {
   Underdashed,
 };
 
-struct Highlight;
-
-using HlTable = std::unordered_map<int, Highlight>;
-
 struct Highlight {
   std::optional<glm::vec4> foreground;
   std::optional<glm::vec4> background;
@@ -28,14 +24,8 @@ struct Highlight {
   float bgAlpha = 1; // 0 - 1
 };
 
-inline glm::vec4 GetForeground(const HlTable& table, const Highlight& hl) {
-  return hl.foreground.value_or(table.at(0).foreground.value());
-}
+using HlTable = std::unordered_map<int, Highlight>;
 
-inline glm::vec4 GetBackground(const HlTable& table, const Highlight& hl) {
-  return hl.background.value_or(table.at(0).background.value());
-}
-
-inline glm::vec4 GetSpecial(const HlTable& table, const Highlight& hl) {
-  return hl.special.value_or(table.at(0).special.value());
-}
+glm::vec4 GetForeground(const HlTable& table, const Highlight& hl);
+glm::vec4 GetBackground(const HlTable& table, const Highlight& hl);
+glm::vec4 GetSpecial(const HlTable& table, const Highlight& hl);

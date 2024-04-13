@@ -185,7 +185,7 @@ void WinManager::Hide(const WinHide& e) {
   // auto& win = it->second;
   // win.hidden = true;
 
-  // save memory because tabs get hidden
+  // save memory when tabs get hidden
   auto removed = windows.erase(e.grid);
   if (removed == 0) {
     LOG_ERR("WinManager::Hide: window {} not found", e.grid);

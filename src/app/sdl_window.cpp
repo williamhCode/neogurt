@@ -36,26 +36,8 @@ Window::Window(
   // LOG_INFO("WGPUContext created with size: {}, {}", fbSize.x, fbSize.y);
 }
 
-Window::~Window() {
-  for (auto& [eventFilter, callback] : eventFilters) {
-    SDL_DelEventWatch(eventFilter, &callback);
-  }
-}
-
 SDL_Window* Window::Get() {
   return window.get();
-}
-
-void Window::AddEventWatch(EventFilter&& _callback) {
-  auto& [eventFilter, callback] = eventFilters.emplace_back(
-    [](void* userdata, SDL_Event* event) {
-      auto& callback = *static_cast<EventFilter*>(userdata);
-      callback(*event);
-      return 0;
-    },
-    std::move(_callback)
-  );
-  SDL_AddEventWatch(eventFilter, &callback);
 }
 
 } // namespace sdl

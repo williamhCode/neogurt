@@ -116,7 +116,9 @@ public:
 
   // returns next notification at front of queue
   NotificationData PopNotification() {
-    return msgsIn.Pop();
+    auto msg = std::move(msgsIn.Front());
+    msgsIn.Pop();
+    return msg;
   }
 
   bool HasNotification() {

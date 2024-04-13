@@ -32,12 +32,14 @@ AppOptions appOpts;
 int main() {
   if (SDL_Init(SDL_INIT_VIDEO)) {
     LOG_ERR("Unable to initialize SDL: {}", SDL_GetError());
+    return 1;
   }
 
   try {
     FtInit();
   } catch (const std::exception& e) {
     LOG_ERR("{}", e.what());
+    return 1;
   }
 
   try {
@@ -79,10 +81,11 @@ int main() {
 
     // main thread -----------------------------------
     std::atomic_bool exitWindow = false;
-    std::atomic_bool windowFocused = true;
-    std::atomic_bool idle = false;
 
     std::thread renderThread([&] {
+      bool windowFocused = true;
+      bool idle = false;
+
       Clock clock;
       Timer timer(30);
 
@@ -115,6 +118,23 @@ int main() {
         }
 
         // update ----------------------------------------------
+        while (!sdl::events.Empty()) {
+          auto& event = sdl::events.Front();
+          switch (event.type) {
+            case SDL_EVENT_WINDOW_FOCUS_GAINED:
+              windowFocused = true;
+              idle = false;
+              idleElasped = 0;
+              editorState.cursor.blinkState = BlinkState::Wait;
+              editorState.cursor.blinkElasped = 0;
+              break;
+            case SDL_EVENT_WINDOW_FOCUS_LOST:
+              windowFocused = false;
+              break;
+          }
+          sdl::events.Pop();
+        }
+
         editorState.winManager.UpdateScrolling(dt);
 
         wgpu::BindGroup currMaskBG;
@@ -128,7 +148,7 @@ int main() {
             sizes.offset;
           editorState.cursor.SetDestPos(cursorPos);
 
-          editorState.cursor.winOffset =
+          editorState.cursor.winScrollOffset =
             win->scrolling ? glm::vec2(0, win->scrollDist - win->scrollCurr)
                            : glm::vec2(0);
 
@@ -138,7 +158,6 @@ int main() {
         editorState.cursor.Update(dt);
 
         // render ----------------------------------------------
-
         if (auto hlIter = editorState.hlTable.find(0);
             hlIter != editorState.hlTable.end()) {
           renderer.SetClearColor(hlIter->second.background.value());
@@ -206,8 +225,8 @@ int main() {
           }
 
           renderer.End();
-          renderer.Present();
 
+          ctx.swapChain.Present();
           ctx.device.Tick();
         }
 
@@ -225,14 +244,13 @@ int main() {
     SDL_SetTextInputRect(&rect);
 
     // resize handling
-    window.AddEventWatch([&](SDL_Event& event) {
+    sdl::AddEventWatch([&](SDL_Event& event) {
       switch (event.type) {
         case SDL_EVENT_WINDOW_RESIZED:
           window.size = {event.window.data1, event.window.data2};
           break;
         case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: {
           window.fbSize = {event.window.data1, event.window.data2};
-          window.dpiScale = SDL_GetWindowPixelDensity(window.Get());
 
           std::scoped_lock lock(wgpuDeviceMutex);
           sizes.UpdateSizes(window.size, window.dpiScale, font.charSize);
@@ -244,6 +262,8 @@ int main() {
         }
         case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED: {
           std::scoped_lock lock(wgpuDeviceMutex);
+          window.dpiScale = SDL_GetWindowPixelDensity(window.Get());
+          LOG("display scale changed: {}", window.dpiScale);
           font = Font("/Library/Fonts/SF-Mono-Medium.otf", 15, window.dpiScale);
           editorState.cursor.fullSize = font.charSize;
           break;
@@ -288,11 +308,8 @@ int main() {
 
         // window handling -----------------------
         case SDL_EVENT_WINDOW_FOCUS_GAINED:
-          windowFocused = true;
-          break;
         case SDL_EVENT_WINDOW_FOCUS_LOST:
-          windowFocused = false;
-          break;
+          sdl::events.Push(event);
       }
 
       // std::this_thread::sleep_for(1ms);

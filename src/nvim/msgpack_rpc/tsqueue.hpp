@@ -26,14 +26,12 @@ public:
     return queue.back();
   }
 
-  T Pop() {
+  void Pop() {
     std::scoped_lock lock(mutex);
     if (queue.empty()) {
       throw std::runtime_error("Cannot pop empty queue");
     }
-    auto t = std::move(queue.front());
     queue.pop();
-    return t;
   }
 
   void Push(const T& item) {
