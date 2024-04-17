@@ -99,7 +99,9 @@ void Renderer::SetClearColor(glm::vec4 color) {
 
 void Renderer::Begin() {
   commandEncoder = ctx.device.CreateCommandEncoder();
-  nextTexture = ctx.swapChain.GetCurrentTexture();
+  SurfaceTexture surfaceTexture;
+  ctx.surface.GetCurrentTexture(&surfaceTexture);
+  nextTexture = surfaceTexture.texture;
   nextTextureView = nextTexture.CreateView();
 }
 

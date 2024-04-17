@@ -12,10 +12,10 @@ struct WGPUContext {
   wgpu::Adapter adapter;
   wgpu::Device device;
   wgpu::Queue queue;
-  wgpu::SwapChain swapChain;
 
   glm::uvec2 size;
-  wgpu::TextureFormat swapChainFormat;
+  wgpu::TextureFormat surfaceFormat;
+  wgpu::CompositeAlphaMode alphaMode;
   wgpu::PresentMode presentMode;
 
   Pipeline pipeline;

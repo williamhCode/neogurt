@@ -226,7 +226,7 @@ int main() {
 
           renderer.End();
 
-          ctx.swapChain.Present();
+          ctx.surface.Present();
           ctx.device.Tick();
         }
 

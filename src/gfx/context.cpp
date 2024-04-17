@@ -47,16 +47,22 @@ void WGPUContext::Init() {
 
   queue = device.GetQueue();
 
-  swapChainFormat = TextureFormat::BGRA8Unorm;
+  // auto prefFormat = surface.GetPreferredFormat(adapter);
+  // LOG_INFO("preferred format: {}", (int)prefFormat);
+  surfaceFormat = TextureFormat::BGRA8Unorm;
 
-  SwapChainDescriptor swapChainDesc{
-    .usage = TextureUsage::RenderAttachment,
-    .format = swapChainFormat,
+  // apple doesn't support unpremultiplied alpha
+  alphaMode = CompositeAlphaMode::Premultiplied;
+
+  SurfaceConfiguration surfaceConfig{
+    .device = device,
+    .format = surfaceFormat,
+    .alphaMode = alphaMode,
     .width = size.x,
     .height = size.y,
     .presentMode = presentMode,
   };
-  swapChain = device.CreateSwapChain(surface, &swapChainDesc);
+  surface.Configure(&surfaceConfig);
 
   pipeline = Pipeline(*this);
 }
@@ -64,12 +70,13 @@ void WGPUContext::Init() {
 void WGPUContext::Resize(glm::uvec2 _size) {
   size = _size;
 
-  SwapChainDescriptor swapChainDesc{
-    .usage = TextureUsage::RenderAttachment,
-    .format = swapChainFormat,
+  SurfaceConfiguration surfaceConfig{
+    .device = device,
+    .format = surfaceFormat,
+    .alphaMode = alphaMode,
     .width = size.x,
     .height = size.y,
     .presentMode = presentMode,
   };
-  swapChain = device.CreateSwapChain(surface, &swapChainDesc);
+  surface.Configure(&surfaceConfig);
 }
