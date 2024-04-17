@@ -41,8 +41,8 @@ struct FragmentOutput {
 fn fs_main(in: FragmentInput) -> FragmentOutput {
   var out: FragmentOutput;
 
-  var color = textureSample(fontTexture, fontSampler, in.uv);
-  out.color = in.foreground * color;
+  out.color = textureSample(fontTexture, fontSampler, in.uv);
+  out.color = in.foreground * out.color;
 
   if (out.color.a > 0.0) {
     out.mask = out.color.a;

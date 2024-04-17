@@ -1,6 +1,14 @@
 #include "highlight.hpp"
 #include "utils/logger.hpp"
 
+glm::vec4 GetDefaultBackground(const HlTable& table) {
+  auto it = table.find(0);
+  if (it == table.end()) {
+    return {0, 0, 0, 1};
+  }
+  return it->second.background.value();
+}
+
 glm::vec4 GetForeground(const HlTable& table, const Highlight& hl) {
   return hl.foreground.value_or([&]() {
     auto it = table.find(0);

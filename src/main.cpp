@@ -3,11 +3,13 @@
 #include "app/input.hpp"
 #include "app/sdl_window.hpp"
 #include "editor/grid.hpp"
+#include "editor/highlight.hpp"
 #include "editor/state.hpp"
 #include "gfx/font.hpp"
 #include "gfx/instance.hpp"
 #include "gfx/renderer.hpp"
 #include "glm/ext/vector_float2.hpp"
+#include "glm/gtx/string_cast.hpp"
 #include "nvim/msgpack_rpc/client.hpp"
 #include "nvim/nvim.hpp"
 #include "utils/clock.hpp"
@@ -48,6 +50,7 @@ int main() {
       .vsync = true,
       .windowMargins{5, 5, 5, 5},
       .borderless = false,
+      .transparency = 0.9,
     };
 
     auto presentMode = appOpts.vsync ? PresentMode::Mailbox : PresentMode::Immediate;
@@ -65,7 +68,7 @@ int main() {
       sizes.uiWidth, sizes.uiHeight,
       {
         {"rgb", true},
-        {"ext_multigrid", appOpts.multigrid},
+        // {"ext_multigrid", appOpts.multigrid},
         {"ext_linegrid", true},
       }
     );
@@ -158,10 +161,14 @@ int main() {
         editorState.cursor.Update(dt);
 
         // render ----------------------------------------------
+        // auto color = GetDefaultBackground(editorState.hlTable);
+        // color.a = 0.5;
+        // renderer.SetClearColor(color);
         if (auto hlIter = editorState.hlTable.find(0);
             hlIter != editorState.hlTable.end()) {
-          renderer.SetClearColor(hlIter->second.background.value());
-          // renderer.SetClearColor({1, 0.7, 0.8, 0.5});
+          auto color = hlIter->second.background.value();
+          color.a = appOpts.transparency;
+          renderer.SetClearColor(color);
         }
 
         if (idle) continue;
@@ -174,7 +181,8 @@ int main() {
           std::scoped_lock lock(wgpuDeviceMutex);
           renderer.Begin();
 
-          bool renderWindows = false;
+          // bool renderWindows = false;
+          bool renderWindows = true;
           for (auto& [id, win] : editorState.winManager.windows) {
             if (win.grid.dirty) {
               renderer.RenderWindow(win, font, editorState.hlTable);
@@ -189,6 +197,7 @@ int main() {
             std::deque<const Win*> windows;
             std::vector<const Win*> floatingWindows;
             for (auto& [id, win] : editorState.winManager.windows) {
+              if (id == 1) continue;
               if (id == editorState.winManager.msgWinId) {
                 windows.push_front(&win);
               } else if (!win.hidden) {

@@ -23,19 +23,13 @@ fn vs_main(in: VertexInput) -> VertexOutput {
   return out;
 }
 
-struct FragmentInput {
-  @builtin(position) position: vec4f,
-  @location(0) foreground: vec4f,
-  @location(1) background: vec4f,
-}
-
 @group(1) @binding(0) var maskTexture: texture_2d<f32>;
 @group(1) @binding(1) var<uniform> maskPos: vec2f;
 
 @group(2) @binding(0) var<uniform> offsetPos: vec2f;
 
 @fragment
-fn fs_main(in: FragmentInput) -> @location(0) vec4f {
+fn fs_main(in: VertexOutput) -> @location(0) vec4f {
   let mask = textureLoad(maskTexture, vec2u(in.position.xy - offsetPos - maskPos), 0).r;
 
   var color = in.background;

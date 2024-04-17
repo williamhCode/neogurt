@@ -26,6 +26,7 @@ struct Highlight {
 
 using HlTable = std::unordered_map<int, Highlight>;
 
+glm::vec4 GetDefaultBackground(const HlTable& table);
 glm::vec4 GetForeground(const HlTable& table, const Highlight& hl);
 glm::vec4 GetBackground(const HlTable& table, const Highlight& hl);
 glm::vec4 GetSpecial(const HlTable& table, const Highlight& hl);

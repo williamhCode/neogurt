@@ -28,4 +28,3 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
   let color = textureSample(texture, textureSampler, uv);
   return color;
 }
-

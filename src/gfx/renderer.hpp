@@ -19,6 +19,7 @@ concept RangeOf =
 
 struct Renderer {
   wgpu::Color clearColor;
+  wgpu::Color premultClearColor;
   wgpu::CommandEncoder commandEncoder;
   wgpu::Texture nextTexture;
   wgpu::TextureView nextTextureView;

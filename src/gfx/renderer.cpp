@@ -3,13 +3,17 @@
 #include "editor/window.hpp"
 #include "gfx/instance.hpp"
 #include "gfx/pipeline.hpp"
+#include "glm/gtx/string_cast.hpp"
+#include "utils/region.hpp"
 #include "utils/unicode.hpp"
+#include "utils/color.hpp"
+#include "webgpu_tools/utils/webgpu.hpp"
 #include <utility>
 
 using namespace wgpu;
 
 Renderer::Renderer(const SizeHandler& sizes) {
-  clearColor = {0.0, 0.0, 0.0, 1.0};
+  clearColor = {0.0, 0.0, 0.0, 0.0};
 
   // shared
   camera = Ortho2D(sizes.size);
@@ -43,8 +47,10 @@ Renderer::Renderer(const SizeHandler& sizes) {
   windowsRPD = utils::RenderPassDescriptor({
     RenderPassColorAttachment{
       .view = finalRenderTexture.textureView,
-      .loadOp = LoadOp::Load,
+      .loadOp = LoadOp::Clear,
       .storeOp = StoreOp::Store,
+      .clearValue = {0.0, 0.0, 0.0, 0.0},
+      // blending to color (0, 0, 0, 0) results in premultiplied texture
     },
   });
 
@@ -82,19 +88,14 @@ void Renderer::Resize(const SizeHandler& sizes) {
   finalRenderTexture =
     RenderTexture(sizes.uiSize, sizes.dpiScale, TextureFormat::BGRA8Unorm);
   finalRenderTexture.UpdatePos(sizes.offset);
-  windowsRPD = utils::RenderPassDescriptor({
-    RenderPassColorAttachment{
-      .view = finalRenderTexture.textureView,
-      .loadOp = LoadOp::Load,
-      .storeOp = StoreOp::Store,
-    },
-  });
+  windowsRPD.cColorAttachments[0].view = finalRenderTexture.textureView;
 
   ctx.queue.WriteBuffer(maskOffsetBuffer, 0, &sizes.fbOffset, sizeof(glm::vec2));
 }
 
 void Renderer::SetClearColor(glm::vec4 color) {
-  clearColor = {color.r, color.g, color.b, color.a};
+  clearColor = ToWGPUColor(color);
+  premultClearColor = ToWGPUColor(PremultiplyAlpha(color));
 }
 
 void Renderer::Begin() {
@@ -220,10 +221,9 @@ template void Renderer::RenderWindows(const std::deque<const Win*>& windows);
 
 void Renderer::RenderFinalTexture() {
   finalRPD.cColorAttachments[0].view = nextTextureView;
-  finalRPD.cColorAttachments[0].clearValue = clearColor;
-  // finalRPD.cColorAttachments[0].clearValue = {0.0, 0.0, 0.0, 0.0};
+  finalRPD.cColorAttachments[0].clearValue = premultClearColor;
   auto passEncoder = commandEncoder.BeginRenderPass(&finalRPD);
-  passEncoder.SetPipeline(ctx.pipeline.textureRPL);
+  passEncoder.SetPipeline(ctx.pipeline.finalTextureRPL);
   passEncoder.SetBindGroup(0, camera.viewProjBG);
   passEncoder.SetBindGroup(1, finalRenderTexture.textureBG);
   finalRenderTexture.renderData.Render(passEncoder);

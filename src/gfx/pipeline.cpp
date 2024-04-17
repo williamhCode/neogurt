@@ -148,6 +148,33 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
     }),
   }));
 
+  finalTextureRPL = ctx.device.CreateRenderPipeline(ToPtr(RenderPipelineDescriptor{
+    .layout = utils::MakePipelineLayout(
+      ctx.device,
+      {
+        viewProjBGL,
+        textureBGL,
+      }
+    ),
+    .vertex = VertexState{
+      .module = textureShader,
+      .entryPoint = "vs_main",
+      .bufferCount = 1,
+      .buffers = &textureQuadVBL,
+    },
+    .fragment = ToPtr(FragmentState{
+      .module = textureShader,
+      .entryPoint = "fs_main",
+      .targetCount = 1,
+      .targets = ToPtr<ColorTargetState>({
+        {
+          .format = TextureFormat::BGRA8Unorm,
+          // replace so no blend
+        },
+      }),
+    }),
+  }));
+
   // cursor pipeline ------------------------------------------------
   utils::VertexBufferLayout cursorQuadVBL{
     sizeof(CursorQuadVertex),
