@@ -1,7 +1,9 @@
+#include "SDL_events.h"
 #include "app/options.hpp"
 #include "app/size.hpp"
 #include "app/input.hpp"
 #include "app/sdl_window.hpp"
+#include "app/macos/window.h"
 #include "editor/grid.hpp"
 #include "editor/highlight.hpp"
 #include "editor/state.hpp"
@@ -11,6 +13,7 @@
 #include "glm/ext/vector_float2.hpp"
 #include "glm/gtx/string_cast.hpp"
 #include "nvim/msgpack_rpc/client.hpp"
+#include "nvim/msgpack_rpc/tsqueue.hpp"
 #include "nvim/nvim.hpp"
 #include "utils/clock.hpp"
 #include "utils/logger.hpp"
@@ -50,11 +53,16 @@ int main() {
       .vsync = true,
       .windowMargins{5, 5, 5, 5},
       .borderless = false,
-      .transparency = 0.9,
+      .transparency = 0.92,
+      .windowBlur = 10,
     };
 
     auto presentMode = appOpts.vsync ? PresentMode::Mailbox : PresentMode::Immediate;
     sdl::Window window({1600, 1000}, "Neovim GUI", presentMode);
+
+     if (appOpts.windowBlur > 0) {
+       SetSDLWindowBlur(window.Get(), appOpts.windowBlur);
+     }
 
     Font font("/Library/Fonts/SF-Mono-Medium.otf", 15, window.dpiScale);
 
@@ -84,6 +92,7 @@ int main() {
 
     // main thread -----------------------------------
     std::atomic_bool exitWindow = false;
+    TSQueue<SDL_Event> resizeEvents;
 
     std::thread renderThread([&] {
       bool windowFocused = true;
@@ -121,6 +130,30 @@ int main() {
         }
 
         // update ----------------------------------------------
+        while (!resizeEvents.Empty()) {
+          // only process the last 2 resize events
+          if (resizeEvents.Size() <= 2) {
+            auto& event = resizeEvents.Front();
+            switch (event.type) {
+              case SDL_EVENT_WINDOW_RESIZED:
+                window.size = {event.window.data1, event.window.data2};
+                break;
+              case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: {
+                window.fbSize = {event.window.data1, event.window.data2};
+
+                std::scoped_lock lock(wgpuDeviceMutex);
+                sizes.UpdateSizes(window.size, window.dpiScale, font.charSize);
+
+                sdl::Window::_ctx.Resize(sizes.fbSize);
+                renderer.Resize(sizes);
+                nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight);
+                break;
+              }
+            }
+          }
+          resizeEvents.Pop();
+        }
+
         while (!sdl::events.Empty()) {
           auto& event = sdl::events.Front();
           switch (event.type) {
@@ -211,7 +244,6 @@ int main() {
             if (auto winIt = editorState.winManager.windows.find(1);
                 winIt != editorState.winManager.windows.end()) {
               windows.push_back(&winIt->second);
-              // windows.push_front(&winIt->second);
             }
 
             // see editor/window.hpp comment for WinManager::windows
@@ -222,9 +254,6 @@ int main() {
               return win->floatData->zindex < other->floatData->zindex;
             });
 
-            // windows.insert(
-            //   windows.end(), floatingWindows.begin(), floatingWindows.end()
-            // );
             renderer.RenderWindows(windows, floatWindows);
           }
 
@@ -257,25 +286,10 @@ int main() {
     sdl::AddEventWatch([&](SDL_Event& event) {
       switch (event.type) {
         case SDL_EVENT_WINDOW_RESIZED:
-          window.size = {event.window.data1, event.window.data2};
+          resizeEvents.Push(event);
           break;
         case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: {
-          window.fbSize = {event.window.data1, event.window.data2};
-
-          std::scoped_lock lock(wgpuDeviceMutex);
-          sizes.UpdateSizes(window.size, window.dpiScale, font.charSize);
-
-          sdl::Window::_ctx.Resize(sizes.fbSize);
-          renderer.Resize(sizes);
-          nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight);
-          break;
-        }
-        case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED: {
-          std::scoped_lock lock(wgpuDeviceMutex);
-          window.dpiScale = SDL_GetWindowPixelDensity(window.Get());
-          LOG("display scale changed: {}", window.dpiScale);
-          font = Font("/Library/Fonts/SF-Mono-Medium.otf", 15, window.dpiScale);
-          editorState.cursor.fullSize = font.charSize;
+          resizeEvents.Push(event);
           break;
         }
       }
@@ -317,12 +331,20 @@ int main() {
           break;
 
         // window handling -----------------------
+        case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED: {
+          std::scoped_lock lock(wgpuDeviceMutex);
+          window.dpiScale = SDL_GetWindowPixelDensity(window.Get());
+          LOG("display scale changed: {}", window.dpiScale);
+          font = Font("/Library/Fonts/SF-Mono-Medium.otf", 15, window.dpiScale);
+          editorState.cursor.fullSize = font.charSize;
+          break;
+        }
+
         case SDL_EVENT_WINDOW_FOCUS_GAINED:
         case SDL_EVENT_WINDOW_FOCUS_LOST:
-          sdl::events.Push(event);
+          // sdl::events.Push(event);
+          break;
       }
-
-      // std::this_thread::sleep_for(1ms);
     }
 
     renderThread.join();

@@ -1,5 +1,7 @@
 # fix https://gitlab.kitware.com/cmake/cmake/-/issues/24104
 enable_language(OBJC) 
+# enable_language(OBJCXX)
+
 cmake_minimum_required(VERSION 3.5...3.28)
 
 project(
@@ -26,6 +28,7 @@ set(APP_SRC
   src/app/sdl_window.cpp
   src/app/input.cpp
   src/app/size.cpp
+  src/app/macos/window.mm
 
   src/editor/state.cpp
   src/editor/cursor.cpp
