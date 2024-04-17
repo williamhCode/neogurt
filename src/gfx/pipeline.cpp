@@ -25,31 +25,12 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
   ShaderModule rectShader =
     utils::LoadShaderModule(ctx.device, ROOT_DIR "/src/shaders/rect.wgsl");
 
-  rectRPL = ctx.device.CreateRenderPipeline(ToPtr(RenderPipelineDescriptor{
-    .layout = utils::MakePipelineLayout(
-      ctx.device,
-      {
-        viewProjBGL,
-      }
-    ),
-    .vertex = VertexState{
-      .module = rectShader,
-      .entryPoint = "vs_main",
-      .bufferCount = 1,
-      .buffers = &rectQuadVBL,
-    },
-    .fragment = ToPtr(FragmentState{
-      .module = rectShader,
-      .entryPoint = "fs_main",
-      .targetCount = 1,
-      .targets = ToPtr<ColorTargetState>({
-        {
-          .format = TextureFormat::BGRA8Unorm,
-          // .blend = &utils::BlendState::AlphaBlending,
-        },
-      }),
-    }),
-  }));
+  rectRPL = utils::RenderPipelineMaker{
+    .layout = utils::MakePipelineLayout(ctx.device, {viewProjBGL}),
+    .module = rectShader,
+    .buffers{rectQuadVBL},
+    .targets{{.format = TextureFormat::BGRA8Unorm}},
+  }.Make(ctx.device);
 
   // text pipeline -------------------------------------------
   utils::VertexBufferLayout textQuadVBL{
@@ -73,34 +54,19 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
   ShaderModule textShader =
     utils::LoadShaderModule(ctx.device, ROOT_DIR "/src/shaders/text.wgsl");
 
-  textRPL = ctx.device.CreateRenderPipeline(ToPtr(RenderPipelineDescriptor{
-    .layout = utils::MakePipelineLayout(
-      ctx.device,
+  textRPL = utils::RenderPipelineMaker{
+    .layout = utils::MakePipelineLayout(ctx.device, {viewProjBGL, fontTextureBGL}),
+    .module = textShader,
+    .buffers{textQuadVBL},
+    .targets{
       {
-        viewProjBGL,
-        fontTextureBGL,
-      }
-    ),
-    .vertex = VertexState{
-      .module = textShader,
-      .entryPoint = "vs_main",
-      .bufferCount = 1,
-      .buffers = &textQuadVBL,
+        .format = TextureFormat::BGRA8Unorm,
+        .blend = &utils::BlendState::AlphaBlending,
+      },
+      {.format = TextureFormat::R8Unorm},
     },
-    .fragment = ToPtr(FragmentState{
-      .module = textShader,
-      .entryPoint = "fs_main",
-      .targetCount = 2,
-      .targets = ToPtr<ColorTargetState>({
-        {
-          .format = TextureFormat::BGRA8Unorm,
-          .blend = &utils::BlendState::AlphaBlending,
-        },
-        {.format = TextureFormat::R8Unorm},
-      }),
-    }),
-  }));
-  
+  }.Make(ctx.device);
+
   // texture pipeline ------------------------------------------------
   utils::VertexBufferLayout textureQuadVBL{
     sizeof(TextureQuadVertex),
@@ -121,59 +87,21 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
     }
   );
 
-  textureRPL = ctx.device.CreateRenderPipeline(ToPtr(RenderPipelineDescriptor{
-    .layout = utils::MakePipelineLayout(
-      ctx.device,
+  auto textureRPLMaker = utils::RenderPipelineMaker{
+    .layout = utils::MakePipelineLayout(ctx.device, {viewProjBGL, textureBGL}),
+    .module = textureShader,
+    .buffers{textureQuadVBL},
+    .targets{
       {
-        viewProjBGL,
-        textureBGL,
-      }
-    ),
-    .vertex = VertexState{
-      .module = textureShader,
-      .entryPoint = "vs_main",
-      .bufferCount = 1,
-      .buffers = &textureQuadVBL,
+        .format = TextureFormat::BGRA8Unorm,
+        .blend = &utils::BlendState::AlphaBlending,
+      },
     },
-    .fragment = ToPtr(FragmentState{
-      .module = textureShader,
-      .entryPoint = "fs_main",
-      .targetCount = 1,
-      .targets = ToPtr<ColorTargetState>({
-        {
-          .format = TextureFormat::BGRA8Unorm,
-          .blend = &utils::BlendState::AlphaBlending,
-        },
-      }),
-    }),
-  }));
+  };
+  textureRPL = textureRPLMaker.Make(ctx.device);
 
-  finalTextureRPL = ctx.device.CreateRenderPipeline(ToPtr(RenderPipelineDescriptor{
-    .layout = utils::MakePipelineLayout(
-      ctx.device,
-      {
-        viewProjBGL,
-        textureBGL,
-      }
-    ),
-    .vertex = VertexState{
-      .module = textureShader,
-      .entryPoint = "vs_main",
-      .bufferCount = 1,
-      .buffers = &textureQuadVBL,
-    },
-    .fragment = ToPtr(FragmentState{
-      .module = textureShader,
-      .entryPoint = "fs_main",
-      .targetCount = 1,
-      .targets = ToPtr<ColorTargetState>({
-        {
-          .format = TextureFormat::BGRA8Unorm,
-          // replace so no blend
-        },
-      }),
-    }),
-  }));
+  textureRPLMaker.targets[0].blend = &utils::BlendState::Replace; // same as nullptr
+  finalTextureRPL = textureRPLMaker.Make(ctx.device);
 
   // cursor pipeline ------------------------------------------------
   utils::VertexBufferLayout cursorQuadVBL{
@@ -203,7 +131,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
     }
   );
 
-  cursorRPL = ctx.device.CreateRenderPipeline(ToPtr(RenderPipelineDescriptor{
+  cursorRPL = utils::RenderPipelineMaker{
     .layout = utils::MakePipelineLayout(
       ctx.device,
       {
@@ -212,22 +140,10 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
         maskOffsetBGL,
       }
     ),
-    .vertex = VertexState{
-      .module = cursorShader,
-      .entryPoint = "vs_main",
-      .bufferCount = 1,
-      .buffers = &cursorQuadVBL,
+    .module = cursorShader,
+    .buffers{cursorQuadVBL},
+    .targets{
+      {.format = TextureFormat::BGRA8Unorm},
     },
-    .fragment = ToPtr(FragmentState{
-      .module = cursorShader,
-      .entryPoint = "fs_main",
-      .targetCount = 1,
-      .targets = ToPtr<ColorTargetState>({
-        {
-          .format = TextureFormat::BGRA8Unorm,
-          // .blend = &utils::BlendState::AlphaBlending,
-        },
-      }),
-    }),
-  }));
+  }.Make(ctx.device);
 }
