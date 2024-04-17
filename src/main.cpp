@@ -68,7 +68,7 @@ int main() {
       sizes.uiWidth, sizes.uiHeight,
       {
         {"rgb", true},
-        // {"ext_multigrid", appOpts.multigrid},
+        {"ext_multigrid", appOpts.multigrid},
         {"ext_linegrid", true},
       }
     );
@@ -195,14 +195,14 @@ int main() {
             editorState.winManager.dirty = false;
 
             std::deque<const Win*> windows;
-            std::vector<const Win*> floatingWindows;
+            std::vector<const Win*> floatWindows;
             for (auto& [id, win] : editorState.winManager.windows) {
               if (id == 1) continue;
               if (id == editorState.winManager.msgWinId) {
                 windows.push_front(&win);
               } else if (!win.hidden) {
                 if (win.floatData.has_value()) {
-                  floatingWindows.push_back(&win);
+                  floatWindows.push_back(&win);
                 } else {
                   windows.push_back(&win);
                 }
@@ -210,21 +210,22 @@ int main() {
             }
             if (auto winIt = editorState.winManager.windows.find(1);
                 winIt != editorState.winManager.windows.end()) {
-              windows.push_front(&winIt->second);
+              windows.push_back(&winIt->second);
+              // windows.push_front(&winIt->second);
             }
 
             // see editor/window.hpp comment for WinManager::windows
-            std::ranges::reverse(floatingWindows);
+            std::ranges::reverse(floatWindows);
 
             // sort floating windows by zindex
-            std::ranges::sort(floatingWindows, [](const Win* win, const Win* other) {
+            std::ranges::sort(floatWindows, [](const Win* win, const Win* other) {
               return win->floatData->zindex < other->floatData->zindex;
             });
 
-            windows.insert(
-              windows.end(), floatingWindows.begin(), floatingWindows.end()
-            );
-            renderer.RenderWindows(windows);
+            // windows.insert(
+            //   windows.end(), floatingWindows.begin(), floatingWindows.end()
+            // );
+            renderer.RenderWindows(windows, floatWindows);
           }
 
           renderer.RenderFinalTexture();

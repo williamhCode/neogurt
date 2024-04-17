@@ -55,7 +55,7 @@ struct Renderer {
 
   void Begin();
   void RenderWindow(Win& win, Font& font, const HlTable& hlTable);
-  void RenderWindows(const RangeOf<const Win*> auto& windows);
+  void RenderWindows(const RangeOf<const Win*> auto& windows, const RangeOf<const Win*> auto& floatWindows);
   void RenderFinalTexture();
   void RenderCursor(const Cursor& cursor, const HlTable& hlTable);
   void End();

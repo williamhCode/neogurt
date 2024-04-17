@@ -87,21 +87,36 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
     }
   );
 
-  auto textureRPLMaker = utils::RenderPipelineMaker{
-    .layout = utils::MakePipelineLayout(ctx.device, {viewProjBGL, textureBGL}),
+  auto textureLayout = utils::MakePipelineLayout(ctx.device, {viewProjBGL, textureBGL});
+
+  textureRPL = utils::RenderPipelineMaker{
+    .layout = textureLayout,
     .module = textureShader,
     .buffers{textureQuadVBL},
+    .depthStencil{
+      .format = TextureFormat::Stencil8,
+      // textures are clockwise, so backface
+      .stencilBack = {
+        .compare = CompareFunction::NotEqual,
+        .failOp = StencilOperation::Keep,
+        .passOp = StencilOperation::IncrementClamp,
+      },
+    },
     .targets{
       {
         .format = TextureFormat::BGRA8Unorm,
         .blend = &utils::BlendState::AlphaBlending,
       },
     },
-  };
-  textureRPL = textureRPLMaker.Make(ctx.device);
+  }.Make(ctx.device);
 
-  textureRPLMaker.targets[0].blend = &utils::BlendState::Replace; // same as nullptr
-  finalTextureRPL = textureRPLMaker.Make(ctx.device);
+
+  finalTextureRPL = utils::RenderPipelineMaker{
+    .layout = textureLayout,
+    .module = textureShader,
+    .buffers{textureQuadVBL},
+    .targets{{.format = TextureFormat::BGRA8Unorm}},
+  }.Make(ctx.device);
 
   // cursor pipeline ------------------------------------------------
   utils::VertexBufferLayout cursorQuadVBL{
