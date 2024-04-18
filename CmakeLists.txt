@@ -28,7 +28,7 @@ set(APP_SRC
   src/app/sdl_window.cpp
   src/app/input.cpp
   src/app/size.cpp
-  src/app/macos/window.mm
+  src/app/window_funcs.mm
 
   src/editor/state.cpp
   src/editor/cursor.cpp

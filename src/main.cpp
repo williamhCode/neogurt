@@ -49,7 +49,7 @@ int main() {
   try {
     appOpts = {
       .multigrid = true,
-      .vsync = false,
+      .vsync = true,
       .windowMargins{5, 5, 5, 5},
       .borderless = false,
       .transparency = 0.92,
@@ -99,7 +99,7 @@ int main() {
       float idleElasped = 0;
 
       while (!exitWindow) {
-        auto dt = clock.Tick();
+        auto dt = clock.Tick(60);
         // LOG("dt: {}", dt);
 
         auto fps = clock.GetFps();

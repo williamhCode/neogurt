@@ -238,7 +238,6 @@ void WinManager::Viewport(const WinViewport& e) {
     win.scrollElapsed = 0;
 
     std::swap(win.prevRenderTexture, win.renderTexture);
-    win.hasPrevRender = true;
   }
 }
 
@@ -259,6 +258,8 @@ void WinManager::UpdateScrolling(float dt) {
 
       auto maskPos = pos * sizes.dpiScale;
       ctx.queue.WriteBuffer(win.maskPosBuffer, 0, &maskPos, sizeof(glm::vec2));
+
+      win.hasPrevRender = true;
 
     } else {
       auto size = win.size;

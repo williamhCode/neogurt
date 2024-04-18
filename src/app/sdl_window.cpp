@@ -1,6 +1,6 @@
 #include "sdl_window.hpp"
 #include "app/options.hpp"
-#include "app/macos/window.h"
+#include "app/window_funcs.h"
 #include <stdexcept>
 #include <format>
 
