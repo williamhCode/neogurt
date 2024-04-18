@@ -1,5 +1,6 @@
 #include "sdl_window.hpp"
 #include "app/options.hpp"
+#include "app/macos/window.h"
 #include <stdexcept>
 #include <format>
 
@@ -22,6 +23,10 @@ Window::Window(
   }
 
   SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
+
+  if (appOpts.windowBlur > 0) {
+    SetSDLWindowBlur(Get(), appOpts.windowBlur);
+  }
 
   // sizing ---------------------------------
   dpiScale = SDL_GetWindowPixelDensity(Get());

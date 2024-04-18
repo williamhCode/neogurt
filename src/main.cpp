@@ -3,7 +3,6 @@
 #include "app/size.hpp"
 #include "app/input.hpp"
 #include "app/sdl_window.hpp"
-#include "app/macos/window.h"
 #include "editor/grid.hpp"
 #include "editor/highlight.hpp"
 #include "editor/state.hpp"
@@ -11,13 +10,13 @@
 #include "gfx/instance.hpp"
 #include "gfx/renderer.hpp"
 #include "glm/ext/vector_float2.hpp"
-#include "glm/gtx/string_cast.hpp"
 #include "nvim/msgpack_rpc/client.hpp"
 #include "nvim/msgpack_rpc/tsqueue.hpp"
 #include "nvim/nvim.hpp"
 #include "utils/clock.hpp"
 #include "utils/logger.hpp"
 #include "utils/timer.hpp"
+#include "utils/color.hpp"
 
 #include <algorithm>
 #include <vector>
@@ -50,7 +49,7 @@ int main() {
   try {
     appOpts = {
       .multigrid = true,
-      .vsync = true,
+      .vsync = false,
       .windowMargins{5, 5, 5, 5},
       .borderless = false,
       .transparency = 0.92,
@@ -60,11 +59,7 @@ int main() {
     auto presentMode = appOpts.vsync ? PresentMode::Mailbox : PresentMode::Immediate;
     sdl::Window window({1600, 1000}, "Neovim GUI", presentMode);
 
-     if (appOpts.windowBlur > 0) {
-       SetSDLWindowBlur(window.Get(), appOpts.windowBlur);
-     }
-
-    Font font("/Library/Fonts/SF-Mono-Medium.otf", 15, window.dpiScale);
+    Font font("/Library/Fonts/SF-Mono-Medium.otf", 13, window.dpiScale);
 
     SizeHandler sizes;
     sizes.UpdateSizes(window.size, window.dpiScale, font.charSize);
@@ -99,17 +94,17 @@ int main() {
       bool idle = false;
 
       Clock clock;
-      Timer timer(30);
+      // Timer timer(30);
 
       float idleElasped = 0;
 
       while (!exitWindow) {
-        auto dt = clock.Tick(60);
+        auto dt = clock.Tick();
         // LOG("dt: {}", dt);
 
-        // auto fps = clock.GetFps();
-        // auto fpsStr = std::format("fps: {:.2f}", fps);
-        // std::cout << '\r' << fpsStr << std::string(10, ' ') << std::flush;
+        auto fps = clock.GetFps();
+        auto fpsStr = std::format("fps: {:.2f}", fps);
+        std::cout << '\r' << fpsStr << std::string(10, ' ') << std::flush;
 
         // timer.Start();
 
@@ -200,6 +195,9 @@ int main() {
         if (auto hlIter = editorState.hlTable.find(0);
             hlIter != editorState.hlTable.end()) {
           auto color = hlIter->second.background.value();
+          // color.a = appOpts.transparency;
+          int colorInt = 0x282c34;
+          color = IntToColor(colorInt);
           color.a = appOpts.transparency;
           renderer.SetClearColor(color);
         }
@@ -335,14 +333,14 @@ int main() {
           std::scoped_lock lock(wgpuDeviceMutex);
           window.dpiScale = SDL_GetWindowPixelDensity(window.Get());
           LOG("display scale changed: {}", window.dpiScale);
-          font = Font("/Library/Fonts/SF-Mono-Medium.otf", 15, window.dpiScale);
+          font = Font("/Library/Fonts/SF-Mono-Medium.otf", 13, window.dpiScale);
           editorState.cursor.fullSize = font.charSize;
           break;
         }
 
         case SDL_EVENT_WINDOW_FOCUS_GAINED:
         case SDL_EVENT_WINDOW_FOCUS_LOST:
-          // sdl::events.Push(event);
+          sdl::events.Push(event);
           break;
       }
     }

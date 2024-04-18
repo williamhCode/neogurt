@@ -92,6 +92,7 @@ struct Win {
   float scrollElapsed;
 
   RenderTexture prevRenderTexture;
+  bool hasPrevRender = false;
 
   QuadRenderData<TextureQuadVertex> marginsData;
 };

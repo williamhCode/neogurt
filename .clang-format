@@ -1,5 +1,3 @@
----
-Language:        Cpp
 ColumnLimit:     88
 # AlignAfterOpenBracket: AlwaysBreak
 AlignAfterOpenBracket: BlockIndent
@@ -22,6 +20,3 @@ AllowShortIfStatementsOnASingleLine: WithoutElse
 # PenaltyReturnTypeOnItsOwnLine: 10000
 AlwaysBreakTemplateDeclarations: Yes
 # AllowShortCaseLabelsOnASingleLine: true
-...
-
-

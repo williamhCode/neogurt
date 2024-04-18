@@ -18,7 +18,6 @@ NSWindow* GetNSWindowPointer(SDL_Window* window) {
 
 void SetSDLWindowBlur(SDL_Window* window, int blurRadius) {
     NSWindow* ns_window = GetNSWindowPointer(window);
-
     NSInteger windowNumber = [ns_window windowNumber];
     CGSConnectionID conn = CGSMainConnectionID();
     CGSSetWindowBackgroundBlurRadius(conn, windowNumber, (NSInteger)blurRadius);

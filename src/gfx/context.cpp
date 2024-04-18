@@ -14,7 +14,7 @@ WGPUContext::WGPUContext(SDL_Window* window, glm::uvec2 _size, PresentMode _pres
     std::exit(1);
   }
 
-  surface = Surface::Acquire(SDL_GetWGPUSurface(instance.Get(), window));
+  surface = SDL_GetWGPUSurface(instance, window);
   Init();
 }
 

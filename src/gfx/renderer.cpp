@@ -3,7 +3,6 @@
 #include "editor/window.hpp"
 #include "gfx/instance.hpp"
 #include "gfx/pipeline.hpp"
-#include "glm/gtx/string_cast.hpp"
 #include "utils/region.hpp"
 #include "utils/unicode.hpp"
 #include "utils/color.hpp"

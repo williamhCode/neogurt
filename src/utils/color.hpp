@@ -18,3 +18,12 @@ inline wgpu::Color ToWGPUColor(const glm::vec4& color) {
     color.a,
   };
 }
+
+inline auto IntToColor(uint32_t color) {
+  return glm::vec4(
+    ((color >> 16) & 0xff) / 255.0f,
+    ((color >> 8) & 0xff) / 255.0f,
+    (color & 0xff) / 255.0f,
+    1.0f
+  );
+};

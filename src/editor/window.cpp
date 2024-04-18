@@ -238,6 +238,7 @@ void WinManager::Viewport(const WinViewport& e) {
     win.scrollElapsed = 0;
 
     std::swap(win.prevRenderTexture, win.renderTexture);
+    win.hasPrevRender = true;
   }
 }
 
