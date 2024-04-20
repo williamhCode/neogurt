@@ -1,4 +1,5 @@
 #pragma once
-#include <SDL3/SDL.h>
+
+struct SDL_Window;
 
 void SetSDLWindowBlur(SDL_Window* window, int blurRadius);

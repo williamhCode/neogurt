@@ -1,8 +1,8 @@
 #pragma once
 
 #include "msgpack/v3/object_fwd_decl.hpp"
-#include <format>
 #include <string>
+#include <format>
 
 struct Logger {
   bool enabled = true;

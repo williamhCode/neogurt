@@ -1,5 +1,4 @@
 #include "context.hpp"
-#include <webgpu/webgpu_cpp.h>
 #include "utils/logger.hpp"
 #include "webgpu_tools/utils/webgpu.hpp"
 #include "webgpu_tools/utils/sdl3webgpu.h"

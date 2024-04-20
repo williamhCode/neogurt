@@ -1,4 +1,6 @@
 #include "state.hpp"
+#include "app/options.hpp"
+#include "glm/gtx/string_cast.hpp"
 #include "utils/color.hpp"
 #include "utils/variant.hpp"
 #include <deque>
@@ -76,8 +78,19 @@ bool ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
           // LOG("default_colors_set");
           auto& hl = editorState.hlTable[0];
           hl.foreground = IntToColor(e.rgbFg);
-          hl.background = IntToColor(e.rgbBg);
+          if (appOpts.transparency < 1) {
+            hl.background = IntToColor(appOpts.bgColor);
+            hl.background->a = appOpts.transparency;
+          } else {
+            hl.background = IntToColor(e.rgbBg);
+          }
           hl.special = IntToColor(e.rgbSp);
+
+          auto& color = editorState.winManager.clearColor;
+          color.r = hl.background->r * 255;
+          color.g = hl.background->g * 255;
+          color.b = hl.background->b * 255;
+          color.a = hl.background->a * 255;
         },
         [&](HlAttrDefine& e) {
           // LOG("hl_attr_define");

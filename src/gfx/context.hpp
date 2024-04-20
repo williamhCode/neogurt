@@ -1,10 +1,11 @@
 #pragma once
 
-#include "SDL3/SDL.h"
 #include "glm/ext/vector_uint2.hpp"
 #include "webgpu/webgpu_cpp.h"
 
 #include "gfx/pipeline.hpp"
+
+struct SDL_Window;
 
 struct WGPUContext {
   wgpu::Instance instance;

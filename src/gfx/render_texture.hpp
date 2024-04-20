@@ -18,7 +18,12 @@ struct RenderTexture {
   QuadRenderData<TextureQuadVertex> renderData;
 
   RenderTexture() = default;
-  RenderTexture(glm::vec2 size, float dpiScale, wgpu::TextureFormat format);
+  RenderTexture(
+    glm::vec2 size,
+    float dpiScale,
+    wgpu::TextureFormat format,
+    const void* data = nullptr
+  );
 
   // region is the subregion of the texture to draw
   void UpdatePos(glm::vec2 pos, std::optional<RegionHandle> region = std::nullopt);

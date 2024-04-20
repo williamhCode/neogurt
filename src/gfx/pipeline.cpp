@@ -29,7 +29,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
     .layout = utils::MakePipelineLayout(ctx.device, {viewProjBGL}),
     .module = rectShader,
     .buffers{rectQuadVBL},
-    .targets{{.format = TextureFormat::BGRA8Unorm}},
+    .targets{{.format = TextureFormat::RGBA8Unorm}},
   }.Make(ctx.device);
 
   // text pipeline -------------------------------------------
@@ -60,7 +60,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
     .buffers{textQuadVBL},
     .targets{
       {
-        .format = TextureFormat::BGRA8Unorm,
+        .format = TextureFormat::RGBA8Unorm,
         .blend = &utils::BlendState::AlphaBlending,
       },
       {.format = TextureFormat::R8Unorm},
@@ -104,7 +104,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
     },
     .targets{
       {
-        .format = TextureFormat::BGRA8Unorm,
+        .format = TextureFormat::RGBA8Unorm,
         .blend = &utils::BlendState::AlphaBlending,
       },
     },

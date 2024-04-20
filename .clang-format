@@ -20,3 +20,8 @@ AllowShortIfStatementsOnASingleLine: WithoutElse
 # PenaltyReturnTypeOnItsOwnLine: 10000
 AlwaysBreakTemplateDeclarations: Yes
 # AllowShortCaseLabelsOnASingleLine: true
+
+IndentExternBlock: Indent
+
+# broken rn https://github.com/llvm/llvm-project/issues/47997
+# IndentPPDirectives: BeforeHash

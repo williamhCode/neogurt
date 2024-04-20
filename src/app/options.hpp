@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 
 struct AppOptions {
   bool multigrid = true;
@@ -15,6 +16,9 @@ struct AppOptions {
 
   bool borderless = false;
   float cursorIdleTime = 10;
+
+  // rgb
+  uint32_t bgColor = 0x000000;
   float transparency = 1;
   int windowBlur = 0;
 };

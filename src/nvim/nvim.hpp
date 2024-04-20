@@ -2,7 +2,7 @@
 
 #include "nvim/parse.hpp"
 #include "process.hpp"
-#include "msgpack/v3/adaptor/boost/msgpack_variant_decl.hpp"
+// #include "msgpack/v3/adaptor/boost/msgpack_variant_decl.hpp"
 
 struct Nvim {
   using variant = msgpack::type::variant;

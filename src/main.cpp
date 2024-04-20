@@ -1,8 +1,9 @@
-#include "SDL_events.h"
+#include "SDL3/SDL_init.h"
 #include "app/options.hpp"
 #include "app/size.hpp"
 #include "app/input.hpp"
 #include "app/sdl_window.hpp"
+#include "app/sdl_event.hpp"
 #include "editor/grid.hpp"
 #include "editor/highlight.hpp"
 #include "editor/state.hpp"
@@ -10,13 +11,11 @@
 #include "gfx/instance.hpp"
 #include "gfx/renderer.hpp"
 #include "glm/ext/vector_float2.hpp"
-#include "nvim/msgpack_rpc/client.hpp"
-#include "nvim/msgpack_rpc/tsqueue.hpp"
+#include "glm/gtx/string_cast.hpp"
 #include "nvim/nvim.hpp"
 #include "utils/clock.hpp"
 #include "utils/logger.hpp"
 #include "utils/timer.hpp"
-#include "utils/color.hpp"
 
 #include <algorithm>
 #include <vector>
@@ -52,8 +51,9 @@ int main() {
       .vsync = true,
       .windowMargins{5, 5, 5, 5},
       .borderless = false,
-      .transparency = 0.92,
-      .windowBlur = 10,
+      .bgColor = 0x282c34,
+      .transparency = 0.90,
+      .windowBlur = 20,
     };
 
     auto presentMode = appOpts.vsync ? PresentMode::Mailbox : PresentMode::Immediate;
@@ -88,6 +88,7 @@ int main() {
     // main thread -----------------------------------
     std::atomic_bool exitWindow = false;
     TSQueue<SDL_Event> resizeEvents;
+    TSQueue<SDL_Event> sdlEvents;
 
     std::thread renderThread([&] {
       bool windowFocused = true;
@@ -102,9 +103,9 @@ int main() {
         auto dt = clock.Tick(60);
         // LOG("dt: {}", dt);
 
-        auto fps = clock.GetFps();
-        auto fpsStr = std::format("fps: {:.2f}", fps);
-        std::cout << '\r' << fpsStr << std::string(10, ' ') << std::flush;
+        // auto fps = clock.GetFps();
+        // auto fpsStr = std::format("fps: {:.2f}", fps);
+        // std::cout << '\r' << fpsStr << std::string(10, ' ') << std::flush;
 
         // timer.Start();
 
@@ -149,8 +150,8 @@ int main() {
           resizeEvents.Pop();
         }
 
-        while (!sdl::events.Empty()) {
-          auto& event = sdl::events.Front();
+        while (!sdlEvents.Empty()) {
+          auto& event = sdlEvents.Front();
           switch (event.type) {
             case SDL_EVENT_WINDOW_FOCUS_GAINED:
               windowFocused = true;
@@ -163,7 +164,7 @@ int main() {
               windowFocused = false;
               break;
           }
-          sdl::events.Pop();
+          sdlEvents.Pop();
         }
 
         editorState.winManager.UpdateScrolling(dt);
@@ -189,16 +190,9 @@ int main() {
         editorState.cursor.Update(dt);
 
         // render ----------------------------------------------
-        // auto color = GetDefaultBackground(editorState.hlTable);
-        // color.a = 0.5;
-        // renderer.SetClearColor(color);
         if (auto hlIter = editorState.hlTable.find(0);
             hlIter != editorState.hlTable.end()) {
           auto color = hlIter->second.background.value();
-          // color.a = appOpts.transparency;
-          int colorInt = 0x282c34;
-          color = IntToColor(colorInt);
-          color.a = appOpts.transparency;
           renderer.SetClearColor(color);
         }
 
@@ -340,7 +334,7 @@ int main() {
 
         case SDL_EVENT_WINDOW_FOCUS_GAINED:
         case SDL_EVENT_WINDOW_FOCUS_LOST:
-          sdl::events.Push(event);
+          sdlEvents.Push(event);
           break;
       }
     }

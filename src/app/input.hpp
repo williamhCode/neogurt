@@ -1,5 +1,6 @@
 #pragma once
 
+#include "SDL_events.h"
 #include "editor/window.hpp"
 #include "glm/ext/vector_float2.hpp"
 #include "nvim/nvim.hpp"

@@ -17,15 +17,16 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)  # clangd
 
 add_subdirectory(deps/webgpu_tools)
 add_subdirectory(deps/msgpack)
-set(ASIO_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/deps/asio/asio/include)
-set(UTFCPP_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/deps/utfcpp/source)
 add_subdirectory(deps/tiny_process_library)
 add_subdirectory(deps/freetype)
+set(ASIO_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/deps/asio/asio/include)
+set(UTFCPP_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/deps/utfcpp/source)
 
 set(APP_SRC
 	src/main.cpp
 
   src/app/sdl_window.cpp
+  src/app/sdl_event.cpp
   src/app/input.cpp
   src/app/size.cpp
   src/app/window_funcs.mm
@@ -50,9 +51,14 @@ set(APP_SRC
   src/utils/clock.cpp
   src/utils/logger.cpp
   src/utils/timer.cpp
+  src/utils/color.cpp
 )
 
 add_executable(neogui ${APP_SRC})
+
+target_compile_definitions(neogui PRIVATE
+  ROOT_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
 
 # set_target_properties(neogui PROPERTIES
 # )
@@ -61,10 +67,6 @@ target_include_directories(neogui PRIVATE
   ${PROJECT_SOURCE_DIR}/src
   ${ASIO_INCLUDE_DIR}
   ${UTFCPP_INCLUDE_DIR}
-)
-
-target_compile_definitions(neogui PRIVATE
-  ROOT_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
 target_link_libraries(neogui PRIVATE 

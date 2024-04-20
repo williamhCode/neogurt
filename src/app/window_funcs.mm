@@ -1,5 +1,6 @@
 #include "window_funcs.h"
 #include "utils/logger.hpp"
+#include "SDL3/SDL.h"
 
 #if defined(SDL_PLATFORM_MACOS)
 #include <Cocoa/Cocoa.h>
@@ -7,9 +8,11 @@
 #include <QuartzCore/CAMetalLayer.h>
 
 extern "C" {
-using CGSConnectionID = void*;
-extern CGSConnectionID CGSMainConnectionID(void);
-extern int CGSSetWindowBackgroundBlurRadius(CGSConnectionID connection, NSInteger windowNumber, NSInteger radius);
+  using CGSConnectionID = void*;
+  extern CGSConnectionID CGSMainConnectionID(void);
+  extern int CGSSetWindowBackgroundBlurRadius(
+    CGSConnectionID connection, NSInteger windowNumber, NSInteger radius
+  );
 }
 #endif
 

@@ -1,8 +1,15 @@
 #include "sdl_window.hpp"
+
+#include "SDL3/SDL_video.h"
+#include "SDL3/SDL_hints.h"
 #include "app/options.hpp"
 #include "app/window_funcs.h"
 #include <stdexcept>
 #include <format>
+
+void SDL_WindowDeleter::operator()(SDL_Window* window) {
+  SDL_DestroyWindow(window);
+}
 
 namespace sdl {
 

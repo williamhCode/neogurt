@@ -12,13 +12,13 @@
 using namespace wgpu;
 
 Renderer::Renderer(const SizeHandler& sizes) {
-  clearColor = {0.0, 0.0, 0.0, 0.0};
+  clearColor = {0.0, 0.0, 0.0, 1.0};
 
   // shared
   camera = Ortho2D(sizes.size);
 
   finalRenderTexture =
-    RenderTexture(sizes.uiSize, sizes.dpiScale, TextureFormat::BGRA8Unorm);
+    RenderTexture(sizes.uiSize, sizes.dpiScale, TextureFormat::RGBA8Unorm);
   finalRenderTexture.UpdatePos(sizes.offset);
 
   // rect
@@ -99,7 +99,7 @@ void Renderer::Resize(const SizeHandler& sizes) {
   camera.Resize(sizes.size);
 
   finalRenderTexture =
-    RenderTexture(sizes.uiSize, sizes.dpiScale, TextureFormat::BGRA8Unorm);
+    RenderTexture(sizes.uiSize, sizes.dpiScale, TextureFormat::RGBA8Unorm);
   finalRenderTexture.UpdatePos(sizes.offset);
   windowsRPD.cColorAttachments[0].view = finalRenderTexture.textureView;
 
@@ -223,8 +223,10 @@ void Renderer::RenderWindows(const RangeOf<const Win*> auto& windows, const Rang
     passEncoder.SetBindGroup(1, win->renderTexture.textureBG);
     win->renderTexture.renderData.Render(passEncoder);
     if (win->scrolling) {
-      passEncoder.SetBindGroup(1, win->prevRenderTexture.textureBG);
-      win->prevRenderTexture.renderData.Render(passEncoder);
+      // if (win->hasPrevRender) {
+        passEncoder.SetBindGroup(1, win->prevRenderTexture.textureBG);
+        win->prevRenderTexture.renderData.Render(passEncoder);
+      // }
 
       // draw window borders
       if (!win->margins.Empty()) {

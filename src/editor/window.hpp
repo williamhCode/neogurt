@@ -8,20 +8,12 @@
 #include "nvim/parse.hpp"
 #include "editor/grid.hpp"
 #include "app/size.hpp"
+#include "utils/color.hpp"
 
 #include <map>
 #include <optional>
 
-// enum class Anchor { NW, NE, SW, SE };
-
 struct FloatData {
-  // Win* anchorWin;
-
-  // Anchor anchor;
-  // int anchorGrid;
-  // float anchorRow;
-  // float anchorCol;
-
   bool focusable;
   int zindex;
 };
@@ -39,18 +31,8 @@ struct Margins {
   int left = 0;
   int right = 0;
 
-  [[nodiscard]] bool Empty() const {
-    return top == 0 && bottom == 0 && left == 0 && right == 0;
-  }
-
-  [[nodiscard]] FMargins ToFloat(glm::vec2 size) const {
-    return {
-      top * size.y,
-      bottom * size.y,
-      left * size.x,
-      right * size.x,
-    };
-  }
+  [[nodiscard]] bool Empty() const;
+  [[nodiscard]] FMargins ToFloat(glm::vec2 size) const;
 };
 
 struct Win {
@@ -88,7 +70,7 @@ struct Win {
   bool scrolling;
   float scrollDist;
   float scrollCurr;
-  float scrollTime = 0.08; // transition time
+  float scrollTime = 0.1; // transition time
   float scrollElapsed;
 
   RenderTexture prevRenderTexture;
@@ -108,6 +90,9 @@ struct WinManager {
   GridManager* gridManager;
   const SizeHandler& sizes;
   bool dirty; // true if window pos updated from scrolling
+
+  using ColorBytes = glm::vec<4, uint8_t>;
+  ColorBytes clearColor;
 
   // not unordered because telescope float background overlaps text
   // so have to render floats in reverse order else text will be covered

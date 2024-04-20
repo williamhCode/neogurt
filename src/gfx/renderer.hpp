@@ -9,7 +9,6 @@
 #include "gfx/font.hpp"
 #include "gfx/pipeline.hpp"
 #include "gfx/quad.hpp"
-#include "webgpu/webgpu_cpp.h"
 #include "webgpu_tools/utils/webgpu.hpp"
 #include <ranges>
 

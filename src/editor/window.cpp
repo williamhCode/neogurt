@@ -5,19 +5,38 @@
 #include "glm/ext/vector_float2.hpp"
 #include "webgpu_tools/utils/webgpu.hpp"
 #include <algorithm>
+#include <cstdint>
 #include <cstdlib>
 #include <utility>
 
 using namespace wgpu;
 
+bool Margins::Empty() const {
+  return top == 0 && bottom == 0 && left == 0 && right == 0;
+}
+
+[[nodiscard]] FMargins Margins::ToFloat(glm::vec2 size) const {
+  return {
+    top * size.y,
+    bottom * size.y,
+    left * size.x,
+    right * size.x,
+  };
+}
+
 void WinManager::InitRenderData(Win& win) {
   auto pos = glm::vec2(win.startCol, win.startRow) * sizes.charSize;
   auto size = glm::vec2(win.width, win.height) * sizes.charSize;
 
-  win.renderTexture = RenderTexture(size, sizes.dpiScale, TextureFormat::BGRA8Unorm);
+  std::vector<ColorBytes> colorData(
+    size.x * size.y * sizes.dpiScale * sizes.dpiScale, clearColor
+  );
+  win.renderTexture =
+    RenderTexture(size, sizes.dpiScale, TextureFormat::RGBA8Unorm, colorData.data());
   win.renderTexture.UpdatePos(pos);
+
   win.prevRenderTexture =
-    RenderTexture(size, sizes.dpiScale, TextureFormat::BGRA8Unorm);
+    RenderTexture(size, sizes.dpiScale, TextureFormat::RGBA8Unorm);
   win.prevRenderTexture.UpdatePos(pos);
 
   auto fbSize = size * sizes.dpiScale;
@@ -61,10 +80,15 @@ void WinManager::UpdateRenderData(Win& win) {
   }
 
   if (sizeChanged) {
-    win.renderTexture = RenderTexture(size, sizes.dpiScale, TextureFormat::BGRA8Unorm);
+    std::vector<ColorBytes> colorData(
+      size.x * size.y * sizes.dpiScale * sizes.dpiScale, clearColor
+    );
+    win.renderTexture =
+      RenderTexture(size, sizes.dpiScale, TextureFormat::RGBA8Unorm, colorData.data());
     win.renderTexture.UpdatePos(pos);
+
     win.prevRenderTexture =
-      RenderTexture(size, sizes.dpiScale, TextureFormat::BGRA8Unorm);
+      RenderTexture(size, sizes.dpiScale, TextureFormat::RGBA8Unorm);
     win.prevRenderTexture.UpdatePos(pos);
   } else {
     win.renderTexture.UpdatePos(pos);
@@ -232,12 +256,17 @@ void WinManager::Viewport(const WinViewport& e) {
   bool shouldScroll =              //
     std::abs(e.scrollDelta) > 0 && //
     std::abs(e.scrollDelta) <= win.height - (win.margins.top + win.margins.bottom);
+
+  // LOG_INFO("WinManager::Viewport: grid {} scrollDelta {} shouldScroll {}", e.grid,
+  // e.scrollDelta,
+  //          shouldScroll);
   if (shouldScroll) {
     win.scrolling = true;
     win.scrollDist = e.scrollDelta * sizes.charSize.y;
     win.scrollElapsed = 0;
 
     std::swap(win.prevRenderTexture, win.renderTexture);
+    win.hasPrevRender = true;
   }
 }
 
@@ -259,7 +288,7 @@ void WinManager::UpdateScrolling(float dt) {
       auto maskPos = pos * sizes.dpiScale;
       ctx.queue.WriteBuffer(win.maskPosBuffer, 0, &maskPos, sizeof(glm::vec2));
 
-      win.hasPrevRender = true;
+      // win.hasPrevRender = true;
 
     } else {
       auto size = win.size;
