@@ -1,4 +1,5 @@
 #include "SDL3/SDL_init.h"
+#include "SDL_keycode.h"
 #include "app/options.hpp"
 #include "app/size.hpp"
 #include "app/input.hpp"
@@ -47,14 +48,15 @@ int main() {
 
   try {
     appOpts = {
-      .multigrid = true,
-      .vsync = true,
+      .multigrid = false,
+      .vsync = false,
       .windowMargins{5, 5, 5, 5},
       .borderless = false,
       .bgColor = 0x282c34,
-      .transparency = 0.90,
-      .windowBlur = 20,
+      .transparency = 0.92,
+      .windowBlur = 0,
     };
+    appOpts.transparency = int(appOpts.transparency * 255) / 255.0f;
 
     auto presentMode = appOpts.vsync ? PresentMode::Mailbox : PresentMode::Immediate;
     sdl::Window window({1600, 1000}, "Neovim GUI", presentMode);
@@ -112,6 +114,7 @@ int main() {
         // nvim events -------------------------------------------
         if (!nvim.client.IsConnected()) {
           exitWindow = true;
+          nvim.sessionManager.RemoveSession("default");
         };
 
         nvim.ParseRedrawEvents();
@@ -163,6 +166,16 @@ int main() {
             case SDL_EVENT_WINDOW_FOCUS_LOST:
               windowFocused = false;
               break;
+            // case SDL_EVENT_KEY_DOWN:
+            //   if (event.key.keysym.sym == SDLK_1) {
+            //     LOG("key down: {}", event.key.keysym.sym);
+            //     nvim.NvimListUis();
+            //   }
+            //   if (event.key.keysym.sym == SDLK_2) {
+            //     LOG("key down: {}", event.key.keysym.sym);
+            //     nvim.UiDetach();
+            //   }
+            //   break;
           }
           sdlEvents.Pop();
         }
@@ -206,8 +219,8 @@ int main() {
           std::scoped_lock lock(wgpuDeviceMutex);
           renderer.Begin();
 
-          // bool renderWindows = false;
-          bool renderWindows = true;
+          bool renderWindows = false;
+          // bool renderWindows = true;
           for (auto& [id, win] : editorState.winManager.windows) {
             if (win.grid.dirty) {
               renderer.RenderWindow(win, font, editorState.hlTable);
@@ -296,6 +309,7 @@ int main() {
 
       switch (event.type) {
         case SDL_EVENT_QUIT:
+          LOG("exit window");
           exitWindow = true;
           break;
 
@@ -303,7 +317,9 @@ int main() {
         case SDL_EVENT_KEY_DOWN:
         case SDL_EVENT_KEY_UP:
           input.HandleKeyboard(event.key);
+          sdlEvents.Push(event);
           break;
+
         case SDL_EVENT_TEXT_EDITING:
           break;
         case SDL_EVENT_TEXT_INPUT:
@@ -340,7 +356,10 @@ int main() {
     }
 
     renderThread.join();
-    nvim.client.Disconnect();
+    if (nvim.client.IsConnected()) {
+      nvim.UiDetach();
+      LOG_INFO("Detached UI");
+    }
 
   } catch (const std::exception& e) {
     LOG_ERR("{}", e.what());

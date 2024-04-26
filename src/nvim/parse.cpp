@@ -9,7 +9,7 @@
 static void ParseRedraw(const msgpack::object& params, RedrawState& state);
 
 void ParseRedrawEvents(rpc::Client& client, RedrawState& state) {
-  LOG_DISABLE();
+  // LOG_DISABLE();
   state.numFlushes = 0;
   while (client.HasNotification()) {
     auto notification = client.PopNotification();

@@ -1,19 +1,11 @@
 # Neogui
-An experimental prototype for a graphically flexible neovim gui.
+Blazingly fast neovim gui written in C++20 and WebGPU.  
 
-## Name Ideas:
-- **neogui**
-- neohou
-- neowilly
-- nvimwilly
-- neolliam
-- cppnvim
-- cppneovim
-- neoweed
-- willynvimgui
-- neogpu
-- nvimgpu
-- neoweb
-- neodawn
-- nvimdawn
-- neocanvas
+### Key Features
+- Blazingly fast and energy efficient
+- Smooth scrolling and cursor out of the box
+- Detachable sessions (similiar to tmux)
+
+### TODO
+- Read neovim settings
+- Proper font loading from path

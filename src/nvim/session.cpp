@@ -1,0 +1,64 @@
+#include "session.hpp"
+
+#include "boost/asio/io_service.hpp"
+#include "boost/asio/ip/tcp.hpp"
+#include "boost/process.hpp"
+#include "utils/logger.hpp"
+#include <fstream>
+#include <sstream>
+
+namespace bp = boost::process;
+
+void SessionManager::LoadSessions(const std::string& filename) {
+  std::ifstream file(filename);
+  std::string line;
+  while (std::getline(file, line)) {
+    std::istringstream iss(line);
+    std::string session_name;
+    uint16_t port;
+    if (iss >> session_name >> port) {
+      sessions[session_name] = port;
+    }
+  }
+}
+
+void SessionManager::SaveSessions(const std::string& filename) {
+  std::ofstream file(filename);
+  for (auto& [key, value] : sessions) {
+    file << key << " " << value << "\n";
+  }
+}
+
+static uint16_t FindFreePort() {
+  using namespace boost::asio;
+  io_service io_service;
+  ip::tcp::acceptor acceptor(io_service);
+  ip::tcp::endpoint endpoint(ip::tcp::v4(), 0);
+  boost::system::error_code ec;
+  acceptor.open(endpoint.protocol(), ec);
+  acceptor.bind(endpoint, ec);
+  if (ec) {
+    throw std::runtime_error("Failed to bind to open port: " + ec.message());
+  }
+  return acceptor.local_endpoint().port();
+}
+
+static void SpawnNvimProcess(uint16_t port) {
+  std::string cmd = "nvim --listen localhost:" + std::to_string(port) +
+                    " --headless --cmd \"let g:neovim_gui = 1\"";
+  bp::spawn(cmd);
+}
+
+uint16_t SessionManager::GetOrCreateSession(const std::string& session_name) {
+  auto [it, inserted] = sessions.try_emplace(session_name);
+  if (inserted) {
+    it->second = FindFreePort();
+    SpawnNvimProcess(it->second);
+    LOG_INFO("Created session {} on port {}", session_name, it->second);
+  }
+  return it->second;
+}
+
+void SessionManager::RemoveSession(const std::string& session_name) {
+  sessions.erase(session_name);
+}

@@ -215,7 +215,7 @@ private:
           if (IsConnected()) {
             // std::cout << "Error code: " << ec << std::endl;
             // std::cout << "Error message: " << ec.message() << std::endl;
-            LOG_INFO("Client::GetData: {}", ec.message());
+            LOG_ERR("Client::GetData: {}", ec.message());
           }
         }
       }
@@ -229,8 +229,8 @@ private:
   }
 
   void DoWrite() {
-    if (!IsConnected()) return;
-    if (msgsOut.Empty() || exit) return;
+    // send all messages before exiting
+    if (msgsOut.Empty()) return;
     auto& buffer = msgsOut.Front();
     asio::async_write(
       socket, asio::buffer(buffer.data(), buffer.size()),
@@ -245,7 +245,7 @@ private:
           DoWrite();
 
         } else {
-          LOG_INFO("Client::DoWrite: {}", ec.message());
+          LOG_ERR("Client::DoWrite: {}", ec.message());
         }
       }
     );

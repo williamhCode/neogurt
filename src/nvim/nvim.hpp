@@ -1,15 +1,16 @@
 #pragma once
 
 #include "nvim/parse.hpp"
-#include "process.hpp"
+// #include "process.hpp"
 // #include "msgpack/v3/adaptor/boost/msgpack_variant_decl.hpp"
+#include "nvim/session.hpp"
 
 struct Nvim {
   using variant = msgpack::type::variant;
 
+  bool debug;
+  SessionManager sessionManager;
   rpc::Client client;
-  std::unique_ptr<TinyProcessLib::Process> nvimProcess;
-
   RedrawState redrawState;
 
   Nvim(bool debug);
@@ -25,6 +26,9 @@ struct Nvim {
     const std::map<std::string, std::string>& attributes
   );
   void SetVar(const std::string& name, const variant& value);
+  void UiAttach(int width, int height, const std::map<std::string, variant>& options);
+  void UiDetach();
+  void UiTryResize(int width, int height);
   void Input(const std::string& input);
   void InputMouse(
     const std::string& button,
@@ -34,7 +38,6 @@ struct Nvim {
     int row,
     int col
   );
-  void UiAttach(int width, int height, const std::map<std::string, variant>& options);
-  void UiTryResize(int width, int height);
+  void NvimListUis();
   void ParseRedrawEvents();
 };

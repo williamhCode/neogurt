@@ -295,7 +295,7 @@ void WinManager::UpdateScrolling(float dt) {
       auto& margins = win.fmargins;
 
       float t = win.scrollElapsed / win.scrollTime;
-      float x = glm::pow(t, 1 / 2.8f);
+      float x = glm::pow(t, 1 / 2.0f);
       win.scrollCurr =
         glm::sign(win.scrollDist) * glm::mix(0.0f, glm::abs(win.scrollDist), x);
       pos.y -= win.scrollCurr;

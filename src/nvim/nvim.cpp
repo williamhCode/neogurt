@@ -1,15 +1,15 @@
 #include "nvim.hpp"
 #include "parse.hpp"
+#include "utils/logger.hpp"
+#include <thread>
 
-Nvim::Nvim(bool debug) {
+Nvim::Nvim(bool _debug) : debug(_debug) {
   // start nvim process
+  uint16_t port = 6666;
   if (!debug) {
-    std::string command = "nvim --listen localhost:6666 --headless "
-                          "--cmd \"let g:neovim_gui = 1\"";
-    // std::string command = "cd ~/.config/nvim && "
-    //                       "nvim --listen localhost:6666 --headless "
-    //                       "--cmd \"let g:neovim_gui = 1\"";
-    nvimProcess = std::make_unique<TinyProcessLib::Process>(command, "", nullptr);
+    sessionManager.LoadSessions(ROOT_DIR "/sessions.txt");
+    port = sessionManager.GetOrCreateSession("default");
+    LOG_INFO("Using port: {}", port);
   }
 
   using namespace std::chrono_literals;
@@ -17,7 +17,7 @@ Nvim::Nvim(bool debug) {
   auto elapsed = 0ms;
   auto delay = 50ms;
   while (elapsed < timeout) {
-    if (client.Connect("localhost", 6666)) break;
+    if (client.Connect("localhost", port)) break;
     std::this_thread::sleep_for(delay);
     elapsed += delay;
   }
@@ -41,7 +41,10 @@ Nvim::Nvim(bool debug) {
 }
 
 Nvim::~Nvim() {
-  if (nvimProcess) nvimProcess->kill(true);
+  client.Disconnect();
+  if (!debug) {
+    sessionManager.SaveSessions(ROOT_DIR "/sessions.txt");
+  }
 }
 
 void Nvim::SetClientInfo(
@@ -64,6 +67,10 @@ void Nvim::UiAttach(
   client.Send("nvim_ui_attach", width, height, options);
 }
 
+void Nvim::UiDetach() {
+  client.Send("nvim_ui_detach");
+}
+
 void Nvim::UiTryResize(int width, int height) {
   client.Send("nvim_ui_try_resize", width, height);
 }
@@ -81,6 +88,15 @@ void Nvim::InputMouse(
   int col
 ) {
   client.Send("nvim_input_mouse", button, action, modifier, grid, row, col);
+}
+
+void Nvim::NvimListUis() {
+  auto response = client.AsyncCall("nvim_list_uis");
+
+  std::thread([response = std::move(response)]() mutable {
+    auto result = response.get();
+    LOG_INFO("nvim_list_uis: {}", ToString(result.get()));
+  }).detach();
 }
 
 void Nvim::ParseRedrawEvents() {

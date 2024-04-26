@@ -5,6 +5,7 @@ compile_commands.json
 xcode
 imgui.ini
 tint
+sessions.txt
 
 # CLion
 .idea

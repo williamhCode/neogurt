@@ -1,6 +1,5 @@
 # fix https://gitlab.kitware.com/cmake/cmake/-/issues/24104
 enable_language(OBJC) 
-# enable_language(OBJCXX)
 
 cmake_minimum_required(VERSION 3.5...3.28)
 
@@ -46,6 +45,7 @@ set(APP_SRC
 
   src/nvim/nvim.cpp
   src/nvim/parse.cpp
+  src/nvim/session.cpp
 
   src/utils/unicode.cpp
   src/utils/clock.cpp
