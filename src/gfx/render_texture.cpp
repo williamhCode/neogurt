@@ -12,10 +12,9 @@ RenderTexture::RenderTexture(
     : size(_size) {
   camera = Ortho2D(size);
 
-  Extent3D textureSize{
-    static_cast<uint32_t>(size.x * dpiScale), static_cast<uint32_t>(size.y * dpiScale)
-  };
-  texture = utils::CreateRenderTexture(ctx.device, textureSize, format, data);
+  auto fbSize = size * dpiScale;
+  texture =
+    utils::CreateRenderTexture(ctx.device, Extent3D(fbSize.x, fbSize.y), format, data);
   textureView = texture.CreateView();
 
   auto textureSampler = ctx.device.CreateSampler(ToPtr(SamplerDescriptor{

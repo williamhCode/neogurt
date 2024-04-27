@@ -9,7 +9,7 @@
 static void ParseRedraw(const msgpack::object& params, RedrawState& state);
 
 void ParseRedrawEvents(rpc::Client& client, RedrawState& state) {
-  // LOG_DISABLE();
+  LOG_DISABLE();
   state.numFlushes = 0;
   while (client.HasNotification()) {
     auto notification = client.PopNotification();
@@ -116,22 +116,19 @@ static const std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
       switch (cell.via.array.size) {
         case 3: {
           auto [text, hl_id, repeat] = cell.as<std::tuple<std::string, int, int>>();
-          // gridLine.cells.emplace_back(text, hl_id, repeat);
-          gridLine.cells.push_back({text, hl_id, repeat});
+          gridLine.cells.emplace_back(text, hl_id, repeat);
           recent_hl_id = hl_id;
           break;
         }
         case 2: {
           auto [text, hl_id] = cell.as<std::tuple<std::string, int>>();
-          // gridLine.cells.emplace_back(text, hl_id);
-          gridLine.cells.push_back({text, hl_id});
+          gridLine.cells.emplace_back(text, hl_id);
           recent_hl_id = hl_id;
           break;
         }
         case 1: {
           auto [text] = cell.as<std::tuple<std::string>>();
-          // gridLine.cells.emplace_back(text, recent_hl_id);
-          gridLine.cells.push_back({text, recent_hl_id});
+          gridLine.cells.emplace_back(text, recent_hl_id);
           break;
         }
       }

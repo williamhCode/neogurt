@@ -60,9 +60,6 @@ target_compile_definitions(neogui PRIVATE
   ROOT_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
-# set_target_properties(neogui PROPERTIES
-# )
-
 target_include_directories(neogui PRIVATE 
   ${PROJECT_SOURCE_DIR}/src
   ${ASIO_INCLUDE_DIR}

@@ -19,6 +19,7 @@
 #include "utils/timer.hpp"
 
 #include <algorithm>
+#include <span>
 #include <vector>
 #include <deque>
 #include <atomic>
@@ -49,12 +50,12 @@ int main() {
   try {
     appOpts = {
       .multigrid = false,
-      .vsync = false,
+      .vsync = true,
       .windowMargins{5, 5, 5, 5},
       .borderless = false,
       .bgColor = 0x282c34,
       .transparency = 0.92,
-      .windowBlur = 0,
+      .windowBlur = 20,
     };
     appOpts.transparency = int(appOpts.transparency * 255) / 255.0f;
 
@@ -77,6 +78,8 @@ int main() {
         {"ext_linegrid", true},
       }
     );
+
+    std::span<const int> test{{10, 10, 10}};
 
     EditorState editorState{
       .winManager{.sizes = sizes},
@@ -219,8 +222,8 @@ int main() {
           std::scoped_lock lock(wgpuDeviceMutex);
           renderer.Begin();
 
-          bool renderWindows = false;
-          // bool renderWindows = true;
+          // bool renderWindows = false;
+          bool renderWindows = true;
           for (auto& [id, win] : editorState.winManager.windows) {
             if (win.grid.dirty) {
               renderer.RenderWindow(win, font, editorState.hlTable);

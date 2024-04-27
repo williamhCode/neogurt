@@ -36,6 +36,7 @@ struct Margins {
 };
 
 struct Win {
+  int id;
   Grid& grid;
 
   int startRow;

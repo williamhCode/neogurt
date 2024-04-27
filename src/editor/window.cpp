@@ -28,19 +28,22 @@ void WinManager::InitRenderData(Win& win) {
   auto pos = glm::vec2(win.startCol, win.startRow) * sizes.charSize;
   auto size = glm::vec2(win.width, win.height) * sizes.charSize;
 
-  std::vector<ColorBytes> colorData(
-    size.x * size.y * sizes.dpiScale * sizes.dpiScale, clearColor
-  );
-  win.renderTexture =
-    RenderTexture(size, sizes.dpiScale, TextureFormat::RGBA8Unorm, colorData.data());
+  // std::vector<ColorBytes> colorData(
+  //   size.x * size.y * sizes.dpiScale * sizes.dpiScale, clearColor
+  // );
+  // win.renderTexture =
+  //   RenderTexture(size, sizes.dpiScale, TextureFormat::RGBA8Unorm, colorData.data());
+  win.renderTexture = RenderTexture(size, sizes.dpiScale, TextureFormat::RGBA8Unorm);
   win.renderTexture.UpdatePos(pos);
 
-  win.prevRenderTexture =
-    RenderTexture(size, sizes.dpiScale, TextureFormat::RGBA8Unorm);
-  win.prevRenderTexture.UpdatePos(pos);
+  if (win.id != 1 && win.id != msgWinId) {
+    win.prevRenderTexture =
+      RenderTexture(size, sizes.dpiScale, TextureFormat::RGBA8Unorm);
+    win.prevRenderTexture.UpdatePos(pos);
+  }
 
   auto fbSize = size * sizes.dpiScale;
-  Extent3D maskSize{(uint32_t)fbSize.x, (uint32_t)fbSize.y};
+  Extent3D maskSize(fbSize.x, fbSize.y);
   win.maskTextureView =
     utils::CreateRenderTexture(ctx.device, maskSize, TextureFormat::R8Unorm)
       .CreateView();
@@ -80,26 +83,33 @@ void WinManager::UpdateRenderData(Win& win) {
   }
 
   if (sizeChanged) {
-    std::vector<ColorBytes> colorData(
-      size.x * size.y * sizes.dpiScale * sizes.dpiScale, clearColor
-    );
-    win.renderTexture =
-      RenderTexture(size, sizes.dpiScale, TextureFormat::RGBA8Unorm, colorData.data());
+    // std::vector<ColorBytes> colorData(
+    //   size.x * size.y * sizes.dpiScale * sizes.dpiScale, clearColor
+    // );
+    // win.renderTexture =
+    //   RenderTexture(size, sizes.dpiScale, TextureFormat::RGBA8Unorm,
+    //   colorData.data());
+    win.renderTexture = RenderTexture(size, sizes.dpiScale, TextureFormat::RGBA8Unorm);
     win.renderTexture.UpdatePos(pos);
 
-    win.prevRenderTexture =
-      RenderTexture(size, sizes.dpiScale, TextureFormat::RGBA8Unorm);
-    win.prevRenderTexture.UpdatePos(pos);
+    if (win.id != 1 && win.id != msgWinId) {
+      win.prevRenderTexture =
+        RenderTexture(size, sizes.dpiScale, TextureFormat::RGBA8Unorm);
+      win.prevRenderTexture.UpdatePos(pos);
+    }
   } else {
     win.renderTexture.UpdatePos(pos);
-    win.prevRenderTexture.UpdatePos(pos);
+    if (win.id != 1 && win.id != msgWinId) {
+      win.prevRenderTexture.UpdatePos(pos);
+    }
   }
 
   if (sizeChanged) {
     auto fbSize = size * sizes.dpiScale;
-    Extent3D maskSize{(uint32_t)fbSize.x, (uint32_t)fbSize.y};
     win.maskTextureView =
-      utils::CreateRenderTexture(ctx.device, maskSize, TextureFormat::R8Unorm)
+      utils::CreateRenderTexture(
+        ctx.device, Extent3D(fbSize.x, fbSize.y), TextureFormat::R8Unorm
+      )
         .CreateView();
 
     win.maskBG = utils::MakeBindGroup(
@@ -129,8 +139,9 @@ void WinManager::UpdateRenderData(Win& win) {
 }
 
 void WinManager::Pos(const WinPos& e) {
-  auto [it, first] =
-    windows.try_emplace(e.grid, Win{.grid = gridManager->grids.at(e.grid)});
+  auto [it, first] = windows.try_emplace(
+    e.grid, Win{.id = e.grid, .grid = gridManager->grids.at(e.grid)}
+  );
   auto& win = it->second;
 
   win.startRow = e.startRow;
@@ -149,8 +160,9 @@ void WinManager::Pos(const WinPos& e) {
 }
 
 void WinManager::FloatPos(const WinFloatPos& e) {
-  auto [winIt, first] =
-    windows.try_emplace(e.grid, Win{.grid = gridManager->grids.at(e.grid)});
+  auto [winIt, first] = windows.try_emplace(
+    e.grid, Win{.id = e.grid, .grid = gridManager->grids.at(e.grid)}
+  );
   auto& win = winIt->second;
 
   win.width = win.grid.width;
@@ -226,8 +238,9 @@ void WinManager::Close(const WinClose& e) {
 }
 
 void WinManager::MsgSet(const MsgSetPos& e) {
-  auto [winIt, first] =
-    windows.try_emplace(e.grid, Win{.grid = gridManager->grids.at(e.grid)});
+  auto [winIt, first] = windows.try_emplace(
+    e.grid, Win{.id = e.grid, .grid = gridManager->grids.at(e.grid)}
+  );
   auto& win = winIt->second;
 
   win.startRow = e.row;
@@ -237,6 +250,8 @@ void WinManager::MsgSet(const MsgSetPos& e) {
   win.height = win.grid.height;
 
   win.hidden = false;
+
+  msgWinId = e.grid;
 
   if (first) {
     InitRenderData(win);

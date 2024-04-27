@@ -5,7 +5,7 @@
 
 Nvim::Nvim(bool _debug) : debug(_debug) {
   // start nvim process
-  uint16_t port = 6666;
+  uint16_t port = 2040;
   if (!debug) {
     sessionManager.LoadSessions(ROOT_DIR "/sessions.txt");
     port = sessionManager.GetOrCreateSession("default");
@@ -18,6 +18,7 @@ Nvim::Nvim(bool _debug) : debug(_debug) {
   auto delay = 50ms;
   while (elapsed < timeout) {
     if (client.Connect("localhost", port)) break;
+    // if (client.Connect("data.cs.purdue.edu", port)) break;
     std::this_thread::sleep_for(delay);
     elapsed += delay;
   }
