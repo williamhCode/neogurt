@@ -49,7 +49,7 @@ int main() {
 
   try {
     appOpts = {
-      .multigrid = false,
+      .multigrid = true,
       .vsync = true,
       .windowMargins{5, 5, 5, 5},
       .borderless = false,
@@ -87,10 +87,10 @@ int main() {
     };
     editorState.winManager.gridManager = &editorState.gridManager;
 
+    // main loop -----------------------------------
     // lock whenever ctx.device is used
     std::mutex wgpuDeviceMutex;
 
-    // main thread -----------------------------------
     std::atomic_bool exitWindow = false;
     TSQueue<SDL_Event> resizeEvents;
     TSQueue<SDL_Event> sdlEvents;
@@ -98,11 +98,10 @@ int main() {
     std::thread renderThread([&] {
       bool windowFocused = true;
       bool idle = false;
+      float idleElasped = 0;
 
       Clock clock;
       // Timer timer(30);
-
-      float idleElasped = 0;
 
       while (!exitWindow) {
         auto dt = clock.Tick(60);
@@ -222,10 +221,11 @@ int main() {
           std::scoped_lock lock(wgpuDeviceMutex);
           renderer.Begin();
 
-          // bool renderWindows = false;
-          bool renderWindows = true;
+          bool renderWindows = false;
+          // bool renderWindows = true;
           for (auto& [id, win] : editorState.winManager.windows) {
             if (win.grid.dirty) {
+            // if (true) {
               renderer.RenderWindow(win, font, editorState.hlTable);
               win.grid.dirty = false;
               renderWindows = true;
@@ -283,12 +283,12 @@ int main() {
       }
     });
 
+    // event loop --------------------------------
     InputHandler input(nvim, editorState.winManager);
 
-    SDL_Rect rect{0, 0, 100, 100};
-
     SDL_StartTextInput();
-    SDL_SetTextInputRect(&rect);
+    // SDL_Rect rect{0, 0, 100, 100};
+    // SDL_SetTextInputRect(&rect);
 
     // resize handling
     sdl::AddEventWatch([&](SDL_Event& event) {

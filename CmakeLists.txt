@@ -76,7 +76,11 @@ target_link_libraries(neogui PRIVATE
 if (MSVC)
   target_compile_options(neogui PRIVATE /W4)
 else()
-  target_compile_options(neogui PRIVATE -Wall -Wextra -Wshadow -pedantic)
+  target_compile_options(neogui PRIVATE
+    -Wall -Wextra -Wshadow -pedantic 
+    -Wno-missing-field-initializers
+  )
+
   # assert in release
   # target_compile_options(neogui PRIVATE -UNDEBUG)
 endif()

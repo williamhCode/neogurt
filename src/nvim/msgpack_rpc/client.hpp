@@ -75,13 +75,11 @@ public:
     return future.get();
   }
 
-  template <typename... Args>
   std::future<msgpack::object_handle>
-  AsyncCall(const std::string& func_name, Args... args) {
+  AsyncCall(const std::string& func_name, auto... args) {
     if (!IsConnected()) return {};
 
-    // template required for Apple Clang
-    Request<std::tuple<Args...>> msg{
+    Request msg{
       .msgid = Msgid(),
       .method = func_name,
       .params = std::tuple(args...),
@@ -100,12 +98,11 @@ public:
     return future;
   }
 
-  template <typename... Args>
-  void Send(const std::string& func_name, Args... args) {
+  void Send(const std::string& func_name, auto... args) {
     if (!IsConnected()) return;
 
     // template required for Apple Clang
-    NotificationOut<std::tuple<Args...>> msg{
+    NotificationOut msg{
       .method = func_name,
       .params = std::tuple(args...),
     };

@@ -330,14 +330,14 @@ void WinManager::UpdateScrolling(float dt) {
         },
         .size{innerWidth, toScroll},
       };
-      win.prevRenderTexture.UpdatePos(pos + prevRegion.pos, prevRegion);
+      win.prevRenderTexture.UpdatePos(pos + prevRegion.pos, &prevRegion);
 
       RegionHandle region{
         .pos{margins.left, scrollPositive ? margins.top : margins.top + toScroll},
         .size{innerWidth, innerHeight - toScroll},
       };
       pos += glm::vec2(0, win.scrollDist);
-      win.renderTexture.UpdatePos(pos + region.pos, region);
+      win.renderTexture.UpdatePos(pos + region.pos, &region);
 
       auto maskPos = pos * sizes.dpiScale;
       ctx.queue.WriteBuffer(win.maskPosBuffer, 0, &maskPos, sizeof(glm::vec2));

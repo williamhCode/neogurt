@@ -5,7 +5,6 @@
 #include "gfx/camera.hpp"
 #include "gfx/quad.hpp"
 #include "glm/ext/vector_float2.hpp"
-#include <optional>
 
 struct RenderTexture {
   Ortho2D camera;
@@ -25,6 +24,7 @@ struct RenderTexture {
     const void* data = nullptr
   );
 
+  // pos is the position (top left) of the texture in the screen
   // region is the subregion of the texture to draw
-  void UpdatePos(glm::vec2 pos, std::optional<RegionHandle> region = std::nullopt);
+  void UpdatePos(glm::vec2 pos, RegionHandle* region = nullptr);
 };

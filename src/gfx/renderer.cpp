@@ -43,11 +43,11 @@ Renderer::Renderer(const SizeHandler& sizes) {
   });
 
   // windows
-  auto stencilTextureView = utils::CreateRenderTexture(
-    ctx.device,
-    {static_cast<uint32_t>(sizes.uiFbSize.x), static_cast<uint32_t>(sizes.uiFbSize.y)},
-    TextureFormat::Stencil8
-  ).CreateView();
+  auto stencilTextureView =
+    utils::CreateRenderTexture(
+      ctx.device, Extent3D(sizes.uiFbSize.x, sizes.uiFbSize.y), TextureFormat::Stencil8
+    )
+      .CreateView();
 
   windowsRPD = utils::RenderPassDescriptor(
     {
@@ -104,10 +104,12 @@ void Renderer::Resize(const SizeHandler& sizes) {
   windowsRPD.cColorAttachments[0].view = finalRenderTexture.textureView;
 
   auto stencilTextureView = utils::CreateRenderTexture(
-    ctx.device,
-    {static_cast<uint32_t>(sizes.uiFbSize.x), static_cast<uint32_t>(sizes.uiFbSize.y)},
-    TextureFormat::Stencil8
-  ).CreateView();
+                              ctx.device,
+                              {static_cast<uint32_t>(sizes.uiFbSize.x),
+                               static_cast<uint32_t>(sizes.uiFbSize.y)},
+                              TextureFormat::Stencil8
+  )
+                              .CreateView();
   windowsRPD.cDepthStencilAttachmentInfo.view = stencilTextureView;
 
   ctx.queue.WriteBuffer(maskOffsetBuffer, 0, &sizes.fbOffset, sizeof(glm::vec2));
@@ -214,7 +216,9 @@ void Renderer::RenderWindow(Win& win, Font& font, const HlTable& hlTable) {
 }
 
 // jst playing with templates and concepts is a bit unnecessary
-void Renderer::RenderWindows(const RangeOf<const Win*> auto& windows, const RangeOf<const Win*> auto& floatWindows) {
+void Renderer::RenderWindows(
+  const RangeOf<const Win*> auto& windows, const RangeOf<const Win*> auto& floatWindows
+) {
   auto passEncoder = commandEncoder.BeginRenderPass(&windowsRPD);
   passEncoder.SetPipeline(ctx.pipeline.textureRPL);
   passEncoder.SetBindGroup(0, finalRenderTexture.camera.viewProjBG);
@@ -224,8 +228,8 @@ void Renderer::RenderWindows(const RangeOf<const Win*> auto& windows, const Rang
     win->renderTexture.renderData.Render(passEncoder);
     if (win->scrolling) {
       // if (win->hasPrevRender) {
-        passEncoder.SetBindGroup(1, win->prevRenderTexture.textureBG);
-        win->prevRenderTexture.renderData.Render(passEncoder);
+      passEncoder.SetBindGroup(1, win->prevRenderTexture.textureBG);
+      win->prevRenderTexture.renderData.Render(passEncoder);
       // }
 
       // draw window borders
@@ -249,7 +253,9 @@ void Renderer::RenderWindows(const RangeOf<const Win*> auto& windows, const Rang
   passEncoder.End();
 }
 // explicit template instantiations
-template void Renderer::RenderWindows(const std::deque<const Win*>& windows, const std::vector<const Win*>& floatWindows);
+template void Renderer::RenderWindows(
+  const std::deque<const Win*>& windows, const std::vector<const Win*>& floatWindows
+);
 
 void Renderer::RenderFinalTexture() {
   finalRPD.cColorAttachments[0].view = nextTextureView;
