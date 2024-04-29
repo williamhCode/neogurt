@@ -3,6 +3,7 @@
 #include "glm/gtx/string_cast.hpp"
 #include "utils/color.hpp"
 #include "utils/variant.hpp"
+#include "utils/logger.hpp"
 #include <deque>
 #include <vector>
 

@@ -4,8 +4,8 @@
 #include "glm/exponential.hpp"
 #include "glm/ext/vector_float2.hpp"
 #include "webgpu_tools/utils/webgpu.hpp"
+#include "utils/logger.hpp"
 #include <algorithm>
-#include <cstdint>
 #include <cstdlib>
 #include <utility>
 

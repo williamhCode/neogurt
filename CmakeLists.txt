@@ -16,7 +16,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)  # clangd
 
 add_subdirectory(deps/webgpu_tools)
 add_subdirectory(deps/msgpack)
-add_subdirectory(deps/tiny_process_library)
 add_subdirectory(deps/freetype)
 set(ASIO_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/deps/asio/asio/include)
 set(UTFCPP_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/deps/utfcpp/source)
@@ -46,6 +45,7 @@ set(APP_SRC
   src/nvim/nvim.cpp
   src/nvim/parse.cpp
   src/nvim/session.cpp
+  src/nvim/msgpack_rpc/client.cpp
 
   src/utils/unicode.cpp
   src/utils/clock.cpp
@@ -69,7 +69,6 @@ target_include_directories(neogui PRIVATE
 target_link_libraries(neogui PRIVATE 
   webgpu_tools
   msgpack-cxx
-  tiny-process-library
   freetype
 )
 
@@ -79,6 +78,7 @@ else()
   target_compile_options(neogui PRIVATE
     -Wall -Wextra -Wshadow -pedantic 
     -Wno-missing-field-initializers
+    -Wno-deprecated-declarations
   )
 
   # assert in release

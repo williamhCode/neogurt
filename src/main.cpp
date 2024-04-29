@@ -62,7 +62,7 @@ int main() {
     auto presentMode = appOpts.vsync ? PresentMode::Mailbox : PresentMode::Immediate;
     sdl::Window window({1600, 1000}, "Neovim GUI", presentMode);
 
-    Font font("/Library/Fonts/SF-Mono-Medium.otf", 13, window.dpiScale);
+    Font font("/Library/Fonts/SF-Mono-Medium.otf", 15, window.dpiScale);
 
     SizeHandler sizes;
     sizes.UpdateSizes(window.size, window.dpiScale, font.charSize);
@@ -78,8 +78,6 @@ int main() {
         {"ext_linegrid", true},
       }
     );
-
-    std::span<const int> test{{10, 10, 10}};
 
     EditorState editorState{
       .winManager{.sizes = sizes},
@@ -346,7 +344,7 @@ int main() {
           std::scoped_lock lock(wgpuDeviceMutex);
           window.dpiScale = SDL_GetWindowPixelDensity(window.Get());
           LOG("display scale changed: {}", window.dpiScale);
-          font = Font("/Library/Fonts/SF-Mono-Medium.otf", 13, window.dpiScale);
+          font = Font("/Library/Fonts/SF-Mono-Medium.otf", 15, window.dpiScale);
           editorState.cursor.fullSize = font.charSize;
           break;
         }

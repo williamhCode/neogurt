@@ -1,7 +1,7 @@
 .PHONY: build
 
-TYPE = release
-# TYPE = debug
+# TYPE = release
+TYPE = debug
 
 build:
 	cmake --build build/$(TYPE) --target neogui
@@ -22,14 +22,16 @@ build-setup:
 		-DCMAKE_C_COMPILER=clang \
 		-DCMAKE_CXX_COMPILER=clang++ \
 		-DCMAKE_C_COMPILER_LAUNCHER=ccache \
-		-DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+		-DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+		-DCMAKE_COLOR_DIAGNOSTICS=ON
 	cmake . -B build/release \
 		-DCMAKE_BUILD_TYPE=Release \
 		-GNinja \
 		-DCMAKE_C_COMPILER=clang \
 		-DCMAKE_CXX_COMPILER=clang++ \
 		-DCMAKE_C_COMPILER_LAUNCHER=ccache \
-		-DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+		-DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+		-DCMAKE_COLOR_DIAGNOSTICS=ON
 
 # TODO: use ccache for xcode
 xcode-setup:
