@@ -4,6 +4,7 @@
 #include "asio/io_context.hpp"
 #include "asio/ip/tcp.hpp"
 
+#include "nvim/msgpack_rpc/messages.hpp"
 #include "tsqueue.hpp"
 
 #include <string_view>
@@ -37,9 +38,10 @@ public:
   void Disconnect();
   bool IsConnected();
 
-  msgpack::object_handle Call(std::string_view method, const std::vector<msgpack::type::variant_ref>& args);
-  std::future<msgpack::object_handle> AsyncCall(std::string_view func_name, const std::vector<msgpack::type::variant_ref>& args);
-  void Send(std::string_view func_name, const std::vector<msgpack::type::variant_ref>& args);
+  msgpack::object_handle Call(std::string_view method, auto&&... args);
+  std::future<msgpack::object_handle>
+  AsyncCall(std::string_view func_name, auto&&... args);
+  void Send(std::string_view func_name, auto&&... args);
 
   // returns next notification at front of queue
   NotificationData PopNotification();
@@ -57,5 +59,50 @@ private:
   void Write(msgpack::sbuffer&& buffer);
   void DoWrite();
 };
+
+} // namespace rpc
+
+namespace rpc {
+
+msgpack::object_handle Client::Call(std::string_view method, auto&&... args) {
+  auto future = AsyncCall(method, args...);
+  return future.get();
+}
+
+std::future<msgpack::object_handle>
+Client::AsyncCall(std::string_view func_name, auto&&... args) {
+  if (!IsConnected()) return {};
+
+  Request msg{
+    .msgid = Msgid(),
+    .method = func_name,
+    .params = std::tuple(args...),
+  };
+  msgpack::sbuffer buffer;
+  msgpack::pack(buffer, msg);
+  Write(std::move(buffer));
+
+  std::promise<msgpack::object_handle> promise;
+  auto future = promise.get_future();
+  {
+    std::scoped_lock lock(responsesMutex);
+    responses[msg.msgid] = std::move(promise);
+  }
+
+  return future;
+}
+
+void Client::Send(std::string_view func_name, auto&&... args) {
+  if (!IsConnected()) return;
+
+  // template required for Apple Clang
+  NotificationOut msg{
+    .method = func_name,
+    .params = std::tuple(args...),
+  };
+  msgpack::sbuffer buffer;
+  msgpack::pack(buffer, msg);
+  Write(std::move(buffer));
+}
 
 } // namespace rpc

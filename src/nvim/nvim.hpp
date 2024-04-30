@@ -6,7 +6,7 @@
 #include "nvim/session.hpp"
 
 struct Nvim {
-  using variant = msgpack::type::variant;
+  using variant_ref = msgpack::type::variant_ref;
 
   bool debug;
   SessionManager sessionManager;
@@ -19,21 +19,21 @@ struct Nvim {
   Nvim& operator=(const Nvim&) = delete;
 
   void SetClientInfo(
-    const std::string& name,
-    const std::map<std::string, variant>& version,
-    const std::string& type,
-    const std::map<std::string, variant>& methods,
-    const std::map<std::string, std::string>& attributes
+    std::string_view name,
+    const std::map<std::string_view, variant_ref>& version,
+    std::string_view type,
+    const std::map<std::string_view, variant_ref>& methods,
+    const std::map<std::string_view, std::string_view>& attributes
   );
-  void SetVar(const std::string& name, const variant& value);
-  void UiAttach(int width, int height, const std::map<std::string, variant>& options);
+  void SetVar(std::string_view name, const variant_ref& value);
+  void UiAttach(int width, int height, const std::map<std::string_view, variant_ref>& options);
   void UiDetach();
   void UiTryResize(int width, int height);
-  void Input(const std::string& input);
+  void Input(std::string_view input);
   void InputMouse(
-    const std::string& button,
-    const std::string& action,
-    const std::string& modifier,
+    std::string_view button,
+    std::string_view action,
+    std::string_view modifier,
     int grid,
     int row,
     int col

@@ -49,21 +49,21 @@ Nvim::~Nvim() {
 }
 
 void Nvim::SetClientInfo(
-  const std::string& name,
-  const std::map<std::string, variant>& version,
-  const std::string& type,
-  const std::map<std::string, variant>& methods,
-  const std::map<std::string, std::string>& attributes
+  std::string_view name,
+  const std::map<std::string_view, variant_ref>& version,
+  std::string_view type,
+  const std::map<std::string_view, variant_ref>& methods,
+  const std::map<std::string_view, std::string_view>& attributes
 ) {
   client.Send("nvim_set_client_info", name, version, type, methods, attributes);
 }
 
-void Nvim::SetVar(const std::string& name, const variant& value) {
+void Nvim::SetVar(std::string_view name, const variant_ref& value) {
   client.Send("nvim_set_var", name, value);
 }
 
 void Nvim::UiAttach(
-  int width, int height, const std::map<std::string, variant>& options
+  int width, int height, const std::map<std::string_view, variant_ref>& options
 ) {
   client.Send("nvim_ui_attach", width, height, options);
 }
@@ -76,14 +76,14 @@ void Nvim::UiTryResize(int width, int height) {
   client.Send("nvim_ui_try_resize", width, height);
 }
 
-void Nvim::Input(const std::string& input) {
+void Nvim::Input(std::string_view input) {
   client.Send("nvim_input", input);
 }
 
 void Nvim::InputMouse(
-  const std::string& button,
-  const std::string& action,
-  const std::string& modifier,
+  std::string_view button,
+  std::string_view action,
+  std::string_view modifier,
   int grid,
   int row,
   int col

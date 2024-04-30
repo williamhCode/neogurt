@@ -46,52 +46,6 @@ bool Client::IsConnected() {
   return !exit;
 }
 
-msgpack::object_handle Client::Call(
-  std::string_view method, const std::vector<msgpack::type::variant_ref>& args
-) {
-  auto future = AsyncCall(method, args);
-  return future.get();
-}
-
-std::future<msgpack::object_handle> Client::AsyncCall(
-  std::string_view func_name, const std::vector<msgpack::type::variant_ref>& args
-) {
-  if (!IsConnected()) return {};
-
-  Request msg{
-    .msgid = Msgid(),
-    .method = func_name,
-    .params = args,
-  };
-  msgpack::sbuffer buffer;
-  msgpack::pack(buffer, msg);
-  Write(std::move(buffer));
-
-  std::promise<msgpack::object_handle> promise;
-  auto future = promise.get_future();
-  {
-    std::scoped_lock lock(responsesMutex);
-    responses[msg.msgid] = std::move(promise);
-  }
-
-  return future;
-}
-
-void Client::Send(
-  std::string_view func_name, const std::vector<msgpack::type::variant_ref>& args
-) {
-  if (!IsConnected()) return;
-
-  // template required for Apple Clang
-  NotificationOut msg{
-    .method = func_name,
-    .params = args,
-  };
-  msgpack::sbuffer buffer;
-  msgpack::pack(buffer, msg);
-  Write(std::move(buffer));
-}
-
 // returns next notification at front of queue
 Client::NotificationData Client::PopNotification() {
   auto msg = std::move(msgsIn.Front());

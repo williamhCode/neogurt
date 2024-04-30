@@ -16,7 +16,7 @@ template <typename T>
 struct Request {
   int32_t type = MessageType::Request;
   uint32_t msgid;
-  std::string method;
+  std::string_view method;
   T params;
   MSGPACK_DEFINE(type, msgid, method, params);
 };
@@ -32,7 +32,7 @@ struct Response {
 template <typename T>
 struct NotificationOut {
   int32_t type = MessageType::Notification;
-  std::string method;
+  std::string_view method;
   T params;
   MSGPACK_DEFINE(type, method, params);
 };
