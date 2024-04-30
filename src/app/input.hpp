@@ -3,7 +3,7 @@
 #include "SDL_events.h"
 #include "editor/window.hpp"
 #include "glm/ext/vector_float2.hpp"
-#include "nvim/nvim.hpp"
+#include "nvim/client.hpp"
 #include <optional>
 
 struct InputHandler {

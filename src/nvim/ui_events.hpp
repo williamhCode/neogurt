@@ -173,7 +173,7 @@ struct WinExtmark {
 };
 
 // clang-format off
-using RedrawEvent = std::variant<
+using UiEvent = std::variant<
   SetTitle,
   SetIcon,
   ModeInfoSet,
@@ -207,17 +207,17 @@ using RedrawEvent = std::variant<
 >;
 // clang-format on
 
-struct RedrawState {
+struct UiEvents {
   int numFlushes = 0;
-  std::deque<std::vector<RedrawEvent>> eventsQueue;
+  std::deque<std::vector<UiEvent>> queue;
 
-  RedrawState() {
-    eventsQueue.emplace_back();
+  UiEvents() {
+    queue.emplace_back();
   }
 
-  auto& currEvents() {
-    return eventsQueue.back();
+  auto& curr() {
+    return queue.back();
   }
 };
 
-void ParseRedrawEvents(rpc::Client& client, RedrawState& state);
+void ParseUiEvents(rpc::Client& client, UiEvents& uiEvents);

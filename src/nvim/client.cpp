@@ -1,17 +1,8 @@
-#include "nvim.hpp"
-#include "parse.hpp"
+#include "client.hpp"
 #include "utils/logger.hpp"
 #include <thread>
 
-Nvim::Nvim(bool _debug) : debug(_debug) {
-  // start nvim process
-  uint16_t port = 2040;
-  if (!debug) {
-    sessionManager.LoadSessions(ROOT_DIR "/sessions.txt");
-    port = sessionManager.GetOrCreateSession("default");
-    LOG_INFO("Using port: {}", port);
-  }
-
+Nvim::Nvim(uint16_t port) {
   using namespace std::chrono_literals;
   auto timeout = 500ms;
   auto elapsed = 0ms;
@@ -27,25 +18,30 @@ Nvim::Nvim(bool _debug) : debug(_debug) {
     // std::cout << "Connected to nvim" << std::endl;
     LOG_INFO("Connected to nvim");
   } else {
-    LOG_ERR("Failed to connect to nvim");
+    throw std::runtime_error("Failed to connect to port " + std::to_string(port));
   }
 
   SetClientInfo(
-    "NeovimGui",
+    "Neogui",
     {
       {"major", 0},
-      {"minor", 1},
+      {"minor", 0},
       {"patch", 0},
     },
     "ui", {}, {}
   );
+
+  auto result = client.Call("nvim_get_api_info");
+  channelId = result->via.array.ptr[0].convert();
+  LOG_INFO("nvim_get_api_info: {}", channelId);
 }
 
 Nvim::~Nvim() {
   client.Disconnect();
-  if (!debug) {
-    sessionManager.SaveSessions(ROOT_DIR "/sessions.txt");
-  }
+}
+
+bool Nvim::IsConnected() {
+  return client.IsConnected();
 }
 
 void Nvim::SetClientInfo(
@@ -91,15 +87,11 @@ void Nvim::InputMouse(
   client.Send("nvim_input_mouse", button, action, modifier, grid, row, col);
 }
 
-void Nvim::NvimListUis() {
+void Nvim::ListUis() {
   auto response = client.AsyncCall("nvim_list_uis");
 
   std::thread([response = std::move(response)]() mutable {
     auto result = response.get();
     LOG_INFO("nvim_list_uis: {}", ToString(result.get()));
   }).detach();
-}
-
-void Nvim::ParseRedrawEvents() {
-  ::ParseRedrawEvents(client, redrawState);
 }

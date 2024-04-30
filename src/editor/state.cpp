@@ -16,13 +16,13 @@ static int VariantAsInt(const msgpack::type::variant& v) {
 
 // clang-format off
 // i hate clang format format on std::visit(overloaded{})
-bool ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
-  bool processedEvents = redrawState.numFlushes > 0;
-  for (int i = 0; i < redrawState.numFlushes; i++) {
-    auto& redrawEvents = redrawState.eventsQueue.front();
+bool ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
+  bool processedEvents = uiEvents.numFlushes > 0;
+  for (int i = 0; i < uiEvents.numFlushes; i++) {
+    auto& redrawEvents = uiEvents.queue.front();
     // to process grid events first then window
-    std::vector<RedrawEvent*> gridEvents;
-    std::deque<RedrawEvent*> winEvents;
+    std::vector<UiEvent*> gridEvents;
+    std::deque<UiEvent*> winEvents;
     for (auto& event : redrawEvents) {
       std::visit(overloaded{
         [&](SetTitle& e) {
@@ -160,7 +160,7 @@ bool ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
           // editorState.hlGroupTable.emplace(e.id, e.name);
         },
         [&](Flush&) {
-          if (redrawEvents.size() <= 1 && redrawState.numFlushes == 1) {
+          if (redrawEvents.size() <= 1 && uiEvents.numFlushes == 1) {
             processedEvents = false;
           }
           // process grid and window events
@@ -233,58 +233,58 @@ bool ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
           winEvents.clear();
         },
         [&](GridResize& e) {
-          gridEvents.push_back((RedrawEvent*)&e);
+          gridEvents.push_back((UiEvent*)&e);
         },
         [&](GridClear& e) {
-          gridEvents.push_back((RedrawEvent*)&e);
+          gridEvents.push_back((UiEvent*)&e);
         },
         [&](GridCursorGoto& e) {
-          gridEvents.push_back((RedrawEvent*)&e);
+          gridEvents.push_back((UiEvent*)&e);
         },
         [&](GridLine& e) {
-          gridEvents.push_back((RedrawEvent*)&e);
+          gridEvents.push_back((UiEvent*)&e);
         },
         [&](GridScroll& e) {
-          gridEvents.push_back((RedrawEvent*)&e);
+          gridEvents.push_back((UiEvent*)&e);
         },
         [&](GridDestroy& e) {
-          gridEvents.push_back((RedrawEvent*)&e);
+          gridEvents.push_back((UiEvent*)&e);
         },
         [&](WinPos& e) {
           // push to front because handle before ViewportMargins
-          winEvents.push_front((RedrawEvent*)&e);
+          winEvents.push_front((UiEvent*)&e);
         },
         [&](WinFloatPos& e) {
           // push to front because handle before ViewportMargins
-          winEvents.push_front((RedrawEvent*)&e);
+          winEvents.push_front((UiEvent*)&e);
         },
         [&](WinExternalPos& e) {
-          winEvents.push_back((RedrawEvent*)&e);
+          winEvents.push_back((UiEvent*)&e);
         },
         [&](WinHide& e) {
-          winEvents.push_back((RedrawEvent*)&e);
+          winEvents.push_back((UiEvent*)&e);
         },
         [&](WinClose& e) {
-          winEvents.push_back((RedrawEvent*)&e);
+          winEvents.push_back((UiEvent*)&e);
         },
         [&](MsgSetPos& e) {
-          winEvents.push_back((RedrawEvent*)&e);
+          winEvents.push_back((UiEvent*)&e);
         },
         [&](WinViewport& e) {
-          winEvents.push_back((RedrawEvent*)&e);
+          winEvents.push_back((UiEvent*)&e);
         },
         [&](WinViewportMargins& e) {
-          winEvents.push_back((RedrawEvent*)&e);
+          winEvents.push_back((UiEvent*)&e);
         },
         [&](WinExtmark& e) {
-          winEvents.push_back((RedrawEvent*)&e);
+          winEvents.push_back((UiEvent*)&e);
         },
         [&](auto&) {
           LOG_WARN("unknown event");
         },
       }, event);
     }
-    redrawState.eventsQueue.pop_front();
+    uiEvents.queue.pop_front();
   }
 
   return processedEvents;

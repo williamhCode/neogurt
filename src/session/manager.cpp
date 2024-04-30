@@ -1,4 +1,4 @@
-#include "session.hpp"
+#include "manager.hpp"
 
 #include "boost/asio/io_service.hpp"
 #include "boost/asio/ip/tcp.hpp"
@@ -10,7 +10,7 @@
 
 namespace bp = boost::process;
 
-void SessionManager::LoadSessions(const std::string& filename) {
+void SessionManager::LoadSessions(std::string_view filename) {
   std::ifstream file(filename);
   std::string line;
   while (std::getline(file, line)) {
@@ -23,7 +23,7 @@ void SessionManager::LoadSessions(const std::string& filename) {
   }
 }
 
-void SessionManager::SaveSessions(const std::string& filename) {
+void SessionManager::SaveSessions(std::string_view filename) {
   std::ofstream file(filename);
   for (auto& [key, value] : sessions) {
     file << key << " " << value << "\n";

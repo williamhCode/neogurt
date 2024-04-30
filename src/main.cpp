@@ -13,7 +13,7 @@
 #include "gfx/renderer.hpp"
 #include "glm/ext/vector_float2.hpp"
 #include "glm/gtx/string_cast.hpp"
-#include "nvim/nvim.hpp"
+#include "nvim/client.hpp"
 #include "utils/clock.hpp"
 #include "utils/logger.hpp"
 #include "utils/timer.hpp"
@@ -48,7 +48,7 @@ int main() {
 
   try {
     appOpts = {
-      .multigrid = true,
+      .multigrid = false,
       .vsync = true,
       .windowMargins{5, 5, 5, 5},
       .borderless = false,
@@ -68,7 +68,7 @@ int main() {
 
     Renderer renderer(sizes);
 
-    Nvim nvim(false);
+    Nvim nvim(2040);
     nvim.UiAttach(
       sizes.uiWidth, sizes.uiHeight,
       {
@@ -113,15 +113,15 @@ int main() {
         // nvim events -------------------------------------------
         if (!nvim.client.IsConnected()) {
           exitWindow = true;
-          nvim.sessionManager.RemoveSession("default");
+          // nvim.sessionManager.RemoveSession("default");
         };
 
-        nvim.ParseRedrawEvents();
+        ParseUiEvents(nvim.client, nvim.uiEvents);
 
         // process events ---------------------------------------
         {
           std::scoped_lock lock(wgpuDeviceMutex);
-          if (ProcessRedrawEvents(nvim.redrawState, editorState)) {
+          if (ParseEditorState(nvim.uiEvents, editorState)) {
             idle = false;
             idleElasped = 0;
           }

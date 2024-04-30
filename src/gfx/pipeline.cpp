@@ -15,7 +15,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
 
   // rect pipeline -------------------------------------------
   ShaderModule rectShader =
-    utils::LoadShaderModule(ctx.device, ROOT_DIR "/src/shaders/rect.wgsl");
+    utils::LoadShaderModule(ctx.device, ROOT_DIR "/src/gfx/shaders/rect.wgsl");
 
   rectRPL = utils::MakeRenderPipeline(ctx.device, {
     .vs = rectShader,
@@ -35,7 +35,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
 
   // text pipeline -------------------------------------------
   ShaderModule textShader =
-    utils::LoadShaderModule(ctx.device, ROOT_DIR "/src/shaders/text.wgsl");
+    utils::LoadShaderModule(ctx.device, ROOT_DIR "/src/gfx/shaders/text.wgsl");
 
   fontTextureBGL = utils::MakeBindGroupLayout(
     ctx.device,
@@ -70,7 +70,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
 
   // texture pipeline ------------------------------------------------
   ShaderModule textureShader =
-    utils::LoadShaderModule(ctx.device, ROOT_DIR "/src/shaders/texture.wgsl");
+    utils::LoadShaderModule(ctx.device, ROOT_DIR "/src/gfx/shaders/texture.wgsl");
 
   utils::VertexBufferLayout textureQuadVBL{
     .arrayStride = sizeof(TextureQuadVertex),
@@ -120,7 +120,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
 
   // cursor pipeline ------------------------------------------------
   ShaderModule cursorShader =
-    utils::LoadShaderModule(ctx.device, ROOT_DIR "/src/shaders/cursor.wgsl");
+    utils::LoadShaderModule(ctx.device, ROOT_DIR "/src/gfx/shaders/cursor.wgsl");
 
   utils::VertexBufferLayout cursorQuadVBL{
     sizeof(CursorQuadVertex),

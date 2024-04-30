@@ -42,10 +42,11 @@ set(APP_SRC
   src/gfx/camera.cpp
   src/gfx/render_texture.cpp
 
-  src/nvim/nvim.cpp
-  src/nvim/parse.cpp
-  src/nvim/session.cpp
+  src/nvim/client.cpp
+  src/nvim/ui_events.cpp
   src/nvim/msgpack_rpc/client.cpp
+
+  src/session/manager.cpp
 
   src/utils/unicode.cpp
   src/utils/clock.cpp

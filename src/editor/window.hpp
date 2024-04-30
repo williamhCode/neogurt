@@ -5,10 +5,9 @@
 
 #include "gfx/quad.hpp"
 #include "gfx/render_texture.hpp"
-#include "nvim/parse.hpp"
+#include "nvim/ui_events.hpp"
 #include "editor/grid.hpp"
 #include "app/size.hpp"
-#include "utils/color.hpp"
 
 #include <map>
 #include <optional>

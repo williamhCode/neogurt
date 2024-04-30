@@ -1,23 +1,23 @@
 #pragma once
 
-#include "nvim/parse.hpp"
-// #include "process.hpp"
-// #include "msgpack/v3/adaptor/boost/msgpack_variant_decl.hpp"
-#include "nvim/session.hpp"
+#include "msgpack_rpc/client.hpp"
+#include "nvim/ui_events.hpp"
 
+// Nvim client that wraps the rpc client.
 struct Nvim {
-  using variant_ref = msgpack::type::variant_ref;
-
-  bool debug;
-  SessionManager sessionManager;
   rpc::Client client;
-  RedrawState redrawState;
+  UiEvents uiEvents;
+  int channelId;
 
-  Nvim(bool debug);
-  ~Nvim();
+  Nvim() = default;
+  Nvim(uint16_t port);
   Nvim(const Nvim&) = delete;
   Nvim& operator=(const Nvim&) = delete;
+  ~Nvim();
 
+  bool IsConnected();
+
+  using variant_ref = msgpack::type::variant_ref;
   void SetClientInfo(
     std::string_view name,
     const std::map<std::string_view, variant_ref>& version,
@@ -38,6 +38,5 @@ struct Nvim {
     int row,
     int col
   );
-  void NvimListUis();
-  void ParseRedrawEvents();
+  void ListUis();
 };
