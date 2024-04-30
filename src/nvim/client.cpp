@@ -2,13 +2,13 @@
 #include "utils/logger.hpp"
 #include <thread>
 
-Nvim::Nvim(uint16_t port) {
+Nvim::Nvim(std::string_view host, uint16_t port) {
   using namespace std::chrono_literals;
   auto timeout = 500ms;
   auto elapsed = 0ms;
   auto delay = 50ms;
   while (elapsed < timeout) {
-    if (client.Connect("localhost", port)) break;
+    if (client.Connect(host, port)) break;
     // if (client.Connect("data.cs.purdue.edu", port)) break;
     std::this_thread::sleep_for(delay);
     elapsed += delay;
@@ -22,7 +22,7 @@ Nvim::Nvim(uint16_t port) {
   }
 
   SetClientInfo(
-    "Neogui",
+    "neogui",
     {
       {"major", 0},
       {"minor", 0},
@@ -31,9 +31,9 @@ Nvim::Nvim(uint16_t port) {
     "ui", {}, {}
   );
 
-  auto result = client.Call("nvim_get_api_info");
-  channelId = result->via.array.ptr[0].convert();
-  LOG_INFO("nvim_get_api_info: {}", channelId);
+  // auto result = client.Call("nvim_get_api_info");
+  // channelId = result->via.array.ptr[0].convert();
+  // LOG_INFO("nvim_get_api_info: {}", channelId);
 }
 
 Nvim::~Nvim() {

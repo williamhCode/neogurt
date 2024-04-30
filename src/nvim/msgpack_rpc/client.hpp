@@ -38,10 +38,10 @@ public:
   void Disconnect();
   bool IsConnected();
 
-  msgpack::object_handle Call(std::string_view method, auto&&... args);
+  msgpack::object_handle Call(std::string_view method, auto... args);
   std::future<msgpack::object_handle>
-  AsyncCall(std::string_view func_name, auto&&... args);
-  void Send(std::string_view func_name, auto&&... args);
+  AsyncCall(std::string_view func_name, auto... args);
+  void Send(std::string_view func_name, auto... args);
 
   // returns next notification at front of queue
   NotificationData PopNotification();
@@ -64,13 +64,13 @@ private:
 
 namespace rpc {
 
-msgpack::object_handle Client::Call(std::string_view method, auto&&... args) {
+msgpack::object_handle Client::Call(std::string_view method, auto... args) {
   auto future = AsyncCall(method, args...);
   return future.get();
 }
 
 std::future<msgpack::object_handle>
-Client::AsyncCall(std::string_view func_name, auto&&... args) {
+Client::AsyncCall(std::string_view func_name, auto... args) {
   if (!IsConnected()) return {};
 
   Request msg{
@@ -92,7 +92,7 @@ Client::AsyncCall(std::string_view func_name, auto&&... args) {
   return future;
 }
 
-void Client::Send(std::string_view func_name, auto&&... args) {
+void Client::Send(std::string_view func_name, auto... args) {
   if (!IsConnected()) return;
 
   // template required for Apple Clang

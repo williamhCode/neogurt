@@ -6,6 +6,7 @@
 #include "utils/region.hpp"
 #include "utils/unicode.hpp"
 #include "utils/color.hpp"
+#include "webgpu/webgpu_cpp.h"
 #include "webgpu_tools/utils/webgpu.hpp"
 #include <utility>
 
@@ -103,13 +104,11 @@ void Renderer::Resize(const SizeHandler& sizes) {
   finalRenderTexture.UpdatePos(sizes.offset);
   windowsRPD.cColorAttachments[0].view = finalRenderTexture.textureView;
 
-  auto stencilTextureView = utils::CreateRenderTexture(
-                              ctx.device,
-                              {static_cast<uint32_t>(sizes.uiFbSize.x),
-                               static_cast<uint32_t>(sizes.uiFbSize.y)},
-                              TextureFormat::Stencil8
-  )
-                              .CreateView();
+  auto stencilTextureView =
+    utils::CreateRenderTexture(
+      ctx.device, Extent3D(sizes.uiFbSize.x, sizes.uiFbSize.y), TextureFormat::Stencil8
+    )
+      .CreateView();
   windowsRPD.cDepthStencilAttachmentInfo.view = stencilTextureView;
 
   ctx.queue.WriteBuffer(maskOffsetBuffer, 0, &sizes.fbOffset, sizeof(glm::vec2));
@@ -146,7 +145,8 @@ void Renderer::RenderWindow(Win& win, Font& font, const HlTable& hlTable) {
       auto hl = hlTable.at(cell.hlId);
 
       // don't render background if default
-      if (cell.hlId != 0 && hl.background.has_value() && hl.background != hlTable.at(0).background) {
+      if (cell.hlId != 0 && hl.background.has_value() &&
+          hl.background != hlTable.at(0).background) {
         auto rectPositions = MakeRegion({0, 0}, font.charSize);
 
         auto background = *hl.background;

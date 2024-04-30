@@ -5,7 +5,7 @@
 #include "editor/highlight.hpp"
 #include "editor/options.hpp"
 #include "editor/window.hpp"
-#include "nvim/ui_events.hpp"
+#include "nvim/events/parse.hpp"
 #include <vector>
 
 // All state information that gets parsed from ui events.

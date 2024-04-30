@@ -1,23 +1,5 @@
-#include "ui_events.hpp"
+#include "ui.hpp"
 #include "utils/logger.hpp"
-
-#include <string>
-#include <string_view>
-#include <unordered_map>
-
-static void ParseRedraw(const msgpack::object& params, UiEvents& uiEvents);
-
-void ParseUiEvents(rpc::Client& client, UiEvents& uiEvents) {
-  LOG_DISABLE();
-  uiEvents.numFlushes = 0;
-  while (client.HasNotification()) {
-    auto notification = client.PopNotification();
-    if (notification.method == "redraw") {
-      ParseRedraw(notification.params, uiEvents);
-    }
-  }
-  LOG_ENABLE();
-}
 
 // clang-format off
 using UiEventFunc = void (*)(const msgpack::object& args, UiEvents& state);
@@ -104,7 +86,7 @@ static const std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
     uiEvents.curr().emplace_back(args.as<GridCursorGoto>());
   }},
 
-  {"grid_line", [](const msgpack::object& args, UiEvents& state) {
+  {"grid_line", [](const msgpack::object& args, UiEvents& uiEvents) {
     auto [grid, row, col_start, cells, wrap] =
       args.as<std::tuple<int, int, int, msgpack::object, bool>>();
     GridLine gridLine{grid, row, col_start, {}};
@@ -135,73 +117,73 @@ static const std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
       }
     }
 
-    state.curr().emplace_back(std::move(gridLine));
+    uiEvents.curr().emplace_back(std::move(gridLine));
   }},
 
-  {"grid_scroll", [](const msgpack::object& args, UiEvents& state) {
-    state.curr().emplace_back(args.as<GridScroll>());
+  {"grid_scroll", [](const msgpack::object& args, UiEvents& uiEvents) {
+    uiEvents.curr().emplace_back(args.as<GridScroll>());
   }},
 
-  {"grid_destroy", [](const msgpack::object& args, UiEvents& state) {
+  {"grid_destroy", [](const msgpack::object& args, UiEvents& uiEvents) {
     LOG("grid_destroy: {}", ToString(args));
-    state.curr().emplace_back(args.as<GridDestroy>());
+    uiEvents.curr().emplace_back(args.as<GridDestroy>());
   }},
 
   // Multigrid Events ------------------------------------------------------------
-  {"win_pos", [](const msgpack::object& args, UiEvents& state) {
+  {"win_pos", [](const msgpack::object& args, UiEvents& uiEvents) {
     LOG("win_pos: {}", ToString(args));
-    state.curr().emplace_back(args.as<WinPos>());
+    uiEvents.curr().emplace_back(args.as<WinPos>());
   }},
 
-  {"win_float_pos", [](const msgpack::object& args, UiEvents& state) {
+  {"win_float_pos", [](const msgpack::object& args, UiEvents& uiEvents) {
     LOG("win_float_pos: {}", ToString(args));
-    state.curr().emplace_back(args.as<WinFloatPos>());
+    uiEvents.curr().emplace_back(args.as<WinFloatPos>());
   }},
 
-  {"win_external_pos", [](const msgpack::object& args, UiEvents& state) {
+  {"win_external_pos", [](const msgpack::object& args, UiEvents& uiEvents) {
     // LOG("win_external_pos: {}", ToString(args));
-    state.curr().emplace_back(args.as<WinExternalPos>());
+    uiEvents.curr().emplace_back(args.as<WinExternalPos>());
   }},
 
-  {"win_hide", [](const msgpack::object& args, UiEvents& state) {
+  {"win_hide", [](const msgpack::object& args, UiEvents& uiEvents) {
     LOG("win_hide: {}", ToString(args));
-    state.curr().emplace_back(args.as<WinHide>());
+    uiEvents.curr().emplace_back(args.as<WinHide>());
   }},
 
-  {"win_close", [](const msgpack::object& args, UiEvents& state) {
+  {"win_close", [](const msgpack::object& args, UiEvents& uiEvents) {
     LOG("win_close: {}", ToString(args));
-    state.curr().emplace_back(args.as<WinClose>());
+    uiEvents.curr().emplace_back(args.as<WinClose>());
   }},
 
-  {"msg_set_pos", [](const msgpack::object& args, UiEvents& state) {
+  {"msg_set_pos", [](const msgpack::object& args, UiEvents& uiEvents) {
     // LOG("msg_set_pos: {}", ToString(args));
-    state.curr().emplace_back(args.as<MsgSetPos>());
+    uiEvents.curr().emplace_back(args.as<MsgSetPos>());
   }},
 
-  {"win_viewport", [](const msgpack::object& args, UiEvents& state) {
+  {"win_viewport", [](const msgpack::object& args, UiEvents& uiEvents) {
     LOG("win_viewport: {}", ToString(args));
     // LOG_INFO("win_viewport: {}", ToString(args));
-    state.curr().emplace_back(args.as<WinViewport>());
+    uiEvents.curr().emplace_back(args.as<WinViewport>());
   }},
 
-  {"win_viewport_margins", [](const msgpack::object& args, UiEvents& state) {
+  {"win_viewport_margins", [](const msgpack::object& args, UiEvents& uiEvents) {
     // LOG("win_viewport_margins: {}", ToString(args));
     // LOG_INFO("win_viewport_margins: {}", ToString(args));
-    state.curr().emplace_back(args.as<WinViewportMargins>());
+    uiEvents.curr().emplace_back(args.as<WinViewportMargins>());
   }},
 
-  {"win_extmark", [](const msgpack::object& args, UiEvents& state) {
+  {"win_extmark", [](const msgpack::object& args, UiEvents& uiEvents) {
     // LOG("win_extmark: {}", ToString(args));
-    state.curr().emplace_back(args.as<WinExtmark>());
+    uiEvents.curr().emplace_back(args.as<WinExtmark>());
   }},
 };
 // clang-format on
 
-static void ParseRedraw(const msgpack::object& params, UiEvents& uiEvents) {
+void ParseUiEvent(const msgpack::object& params, UiEvents& uiEvents) {
   std::span<const msgpack::object> paramList(params.via.array);
 
   for (const auto& param : paramList) {
-    auto paramArr = param.via.array;
+    const auto& paramArr = param.via.array;
     std::string_view eventName(paramArr.ptr[0].convert());
     std::span<const msgpack::object> eventArgs(&paramArr.ptr[1], paramArr.size - 1);
 
@@ -213,7 +195,6 @@ static void ParseRedraw(const msgpack::object& params, UiEvents& uiEvents) {
     auto uiEventFunc = it->second;
 
     for (const auto& arg : eventArgs) {
-      // LOG_INFO("Event: {}", ToString(arg));
       uiEventFunc(arg, uiEvents);
     }
   }

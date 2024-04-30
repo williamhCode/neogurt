@@ -5,7 +5,7 @@
 
 #include "gfx/quad.hpp"
 #include "gfx/render_texture.hpp"
-#include "nvim/ui_events.hpp"
+#include "nvim/events/parse.hpp"
 #include "editor/grid.hpp"
 #include "app/size.hpp"
 

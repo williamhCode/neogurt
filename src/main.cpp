@@ -14,6 +14,7 @@
 #include "glm/ext/vector_float2.hpp"
 #include "glm/gtx/string_cast.hpp"
 #include "nvim/client.hpp"
+#include "session/manager.hpp"
 #include "utils/clock.hpp"
 #include "utils/logger.hpp"
 #include "utils/timer.hpp"
@@ -68,7 +69,13 @@ int main() {
 
     Renderer renderer(sizes);
 
-    Nvim nvim(2040);
+    SessionManager sessionManager;
+    sessionManager.LoadSessions("sessions.txt");
+
+    uint16_t port = 2040;
+    port = sessionManager.GetOrCreateSession("default");
+
+    Nvim nvim("localhost", port);
     nvim.UiAttach(
       sizes.uiWidth, sizes.uiHeight,
       {
@@ -111,12 +118,12 @@ int main() {
         // timer.Start();
 
         // nvim events -------------------------------------------
-        if (!nvim.client.IsConnected()) {
+        if (!nvim.IsConnected()) {
           exitWindow = true;
-          // nvim.sessionManager.RemoveSession("default");
+          sessionManager.RemoveSession("default");
         };
 
-        ParseUiEvents(nvim.client, nvim.uiEvents);
+        ParseEvents(nvim.client, nvim.uiEvents);
 
         // process events ---------------------------------------
         {
@@ -356,7 +363,7 @@ int main() {
     }
 
     renderThread.join();
-    if (nvim.client.IsConnected()) {
+    if (nvim.IsConnected()) {
       nvim.UiDetach();
       LOG_INFO("Detached UI");
     }

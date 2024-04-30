@@ -1,6 +1,6 @@
 #pragma once
 
-#include "nvim/ui_events.hpp"
+#include "nvim/events/parse.hpp"
 #include "utils/ring_buffer.hpp"
 #include <vector>
 

@@ -1,16 +1,17 @@
 #pragma once
 
 #include "msgpack_rpc/client.hpp"
-#include "nvim/ui_events.hpp"
+#include "nvim/events/parse.hpp"
+#include <string_view>
 
 // Nvim client that wraps the rpc client.
 struct Nvim {
   rpc::Client client;
   UiEvents uiEvents;
-  int channelId;
+  // int channelId;
 
   Nvim() = default;
-  Nvim(uint16_t port);
+  Nvim(std::string_view host, uint16_t port);
   Nvim(const Nvim&) = delete;
   Nvim& operator=(const Nvim&) = delete;
   ~Nvim();

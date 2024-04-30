@@ -2,13 +2,14 @@
 
 #include "boost/asio/io_service.hpp"
 #include "boost/asio/ip/tcp.hpp"
-// #include "boost/process.hpp"
 #include "boost/process/spawn.hpp"
 #include "utils/logger.hpp"
 #include <fstream>
 #include <sstream>
+#include <filesystem>
 
 namespace bp = boost::process;
+namespace fs = std::filesystem;
 
 void SessionManager::LoadSessions(std::string_view filename) {
   std::ifstream file(filename);
@@ -45,8 +46,10 @@ static uint16_t FindFreePort() {
 }
 
 static void SpawnNvimProcess(uint16_t port) {
+  std::string luaInitPath = ROOT_DIR "/lua/init.lua";
   std::string cmd = "nvim --listen localhost:" + std::to_string(port) +
-                    " --headless --cmd \"let g:neovim_gui = 1\"";
+                    " --headless " +
+                    "--cmd \"luafile " + luaInitPath + "\"";
   bp::spawn(cmd);
 }
 

@@ -43,8 +43,9 @@ set(APP_SRC
   src/gfx/render_texture.cpp
 
   src/nvim/client.cpp
-  src/nvim/ui_events.cpp
   src/nvim/msgpack_rpc/client.cpp
+  src/nvim/events/parse.cpp
+  src/nvim/events/ui.cpp
 
   src/session/manager.cpp
 

@@ -8,6 +8,10 @@
 struct SessionManager {
   std::unordered_map<std::string, uint16_t> sessions;
 
+  // temp
+  ~SessionManager() {
+    SaveSessions("sessions.txt");
+  }
   void LoadSessions(std::string_view filename);
   void SaveSessions(std::string_view filename);
   uint16_t GetOrCreateSession(const std::string& session_name);

@@ -1,6 +1,4 @@
-#pragma once
-
-#include "msgpack_rpc/client.hpp"
+#include "msgpack.hpp"
 #include <map>
 #include <variant>
 
@@ -220,4 +218,4 @@ struct UiEvents {
   }
 };
 
-void ParseUiEvents(rpc::Client& client, UiEvents& uiEvents);
+void ParseUiEvent(const msgpack::object& params, UiEvents& uiEvents);
