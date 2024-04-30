@@ -19,7 +19,6 @@
 #include "utils/timer.hpp"
 
 #include <algorithm>
-#include <span>
 #include <vector>
 #include <deque>
 #include <atomic>
@@ -223,7 +222,7 @@ int main() {
           // bool renderWindows = true;
           for (auto& [id, win] : editorState.winManager.windows) {
             if (win.grid.dirty) {
-            // if (true) {
+              // if (true) {
               renderer.RenderWindow(win, font, editorState.hlTable);
               win.grid.dirty = false;
               renderWindows = true;

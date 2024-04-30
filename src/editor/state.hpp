@@ -3,6 +3,7 @@
 #include "editor/cursor.hpp"
 #include "editor/grid.hpp"
 #include "editor/highlight.hpp"
+#include "editor/options.hpp"
 #include "editor/window.hpp"
 #include "nvim/parse.hpp"
 #include <vector>
@@ -15,6 +16,7 @@ struct EditorState {
   HlTable hlTable;
   Cursor cursor;
   std::vector<ModeInfo> modeInfoList;
+  UiOptions uiOptions;
   // std::map<int, std::string> hlGroupTable;
 };
 

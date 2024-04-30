@@ -27,3 +27,4 @@ template <typename T>
 auto& vGet(auto& t) noexcept {
   return *std::get_if<T>(&t);
 }
+

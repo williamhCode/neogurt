@@ -20,6 +20,7 @@ void ParseRedrawEvents(rpc::Client& client, RedrawState& state) {
   LOG_ENABLE();
 }
 
+// clang-format off
 using UiEventFunc = void (*)(const msgpack::object& args, RedrawState& state);
 static const std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
   // Global Events ----------------------------------------------------------
@@ -36,6 +37,7 @@ static const std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
   }},
 
   {"option_set", [](const msgpack::object& args, RedrawState& state) {
+    // LOG_INFO("option_set: {}", ToString(args));
     state.currEvents().emplace_back(args.as<OptionSet>());
   }},
 
@@ -194,8 +196,9 @@ static const std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
     state.currEvents().emplace_back(args.as<WinExtmark>());
   }},
 };
+// clang-format on
 
-static void ParseRedraw(const msgpack::object& params, RedrawState &state) {
+static void ParseRedraw(const msgpack::object& params, RedrawState& state) {
   std::span<const msgpack::object> paramList(params.via.array);
 
   for (const auto& param : paramList) {

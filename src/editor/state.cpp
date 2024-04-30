@@ -7,6 +7,15 @@
 #include <deque>
 #include <vector>
 
+static int VariantAsInt(const msgpack::type::variant& v) {
+  if (v.is_uint64_t()) return v.as_uint64_t();
+  if (v.is_int64_t()) return v.as_int64_t();
+  LOG_ERR("VariantAsInt: variant is not convertible to int");
+  return 0;
+}
+
+// clang-format off
+// i hate clang format format on std::visit(overloaded{})
 bool ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
   bool processedEvents = redrawState.numFlushes > 0;
   for (int i = 0; i < redrawState.numFlushes; i++) {
@@ -38,21 +47,38 @@ bool ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
                   LOG_WARN("unknown cursor shape: {}", shape);
                 }
               } else if (key == "cell_percentage") {
-                modeInfo.cellPercentage = value.as_uint64_t();
+                modeInfo.cellPercentage = VariantAsInt(value);
               } else if (key == "blinkwait") {
-                modeInfo.blinkwait = value.as_uint64_t();
+                modeInfo.blinkwait = VariantAsInt(value);
               } else if (key == "blinkon") {
-                modeInfo.blinkon = value.as_uint64_t();
+                modeInfo.blinkon = VariantAsInt(value);
               } else if (key == "blinkoff") {
-                modeInfo.blinkoff = value.as_uint64_t();
+                modeInfo.blinkoff = VariantAsInt(value);
               } else if (key == "attr_id") {
-                modeInfo.attrId = value.as_uint64_t();
+                modeInfo.attrId = VariantAsInt(value);
               }
             }
           }
         },
         [&](OptionSet& e) {
-          // LOG("option_set");
+          auto& opts = editorState.uiOptions;
+          if (e.name == "emoji") {
+            opts.emoji = e.value.as_bool();
+          } else if (e.name == "guifont") {
+            opts.guifont = e.value.as_string();
+          } else if (e.name == "guifontwide") {
+            opts.guifontwide = e.value.as_string();
+          } else if (e.name == "linespace") {
+            opts.linespace = VariantAsInt(e.value);
+          } else if (e.name == "mousefocus") {
+            opts.mousefocus = e.value.as_bool();
+          } else if (e.name == "mousehide") {
+            opts.mousehide = e.value.as_bool();
+          } else if (e.name == "mousemoveevent") {
+            opts.mousemoveevent = e.value.as_bool();
+          } else {
+            // LOG_WARN("unhandled option_set: {}", e.name);
+          }
         },
         [&](Chdir& e) {
           // LOG("chdir");
@@ -98,11 +124,11 @@ bool ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
           auto& hl = editorState.hlTable[e.id];
           for (auto& [key, value] : e.rgbAttrs) {
             if (key == "foreground") {
-              hl.foreground = IntToColor(value.as_uint64_t());
+              hl.foreground = IntToColor(VariantAsInt(value));
             } else if (key == "background") {
-              hl.background = IntToColor(value.as_uint64_t());
+              hl.background = IntToColor(VariantAsInt(value));
             } else if (key == "special") {
-              hl.special = IntToColor(value.as_uint64_t());
+              hl.special = IntToColor(VariantAsInt(value));
             } else if (key == "reverse") {
               hl.reverse = value.as_bool();
             } else if (key == "italic") {
@@ -122,15 +148,15 @@ bool ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
             } else if (key == "underdashed") {
               hl.underline = UnderlineType::Underdashed;
             } else if (key == "blend") {
-              hl.bgAlpha = 1 - (value.as_uint64_t() / 100.0f);
+              hl.bgAlpha = 1 - (VariantAsInt(value) / 100.0f);
             } else {
               LOG_WARN("unknown hl attr key: {}", key);
             }
           }
         },
         [&](HlGroupSet& e) {
-         // not needed to render grids, but used for rendering
-         // own elements with consistent highlighting
+          // not needed to render grids, but used for rendering
+          // own elements with consistent highlighting
           // editorState.hlGroupTable.emplace(e.id, e.name);
         },
         [&](Flush&) {
@@ -138,7 +164,7 @@ bool ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
             processedEvents = false;
           }
           // process grid and window events
-          for (auto *event : gridEvents) {
+          for (auto* event : gridEvents) {
             std::visit(overloaded{
               [&](GridResize& e) {
                 editorState.gridManager.Resize(e);
@@ -220,17 +246,16 @@ bool ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
         },
         [&](GridScroll& e) {
           gridEvents.push_back((RedrawEvent*)&e);
-          // editorState.gridManager.Scroll(e);
         },
         [&](GridDestroy& e) {
           gridEvents.push_back((RedrawEvent*)&e);
         },
         [&](WinPos& e) {
-          // winEvents.push_back((RedrawEvent*)&e);
+          // push to front because handle before ViewportMargins
           winEvents.push_front((RedrawEvent*)&e);
         },
         [&](WinFloatPos& e) {
-          // winEvents.push_back((RedrawEvent*)&e);
+          // push to front because handle before ViewportMargins
           winEvents.push_front((RedrawEvent*)&e);
         },
         [&](WinExternalPos& e) {
@@ -264,3 +289,4 @@ bool ProcessRedrawEvents(RedrawState& redrawState, EditorState& editorState) {
 
   return processedEvents;
 }
+// clang-format on
