@@ -9,11 +9,13 @@
 #include "editor/highlight.hpp"
 #include "editor/state.hpp"
 #include "gfx/font.hpp"
+#include "gfx/font/descriptor.hpp"
+#include "gfx/font/locator.hpp"
 #include "gfx/instance.hpp"
 #include "gfx/renderer.hpp"
 #include "glm/ext/vector_float2.hpp"
 #include "glm/gtx/string_cast.hpp"
-#include "nvim/client.hpp"
+#include "nvim/nvim.hpp"
 #include "session/manager.hpp"
 #include "utils/clock.hpp"
 #include "utils/logger.hpp"
@@ -47,14 +49,21 @@ int main() {
     return 1;
   }
 
+  auto fontPath = GetFontPath({
+    .family = "JetBrains Mono",
+    .weight = FontWeight::Normal,
+    // .slant = FontSlant::Italic,
+  });
+  LOG_INFO("font path: {}", fontPath);
+
   try {
     appOpts = {
-      .multigrid = false,
+      .multigrid = true,
       .vsync = true,
       .windowMargins{5, 5, 5, 5},
       .borderless = false,
       .bgColor = 0x282c34,
-      .transparency = 0.92,
+      .transparency = 0.90,
       .windowBlur = 20,
     };
     appOpts.transparency = int(appOpts.transparency * 255) / 255.0f;
@@ -62,7 +71,7 @@ int main() {
     auto presentMode = appOpts.vsync ? PresentMode::Mailbox : PresentMode::Immediate;
     sdl::Window window({1600, 1000}, "Neovim GUI", presentMode);
 
-    Font font("/Library/Fonts/SF-Mono-Medium.otf", 15, window.dpiScale);
+    Font font(fontPath, 15, window.dpiScale);
 
     SizeHandler sizes;
     sizes.UpdateSizes(window.size, window.dpiScale, font.charSize);
@@ -350,7 +359,7 @@ int main() {
           std::scoped_lock lock(wgpuDeviceMutex);
           window.dpiScale = SDL_GetWindowPixelDensity(window.Get());
           LOG("display scale changed: {}", window.dpiScale);
-          font = Font("/Library/Fonts/SF-Mono-Medium.otf", 15, window.dpiScale);
+          font = Font(fontPath, 15, window.dpiScale);
           editorState.cursor.fullSize = font.charSize;
           break;
         }

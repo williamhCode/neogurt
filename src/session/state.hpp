@@ -1,7 +1,7 @@
 #pragma once
 #include "app/input.hpp"
 #include "editor/state.hpp"
-#include "nvim/client.hpp"
+#include "nvim/nvim.hpp"
 
 struct NvimSession {
   Nvim nvim;

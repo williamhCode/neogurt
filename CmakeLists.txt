@@ -41,8 +41,9 @@ set(APP_SRC
   src/gfx/font.cpp
   src/gfx/camera.cpp
   src/gfx/render_texture.cpp
+  src/gfx/font/locator.mm
 
-  src/nvim/client.cpp
+  src/nvim/nvim.cpp
   src/nvim/msgpack_rpc/client.cpp
   src/nvim/events/parse.cpp
   src/nvim/events/ui.cpp
