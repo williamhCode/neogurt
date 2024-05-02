@@ -1,12 +1,10 @@
 #include "locator.hpp"
-#include <AppKit/AppKit.h>
-#include <CoreText/CoreText.h>
+#include <AppKit/NSFontDescriptor.h>
 #include <Foundation/Foundation.h>
-#include <iomanip>
-#include <iostream>
+#include <CoreText/CoreText.h>
 
-static CGFloat WeightToCoreTextWeight(FontWeight weight) {
-  CGFloat fWeight;
+static NSFontWeight WeightToCoreTextWeight(FontWeight weight) {
+  NSFontWeight fWeight;
   switch (weight) {
     case FontWeight::Thin: fWeight = NSFontWeightThin; break;
     case FontWeight::ExtraLight: fWeight = NSFontWeightUltraLight; break;
@@ -24,16 +22,14 @@ static CGFloat WeightToCoreTextWeight(FontWeight weight) {
 static CTFontSymbolicTraits SlantToCoreTextSlant(FontSlant slant) {
   switch (slant) {
     case FontSlant::Italic: return kCTFontItalicTrait;
-    case FontSlant::Oblique:
-      return kCTFontItalicTrait; // Typically treated the same as italic
+    case FontSlant::Oblique: return kCTFontItalicTrait;
     default: return 0;
   }
 }
 
 std::string GetFontPath(const FontDescriptor& desc) {
-  CFStringRef cfFamily =
-    CFStringCreateWithCString(NULL, desc.family.c_str(), kCFStringEncodingUTF8);
-  CGFloat ctWeight = WeightToCoreTextWeight(desc.weight);
+  NSString* ctFamily = [NSString stringWithUTF8String:desc.family.c_str()];
+  NSFontWeight ctWeight = WeightToCoreTextWeight(desc.weight);
   CTFontSymbolicTraits ctSlant = SlantToCoreTextSlant(desc.slant);
 
   NSDictionary* traits = @{
@@ -42,25 +38,21 @@ std::string GetFontPath(const FontDescriptor& desc) {
   };
 
   NSDictionary* attributes = @{
-    (NSString*)kCTFontFamilyNameAttribute : (__bridge NSString*)cfFamily,
+    (NSString*)kCTFontFamilyNameAttribute : ctFamily,
     (NSString*)kCTFontTraitsAttribute : traits,
   };
 
   CTFontDescriptorRef ctDescriptor =
     CTFontDescriptorCreateWithAttributes((__bridge CFDictionaryRef)attributes);
 
-  CTFontRef font = CTFontCreateWithFontDescriptor(ctDescriptor, desc.size, NULL);
+  // size can be ignored, we just need the font URL
+  CTFontRef font = CTFontCreateWithFontDescriptor(ctDescriptor, 0, nullptr);
   CFURLRef fontURL = (CFURLRef)CTFontCopyAttribute(font, kCTFontURLAttribute);
+  NSString *fontPath = [NSString stringWithString:[(NSURL *)fontURL path]];
 
-  std::string path;
-  char cpath[1024];
-  if (CFURLGetFileSystemRepresentation(fontURL, true, (UInt8*)cpath, sizeof(cpath))) {
-    path = cpath;
-  }
   CFRelease(font);
   CFRelease(ctDescriptor);
-  CFRelease(cfFamily);
   if (fontURL) CFRelease(fontURL);
 
-  return path;
+  return [fontPath UTF8String];
 }

@@ -51,7 +51,7 @@ int main() {
 
   auto fontPath = GetFontPath({
     .family = "JetBrains Mono",
-    .weight = FontWeight::Normal,
+    .weight = FontWeight::Medium,
     // .slant = FontSlant::Italic,
   });
   LOG_INFO("font path: {}", fontPath);
