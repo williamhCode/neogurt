@@ -18,27 +18,27 @@ CreateFace(FT_Library library, const char* filepath, FT_Long face_index) {
 }
 
 static FT_Library library;
-static FT_Face nerdFace;
+// static FT_Face nerdFace;
 
 void FtInit() {
   if (FT_Init_FreeType(&library)) {
     throw std::runtime_error("Failed to initialize FreeType library");
   }
 
-  std::string nerdFontPath(
-    // ROOT_DIR "/res/Hack/HackNerdFont-Regular.ttf"
-    // ROOT_DIR "/res/Hack/HackNerdFontMono-Regular.ttf"
-    ROOT_DIR "/res/NerdFontsSymbolsOnly/SymbolsNerdFont-Regular.ttf"
-    // ROOT_DIR "/res/NerdFontsSymbolsOnly/SymbolsNerdFontMono-Regular.ttf"
-  );
+  // std::string nerdFontPath(
+  //   // ROOT_DIR "/res/Hack/HackNerdFont-Regular.ttf"
+  //   // ROOT_DIR "/res/Hack/HackNerdFontMono-Regular.ttf"
+  //   ROOT_DIR "/res/NerdFontsSymbolsOnly/SymbolsNerdFont-Regular.ttf"
+  //   // ROOT_DIR "/res/NerdFontsSymbolsOnly/SymbolsNerdFontMono-Regular.ttf"
+  // );
 
-  if (FT_New_Face(library, nerdFontPath.c_str(), 0, &nerdFace)) {
-    throw std::runtime_error("Failed to load nerd font");
-  }
+  // if (FT_New_Face(library, nerdFontPath.c_str(), 0, &nerdFace)) {
+  //   throw std::runtime_error("Failed to load nerd font");
+  // }
 }
 
 void FtDone() {
-  FT_Done_Face(nerdFace);
+  // FT_Done_Face(nerdFace);
   FT_Done_FreeType(library);
 }
 
@@ -64,55 +64,31 @@ Font::Font(const std::string& path, int _size, float _dpiScale)
 
   // start off by rendering the first 128 characters
   for (uint32_t i = 0; i < numChars; i++) {
-    GetGlyphInfoOrAdd(i);
+    GetGlyphInfo(i);
   }
 
   UpdateTexture();
 }
 
-const Font::GlyphInfo& Font::GetGlyphInfoOrAdd(FT_ULong charcode) {
+const Font::GlyphInfo* Font::GetGlyphInfo(FT_ULong charcode) {
   auto glyphIndex = FT_Get_Char_Index(face.get(), charcode);
 
-  FT_Face currFace;
-  GlyphInfoMap* currMap;
-  float vertOffset = 0;
-  bool isNerd = false;
-
-  if (glyphIndex != 0) {
-    auto it = glyphInfoMap.find(glyphIndex);
-    if (it != glyphInfoMap.end()) {
-      return it->second;
-    }
-
-    currFace = face.get();
-    currMap = &glyphInfoMap;
-
-  } else {
-    // is nerdfont
-    glyphIndex = FT_Get_Char_Index(nerdFace, charcode);
-    auto it = nerdGlyphInfoMap.find(glyphIndex);
-    if (it != nerdGlyphInfoMap.end()) {
-      return it->second;
-    }
-
-    currFace = nerdFace;
-    currMap = &nerdGlyphInfoMap;
-
-    FT_Set_Pixel_Sizes(nerdFace, 0, trueSize);
-
-    // isNerd = true;
-    // TODO: make nerdfont vertical offset an option
-    vertOffset = charSize.y / 12;
+  if (glyphIndex == 0) {
+    return nullptr;
   }
+
+  auto it = glyphInfoMap.find(glyphIndex);
+  if (it != glyphInfoMap.end()) {
+    return &(it->second);
+  }
+
   // TODO: implement custom box drawing characters
   // if (charcode >= 0x2500 && charcode <= 0x25FF) {
   //   vertOffset = charSize.y * 0.2;
   //   vertOffset = floor(vertOffset * dpiScale) / dpiScale;
   // }
 
-  dirty = true;
-
-  auto numGlyphs = glyphInfoMap.size() + nerdGlyphInfoMap.size() + 1;
+  auto numGlyphs = glyphInfoMap.size() + 1;
   atlasHeight = (numGlyphs + atlasWidth - 1) / atlasWidth;
 
   textureSize = {texCharSize.x * atlasWidth, texCharSize.y * atlasHeight};
@@ -122,8 +98,8 @@ const Font::GlyphInfo& Font::GetGlyphInfoOrAdd(FT_ULong charcode) {
 
   auto index = numGlyphs - 1;
 
-  FT_Load_Glyph(currFace, glyphIndex, FT_LOAD_RENDER);
-  auto& glyph = *(currFace->glyph);
+  FT_Load_Glyph(face.get(), glyphIndex, FT_LOAD_RENDER);
+  auto& glyph = *(face->glyph);
   auto& bitmap = glyph.bitmap;
 
   glm::vec2 pos{
@@ -142,7 +118,7 @@ const Font::GlyphInfo& Font::GetGlyphInfoOrAdd(FT_ULong charcode) {
     }
   }
 
-  auto pair = currMap->emplace(
+  auto pair = glyphInfoMap.emplace(
     glyphIndex,
     GlyphInfo{
       // .size =
@@ -150,18 +126,17 @@ const Font::GlyphInfo& Font::GetGlyphInfoOrAdd(FT_ULong charcode) {
       //     bitmap.width / dpiScale,
       //     bitmap.rows / dpiScale,
       //   },
-      .bearing = isNerd ?
-        glm::vec2(0, 0) :
-        glm::vec2{
+      .bearing = glm::vec2{
           glyph.bitmap_left / dpiScale,
-          glyph.bitmap_top / dpiScale + vertOffset,
+          glyph.bitmap_top / dpiScale,
         },
       // .advance = (glyph.advance.x >> 6) / dpiScale,
       .region = MakeRegion(pos, texCharSize),
     }
   );
+  dirty = true;
 
-  return pair.first->second;
+  return &(pair.first->second);
 }
 
 void Font::UpdateTexture() {

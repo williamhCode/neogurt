@@ -18,16 +18,18 @@ struct Nvim {
 
   bool IsConnected();
 
-  using variant_ref = msgpack::type::variant_ref;
+  using Variant = msgpack::type::variant;
+  using VariantRef = msgpack::type::variant_ref;
+  using MapRef = const std::map<std::string_view, VariantRef>&;
   void SetClientInfo(
     std::string_view name,
-    const std::map<std::string_view, variant_ref>& version,
+    MapRef version,
     std::string_view type,
-    const std::map<std::string_view, variant_ref>& methods,
-    const std::map<std::string_view, std::string_view>& attributes
+    MapRef methods,
+    MapRef attributes
   );
-  void SetVar(std::string_view name, const variant_ref& value);
-  void UiAttach(int width, int height, const std::map<std::string_view, variant_ref>& options);
+  void SetVar(std::string_view name, VariantRef value);
+  void UiAttach(int width, int height, MapRef options);
   void UiDetach();
   void UiTryResize(int width, int height);
   void Input(std::string_view input);
@@ -40,4 +42,5 @@ struct Nvim {
     int col
   );
   void ListUis();
+  Variant GetOptionValue(std::string_view name, MapRef opts);
 };

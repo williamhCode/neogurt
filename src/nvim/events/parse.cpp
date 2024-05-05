@@ -12,7 +12,7 @@ void ParseEvents(rpc::Client& client, UiEvents& uiEvents) {
       ParseUiEvent(notification.params, uiEvents);
 
     } else if (notification.method == "session_cmd") {
-      LOG_INFO("test notification: {}", ToString(notification.params));
+      LOG_INFO("Session notification: {}", ToString(notification.params));
 
     }
   }

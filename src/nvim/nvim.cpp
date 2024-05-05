@@ -46,21 +46,19 @@ bool Nvim::IsConnected() {
 
 void Nvim::SetClientInfo(
   std::string_view name,
-  const std::map<std::string_view, variant_ref>& version,
+  MapRef version,
   std::string_view type,
-  const std::map<std::string_view, variant_ref>& methods,
-  const std::map<std::string_view, std::string_view>& attributes
+  MapRef methods,
+  MapRef attributes
 ) {
   client.Send("nvim_set_client_info", name, version, type, methods, attributes);
 }
 
-void Nvim::SetVar(std::string_view name, const variant_ref& value) {
+void Nvim::SetVar(std::string_view name, VariantRef value) {
   client.Send("nvim_set_var", name, value);
 }
 
-void Nvim::UiAttach(
-  int width, int height, const std::map<std::string_view, variant_ref>& options
-) {
+void Nvim::UiAttach(int width, int height, MapRef options) {
   client.Send("nvim_ui_attach", width, height, options);
 }
 
@@ -94,4 +92,8 @@ void Nvim::ListUis() {
     auto result = response.get();
     LOG_INFO("nvim_list_uis: {}", ToString(result.get()));
   }).detach();
+}
+
+Nvim::Variant Nvim::GetOptionValue(std::string_view name, MapRef opts) {
+  return client.Call("nvim_get_option_value", name, opts)->convert();
 }

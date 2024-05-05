@@ -49,14 +49,22 @@ int main() {
     return 1;
   }
 
-  auto fontPath = GetFontPath({
-    .family = "JetBrains Mono",
-    .weight = FontWeight::Medium,
-    // .slant = FontSlant::Italic,
-  });
-  LOG_INFO("font path: {}", fontPath);
-
   try {
+    SessionManager sessionManager;
+    sessionManager.LoadSessions("sessions.txt");
+
+    uint16_t port = 2040;
+    port = sessionManager.GetOrCreateSession("default");
+    Nvim nvim("localhost", port);
+    auto guifont = nvim.GetOptionValue("guifont", {}).as_string();
+    LOG("guifont: {}", guifont);
+    auto fontPath = GetFontPath({
+      .family = "JetBrains Mono",
+      .weight = FontWeight::Medium,
+      .slant = FontSlant::Normal,
+    });
+    LOG("font path: {}", fontPath);
+
     appOpts = {
       .multigrid = true,
       .vsync = true,
@@ -78,13 +86,12 @@ int main() {
 
     Renderer renderer(sizes);
 
-    SessionManager sessionManager;
-    sessionManager.LoadSessions("sessions.txt");
+    EditorState editorState{
+      .winManager{.sizes = sizes},
+      .cursor{.fullSize = sizes.charSize},
+    };
+    editorState.winManager.gridManager = &editorState.gridManager;
 
-    uint16_t port = 2040;
-    port = sessionManager.GetOrCreateSession("default");
-
-    Nvim nvim("localhost", port);
     nvim.UiAttach(
       sizes.uiWidth, sizes.uiHeight,
       {
@@ -93,12 +100,6 @@ int main() {
         {"ext_linegrid", true},
       }
     );
-
-    EditorState editorState{
-      .winManager{.sizes = sizes},
-      .cursor{.fullSize = sizes.charSize},
-    };
-    editorState.winManager.gridManager = &editorState.gridManager;
 
     // main loop -----------------------------------
     // lock whenever ctx.device is used
@@ -181,16 +182,16 @@ int main() {
             case SDL_EVENT_WINDOW_FOCUS_LOST:
               windowFocused = false;
               break;
-            // case SDL_EVENT_KEY_DOWN:
-            //   if (event.key.keysym.sym == SDLK_1) {
-            //     LOG("key down: {}", event.key.keysym.sym);
-            //     nvim.NvimListUis();
-            //   }
-            //   if (event.key.keysym.sym == SDLK_2) {
-            //     LOG("key down: {}", event.key.keysym.sym);
-            //     nvim.UiDetach();
-            //   }
-            //   break;
+              // case SDL_EVENT_KEY_DOWN:
+              //   if (event.key.keysym.sym == SDLK_1) {
+              //     LOG("key down: {}", event.key.keysym.sym);
+              //     nvim.NvimListUis();
+              //   }
+              //   if (event.key.keysym.sym == SDLK_2) {
+              //     LOG("key down: {}", event.key.keysym.sym);
+              //     nvim.UiDetach();
+              //   }
+              //   break;
           }
           sdlEvents.Pop();
         }

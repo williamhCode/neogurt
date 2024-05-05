@@ -52,12 +52,13 @@ struct Font {
   };
   using GlyphInfoMap = std::unordered_map<uint32_t, GlyphInfo>;
   GlyphInfoMap glyphInfoMap;
-  GlyphInfoMap nerdGlyphInfoMap;
 
   Font() = default;
   Font(const std::string& path, int size, float dpiScale);
 
-  const GlyphInfo& GetGlyphInfoOrAdd(FT_ULong charcode);
+  // returns nullptr when charcode is not found.
+  // updates glyphInfoMap when charcode not in map.
+  const GlyphInfo* GetGlyphInfo(FT_ULong charcode);
   void UpdateTexture();
   void DpiChanged(float ratio);
 };

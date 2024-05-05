@@ -142,7 +142,7 @@ void Renderer::RenderWindow(Win& win, Font& font, const HlTable& hlTable) {
 
     for (auto& cell : line) {
       auto charcode = UTF8ToUnicode(cell.text);
-      auto hl = hlTable.at(cell.hlId);
+      Highlight hl = hlTable.at(cell.hlId);
 
       // don't render background if default
       if (cell.hlId != 0 && hl.background.has_value() &&
@@ -161,7 +161,7 @@ void Renderer::RenderWindow(Win& win, Font& font, const HlTable& hlTable) {
       }
 
       if (cell.text != " ") {
-        const auto& glyphInfo = font.GetGlyphInfoOrAdd(charcode);
+        const auto& glyphInfo = *font.GetGlyphInfo(charcode);
 
         glm::vec2 textQuadPos{
           textOffset.x + glyphInfo.bearing.x,

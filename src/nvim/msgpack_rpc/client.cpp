@@ -91,15 +91,9 @@ void Client::GetData() {
                 );
 
               } else {
-                // TODO: do something with error
-                // promise.set_exception(std::make_exception_ptr(
-                //   std::runtime_error(msg.error.via.array.ptr[1].as<std::string>())
-                // ));
-                std::cout << "ERROR_TYPE: " << msg.error.via.array.ptr[0] << "\n";
-                std::cout << "ERROR: " << msg.error.via.array.ptr[1] << "\n";
-                // promise.set_value(
-                //   msgpack::object_handle(msg.error, std::move(handle.zone()))
-                // );
+                promise.set_exception(std::make_exception_ptr(
+                  std::runtime_error("rpc::Client response error: " + msg.error.via.array.ptr[1].as<std::string>())
+                ));
               }
 
               {
