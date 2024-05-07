@@ -15,7 +15,7 @@ struct FontSet {
   FontHandle boldItalic; // optional
 };
 
-// list of fonts, primary font and fallback fonts
+// list of fonts: primary font and fallback fonts
 struct FontFamily {
   std::vector<FontSet> fonts;
 

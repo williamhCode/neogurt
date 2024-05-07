@@ -8,7 +8,7 @@
 #include <vector>
 #include <expected>
 
-void FtInit();
+int FtInit();
 void FtDone();
 
 struct FT_FaceDeleter {
@@ -62,5 +62,5 @@ struct Font {
   // updates glyphInfoMap when charcode not in map.
   const GlyphInfo* GetGlyphInfo(FT_ULong charcode);
   void UpdateTexture();
-  void DpiChanged(float ratio);
+  // void DpiChanged(float ratio);
 };

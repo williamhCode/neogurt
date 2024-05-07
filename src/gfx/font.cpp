@@ -20,23 +20,9 @@ CreateFace(FT_Library library, const char* filepath, FT_Long face_index) {
 }
 
 static FT_Library library;
-// static FT_Face nerdFace;
 
-void FtInit() {
-  if (FT_Init_FreeType(&library)) {
-    throw std::runtime_error("Failed to initialize FreeType library");
-  }
-
-  // std::string nerdFontPath(
-  //   // ROOT_DIR "/res/Hack/HackNerdFont-Regular.ttf"
-  //   // ROOT_DIR "/res/Hack/HackNerdFontMono-Regular.ttf"
-  //   ROOT_DIR "/res/NerdFontsSymbolsOnly/SymbolsNerdFont-Regular.ttf"
-  //   // ROOT_DIR "/res/NerdFontsSymbolsOnly/SymbolsNerdFontMono-Regular.ttf"
-  // );
-
-  // if (FT_New_Face(library, nerdFontPath.c_str(), 0, &nerdFace)) {
-  //   throw std::runtime_error("Failed to load nerd font");
-  // }
+int FtInit() {
+  return FT_Init_FreeType(&library);
 }
 
 void FtDone() {

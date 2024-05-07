@@ -24,7 +24,7 @@ MakeFontHandle(const std::string& path, int size, int width, float dpiScale) {
 std::expected<FontHandle, std::string>
 FontHandleFromName(const FontDescriptorWithName& desc, float dpiScale) {
   auto fontPath = GetFontPathFromName(desc);
-  LOG_INFO("Font path: {}", fontPath);
+  LOG_INFO("Font path: {}, size: {}", fontPath, desc.size);
   if (fontPath.empty()) {
     return std::unexpected("Failed to find font for: " + desc.name);
   }

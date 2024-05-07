@@ -41,10 +41,8 @@ int main() {
     return 1;
   }
 
-  try {
-    FtInit();
-  } catch (const std::exception& e) {
-    LOG_ERR("{}", e.what());
+  if (FtInit()) {
+    LOG_ERR("Unable to initialize freetype");
     return 1;
   }
 
@@ -63,7 +61,7 @@ int main() {
       .bold = true,
       .italic = true,
     });
-    LOG("font path: {}", fontPath);
+    // LOG("font path: {}", fontPath);
 
     auto fontFamily = FontFamily::FromGuifont(guifont, 2.0f);
 

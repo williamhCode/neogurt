@@ -16,7 +16,7 @@ FontFamily::FromGuifont(std::string_view guifont, float dpiScale) {
     return std::unexpected("Empty guifont");
   }
 
-  // split string by colon, first string is requried, options args can be any length
+  // split string by colon, first string is required, options args can be any length
   std::string_view fontsStr;
   float size = 12;
   float width = 0;
@@ -55,10 +55,10 @@ FontFamily::FromGuifont(std::string_view guifont, float dpiScale) {
       return FontHandleFromName(
         {
           .name = std::string(font),
-          .bold = bold,
-          .italic = italic,
           .size = (int)size,
           .width = (int)width,
+          .bold = bold,
+          .italic = italic,
         },
         dpiScale
       );
