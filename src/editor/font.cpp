@@ -77,11 +77,9 @@ FontFamily::FromGuifont(std::string_view guifont, float dpiScale) {
       if (auto boldFont = makeFont(true, false)) {
         fontSet.bold = std::move(*boldFont);
       }
-
       if (auto italicFont = makeFont(false, true)) {
         fontSet.italic = std::move(*italicFont);
       }
-
       if (auto boldItalicFont = makeFont(true, true)) {
         fontSet.boldItalic = std::move(*boldItalicFont);
       }

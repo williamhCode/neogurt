@@ -8,8 +8,7 @@
 #include "editor/grid.hpp"
 #include "editor/highlight.hpp"
 #include "editor/state.hpp"
-#include "gfx/font.hpp"
-#include "gfx/font/descriptor.hpp"
+#include "editor/font.hpp"
 #include "gfx/font/locator.hpp"
 #include "gfx/instance.hpp"
 #include "gfx/renderer.hpp"
@@ -58,12 +57,15 @@ int main() {
     Nvim nvim("localhost", port);
     auto guifont = nvim.GetOptionValue("guifont", {}).as_string();
     LOG("guifont: {}", guifont);
+
     auto fontPath = GetFontPathFromName({
-      .name = "SF Mono Light",
+      .name = "SF Mono",
       .bold = true,
       .italic = true,
     });
     LOG("font path: {}", fontPath);
+
+    auto fontFamily = FontFamily::FromGuifont(guifont, 2.0f);
 
     appOpts = {
       .multigrid = true,

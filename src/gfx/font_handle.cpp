@@ -1,5 +1,6 @@
 #include "font_handle.hpp"
 #include "gfx/font/locator.hpp"
+#include "utils/logger.hpp"
 #include <unordered_map>
 
 std::unordered_map<std::string, std::weak_ptr<Font>> fontCache;
@@ -23,6 +24,7 @@ MakeFontHandle(const std::string& path, int size, int width, float dpiScale) {
 std::expected<FontHandle, std::string>
 FontHandleFromName(const FontDescriptorWithName& desc, float dpiScale) {
   auto fontPath = GetFontPathFromName(desc);
+  LOG_INFO("Font path: {}", fontPath);
   if (fontPath.empty()) {
     return std::unexpected("Failed to find font for: " + desc.name);
   }

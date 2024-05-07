@@ -47,14 +47,18 @@ std::string GetFontPathFromName(const FontDescriptorWithName& desc) {
   
   CTFontDescriptorRef newDescriptor;
 
+  // alter original font traits, and create new font desc with original family but new traits
   if (desc.bold || desc.italic) {
     NSMutableDictionary* newTraits = [NSMutableDictionary dictionary];
 
+    auto traits = (NSDictionary *)CTFontDescriptorCopyAttribute(ctDescriptor, kCTFontTraitsAttribute);
+    auto currWeight = (NSNumber *)traits[(NSString *)kCTFontWeightTrait];
+
     if (desc.bold) {
-      auto traits = (NSDictionary *)CTFontDescriptorCopyAttribute(ctDescriptor, kCTFontTraitsAttribute);
-      auto currWeight = (NSNumber *)traits[(NSString *)kCTFontWeightTrait];
       NSNumber* newWeight = @(NSFontWeightBolder([currWeight floatValue]));
       newTraits[(NSString *)kCTFontWeightTrait] = newWeight;
+    } else {
+      newTraits[(NSString *)kCTFontWeightTrait] = currWeight;
     }
 
     if (desc.italic) {

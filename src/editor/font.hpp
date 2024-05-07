@@ -22,6 +22,6 @@ struct FontFamily {
   static std::expected<FontFamily, std::string>
   FromGuifont(std::string_view guifont, float dpiScale);
 
-  static FontFamily Default(float dpiScale);
+  // static FontFamily Default(float dpiScale);
 };
 
