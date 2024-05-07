@@ -1,10 +1,12 @@
 #pragma once
 
 #include "freetype/freetype.h"
+#include "gfx/font/descriptor.hpp"
 #include "glm/ext/vector_float2.hpp"
 #include "utils/region.hpp"
 #include "webgpu/webgpu_cpp.h"
 #include <vector>
+#include <expected>
 
 void FtInit();
 void FtDone();
@@ -30,7 +32,7 @@ struct Font {
   std::vector<Color> textureData;
   wgpu::TextureView textureView;
   wgpu::BindGroup fontTextureBG;
-  bool dirty = true;
+  bool dirty = false;
 
   // dimensions
   static constexpr int atlasWidth = 16;
@@ -54,7 +56,7 @@ struct Font {
   GlyphInfoMap glyphInfoMap;
 
   Font() = default;
-  Font(const std::string& path, int size, float dpiScale);
+  Font(const std::string& path, int height, int width, float dpiScale);
 
   // returns nullptr when charcode is not found.
   // updates glyphInfoMap when charcode not in map.

@@ -58,10 +58,10 @@ int main() {
     Nvim nvim("localhost", port);
     auto guifont = nvim.GetOptionValue("guifont", {}).as_string();
     LOG("guifont: {}", guifont);
-    auto fontPath = GetFontPath({
-      .family = "JetBrains Mono",
-      .weight = FontWeight::Medium,
-      .slant = FontSlant::Normal,
+    auto fontPath = GetFontPathFromName({
+      .name = "SF Mono Light",
+      .bold = true,
+      .italic = true,
     });
     LOG("font path: {}", fontPath);
 
@@ -79,7 +79,7 @@ int main() {
     auto presentMode = appOpts.vsync ? PresentMode::Mailbox : PresentMode::Immediate;
     sdl::Window window({1600, 1000}, "Neovim GUI", presentMode);
 
-    Font font(fontPath, 15, window.dpiScale);
+    Font font(fontPath, 15, 0, window.dpiScale);
 
     SizeHandler sizes;
     sizes.UpdateSizes(window.size, window.dpiScale, font.charSize);
@@ -360,7 +360,7 @@ int main() {
           std::scoped_lock lock(wgpuDeviceMutex);
           window.dpiScale = SDL_GetWindowPixelDensity(window.Get());
           LOG("display scale changed: {}", window.dpiScale);
-          font = Font(fontPath, 15, window.dpiScale);
+          font = Font(fontPath, 15, 0, window.dpiScale);
           editorState.cursor.fullSize = font.charSize;
           break;
         }

@@ -2,8 +2,10 @@
 #include "glm/common.hpp"
 #include "utils/region.hpp"
 #include "webgpu_tools/utils/webgpu.hpp"
+#include "gfx/font/locator.hpp"
 #include "gfx/instance.hpp"
 
+#include <__expected/unexpected.h>
 #include <vector>
 
 using namespace wgpu;
@@ -38,19 +40,19 @@ void FtInit() {
 }
 
 void FtDone() {
-  // FT_Done_Face(nerdFace);
   FT_Done_FreeType(library);
 }
 
-Font::Font(const std::string& path, int _size, float _dpiScale)
+Font::Font(const std::string& path, int _size, int width, float _dpiScale)
     : size(_size), dpiScale(_dpiScale) {
   if (face = CreateFace(library, path.c_str(), 0); face == nullptr) {
-    throw std::runtime_error("Failed to load font");
+    throw std::runtime_error("Failed to create font face for: " + path);
   }
 
   // winding order is clockwise starting from top left
   trueSize = size * dpiScale;
-  FT_Set_Pixel_Sizes(face.get(), 0, trueSize);
+  int trueWidth = width * dpiScale;
+  FT_Set_Pixel_Sizes(face.get(), trueWidth, trueSize);
 
   charSize.x = (face->size->metrics.max_advance >> 6) / dpiScale;
   charSize.y = (face->size->metrics.height >> 6) / dpiScale;
@@ -60,14 +62,14 @@ Font::Font(const std::string& path, int _size, float _dpiScale)
 
   positions = MakeRegion({0, 0}, texCharSize);
 
-  uint32_t numChars = 128;
+  // uint32_t numChars = 128;
 
   // start off by rendering the first 128 characters
-  for (uint32_t i = 0; i < numChars; i++) {
-    GetGlyphInfo(i);
-  }
+  // for (uint32_t i = 0; i < numChars; i++) {
+  //   GetGlyphInfo(i);
+  // }
 
-  UpdateTexture();
+  // UpdateTexture();
 }
 
 const Font::GlyphInfo* Font::GetGlyphInfo(FT_ULong charcode) {
@@ -126,7 +128,8 @@ const Font::GlyphInfo* Font::GetGlyphInfo(FT_ULong charcode) {
       //     bitmap.width / dpiScale,
       //     bitmap.rows / dpiScale,
       //   },
-      .bearing = glm::vec2{
+      .bearing =
+        glm::vec2{
           glyph.bitmap_left / dpiScale,
           glyph.bitmap_top / dpiScale,
         },

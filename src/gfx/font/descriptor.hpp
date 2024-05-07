@@ -27,11 +27,41 @@ inline float FontWeightToFloat(FontWeight weight) {
   }
 }
 
+inline FontWeight FontWeightBolder(FontWeight weight) {
+  switch (weight) {
+    case FontWeight::Thin:
+    case FontWeight::ExtraLight:
+    case FontWeight::Light:
+      return FontWeight::Normal;
+
+    case FontWeight::Normal:
+    case FontWeight::Medium:
+      return FontWeight::Bold;
+
+    case FontWeight::SemiBold:
+    case FontWeight::Bold:
+    case FontWeight::ExtraBold:
+    case FontWeight::Black:
+      return FontWeight::Black;
+  }
+}
+
 enum class FontSlant { Normal, Italic, Oblique };
 
-struct FontDescriptor {
+struct FontDescriptorWithName {
+  std::string name;
+  bool bold = false;
+  bool italic = false;
+  int size = 12;
+  int width = 0;
+};
+
+struct FontDescriptorWithFamily {
   std::string family;
   FontWeight weight = FontWeight::Normal;
   FontSlant slant = FontSlant::Normal;
-  int size;
+  bool bold = false;
+  bool italic = false;
+  int size = 12;
+  int width = 0;
 };

@@ -1,22 +1,24 @@
 #include "locator.hpp"
-#include <AppKit/NSFontDescriptor.h>
-#include <Foundation/Foundation.h>
-#include <CoreText/CoreText.h>
+#include "utils/logger.hpp"
+#import <AppKit/NSFontDescriptor.h>
+#include <format>
+#include <CoreText/CTFontDescriptor.h>
+#import <Foundation/NSString.h>
+#import <Foundation/NSDictionary.h>
+#import <CoreText/CoreText.h>
 
-static NSFontWeight WeightToCoreTextWeight(FontWeight weight) {
-  NSFontWeight fWeight;
+static NSFontWeight FontWeightToNSFontWeight(FontWeight weight) {
   switch (weight) {
-    case FontWeight::Thin: fWeight = NSFontWeightThin; break;
-    case FontWeight::ExtraLight: fWeight = NSFontWeightUltraLight; break;
-    case FontWeight::Light: fWeight = NSFontWeightLight; break;
-    case FontWeight::Normal: fWeight = NSFontWeightRegular; break;
-    case FontWeight::Medium: fWeight = NSFontWeightMedium; break;
-    case FontWeight::SemiBold: fWeight = NSFontWeightSemibold; break;
-    case FontWeight::Bold: fWeight = NSFontWeightBold; break;
-    case FontWeight::ExtraBold: fWeight = NSFontWeightHeavy; break;
-    case FontWeight::Black: fWeight = NSFontWeightBlack; break;
+    case FontWeight::Thin: return NSFontWeightUltraLight;
+    case FontWeight::ExtraLight: return NSFontWeightThin;
+    case FontWeight::Light: return NSFontWeightLight;
+    case FontWeight::Normal: return NSFontWeightRegular;
+    case FontWeight::Medium: return NSFontWeightMedium;
+    case FontWeight::SemiBold: return NSFontWeightSemibold;
+    case FontWeight::Bold: return NSFontWeightBold;
+    case FontWeight::ExtraBold: return NSFontWeightHeavy;
+    case FontWeight::Black: return NSFontWeightBlack;
   }
-  return fWeight;
 }
 
 static CTFontSymbolicTraits SlantToCoreTextSlant(FontSlant slant) {
@@ -27,32 +29,90 @@ static CTFontSymbolicTraits SlantToCoreTextSlant(FontSlant slant) {
   }
 }
 
-std::string GetFontPath(const FontDescriptor& desc) {
-  NSString* ctFamily = [NSString stringWithUTF8String:desc.family.c_str()];
-  NSFontWeight ctWeight = WeightToCoreTextWeight(desc.weight);
-  CTFontSymbolicTraits ctSlant = SlantToCoreTextSlant(desc.slant);
-
-  NSDictionary* traits = @{
-    (NSString*)kCTFontWeightTrait : @(ctWeight),
-    (NSString*)kCTFontSymbolicTrait : @(ctSlant),
-  };
-
-  NSDictionary* attributes = @{
-    (NSString*)kCTFontFamilyNameAttribute : ctFamily,
-    (NSString*)kCTFontTraitsAttribute : traits,
-  };
-
-  CTFontDescriptorRef ctDescriptor =
-    CTFontDescriptorCreateWithAttributes((__bridge CFDictionaryRef)attributes);
-
-  // size can be ignored, we just need the font URL
-  CTFontRef font = CTFontCreateWithFontDescriptor(ctDescriptor, 0, nullptr);
-  CFURLRef fontURL = (CFURLRef)CTFontCopyAttribute(font, kCTFontURLAttribute);
-  NSString *fontPath = [NSString stringWithString:[(NSURL *)fontURL path]];
-
-  CFRelease(font);
-  CFRelease(ctDescriptor);
-  if (fontURL) CFRelease(fontURL);
-
-  return [fontPath UTF8String];
+static NSFontWeight NSFontWeightBolder(NSFontWeight weight) {
+  if (weight <= NSFontWeightLight) return NSFontWeightRegular;
+  if (weight <= NSFontWeightMedium) return NSFontWeightBold;
+  return NSFontWeightBlack;
 }
+
+std::string GetFontPathFromName(const FontDescriptorWithName& desc) {
+  NSString* ctName = @(desc.name.c_str());
+  CTFontDescriptorRef ctDescriptor =
+    CTFontDescriptorCreateWithNameAndSize((CFStringRef)ctName, 0);
+  CFURLRef fontUrl =
+    (CFURLRef)CTFontDescriptorCopyAttribute(ctDescriptor, kCTFontURLAttribute);
+  if (fontUrl == nullptr) {
+    return "";
+  }
+  
+  CTFontDescriptorRef newDescriptor;
+
+  if (desc.bold || desc.italic) {
+    NSMutableDictionary* newTraits = [NSMutableDictionary dictionary];
+
+    if (desc.bold) {
+      auto traits = (NSDictionary *)CTFontDescriptorCopyAttribute(ctDescriptor, kCTFontTraitsAttribute);
+      auto currWeight = (NSNumber *)traits[(NSString *)kCTFontWeightTrait];
+      NSNumber* newWeight = @(NSFontWeightBolder([currWeight floatValue]));
+      newTraits[(NSString *)kCTFontWeightTrait] = newWeight;
+    }
+
+    if (desc.italic) {
+      newTraits[(NSString *)kCTFontSlantTrait] = @(kCTFontItalicTrait);
+    }
+
+    auto family = (NSString *)CTFontDescriptorCopyAttribute(ctDescriptor, kCTFontFamilyNameAttribute);
+    NSDictionary* newAttributes = @{
+      (NSString*)kCTFontFamilyNameAttribute : family,
+      (NSString*)kCTFontTraitsAttribute : newTraits,
+    };
+    newDescriptor =
+      CTFontDescriptorCreateWithAttributes((CFDictionaryRef)newAttributes);
+
+  } else {
+    newDescriptor = ctDescriptor;
+  }
+
+  CFURLRef newFontUrl =
+    (CFURLRef)CTFontDescriptorCopyAttribute(newDescriptor, kCTFontURLAttribute);
+
+  std::string path;
+  if (newFontUrl) {
+    path = [[(NSURL*)newFontUrl path] UTF8String];
+    CFRelease(newFontUrl);
+  }
+  CFRelease(newDescriptor);
+
+  return path;
+}
+
+// std::string GetFontPathFromFamilyAndStyle(const FontDescriptor& desc) {
+
+//   NSString* ctName = @(desc.name.c_str());
+//   NSFontWeight ctWeight = FontWeightToNSFontWeight(desc.weight);
+//   CTFontSymbolicTraits ctSlant = SlantToCoreTextSlant(desc.slant);
+
+//   NSDictionary* traits = @{
+//     (NSString*)kCTFontWeightTrait : @(ctWeight),
+//     (NSString*)kCTFontSlantTrait : @(ctSlant),
+//   };
+
+//   NSDictionary* attributes = @{
+//     (NSString*)kCTFontNameAttribute : ctName,
+//     (NSString*)kCTFontTraitsAttribute : traits,
+//   };
+
+//   CTFontDescriptorRef ctDescriptor =
+//     CTFontDescriptorCreateWithAttributes((__bridge CFDictionaryRef)attributes);
+//   CFURLRef fontUrl =
+//     (CFURLRef)CTFontDescriptorCopyAttribute(ctDescriptor, kCTFontURLAttribute);
+
+//   std::string path;
+//   if (fontUrl) {
+//     path = [[(NSURL*)fontUrl path] UTF8String];
+//     CFRelease(fontUrl);
+//   }
+//   CFRelease(ctDescriptor);
+
+//   return path;
+// }

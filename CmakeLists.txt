@@ -9,7 +9,7 @@ project(
   LANGUAGES C CXX
 )
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)  # clangd
@@ -34,11 +34,13 @@ set(APP_SRC
   src/editor/grid.cpp
   src/editor/window.cpp
   src/editor/highlight.cpp
+  src/editor/font.cpp
 
   src/gfx/context.cpp
   src/gfx/pipeline.cpp
   src/gfx/renderer.cpp
   src/gfx/font.cpp
+  src/gfx/font_handle.cpp
   src/gfx/camera.cpp
   src/gfx/render_texture.cpp
   src/gfx/font/locator.mm
