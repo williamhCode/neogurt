@@ -23,7 +23,6 @@ struct TextureAtlas {
   };
   std::vector<Color> dataRaw;
   std::mdspan<Color, std::dextents<uint, 2>> data;
-
   bool dirty = false;
 
   glm::uvec2 currentPos = {0, 0};
@@ -31,12 +30,11 @@ struct TextureAtlas {
   // advance pos.y by this value when moving to next row
   uint currMaxHeight = 0;
 
-  bool resized = false;
   wgpu::Buffer textureSizeBuffer;
   wgpu::Texture texture;
   wgpu::Sampler textureSampler;
-
   wgpu::BindGroup fontTextureBG;
+  bool resized = false;
 
   TextureAtlas() = default;
   TextureAtlas(uint glyphSize, float dpiScale);

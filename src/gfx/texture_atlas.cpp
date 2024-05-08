@@ -24,14 +24,12 @@ TextureAtlas::TextureAtlas(uint _glyphSize, float _dpiScale)
     ctx.device, Extent3D(bufferSize.x, bufferSize.y), wgpu::TextureFormat::RGBA8Unorm
   );
 
-  textureSampler = ctx.device.CreateSampler(
-    ToPtr(SamplerDescriptor{
-      .addressModeU = AddressMode::ClampToEdge,
-      .addressModeV = AddressMode::ClampToEdge,
-      .magFilter = FilterMode::Nearest,
-      .minFilter = FilterMode::Nearest,
-    })
-  );
+  textureSampler = ctx.device.CreateSampler(ToPtr(SamplerDescriptor{
+    .addressModeU = AddressMode::ClampToEdge,
+    .addressModeV = AddressMode::ClampToEdge,
+    .magFilter = FilterMode::Nearest,
+    .minFilter = FilterMode::Nearest,
+  }));
 
   fontTextureBG = utils::MakeBindGroup(
     ctx.device, ctx.pipeline.fontTextureBGL,
@@ -63,7 +61,8 @@ TextureAtlas::AddGlyph(std::mdspan<unsigned char, std::dextents<uint, 2>> glyphD
       dest.r = 255;
       dest.g = 255;
       dest.b = 255;
-      dest.a = glyphData[row, col];;
+      dest.a = glyphData[row, col];
+      ;
     }
   }
   dirty = true;
@@ -95,7 +94,11 @@ void TextureAtlas::Update() {
   if (!dirty) return;
 
   if (resized) {
-    ctx.queue.WriteBuffer(textureSizeBuffer, 0, &textureSize, sizeof(glm::vec2));
+    // replace buffer because we dont want to change previous buffer data
+    // we wanna create copy of it so different instances of the buffer
+    // can be used in the same command encoder
+    textureSizeBuffer =
+      utils::CreateUniformBuffer(ctx.device, sizeof(glm::vec2), &textureSize);
 
     texture = utils::CreateBindingTexture(
       ctx.device, Extent3D(bufferSize.x, bufferSize.y), wgpu::TextureFormat::RGBA8Unorm
@@ -117,4 +120,3 @@ void TextureAtlas::Update() {
   );
   dirty = false;
 }
-
