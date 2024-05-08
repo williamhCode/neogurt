@@ -14,7 +14,7 @@ TextureAtlas::TextureAtlas(uint _glyphSize, float _dpiScale)
 
   dataRaw.resize(bufferSize.x * bufferSize.y);
   data =
-    std::mdspan(dataRaw.data(), std::dextents<uint, 2>{bufferSize.x, bufferSize.y});
+    std::mdspan(dataRaw.data(), std::dextents<uint, 2>{bufferSize.y, bufferSize.x});
 
   // init bind group data
   textureSizeBuffer =
@@ -43,36 +43,38 @@ TextureAtlas::TextureAtlas(uint _glyphSize, float _dpiScale)
   );
 }
 
-Region TextureAtlas::AddGlyph(std::mdspan<Color, std::dextents<uint, 2>> glyphData) {
+Region
+TextureAtlas::AddGlyph(std::mdspan<unsigned char, std::dextents<uint, 2>> glyphData) {
   // check if current row is full
   // if so, move to next row
-  if (currentPos.x + glyphData.extent(0) > bufferSize.x) {
+  if (currentPos.x + glyphData.extent(1) > bufferSize.x) {
     currentPos.x = 0;
     currentPos.y += currMaxHeight;
     currMaxHeight = 0;
-
-    if (currentPos.y + glyphData.extent(1) > bufferSize.y) {
-      Resize();
-    }
+  }
+  if (currentPos.y + glyphData.extent(0) > bufferSize.y) {
+    Resize();
   }
 
   // fill data
-  for (uint row = 0; row < glyphData.extent(1); row++) {
-    for (uint col = 0; col < glyphData.extent(0); col++) {
-      Color& dest = data[row + currentPos.y, col + currentPos.x];
-      Color& src = glyphData[row, col];
-      dest = src;
+  for (uint row = 0; row < glyphData.extent(0); row++) {
+    for (uint col = 0; col < glyphData.extent(1); col++) {
+      Color& dest = data[currentPos.y + row, currentPos.x + col];
+      dest.r = 255;
+      dest.g = 255;
+      dest.b = 255;
+      dest.a = glyphData[row, col];;
     }
   }
   dirty = true;
 
   // calculate region
   auto regionPos = glm::vec2(currentPos) / dpiScale;
-  auto regionSize = glm::vec2(glyphData.extent(0), glyphData.extent(1)) / dpiScale;
+  auto regionSize = glm::vec2(glyphData.extent(1), glyphData.extent(0)) / dpiScale;
 
   // advance current position
-  currentPos.x += glyphData.extent(0);
-  currMaxHeight = std::max(currMaxHeight, glyphData.extent(1));
+  currentPos.x += glyphData.extent(1);
+  currMaxHeight = std::max(currMaxHeight, glyphData.extent(0));
 
   return MakeRegion(regionPos, regionSize);
 }
@@ -84,7 +86,7 @@ void TextureAtlas::Resize() {
 
   dataRaw.resize(bufferSize.x * bufferSize.y);
   data =
-    std::mdspan(dataRaw.data(), std::dextents<uint, 2>{bufferSize.x, bufferSize.y});
+    std::mdspan(dataRaw.data(), std::dextents<uint, 2>{bufferSize.y, bufferSize.x});
 
   resized = true;
 }

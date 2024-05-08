@@ -1,5 +1,6 @@
 #include "font.hpp"
 #include "utils/expected.hpp"
+#include "utils/logger.hpp"
 #include <ranges>
 #include <string>
 
@@ -125,5 +126,9 @@ FontFamily::GetGlyphInfo(uint32_t codepoint, bool bold, bool italic) {
     }
   }
 
-  return *fonts.front().normal->GetGlyphInfo(0, textureAtlas);
+  const auto *glyphInfo = fonts.front().normal->GetGlyphInfo(' ', textureAtlas);
+  if (glyphInfo == nullptr) {
+    LOG_ERR("Failed to get glyph info for codepoint: {}", codepoint);
+  }
+  return *glyphInfo;
 }

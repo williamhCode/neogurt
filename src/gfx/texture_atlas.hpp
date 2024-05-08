@@ -43,7 +43,7 @@ struct TextureAtlas {
 
   // Adds data to texture atlas, and returns the region where the data was added.
   // Region coordinates is relative to textureSize.
-  Region AddGlyph(std::mdspan<Color, std::dextents<uint, 2>> glyphData);
+  Region AddGlyph(std::mdspan<unsigned char, std::dextents<uint, 2>> glyphData);
   // Resize cpu side data and sizes
   void Resize();
   // Resize gpu side data and update bind group

@@ -28,7 +28,7 @@ void FtDone() {
 std::expected<Font, std::string>
 Font::FromName(const FontDescriptorWithName& desc, float dpiScale) {
   auto fontPath = GetFontPathFromName(desc);
-  LOG("Font path: {}, size: {}", fontPath, desc.size);
+  // LOG("Font path: {}, size: {}", fontPath, desc.size);
   if (fontPath.empty()) {
     return std::unexpected("Failed to find font for: " + desc.name);
   }
@@ -49,8 +49,6 @@ Font::Font(std::string _path, int _size, int width, float _dpiScale)
 
   charSize.x = (face->size->metrics.max_advance >> 6) / dpiScale;
   charSize.y = (face->size->metrics.height >> 6) / dpiScale;
-
-
 }
 
 const Font::GlyphInfo*
@@ -77,8 +75,8 @@ Font::GetGlyphInfo(FT_ULong charcode, TextureAtlas& textureAtlas) {
   auto& bitmap = glyph.bitmap;
 
   auto region = textureAtlas.AddGlyph({
-    (TextureAtlas::Color*)bitmap.buffer,
-    std::dextents<uint, 2>{bitmap.width, bitmap.rows},
+    bitmap.buffer,
+    std::dextents<uint, 2>{bitmap.rows, bitmap.width},
   });
 
   auto pair = glyphInfoMap.emplace(
