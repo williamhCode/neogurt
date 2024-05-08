@@ -53,17 +53,6 @@ int main() {
     uint16_t port = 2040;
     port = sessionManager.GetOrCreateSession("default");
     Nvim nvim("localhost", port);
-    auto guifont = nvim.GetOptionValue("guifont", {}).as_string();
-    LOG("guifont: {}", guifont);
-
-    auto fontPath = GetFontPathFromName({
-      .name = "SF Mono",
-      .bold = true,
-      .italic = true,
-    });
-    // LOG("font path: {}", fontPath);
-
-    auto fontFamily = FontFamily::FromGuifont(guifont, 2.0f);
 
     appOpts = {
       .multigrid = true,
@@ -79,10 +68,19 @@ int main() {
     auto presentMode = appOpts.vsync ? PresentMode::Mailbox : PresentMode::Immediate;
     sdl::Window window({1600, 1000}, "Neovim GUI", presentMode);
 
-    Font font(fontPath, 15, 0, window.dpiScale);
+    // create font
+    auto guifont = nvim.GetOptionValue("guifont", {}).as_string();
+    LOG("guifont: {}", guifont);
+    auto fontFamilyResult = FontFamily::FromGuifont(guifont, 2.0f);
+    if (!fontFamilyResult) {
+      LOG_ERR("Failed to create font family: {}", fontFamilyResult.error());
+      return 1;
+    }
+    FontFamily fontFamily = std::move(*fontFamilyResult);
+    const Font& defaultFont = fontFamily.DefaultFont();
 
     SizeHandler sizes;
-    sizes.UpdateSizes(window.size, window.dpiScale, font.charSize);
+    sizes.UpdateSizes(window.size, window.dpiScale, defaultFont.charSize);
 
     Renderer renderer(sizes);
 
@@ -157,7 +155,7 @@ int main() {
                 window.fbSize = {event.window.data1, event.window.data2};
 
                 std::scoped_lock lock(wgpuDeviceMutex);
-                sizes.UpdateSizes(window.size, window.dpiScale, font.charSize);
+                sizes.UpdateSizes(window.size, window.dpiScale, defaultFont.charSize);
 
                 sdl::Window::_ctx.Resize(sizes.fbSize);
                 renderer.Resize(sizes);
@@ -240,7 +238,7 @@ int main() {
           for (auto& [id, win] : editorState.winManager.windows) {
             if (win.grid.dirty) {
               // if (true) {
-              renderer.RenderWindow(win, font, editorState.hlTable);
+              renderer.RenderWindow(win, fontFamily, editorState.hlTable);
               win.grid.dirty = false;
               renderWindows = true;
             }
@@ -360,8 +358,9 @@ int main() {
           std::scoped_lock lock(wgpuDeviceMutex);
           window.dpiScale = SDL_GetWindowPixelDensity(window.Get());
           LOG("display scale changed: {}", window.dpiScale);
-          font = Font(fontPath, 15, 0, window.dpiScale);
-          editorState.cursor.fullSize = font.charSize;
+          // TODO: change font family dpi scale
+          // font = Font(fontPath, 15, 0, window.dpiScale);
+          // editorState.cursor.fullSize = font.charSize;
           break;
         }
 

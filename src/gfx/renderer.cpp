@@ -8,6 +8,7 @@
 #include "utils/color.hpp"
 #include "webgpu/webgpu_cpp.h"
 #include "webgpu_tools/utils/webgpu.hpp"
+#include <ostream>
 #include <utility>
 
 using namespace wgpu;
@@ -127,7 +128,7 @@ void Renderer::Begin() {
   nextTextureView = nextTexture.CreateView();
 }
 
-void Renderer::RenderWindow(Win& win, Font& font, const HlTable& hlTable) {
+void Renderer::RenderWindow(Win& win, FontFamily& fontFamily, const HlTable& hlTable) {
   auto& rectData = win.rectData;
   auto& textData = win.textData;
 
@@ -135,11 +136,12 @@ void Renderer::RenderWindow(Win& win, Font& font, const HlTable& hlTable) {
   textData.ResetCounts();
 
   glm::vec2 textOffset(0, 0);
+  const auto& defaultFont = fontFamily.DefaultFont();
 
   for (size_t row = 0; row < win.grid.lines.Size(); row++) {
     auto& line = win.grid.lines[row];
     textOffset.x = 0;
-
+  
     for (auto& cell : line) {
       auto charcode = UTF8ToUnicode(cell.text);
       Highlight hl = hlTable.at(cell.hlId);
@@ -147,7 +149,7 @@ void Renderer::RenderWindow(Win& win, Font& font, const HlTable& hlTable) {
       // don't render background if default
       if (cell.hlId != 0 && hl.background.has_value() &&
           hl.background != hlTable.at(0).background) {
-        auto rectPositions = MakeRegion({0, 0}, font.charSize);
+        auto rectPositions = MakeRegion({0, 0}, defaultFont.charSize);
 
         auto background = *hl.background;
         background.a = hl.bgAlpha;
@@ -161,17 +163,17 @@ void Renderer::RenderWindow(Win& win, Font& font, const HlTable& hlTable) {
       }
 
       if (cell.text != " ") {
-        const auto& glyphInfo = *font.GetGlyphInfo(charcode);
+        const auto& glyphInfo = fontFamily.GetGlyphInfo(charcode, hl.bold, hl.italic);
 
         glm::vec2 textQuadPos{
           textOffset.x + glyphInfo.bearing.x,
-          textOffset.y - glyphInfo.bearing.y + font.size,
+          textOffset.y - glyphInfo.bearing.y + defaultFont.size,
         };
 
         glm::vec4 foreground = GetForeground(hlTable, hl);
         for (size_t i = 0; i < 4; i++) {
           auto& vertex = textData.CurrQuad()[i];
-          vertex.position = textQuadPos + font.positions[i];
+          vertex.position = textQuadPos + glyphInfo.sizePositions[i];
           vertex.regionCoords = glyphInfo.region[i];
           vertex.foreground = foreground;
         }
@@ -179,18 +181,19 @@ void Renderer::RenderWindow(Win& win, Font& font, const HlTable& hlTable) {
         textData.Increment();
       }
 
-      textOffset.x += font.charSize.x;
+      textOffset.x += defaultFont.charSize.x;
     }
 
-    textOffset.y += font.charSize.y;
+    textOffset.y += defaultFont.charSize.y;
   }
 
   rectData.WriteBuffers();
   textData.WriteBuffers();
 
-  // updates texture if new glyphs added, old font texture from previous renders
-  // is not owned by font anymore but still referenced by command encoder
-  font.UpdateTexture();
+  // gpu texture is reallocated if resized
+  // old gpu texture is not refereced by texture atlas anymore
+  // but still referenced by command encoder
+  fontFamily.textureAtlas.Update();
 
   // background
   {
@@ -209,10 +212,11 @@ void Renderer::RenderWindow(Win& win, Font& font, const HlTable& hlTable) {
     RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textRPD);
     passEncoder.SetPipeline(ctx.pipeline.textRPL);
     passEncoder.SetBindGroup(0, win.renderTexture.camera.viewProjBG);
-    passEncoder.SetBindGroup(1, font.fontTextureBG);
+    passEncoder.SetBindGroup(1, fontFamily.textureAtlas.fontTextureBG);
     textData.Render(passEncoder);
     passEncoder.End();
   }
+
 }
 
 // jst playing with templates and concepts is a bit unnecessary

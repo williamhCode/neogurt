@@ -49,41 +49,35 @@ std::string GetFontPathFromName(const FontDescriptorWithName& desc) {
 
   // alter original font traits,
   // and create new font desc with original family but with new traits
-  if (desc.bold || desc.italic) {
-    NSMutableDictionary* newTraits = [NSMutableDictionary dictionary];
+  auto traits =
+    (NSDictionary*)CTFontDescriptorCopyAttribute(ctDescriptor, kCTFontTraitsAttribute);
+  NSMutableDictionary* newTraits = [NSMutableDictionary dictionary];
 
-    auto traits = (NSDictionary*)CTFontDescriptorCopyAttribute(
-      ctDescriptor, kCTFontTraitsAttribute
-    );
-    auto currWeight = (NSNumber*)traits[(NSString*)kCTFontWeightTrait];
-
-    if (desc.bold) {
-      NSNumber* newWeight = @(NSFontWeightBolder([currWeight floatValue]));
-      newTraits[(NSString*)kCTFontWeightTrait] = newWeight;
-    } else {
-      newTraits[(NSString*)kCTFontWeightTrait] = currWeight;
-    }
-
-    if (desc.italic) {
-      newTraits[(NSString*)kCTFontSlantTrait] = @(kCTFontItalicTrait);
-    }
-
-    auto family = (NSString*)CTFontDescriptorCopyAttribute(
-      ctDescriptor, kCTFontFamilyNameAttribute
-    );
-    NSDictionary* newAttributes = @{
-      (NSString*)kCTFontFamilyNameAttribute : family,
-      (NSString*)kCTFontTraitsAttribute : newTraits,
-    };
-    newDescriptor =
-      CTFontDescriptorCreateWithAttributes((CFDictionaryRef)newAttributes);
-
-    CFRelease(family);
-    CFRelease(traits);
-
+  auto currWeight = (NSNumber*)traits[(NSString*)kCTFontWeightTrait];
+  if (desc.bold) {
+    NSNumber* newWeight = @(NSFontWeightBolder([currWeight floatValue]));
+    newTraits[(NSString*)kCTFontWeightTrait] = newWeight;
   } else {
-    newDescriptor = ctDescriptor;
+    newTraits[(NSString*)kCTFontWeightTrait] = currWeight;
   }
+
+  auto currSlant = (NSNumber*)traits[(NSString*)kCTFontSlantTrait];
+  if (desc.italic) {
+    newTraits[(NSString*)kCTFontSlantTrait] = @(kCTFontItalicTrait);
+  } else {
+    newTraits[(NSString*)kCTFontSlantTrait] = currSlant;
+  }
+
+  auto family =
+    (NSString*)CTFontDescriptorCopyAttribute(ctDescriptor, kCTFontFamilyNameAttribute);
+  NSDictionary* newAttributes = @{
+    (NSString*)kCTFontFamilyNameAttribute : family,
+    (NSString*)kCTFontTraitsAttribute : newTraits,
+  };
+  newDescriptor = CTFontDescriptorCreateWithAttributes((CFDictionaryRef)newAttributes);
+
+  CFRelease(family);
+  CFRelease(traits);
 
   std::string path;
   CFURLRef newFontUrl =

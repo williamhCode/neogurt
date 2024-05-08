@@ -1,27 +1,29 @@
 #pragma once
-#include "gfx/font_handle.hpp"
+#include "gfx/font.hpp"
+#include "gfx/texture_atlas.hpp"
 #include <string_view>
 #include <vector>
-#include <optional>
 #include <expected>
 
-// Normal is guarenteed to be present.
-// If style is set explicitly, only normal style will be present,
-// and normal member will be set to that style.
+using FontHandle = std::shared_ptr<Font>;
+// Font is shared with normal if bold/italic/boldItalic is not available
+// If variation exists, it owns its own Font
 struct FontSet {
   FontHandle normal;
-  FontHandle bold; // optional
-  FontHandle italic; // optional
-  FontHandle boldItalic; // optional
+  FontHandle bold;
+  FontHandle italic;
+  FontHandle boldItalic;
 };
 
 // list of fonts: primary font and fallback fonts
 struct FontFamily {
   std::vector<FontSet> fonts;
+  TextureAtlas textureAtlas;
 
   static std::expected<FontFamily, std::string>
   FromGuifont(std::string_view guifont, float dpiScale);
-
   // static FontFamily Default(float dpiScale);
-};
 
+  const Font& DefaultFont() const;
+  const Font::GlyphInfo& GetGlyphInfo(uint32_t codepoint, bool bold, bool italic);
+};

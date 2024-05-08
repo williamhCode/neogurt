@@ -6,38 +6,50 @@ glm::vec4 GetDefaultBackground(const HlTable& table) {
   if (it == table.end()) {
     return {0, 0, 0, 1};
   }
-  return it->second.background.value();
+  return it->second.background.or_else([&] {
+    LOG_ERR("GetDefaultBackground: default highlight table entry (0) has no background color");
+    return std::make_optional<glm::vec4>(0, 0, 0, 1);
+  }).value();
 }
 
 glm::vec4 GetForeground(const HlTable& table, const Highlight& hl) {
-  return hl.foreground.value_or([&]() {
+  return hl.foreground.or_else([&] {
     auto it = table.find(0);
     if (it == table.end()) {
       LOG_ERR("GetForeground: default highlight table entry (0) not found");
-      return glm::vec4(0, 0, 0, 1);
+      return std::make_optional<glm::vec4>(0, 0, 0, 1);
     }
-    return it->second.foreground.value();
-  }());
+    return it->second.foreground.or_else([&] {
+      LOG_ERR("GetForeground: default highlight table entry (0) has no foreground color");
+      return std::make_optional<glm::vec4>(0, 0, 0, 1);
+    });
+  }).value();
 }
 
 glm::vec4 GetBackground(const HlTable& table, const Highlight& hl) {
-  return hl.background.value_or([&]() {
+  return hl.background.or_else([&] {
     auto it = table.find(0);
     if (it == table.end()) {
-      LOG_ERR("GetBackground: default highlight table entry (0) not found");
-      return glm::vec4(0, 0, 0, 1);
+      LOG_ERR("GetBoreground: default highlight table entry (0) not found");
+      return std::make_optional<glm::vec4>(0, 0, 0, 1);
     }
-    return it->second.background.value();
-  }());
+    return it->second.background.or_else([&] {
+      LOG_ERR("GetBoreground: default highlight table entry (0) has no background color");
+      return std::make_optional<glm::vec4>(0, 0, 0, 1);
+    });
+  }).value();
 }
 
 glm::vec4 GetSpecial(const HlTable& table, const Highlight& hl) {
-  return hl.special.value_or([&]() {
+  return hl.special.or_else([&] {
     auto it = table.find(0);
     if (it == table.end()) {
       LOG_ERR("GetSpecial: default highlight table entry (0) not found");
-      return glm::vec4(0, 0, 0, 1);
+      return std::make_optional<glm::vec4>(0, 0, 0, 1);
     }
-    return it->second.special.value();
-  }());
+    return it->second.special.or_else([&] {
+      LOG_ERR("GetSpecial: default highlight table entry (0) has no special color");
+      return std::make_optional<glm::vec4>(0, 0, 0, 1);
+    });
+  }).value();
 }

@@ -4,6 +4,7 @@
 #include "SDL3/SDL_hints.h"
 #include "app/options.hpp"
 #include "app/window_funcs.h"
+#include "utils/types.hpp"
 #include <stdexcept>
 #include <format>
 
@@ -37,7 +38,7 @@ Window::Window(
 
   // sizing ---------------------------------
   dpiScale = SDL_GetWindowPixelDensity(Get());
-  fbSize = size * (unsigned int)dpiScale;
+  fbSize = size * (uint)dpiScale;
 
   // auto displayId = SDL_GetPrimaryDisplay();
   // contentScale = SDL_GetDisplayContentScale(displayId);
