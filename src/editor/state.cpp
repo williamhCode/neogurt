@@ -105,10 +105,7 @@ bool ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
           // LOG("default_colors_set");
           auto& hl = editorState.hlTable[0];
           hl.foreground = IntToColor(e.rgbFg);
-          if (appOpts.transparency < 1) {
-            hl.background = IntToColor(appOpts.bgColor);
-            hl.background->a = appOpts.transparency;
-          } else {
+          if (!hl.background.has_value()) {
             hl.background = IntToColor(e.rgbBg);
           }
           hl.special = IntToColor(e.rgbSp);

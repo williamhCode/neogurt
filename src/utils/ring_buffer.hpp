@@ -11,7 +11,7 @@ private:
   size_t head = 0;
   size_t size;
 
-  [[nodiscard]] size_t wrapIndex(size_t index) const {
+  size_t wrapIndex(size_t index) const {
     return index >= size ? index - size : index;
   }
 
@@ -91,7 +91,7 @@ public:
       head = wrapIndex(head + size + lines);
   }
 
-  [[nodiscard]] size_t Size() const {
+  size_t Size() const {
     return size;
   }
 

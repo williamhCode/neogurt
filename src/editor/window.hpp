@@ -30,8 +30,8 @@ struct Margins {
   int left = 0;
   int right = 0;
 
-  [[nodiscard]] bool Empty() const;
-  [[nodiscard]] FMargins ToFloat(glm::vec2 size) const;
+  bool Empty() const;
+  FMargins ToFloat(glm::vec2 size) const;
 };
 
 struct Win {

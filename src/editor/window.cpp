@@ -15,7 +15,7 @@ bool Margins::Empty() const {
   return top == 0 && bottom == 0 && left == 0 && right == 0;
 }
 
-[[nodiscard]] FMargins Margins::ToFloat(glm::vec2 size) const {
+FMargins Margins::ToFloat(glm::vec2 size) const {
   return {
     top * size.y,
     bottom * size.y,
@@ -319,7 +319,7 @@ void WinManager::UpdateScrolling(float dt) {
       float scrollDistAbs = glm::abs(win.scrollDist);
       float innerWidth = size.x - margins.left - margins.right;
       float innerHeight = size.y - margins.top - margins.bottom;
-      auto toScroll = scrollDistAbs - scrollCurrAbs;
+      float toScroll = scrollDistAbs - scrollCurrAbs;
       bool scrollPositive = win.scrollDist > 0;
 
       RegionHandle prevRegion{

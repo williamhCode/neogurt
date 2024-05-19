@@ -24,6 +24,8 @@ struct FontFamily {
   FromGuifont(std::string_view guifont, float dpiScale);
   // static FontFamily Default(float dpiScale);
 
+  void ChangeDpiScale(float dpiScale);
+
   const Font& DefaultFont() const;
   const Font::GlyphInfo& GetGlyphInfo(uint32_t codepoint, bool bold, bool italic);
 };

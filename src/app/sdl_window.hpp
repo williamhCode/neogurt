@@ -2,6 +2,7 @@
 
 #include "glm/ext/vector_uint2.hpp"
 #include "gfx/context.hpp"
+#include "app/options.hpp"
 
 struct SDL_Window;
 
@@ -23,7 +24,7 @@ struct Window {
   float contentScale;
 
   Window() = default;
-  Window(glm::uvec2 size, const std::string& title, wgpu::PresentMode presentMode);
+  Window(glm::uvec2 size, const std::string& title, Options::Window winOpts);
 
   SDL_Window* Get();
 };

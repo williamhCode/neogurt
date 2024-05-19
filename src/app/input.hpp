@@ -10,6 +10,10 @@ struct InputHandler {
   Nvim& nvim;
   WinManager& winManager;
 
+  // options
+  bool macOptAsAlt;
+  bool multigrid;
+
   // shared
   SDL_Keymod mod = SDL_KMOD_NONE;
 
@@ -21,7 +25,7 @@ struct InputHandler {
   double xAccum = 0;
   int scrollDir = 0;
 
-  InputHandler(Nvim& nvim, WinManager& winManager);
+  InputHandler(Nvim& nvim, WinManager& winManager, bool macOptAsAlt, bool multigrid);
 
   void HandleKeyboard(const SDL_KeyboardEvent& event);
   void HandleTextInput(const SDL_TextInputEvent& event);

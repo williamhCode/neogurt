@@ -1,6 +1,7 @@
 #pragma once
 
 #include "glm/ext/vector_float2.hpp"
+#include "app/options.hpp"
 
 struct SizeHandler {
   glm::vec2 size;
@@ -15,5 +16,5 @@ struct SizeHandler {
   glm::vec2 offset;
   glm::vec2 fbOffset;
 
-  void UpdateSizes(glm::vec2 size, float dpiScale, glm::vec2 charSize);
+  void UpdateSizes(glm::vec2 size, float dpiScale, glm::vec2 charSize, Options::Margins margins);
 };

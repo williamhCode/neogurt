@@ -41,8 +41,7 @@ TextureAtlas::TextureAtlas(uint _glyphSize, float _dpiScale)
   );
 }
 
-Region
-TextureAtlas::AddGlyph(std::mdspan<unsigned char, std::dextents<uint, 2>> glyphData) {
+Region TextureAtlas::AddGlyph(std::mdspan<uint8_t, std::dextents<uint, 2>> glyphData) {
   // check if current row is full
   // if so, move to next row
   if (currentPos.x + glyphData.extent(1) > bufferSize.x) {

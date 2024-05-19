@@ -2,17 +2,19 @@
 #include "glm/common.hpp"
 #include "app/options.hpp"
 
-void SizeHandler::UpdateSizes(glm::vec2 _size, float _dpiScale, glm::vec2 _charSize) {
+void SizeHandler::UpdateSizes(
+  glm::vec2 _size, float _dpiScale, glm::vec2 _charSize, Options::Margins margins
+) {
   size = _size;
   dpiScale = _dpiScale;
   charSize = _charSize;
 
   fbSize = size * dpiScale;
 
-  glm::vec2 innerSize(
-    size.x - appOpts.windowMargins.left - appOpts.windowMargins.right,
-    size.y - appOpts.windowMargins.top - appOpts.windowMargins.bottom
-  );
+  glm::vec2 innerSize{
+    size.x - margins.left - margins.right,
+    size.y - margins.top - margins.bottom,
+  };
   auto uiWidthHeight = glm::floor(innerSize / charSize);
   uiWidth = uiWidthHeight.x;
   uiHeight = uiWidthHeight.y;

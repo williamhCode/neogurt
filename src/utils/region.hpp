@@ -18,7 +18,7 @@ struct RegionHandle {
   glm::vec2 pos;
   glm::vec2 size;
 
-  [[nodiscard]] Region Get() const {
+  Region Get() const {
     return MakeRegion(pos, size);
   }
 };

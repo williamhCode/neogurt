@@ -3,7 +3,7 @@
 #include "editor/cursor.hpp"
 #include "editor/grid.hpp"
 #include "editor/highlight.hpp"
-#include "editor/options.hpp"
+#include "editor/ui_options.hpp"
 #include "editor/window.hpp"
 #include "nvim/events/parse.hpp"
 #include <vector>

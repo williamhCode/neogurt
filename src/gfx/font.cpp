@@ -2,6 +2,7 @@
 #include "utils/logger.hpp"
 #include "gfx/font/locator.hpp"
 #include "utils/region.hpp"
+#include "glm/gtx/string_cast.hpp"
 #include <mdspan>
 
 using namespace wgpu;
@@ -36,8 +37,8 @@ Font::FromName(const FontDescriptorWithName& desc, float dpiScale) {
   return Font(fontPath, desc.size, desc.width, dpiScale);
 }
 
-Font::Font(std::string _path, int _size, int width, float _dpiScale)
-    : path(std::move(_path)), size(_size), dpiScale(_dpiScale) {
+Font::Font(std::string _path, int _size, int _width, float _dpiScale)
+    : path(std::move(_path)), size(_size), width(_width), dpiScale(_dpiScale) {
   if (face = CreateFace(library, path.c_str(), 0); face == nullptr) {
     throw std::runtime_error("Failed to create FT_Face for: " + path);
   }
@@ -49,6 +50,8 @@ Font::Font(std::string _path, int _size, int width, float _dpiScale)
 
   charSize.x = (face->size->metrics.max_advance >> 6) / dpiScale;
   charSize.y = (face->size->metrics.height >> 6) / dpiScale;
+  // LOG_INFO("Font: {}, size: {}, dpiScale: {}, charSize: {}",
+  //          path, size, dpiScale, glm::to_string(charSize));
 }
 
 const Font::GlyphInfo*

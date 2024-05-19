@@ -53,7 +53,7 @@ FontFamily::FromGuifont(std::string_view guifont, float dpiScale) {
   };
 
   for (auto fontName : SplitStr(fontsStr, ',')) {
-    FontSet fontSet;
+    FontSet& fontSet = fontFamily.fonts.emplace_back();
     auto makeFontHandle =
       [&](bool bold, bool italic) -> std::expected<FontHandle, std::string> {
       return Font::FromName(
@@ -94,11 +94,33 @@ FontFamily::FromGuifont(std::string_view guifont, float dpiScale) {
       if (!boldItalicFont) return MakeUnexpected(boldItalicFont);
       fontSet.boldItalic = std::move(*boldItalicFont);
     }
-
-    fontFamily.fonts.push_back(std::move(fontSet));
   }
 
   return fontFamily;
+}
+
+void FontFamily::ChangeDpiScale(float dpiScale) {
+  std::vector<FontSet> newFonts;
+  for (auto& fontSet : fonts) {
+    FontSet& newFontSet = newFonts.emplace_back();
+    auto makeFontHandle = [&](const FontHandle& fontHandle) -> FontHandle {
+      // check if the normal font can be reused
+      if (newFontSet.normal && fontHandle->path == newFontSet.normal->path) {
+        return newFontSet.normal;
+      }
+      return std::make_shared<Font>(
+        fontHandle->path, fontHandle->size, fontHandle->width, dpiScale
+      );
+    };
+
+    newFontSet.normal = makeFontHandle(fontSet.normal);
+    newFontSet.bold = makeFontHandle(fontSet.bold);
+    newFontSet.italic = makeFontHandle(fontSet.italic);
+    newFontSet.boldItalic = makeFontHandle(fontSet.boldItalic);
+  }
+  fonts = std::move(newFonts);
+
+  textureAtlas = TextureAtlas(DefaultFont().size, dpiScale);
 }
 
 const Font& FontFamily::DefaultFont() const {
@@ -126,7 +148,7 @@ FontFamily::GetGlyphInfo(uint32_t codepoint, bool bold, bool italic) {
     }
   }
 
-  const auto *glyphInfo = fonts.front().normal->GetGlyphInfo(' ', textureAtlas);
+  const auto* glyphInfo = fonts.front().normal->GetGlyphInfo(' ', textureAtlas);
   if (glyphInfo == nullptr) {
     LOG_ERR("Failed to get glyph info for codepoint: {}", codepoint);
   }

@@ -8,4 +8,3 @@ Blazingly fast neovim gui written in C++20 and WebGPU.
 
 ### TODO
 - Read neovim settings
-- Proper font loading from path

@@ -1,4 +1,4 @@
-vim.g.neovim_gui = 1
+vim.g.neogui = 1
 
 vim.api.nvim_create_user_command("Session", function(opts)
   local uis = vim.api.nvim_list_uis()

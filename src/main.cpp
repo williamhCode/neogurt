@@ -1,15 +1,14 @@
 #include "SDL3/SDL_init.h"
-#include "SDL_keycode.h"
-#include "app/options.hpp"
+#include "SDL3/SDL_keycode.h"
 #include "app/size.hpp"
 #include "app/input.hpp"
 #include "app/sdl_window.hpp"
 #include "app/sdl_event.hpp"
+#include "app/options.hpp"
 #include "editor/grid.hpp"
 #include "editor/highlight.hpp"
 #include "editor/state.hpp"
 #include "editor/font.hpp"
-#include "gfx/font/locator.hpp"
 #include "gfx/instance.hpp"
 #include "gfx/renderer.hpp"
 #include "glm/ext/vector_float2.hpp"
@@ -17,6 +16,7 @@
 #include "nvim/nvim.hpp"
 #include "session/manager.hpp"
 #include "utils/clock.hpp"
+#include "utils/color.hpp"
 #include "utils/logger.hpp"
 #include "utils/timer.hpp"
 
@@ -33,7 +33,6 @@ using namespace std::chrono_literals;
 using namespace std::chrono;
 
 const WGPUContext& ctx = sdl::Window::_ctx;
-AppOptions appOpts;
 
 int main() {
   if (SDL_Init(SDL_INIT_VIDEO)) {
@@ -48,39 +47,42 @@ int main() {
 
   try {
     SessionManager sessionManager;
-    sessionManager.LoadSessions("sessions.txt");
+    sessionManager.LoadSessions(ROOT_DIR "/sessions.txt");
 
     uint16_t port = 2040;
     port = sessionManager.GetOrCreateSession("default");
     Nvim nvim("localhost", port);
 
-    appOpts = {
+    Options options = {
+      .window{
+        .vsync = true,
+        .highDpi = true,
+        .borderless = false,
+        .blur = 20,
+      },
+      .margins{5, 5, 5, 5},
       .multigrid = true,
-      .vsync = true,
-      .windowMargins{5, 5, 5, 5},
-      .borderless = false,
       .bgColor = 0x282c34,
       .transparency = 0.90,
-      .windowBlur = 20,
     };
-    appOpts.transparency = int(appOpts.transparency * 255) / 255.0f;
+    options.transparency = int(options.transparency * 255) / 255.0f;
 
-    auto presentMode = appOpts.vsync ? PresentMode::Mailbox : PresentMode::Immediate;
-    sdl::Window window({1600, 1000}, "Neovim GUI", presentMode);
+    // sdl::Window window({1600, 1000}, "Neovim GUI", options.window);
+    sdl::Window window({1200, 800}, "Neovim GUI", options.window);
 
     // create font
     auto guifont = nvim.GetOptionValue("guifont", {}).as_string();
-    LOG("guifont: {}", guifont);
-    auto fontFamilyResult = FontFamily::FromGuifont(guifont, 2.0f);
+    auto fontFamilyResult = FontFamily::FromGuifont(guifont, window.dpiScale);
     if (!fontFamilyResult) {
       LOG_ERR("Failed to create font family: {}", fontFamilyResult.error());
       return 1;
     }
     FontFamily fontFamily = std::move(*fontFamilyResult);
-    const Font& defaultFont = fontFamily.DefaultFont();
 
     SizeHandler sizes;
-    sizes.UpdateSizes(window.size, window.dpiScale, defaultFont.charSize);
+    sizes.UpdateSizes(
+      window.size, window.dpiScale, fontFamily.DefaultFont().charSize, options.margins
+    );
 
     Renderer renderer(sizes);
 
@@ -89,12 +91,17 @@ int main() {
       .cursor{.fullSize = sizes.charSize},
     };
     editorState.winManager.gridManager = &editorState.gridManager;
+    if (options.transparency < 1) {
+      auto& hl = editorState.hlTable[0];
+      hl.background = IntToColor(options.bgColor);
+      hl.background->a = options.transparency;
+    }
 
     nvim.UiAttach(
       sizes.uiWidth, sizes.uiHeight,
       {
         {"rgb", true},
-        {"ext_multigrid", appOpts.multigrid},
+        {"ext_multigrid", options.multigrid},
         {"ext_linegrid", true},
       }
     );
@@ -152,10 +159,16 @@ int main() {
                 window.size = {event.window.data1, event.window.data2};
                 break;
               case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: {
+                // LOG(
+                //   "pixel size changed: {} {}", event.window.data1, event.window.data2
+                // );
                 window.fbSize = {event.window.data1, event.window.data2};
 
                 std::scoped_lock lock(wgpuDeviceMutex);
-                sizes.UpdateSizes(window.size, window.dpiScale, defaultFont.charSize);
+                sizes.UpdateSizes(
+                  window.size, window.dpiScale, fontFamily.DefaultFont().charSize,
+                  options.margins
+                );
 
                 sdl::Window::_ctx.Resize(sizes.fbSize);
                 renderer.Resize(sizes);
@@ -225,7 +238,7 @@ int main() {
 
         if (idle) continue;
         idleElasped += dt;
-        if (idleElasped >= appOpts.cursorIdleTime || !windowFocused) {
+        if (idleElasped >= options.cursorIdleTime || !windowFocused) {
           idle = true;
           editorState.cursor.blinkState = BlinkState::On;
         }
@@ -296,7 +309,9 @@ int main() {
     });
 
     // event loop --------------------------------
-    InputHandler input(nvim, editorState.winManager);
+    InputHandler input(
+      nvim, editorState.winManager, options.macOptAsAlt, options.multigrid
+    );
 
     SDL_StartTextInput();
     // SDL_Rect rect{0, 0, 100, 100};
@@ -356,11 +371,12 @@ int main() {
         // window handling -----------------------
         case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED: {
           std::scoped_lock lock(wgpuDeviceMutex);
+          float prevDpiScale = window.dpiScale;
           window.dpiScale = SDL_GetWindowPixelDensity(window.Get());
-          LOG("display scale changed: {}", window.dpiScale);
-          // TODO: change font family dpi scale
-          // font = Font(fontPath, 15, 0, window.dpiScale);
-          // editorState.cursor.fullSize = font.charSize;
+          if (prevDpiScale == window.dpiScale) break;
+          // LOG("display scale changed: {}", window.dpiScale);
+          fontFamily.ChangeDpiScale(window.dpiScale);
+          editorState.cursor.fullSize = fontFamily.DefaultFont().charSize;
           break;
         }
 
@@ -373,6 +389,9 @@ int main() {
 
     renderThread.join();
     if (nvim.IsConnected()) {
+      // send escape so nvim doesn't get stuck when reattaching
+      // prevents cmd + q exiting window getting stuck
+      nvim.Input("<Esc>");
       nvim.UiDetach();
       LOG_INFO("Detached UI");
     }
