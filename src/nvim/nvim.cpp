@@ -94,6 +94,14 @@ void Nvim::ListUis() {
   }).detach();
 }
 
-Nvim::Variant Nvim::GetOptionValue(std::string_view name, MapRef opts) {
-  return client.Call("nvim_get_option_value", name, opts)->convert();
+msgpack::object_handle Nvim::GetOptionValue(std::string_view name, MapRef opts) {
+  return client.Call("nvim_get_option_value", name, opts);
+}
+
+msgpack::object_handle Nvim::GetVar(std::string_view name) {
+  return client.Call("nvim_get_var", name);
+}
+
+msgpack::object_handle Nvim::ExecLua(std::string_view code, VectorRef args) {
+  return client.Call("nvim_exec_lua", code, args);
 }

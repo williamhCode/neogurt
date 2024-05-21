@@ -21,6 +21,7 @@ struct Nvim {
   using Variant = msgpack::type::variant;
   using VariantRef = msgpack::type::variant_ref;
   using MapRef = const std::map<std::string_view, VariantRef>&;
+  using VectorRef = const std::vector<VariantRef>&;
   void SetClientInfo(
     std::string_view name,
     MapRef version,
@@ -42,5 +43,7 @@ struct Nvim {
     int col
   );
   void ListUis();
-  Variant GetOptionValue(std::string_view name, MapRef opts);
+  msgpack::object_handle GetOptionValue(std::string_view name, MapRef opts);
+  msgpack::object_handle GetVar(std::string_view name);
+  msgpack::object_handle ExecLua(std::string_view code, VectorRef args);
 };

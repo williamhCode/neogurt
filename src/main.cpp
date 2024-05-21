@@ -53,25 +53,14 @@ int main() {
     port = sessionManager.GetOrCreateSession("default");
     Nvim nvim("localhost", port);
 
-    Options options = {
-      .window{
-        .vsync = true,
-        .highDpi = true,
-        .borderless = false,
-        .blur = 20,
-      },
-      .margins{5, 5, 5, 5},
-      .multigrid = true,
-      .bgColor = 0x282c34,
-      .transparency = 0.90,
-    };
-    options.transparency = int(options.transparency * 255) / 255.0f;
+    Options options;
+    options.Load(nvim);
 
     // sdl::Window window({1600, 1000}, "Neovim GUI", options.window);
     sdl::Window window({1200, 800}, "Neovim GUI", options.window);
 
     // create font
-    auto guifont = nvim.GetOptionValue("guifont", {}).as_string();
+    std::string guifont = nvim.GetOptionValue("guifont", {})->convert();
     auto fontFamilyResult = FontFamily::FromGuifont(guifont, window.dpiScale);
     if (!fontFamilyResult) {
       LOG_ERR("Failed to create font family: {}", fontFamilyResult.error());
@@ -398,6 +387,7 @@ int main() {
 
   } catch (const std::exception& e) {
     LOG_ERR("{}", e.what());
+    LOG_ERR("Exiting...");
   }
   // destructors cleans up window and font before quitting sdl and freetype
 
