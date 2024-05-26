@@ -7,6 +7,5 @@ imgui.ini
 tint
 sessions.txt
 
-# CLion
-.idea
-/cmake-build*
+.venv
+test.py

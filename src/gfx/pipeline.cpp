@@ -30,7 +30,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
         }
       }
     },
-    .targets = {{.format = TextureFormat::RGBA8Unorm}},
+    .targets = {{.format = TextureFormat::RGBA8UnormSrgb}},
   });
 
   // text pipeline -------------------------------------------
@@ -61,8 +61,9 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
     },
     .targets = {
       {
-        .format = TextureFormat::RGBA8Unorm,
+        .format = TextureFormat::RGBA8UnormSrgb,
         .blend = &utils::BlendState::AlphaBlending,
+        // .blend = &utils::BlendState::PremultipliedAlphaBlending,
       },
       {.format = TextureFormat::R8Unorm},
     },
@@ -88,6 +89,27 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
     }
   );
 
+  textureNoBlendRPL = utils::MakeRenderPipeline(ctx.device, {
+    .vs = textureShader,
+    .fs = textureShader,
+    .bgls = {viewProjBGL, textureBGL},
+    .buffers = {textureQuadVBL},
+    .targets = {
+      {
+        .format = TextureFormat::RGBA8UnormSrgb,
+      },
+    },
+    .depthStencil{
+      .format = TextureFormat::Stencil8,
+      // textures are clockwise, so backface
+      .stencilBack{
+        .compare = CompareFunction::NotEqual,
+        .failOp = StencilOperation::Keep,
+        .passOp = StencilOperation::IncrementClamp,
+      },
+    },
+  });
+
   textureRPL = utils::MakeRenderPipeline(ctx.device, {
     .vs = textureShader,
     .fs = textureShader,
@@ -95,7 +117,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
     .buffers = {textureQuadVBL},
     .targets = {
       {
-        .format = TextureFormat::RGBA8Unorm,
+        .format = TextureFormat::RGBA8UnormSrgb,
         .blend = &utils::BlendState::AlphaBlending,
       },
     },
@@ -110,9 +132,13 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
     },
   });
 
+  ShaderModule texturePremultShader = utils::LoadShaderModule(
+    ctx.device, ROOT_DIR "/src/gfx/shaders/texture_premult.wgsl"
+  );
+
   finalTextureRPL = utils::MakeRenderPipeline(ctx.device, {
-    .vs = textureShader,
-    .fs = textureShader,
+    .vs = texturePremultShader,
+    .fs = texturePremultShader,
     .bgls = {viewProjBGL, textureBGL},
     .buffers = {textureQuadVBL},
     .targets = {{.format = TextureFormat::BGRA8Unorm}},

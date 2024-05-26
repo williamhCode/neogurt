@@ -14,7 +14,7 @@ struct VertexOutput {
 fn vs_main(in: VertexInput) -> VertexOutput {
   let out = VertexOutput(
     viewProj * vec4f(in.position, 0.0, 1.0),
-    in.color,
+    ToLinear(in.color)
   );
 
   return out;
@@ -23,4 +23,13 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 @fragment
 fn fs_main(@location(0) color: vec4f) -> @location(0) vec4f {
   return color;
+}
+
+fn ToLinear(color: vec4f) -> vec4f {
+  return vec4f(
+    pow(color.r, 2.2f),
+    pow(color.g, 2.2f),
+    pow(color.b, 2.2f),
+    color.a
+  );
 }

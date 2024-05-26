@@ -3,6 +3,7 @@
 #include "editor/window.hpp"
 #include "gfx/instance.hpp"
 #include "gfx/pipeline.hpp"
+#include "utils/logger.hpp"
 #include "utils/region.hpp"
 #include "utils/unicode.hpp"
 #include "utils/color.hpp"
@@ -10,6 +11,7 @@
 #include "webgpu_tools/utils/webgpu.hpp"
 #include <ostream>
 #include <utility>
+#include "glm/gtx/string_cast.hpp"
 
 using namespace wgpu;
 
@@ -20,7 +22,7 @@ Renderer::Renderer(const SizeHandler& sizes) {
   camera = Ortho2D(sizes.size);
 
   finalRenderTexture =
-    RenderTexture(sizes.uiSize, sizes.dpiScale, TextureFormat::RGBA8Unorm);
+    RenderTexture(sizes.uiSize, sizes.dpiScale, TextureFormat::RGBA8UnormSrgb);
   finalRenderTexture.UpdatePos(sizes.offset);
 
   // rect
@@ -57,8 +59,6 @@ Renderer::Renderer(const SizeHandler& sizes) {
         .view = finalRenderTexture.textureView,
         .loadOp = LoadOp::Clear,
         .storeOp = StoreOp::Store,
-        .clearValue = {0.0, 0.0, 0.0, 0.0},
-        // blending to color (0, 0, 0, 0) results in premultiplied texture
       },
     },
     RenderPassDepthStencilAttachment{
@@ -101,7 +101,7 @@ void Renderer::Resize(const SizeHandler& sizes) {
   camera.Resize(sizes.size);
 
   finalRenderTexture =
-    RenderTexture(sizes.uiSize, sizes.dpiScale, TextureFormat::RGBA8Unorm);
+    RenderTexture(sizes.uiSize, sizes.dpiScale, TextureFormat::RGBA8UnormSrgb);
   finalRenderTexture.UpdatePos(sizes.offset);
   windowsRPD.cColorAttachments[0].view = finalRenderTexture.textureView;
 
@@ -118,6 +118,7 @@ void Renderer::Resize(const SizeHandler& sizes) {
 void Renderer::SetClearColor(glm::vec4 color) {
   clearColor = ToWGPUColor(color);
   premultClearColor = ToWGPUColor(PremultiplyAlpha(color));
+  linearClearColor = ToWGPUColor(ToLinear(color));
 }
 
 void Renderer::Begin() {
@@ -141,7 +142,7 @@ void Renderer::RenderWindow(Win& win, FontFamily& fontFamily, const HlTable& hlT
   for (size_t row = 0; row < win.grid.lines.Size(); row++) {
     auto& line = win.grid.lines[row];
     textOffset.x = 0;
-  
+
     for (auto& cell : line) {
       auto charcode = UTF8ToUnicode(cell.text);
       Highlight hl = hlTable.at(cell.hlId);
@@ -198,7 +199,7 @@ void Renderer::RenderWindow(Win& win, FontFamily& fontFamily, const HlTable& hlT
   // background
   {
     rectRPD.cColorAttachments[0].view = win.renderTexture.textureView;
-    rectRPD.cColorAttachments[0].clearValue = clearColor;
+    rectRPD.cColorAttachments[0].clearValue = linearClearColor;
     RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&rectRPD);
     passEncoder.SetPipeline(ctx.pipeline.rectRPL);
     passEncoder.SetBindGroup(0, win.renderTexture.camera.viewProjBG);
@@ -216,25 +217,24 @@ void Renderer::RenderWindow(Win& win, FontFamily& fontFamily, const HlTable& hlT
     textData.Render(passEncoder);
     passEncoder.End();
   }
-
 }
 
 // jst playing with templates and concepts is a bit unnecessary
 void Renderer::RenderWindows(
   const RangeOf<const Win*> auto& windows, const RangeOf<const Win*> auto& floatWindows
 ) {
+  windowsRPD.cColorAttachments[0].clearValue = linearClearColor;
   auto passEncoder = commandEncoder.BeginRenderPass(&windowsRPD);
-  passEncoder.SetPipeline(ctx.pipeline.textureRPL);
-  passEncoder.SetBindGroup(0, finalRenderTexture.camera.viewProjBG);
 
+  passEncoder.SetBindGroup(0, finalRenderTexture.camera.viewProjBG);
   auto renderWin = [&](const Win* win) {
     passEncoder.SetBindGroup(1, win->renderTexture.textureBG);
     win->renderTexture.renderData.Render(passEncoder);
     if (win->scrolling) {
-      // if (win->hasPrevRender) {
-      passEncoder.SetBindGroup(1, win->prevRenderTexture.textureBG);
-      win->prevRenderTexture.renderData.Render(passEncoder);
-      // }
+      if (win->hasPrevRender) {
+        passEncoder.SetBindGroup(1, win->prevRenderTexture.textureBG);
+        win->prevRenderTexture.renderData.Render(passEncoder);
+      }
 
       // draw window borders
       if (!win->margins.Empty()) {
@@ -244,11 +244,13 @@ void Renderer::RenderWindows(
     }
   };
 
+  passEncoder.SetPipeline(ctx.pipeline.textureNoBlendRPL);
   passEncoder.SetStencilReference(1);
   for (const Win* win : windows) {
     renderWin(win);
   }
 
+  passEncoder.SetPipeline(ctx.pipeline.textureRPL);
   passEncoder.SetStencilReference(0);
   for (const Win* win : floatWindows) {
     renderWin(win);

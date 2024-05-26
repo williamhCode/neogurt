@@ -7,3 +7,6 @@ glm::vec4 PremultiplyAlpha(const glm::vec4& color);
 wgpu::Color ToWGPUColor(const glm::vec4& color);
 glm::vec4 IntToColor(uint32_t color);             // rgb no alpha
 // uint32_t ColorToInt(const glm::vec4& color); // rgba
+
+glm::vec4 ToLinear(const glm::vec4& color);
+glm::vec4 ToSrgb(const glm::vec4& color);

@@ -28,9 +28,9 @@ void WGPUContext::Init() {
   adapter.GetLimits(&supportedLimits);
   // utils::PrintLimits(supportedLimits.limits);
 
-  RequiredLimits requiredLimits{
-    .limits = supportedLimits.limits,
-  };
+  // RequiredLimits requiredLimits{
+  //   .limits = supportedLimits.limits,
+  // };
 
   // std::vector<FeatureName> requiredFeatures{
   //   FeatureName::SurfaceCapabilities,
@@ -39,7 +39,7 @@ void WGPUContext::Init() {
   DeviceDescriptor deviceDesc{
     // .requiredFeatureCount = requiredFeatures.size(),
     // .requiredFeatures = requiredFeatures.data(),
-    .requiredLimits = &requiredLimits,
+    // .requiredLimits = &requiredLimits,
   };
   device = utils::RequestDevice(adapter, &deviceDesc);
   utils::SetUncapturedErrorCallback(device);

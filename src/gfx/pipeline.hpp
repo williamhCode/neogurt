@@ -37,6 +37,7 @@ struct Pipeline {
   wgpu::RenderPipeline textRPL;
 
   wgpu::BindGroupLayout textureBGL;
+  wgpu::RenderPipeline textureNoBlendRPL;
   wgpu::RenderPipeline textureRPL;
 
   wgpu::RenderPipeline finalTextureRPL;

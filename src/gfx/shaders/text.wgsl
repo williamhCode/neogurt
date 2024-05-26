@@ -18,7 +18,7 @@ fn vs_main(in: VertexInput) -> VertexOutput {
   let uv = in.regionCoords / textureSize;
   let out = VertexOutput(
     viewProj * vec4f(in.position, 0.0, 1.0),
-    uv, in.foreground,
+    uv, ToLinear(in.foreground)
   );
 
   return out;
@@ -49,4 +49,13 @@ fn fs_main(in: FragmentInput) -> FragmentOutput {
   }
 
   return out;
+}
+
+fn ToLinear(color: vec4f) -> vec4f {
+  return vec4f(
+    pow(color.r, 2.2f),
+    pow(color.g, 2.2f),
+    pow(color.b, 2.2f),
+    color.a
+  );
 }

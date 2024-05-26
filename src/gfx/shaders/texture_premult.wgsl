@@ -26,5 +26,21 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 @fragment
 fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
   var color = textureSample(texture, textureSampler, uv);
+  color = ToSrgb(color);
+  color = Premult(color);
   return color;
 }
+
+fn ToSrgb(color: vec4f) -> vec4f {
+  return vec4f(
+    pow(color.r, 1.0f / 2.2f),
+    pow(color.g, 1.0f / 2.2f),
+    pow(color.b, 1.0f / 2.2f),
+    color.a
+  );
+}
+
+fn Premult(color: vec4f) -> vec4f {
+  return vec4f(color.rgb * color.a, color.a);
+}
+

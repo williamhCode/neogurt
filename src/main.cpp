@@ -235,11 +235,11 @@ int main() {
           std::scoped_lock lock(wgpuDeviceMutex);
           renderer.Begin();
 
-          bool renderWindows = false;
-          // bool renderWindows = true;
+          // bool renderWindows = false;
+          bool renderWindows = true;
           for (auto& [id, win] : editorState.winManager.windows) {
-            if (win.grid.dirty) {
-              // if (true) {
+            // if (win.grid.dirty) {
+              if (true) {
               renderer.RenderWindow(win, fontFamily, editorState.hlTable);
               win.grid.dirty = false;
               renderWindows = true;

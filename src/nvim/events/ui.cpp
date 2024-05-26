@@ -162,7 +162,7 @@ static const std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
 
   {"win_viewport", [](const msgpack::object& args, UiEvents& uiEvents) {
     LOG("win_viewport: {}", ToString(args));
-    LOG_INFO("win_viewport: {}", ToString(args));
+    // LOG_INFO("win_viewport: {}", ToString(args));
     uiEvents.curr().emplace_back(args.as<WinViewport>());
   }},
 

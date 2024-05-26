@@ -32,13 +32,13 @@ void WinManager::InitRenderData(Win& win) {
   //   size.x * size.y * sizes.dpiScale * sizes.dpiScale, clearColor
   // );
   // win.renderTexture =
-  //   RenderTexture(size, sizes.dpiScale, TextureFormat::RGBA8Unorm, colorData.data());
-  win.renderTexture = RenderTexture(size, sizes.dpiScale, TextureFormat::RGBA8Unorm);
+  //   RenderTexture(size, sizes.dpiScale, TextureFormat::RGBA8UnormSrgb, colorData.data());
+  win.renderTexture = RenderTexture(size, sizes.dpiScale, TextureFormat::RGBA8UnormSrgb);
   win.renderTexture.UpdatePos(pos);
 
   if (win.id != 1 && win.id != msgWinId) {
     win.prevRenderTexture =
-      RenderTexture(size, sizes.dpiScale, TextureFormat::RGBA8Unorm);
+      RenderTexture(size, sizes.dpiScale, TextureFormat::RGBA8UnormSrgb);
     win.prevRenderTexture.UpdatePos(pos);
   }
 
@@ -87,14 +87,14 @@ void WinManager::UpdateRenderData(Win& win) {
     //   size.x * size.y * sizes.dpiScale * sizes.dpiScale, clearColor
     // );
     // win.renderTexture =
-    //   RenderTexture(size, sizes.dpiScale, TextureFormat::RGBA8Unorm,
+    //   RenderTexture(size, sizes.dpiScale, TextureFormat::RGBA8UnormSrgb,
     //   colorData.data());
-    win.renderTexture = RenderTexture(size, sizes.dpiScale, TextureFormat::RGBA8Unorm);
+    win.renderTexture = RenderTexture(size, sizes.dpiScale, TextureFormat::RGBA8UnormSrgb);
     win.renderTexture.UpdatePos(pos);
 
     if (win.id != 1 && win.id != msgWinId) {
       win.prevRenderTexture =
-        RenderTexture(size, sizes.dpiScale, TextureFormat::RGBA8Unorm);
+        RenderTexture(size, sizes.dpiScale, TextureFormat::RGBA8UnormSrgb);
       win.prevRenderTexture.UpdatePos(pos);
     }
   } else {
@@ -281,7 +281,7 @@ void WinManager::Viewport(const WinViewport& e) {
     win.scrollElapsed = 0;
 
     std::swap(win.prevRenderTexture, win.renderTexture);
-    win.hasPrevRender = true;
+    // win.hasPrevRender = true;
   }
 }
 
@@ -303,7 +303,7 @@ void WinManager::UpdateScrolling(float dt) {
       auto maskPos = pos * sizes.dpiScale;
       ctx.queue.WriteBuffer(win.maskPosBuffer, 0, &maskPos, sizeof(glm::vec2));
 
-      // win.hasPrevRender = true;
+      win.hasPrevRender = true;
 
     } else {
       auto size = win.size;
