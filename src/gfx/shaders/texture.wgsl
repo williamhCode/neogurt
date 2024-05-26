@@ -26,5 +26,10 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 @fragment
 fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
   var color = textureSample(texture, textureSampler, uv);
-  return color;
+  return AdjustAlpha(color);
+}
+
+// adjust alpha due to srgb blending
+fn AdjustAlpha(color: vec4f) -> vec4f {
+  return vec4f(color.xyz, pow(color.w, 1.0f / 2.2f));
 }
