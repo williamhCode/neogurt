@@ -12,26 +12,27 @@ static void LoadOption(Nvim& nvim, std::string_view name, auto& value) {
   }
 };
 
-#define LOAD_OPTION(name) LoadOption(nvim, #name, name)
+#define LOAD(name) LoadOption(nvim, #name, name)
 
 void Options::Load(Nvim& nvim) {
   nvim.ExecLua("vim.g.resolve_neogui_opts()", {});
 
-  LOAD_OPTION(window.vsync);
-  LOAD_OPTION(window.highDpi);
-  LOAD_OPTION(window.borderless);
-  LOAD_OPTION(window.blur);
+  LOAD(window.vsync);
+  LOAD(window.highDpi);
+  LOAD(window.borderless);
+  LOAD(window.blur);
 
-  LOAD_OPTION(margins.top);
-  LOAD_OPTION(margins.bottom);
-  LOAD_OPTION(margins.left);
-  LOAD_OPTION(margins.right);
+  LOAD(margins.top);
+  LOAD(margins.bottom);
+  LOAD(margins.left);
+  LOAD(margins.right);
 
-  LOAD_OPTION(multigrid);
-  LOAD_OPTION(macOptAsAlt);
-  LOAD_OPTION(cursorIdleTime);
+  LOAD(multigrid);
+  LOAD(macOptAsAlt);
+  LOAD(cursorIdleTime);
 
-  LOAD_OPTION(bgColor);
-  LOAD_OPTION(transparency);
+  LOAD(bgColor);
+  LOAD(transparency);
+
   transparency = int(transparency * 255) / 255.0f;
 }
