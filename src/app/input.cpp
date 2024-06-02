@@ -3,6 +3,7 @@
 #include "SDL_events.h"
 #include "app/options.hpp"
 #include "editor/window.hpp"
+#include "utils/logger.hpp"
 #include <algorithm>
 #include <set>
 
@@ -49,7 +50,7 @@ void InputHandler::HandleKeyboard(const SDL_KeyboardEvent& event) {
     if (mod & SDL_KMOD_SHIFT) inputStr += "S-";
     inputStr += keyName + ">";
 
-    // LOG_INFO("inputStr: {}", inputStr);
+    // LOG_INFO("Key: {}", inputStr);
     nvim.Input(inputStr);
   }
 }
@@ -61,7 +62,7 @@ void InputHandler::HandleTextInput(const SDL_TextInputEvent& event) {
   if (inputStr == " ") return;
   if (inputStr == "<") inputStr = "<lt>";
 
-  // LOG_INFO("inputStr: {}", inputStr);
+  // LOG_INFO("Text: {}", inputStr);
   nvim.Input(inputStr);
 }
 

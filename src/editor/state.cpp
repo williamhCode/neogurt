@@ -4,6 +4,7 @@
 #include "utils/color.hpp"
 #include "utils/variant.hpp"
 #include "utils/logger.hpp"
+#include <algorithm>
 #include <deque>
 #include <vector>
 
@@ -20,9 +21,11 @@ bool ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
   bool processedEvents = uiEvents.numFlushes > 0;
   for (int i = 0; i < uiEvents.numFlushes; i++) {
     auto& redrawEvents = uiEvents.queue.front();
-    // to process grid events first then window
-    std::vector<UiEvent*> gridEvents;
-    std::deque<UiEvent*> winEvents;
+    // sort based on variant index
+    std::ranges::sort(redrawEvents, [](auto& a, auto& b) {
+      return a.index() < b.index();
+    });
+
     for (auto& event : redrawEvents) {
       std::visit(overloaded{
         [&](SetTitle& e) {
@@ -160,121 +163,66 @@ bool ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
           if (redrawEvents.size() <= 1 && uiEvents.numFlushes == 1) {
             processedEvents = false;
           }
-          // process grid and window events
-          for (auto* event : gridEvents) {
-            std::visit(overloaded{
-              [&](GridResize& e) {
-                editorState.gridManager.Resize(e);
-                // default window events not send by nvim
-                if (e.grid == 1) {
-                  editorState.winManager.Pos({1, {}, 0, 0, e.width, e.height});
-                }
-              },
-              [&](GridClear& e) {
-                editorState.gridManager.Clear(e);
-              },
-              [&](GridCursorGoto& e) {
-                editorState.gridManager.CursorGoto(e);
-                editorState.winManager.activeWinId = e.grid;
-              },
-              [&](GridLine& e) {
-                editorState.gridManager.Line(e);
-              },
-              [&](GridScroll& e) {
-                editorState.gridManager.Scroll(e);
-              },
-              [&](GridDestroy& e) {
-                editorState.gridManager.Destroy(e);
-                // TODO: file bug report, win_close not called after tabclose
-                // temp fix for bug
-                editorState.winManager.Close({e.grid});
-              },
-              [&](auto&) {
-                LOG_WARN("unknown event");
-              }
-            }, *event);
-          }
-          for (auto& event : winEvents) {
-            std::visit(overloaded{
-              [&](WinPos& e) {
-                editorState.winManager.Pos(e);
-              },
-              [&](WinFloatPos& e) {
-                editorState.winManager.FloatPos(e);
-              },
-              [&](WinExternalPos& e) {
-              },
-              [&](WinHide& e) {
-                editorState.winManager.Hide(e);
-              },
-              [&](WinClose& e) {
-                editorState.winManager.Close(e);
-              },
-              [&](MsgSetPos& e) {
-                editorState.winManager.MsgSet(e);
-              },
-              [&](WinViewport& e) {
-                editorState.winManager.Viewport(e);
-              },
-              [&](WinViewportMargins& e) {
-                editorState.winManager.ViewportMargins(e);
-              },
-              [&](WinExtmark& e) {
-              },
-              [&](auto&) {
-                LOG_WARN("unknown event");
-              }
-            }, *event);
-          }
-          gridEvents.clear();
-          winEvents.clear();
         },
         [&](GridResize& e) {
-          gridEvents.push_back((UiEvent*)&e);
+          LOG("GridResize: {}", e.grid);
+          editorState.gridManager.Resize(e);
+          // default window events not send by nvim
+          if (e.grid == 1) {
+            editorState.winManager.Pos({1, {}, 0, 0, e.width, e.height});
+          }
         },
         [&](GridClear& e) {
-          gridEvents.push_back((UiEvent*)&e);
+          LOG("GridClear: {}", e.grid);
+          editorState.gridManager.Clear(e);
         },
         [&](GridCursorGoto& e) {
-          gridEvents.push_back((UiEvent*)&e);
+          editorState.gridManager.CursorGoto(e);
+          editorState.winManager.activeWinId = e.grid;
         },
         [&](GridLine& e) {
-          gridEvents.push_back((UiEvent*)&e);
+          editorState.gridManager.Line(e);
         },
         [&](GridScroll& e) {
-          gridEvents.push_back((UiEvent*)&e);
+          editorState.gridManager.Scroll(e);
         },
         [&](GridDestroy& e) {
-          gridEvents.push_back((UiEvent*)&e);
+          LOG("GridDestroy: {}", e.grid);
+          editorState.gridManager.Destroy(e);
+          // TODO: file bug report, win_close not called after tabclose
+          // temp fix for bug
+          editorState.winManager.Close({e.grid});
         },
         [&](WinPos& e) {
-          // push to front because handle before ViewportMargins
-          winEvents.push_front((UiEvent*)&e);
+          LOG("WinPos: {}", e.grid);
+          editorState.winManager.Pos(e);
         },
         [&](WinFloatPos& e) {
-          // push to front because handle before ViewportMargins
-          winEvents.push_front((UiEvent*)&e);
+          LOG("WinFloatPos: {}", e.grid);
+          editorState.winManager.FloatPos(e);
         },
         [&](WinExternalPos& e) {
-          winEvents.push_back((UiEvent*)&e);
         },
         [&](WinHide& e) {
-          winEvents.push_back((UiEvent*)&e);
+          LOG("WinHide: {}", e.grid);
+          editorState.winManager.Hide(e);
         },
         [&](WinClose& e) {
-          winEvents.push_back((UiEvent*)&e);
+          LOG("WinClose: {}", e.grid);
+          editorState.winManager.Close(e);
         },
         [&](MsgSetPos& e) {
-          winEvents.push_back((UiEvent*)&e);
+          LOG("MsgSetPos: {}", e.grid);
+          editorState.winManager.MsgSet(e);
         },
         [&](WinViewport& e) {
-          winEvents.push_back((UiEvent*)&e);
+          editorState.winManager.Viewport(e);
         },
         [&](WinViewportMargins& e) {
-          winEvents.push_back((UiEvent*)&e);
+          LOG("WinViewportMargins: {}", e.grid);
+          editorState.winManager.ViewportMargins(e);
         },
         [&](WinExtmark& e) {
-          winEvents.push_back((UiEvent*)&e);
         },
         [&](auto&) {
           LOG_WARN("unknown event");

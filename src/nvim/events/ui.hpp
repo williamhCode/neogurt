@@ -186,7 +186,6 @@ using UiEvent = std::variant<
   DefaultColorsSet,
   HlAttrDefine,
   HlGroupSet,
-  Flush,
   GridResize,
   GridClear,
   GridCursorGoto,
@@ -201,7 +200,8 @@ using UiEvent = std::variant<
   MsgSetPos,
   WinViewport,
   WinViewportMargins,
-  WinExtmark
+  WinExtmark,
+  Flush
 >;
 // clang-format on
 
@@ -213,7 +213,7 @@ struct UiEvents {
     queue.emplace_back();
   }
 
-  auto& curr() {
+  auto& Curr() {
     return queue.back();
   }
 };

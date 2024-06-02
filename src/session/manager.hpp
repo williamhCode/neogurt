@@ -10,7 +10,7 @@ struct SessionManager {
 
   // temp
   ~SessionManager() {
-    SaveSessions("sessions.txt");
+    SaveSessions(ROOT_DIR "/sessions.txt");
   }
   void LoadSessions(std::string_view filename);
   void SaveSessions(std::string_view filename);

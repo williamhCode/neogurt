@@ -25,7 +25,6 @@ bool Client::Connect(std::string_view host, uint16_t port) {
   asio::connect(socket, endpoints, ec);
 
   if (ec) {
-    LOG_ERR("Client::Connect: {}", ec.message());
     socket.close();
     exit = true;
     return false;

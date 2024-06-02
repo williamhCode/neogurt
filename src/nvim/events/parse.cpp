@@ -2,7 +2,6 @@
 #include "utils/logger.hpp"
 
 void ParseEvents(rpc::Client& client, UiEvents& uiEvents) {
-  LOG_DISABLE();
   uiEvents.numFlushes = 0;
 
   while (client.HasNotification()) {
@@ -16,6 +15,5 @@ void ParseEvents(rpc::Client& client, UiEvents& uiEvents) {
 
     }
   }
-  LOG_ENABLE();
 }
 

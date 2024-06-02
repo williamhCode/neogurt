@@ -127,15 +127,19 @@ int main() {
           sessionManager.RemoveSession("default");
         };
 
+        LOG_DISABLE();
         ParseEvents(nvim.client, nvim.uiEvents);
+        LOG_ENABLE();
 
         // process events ---------------------------------------
         {
           std::scoped_lock lock(wgpuDeviceMutex);
+          LOG_DISABLE();
           if (ParseEditorState(nvim.uiEvents, editorState)) {
             idle = false;
             idleElasped = 0;
           }
+          LOG_ENABLE();
         }
 
         // update ----------------------------------------------
@@ -235,11 +239,11 @@ int main() {
           std::scoped_lock lock(wgpuDeviceMutex);
           renderer.Begin();
 
-          // bool renderWindows = false;
-          bool renderWindows = true;
+          bool renderWindows = false;
+          // bool renderWindows = true;
           for (auto& [id, win] : editorState.winManager.windows) {
-            // if (win.grid.dirty) {
-              if (true) {
+            if (win.grid.dirty) {
+              // if (true) {
               renderer.RenderWindow(win, fontFamily, editorState.hlTable);
               win.grid.dirty = false;
               renderWindows = true;
