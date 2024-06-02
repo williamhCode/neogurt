@@ -22,10 +22,10 @@ bool ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
   bool processedEvents = uiEvents.numFlushes > 0;
   for (int i = 0; i < uiEvents.numFlushes; i++) {
     auto& redrawEvents = uiEvents.queue.front();
-    // sort based on variant index
-    std::ranges::sort(redrawEvents, [](auto& a, auto& b) {
-      return a.index() < b.index();
-    });
+
+    // neovim sends these events before appropriate window is created
+    std::vector<WinViewportMargins*> margins;
+    std::vector<MsgSetPos*> msgSetPos;
 
     for (auto& event : redrawEvents) {
       std::visit(overloaded{
@@ -164,6 +164,14 @@ bool ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
           if (redrawEvents.size() <= 1 && uiEvents.numFlushes == 1) {
             processedEvents = false;
           }
+
+          // apply margins and msg_set_pos after all events
+          for (auto* e : margins) {
+            editorState.winManager.ViewportMargins(*e);
+          }
+          for (auto* e : msgSetPos) {
+            editorState.winManager.MsgSet(*e);
+          }
         },
         [&](GridResize& e) {
           LOG("GridResize: {}", e.grid);
@@ -214,14 +222,16 @@ bool ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
         },
         [&](MsgSetPos& e) {
           LOG("MsgSetPos: {}", e.grid);
-          editorState.winManager.MsgSet(e);
+          // editorState.winManager.MsgSet(e);
+          msgSetPos.push_back(&e);
         },
         [&](WinViewport& e) {
           editorState.winManager.Viewport(e);
         },
         [&](WinViewportMargins& e) {
           LOG("WinViewportMargins: {}", e.grid);
-          editorState.winManager.ViewportMargins(e);
+          // editorState.winManager.ViewportMargins(e);
+          margins.push_back(&e);
         },
         [&](WinExtmark& e) {
         },
