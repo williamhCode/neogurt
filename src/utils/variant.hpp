@@ -1,6 +1,7 @@
 #pragma once
 
 #include <variant>
+#include <set>
 
 template <class... Ts>
 struct overloaded : Ts... {
@@ -21,6 +22,11 @@ constexpr std::size_t vIndex() {
   } else {
     return vIndex<VariantType, T, index + 1>();
   }
+}
+
+template <typename VariantType, typename... Types>
+constexpr auto vIndicesSet() {
+  return std::set<std::size_t>{vIndex<VariantType, Types>()...};
 }
 
 template <typename T>

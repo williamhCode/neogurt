@@ -1,6 +1,6 @@
 #include "msgpack.hpp"
+#include "utils/variant.hpp"
 #include <map>
-#include <variant>
 
 struct SetTitle {
   std::string title;
@@ -170,7 +170,6 @@ struct WinExtmark {
   MSGPACK_DEFINE(grid, win, nsId, markId, row, col);
 };
 
-// clang-format off
 using UiEvent = std::variant<
   SetTitle,
   SetIcon,
@@ -201,9 +200,7 @@ using UiEvent = std::variant<
   MsgSetPos,
   WinViewport,
   WinViewportMargins,
-  WinExtmark
->;
-// clang-format on
+  WinExtmark>;
 
 struct UiEvents {
   int numFlushes = 0;

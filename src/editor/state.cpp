@@ -1,11 +1,9 @@
 #include "state.hpp"
 #include "app/options.hpp"
 #include "glm/gtx/string_cast.hpp"
+#include "nvim/events/parse.hpp"
 #include "utils/color.hpp"
-#include "utils/variant.hpp"
 #include "utils/logger.hpp"
-#include "utils/timer.hpp"
-#include <algorithm>
 #include <deque>
 #include <vector>
 
@@ -16,6 +14,24 @@ static int VariantAsInt(const msgpack::type::variant& v) {
   return 0;
 }
 
+static const auto gridTypes = vIndicesSet<
+  UiEvent,
+  GridResize,
+  GridClear,
+  GridCursorGoto,
+  GridLine,
+  GridScroll,
+  GridDestroy>();
+
+static const auto winTypes = vIndicesSet<
+  UiEvent,
+  WinPos,
+  WinFloatPos,
+  WinExternalPos,
+  WinHide,
+  WinClose,
+  WinViewport>();
+
 // clang-format off
 // i hate clang format format on std::visit(overloaded{})
 bool ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
@@ -23,6 +39,8 @@ bool ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
   for (int i = 0; i < uiEvents.numFlushes; i++) {
     auto& redrawEvents = uiEvents.queue.front();
 
+    std::vector<UiEvent*> gridEvents;
+    std::vector<UiEvent*> winEvents;
     // neovim sends these events before appropriate window is created
     std::vector<WinViewportMargins*> margins;
     std::vector<MsgSetPos*> msgSetPos;
@@ -165,6 +183,72 @@ bool ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
             processedEvents = false;
           }
 
+          // DONT REMOVE, grid events should always execute first!
+          for (auto* event : gridEvents) {
+            std::visit(overloaded{
+              [&](GridResize& e) {
+                editorState.gridManager.Resize(e);
+                // default window events not send by nvim
+                if (e.grid == 1) {
+                  editorState.winManager.Pos({1, {}, 0, 0, e.width, e.height});
+                }
+              },
+              [&](GridClear& e) {
+                editorState.gridManager.Clear(e);
+              },
+              [&](GridCursorGoto& e) {
+                editorState.gridManager.CursorGoto(e);
+                editorState.winManager.activeWinId = e.grid;
+              },
+              [&](GridLine& e) {
+                editorState.gridManager.Line(e);
+              },
+              [&](GridScroll& e) {
+                editorState.gridManager.Scroll(e);
+              },
+              [&](GridDestroy& e) {
+                editorState.gridManager.Destroy(e);
+                // TODO: file bug report, win_close not called after tabclose
+                // temp fix for bug
+                editorState.winManager.Close({e.grid});
+              },
+              [&](auto&) {
+                LOG_WARN("unknown event");
+              }
+            }, *event);
+          }
+          for (auto& event : winEvents) {
+            std::visit(overloaded{
+              [&](WinPos& e) {
+                editorState.winManager.Pos(e);
+              },
+              [&](WinFloatPos& e) {
+                editorState.winManager.FloatPos(e);
+              },
+              [&](WinExternalPos& e) {
+              },
+              [&](WinHide& e) {
+                editorState.winManager.Hide(e);
+              },
+              [&](WinClose& e) {
+                editorState.winManager.Close(e);
+              },
+              [&](MsgSetPos& e) {
+                editorState.winManager.MsgSet(e);
+              },
+              [&](WinViewport& e) {
+                editorState.winManager.Viewport(e);
+              },
+              [&](WinViewportMargins& e) {
+                editorState.winManager.ViewportMargins(e);
+              },
+              [&](WinExtmark& e) {
+              },
+              [&](auto&) {
+                LOG_WARN("unknown event");
+              }
+            }, *event);
+          }
           // apply margins and msg_set_pos after all events
           for (auto* e : margins) {
             editorState.winManager.ViewportMargins(*e);
@@ -173,71 +257,27 @@ bool ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
             editorState.winManager.MsgSet(*e);
           }
         },
-        [&](GridResize& e) {
-          LOG("GridResize: {}", e.grid);
-          editorState.gridManager.Resize(e);
-          // default window events not send by nvim
-          if (e.grid == 1) {
-            editorState.winManager.Pos({1, {}, 0, 0, e.width, e.height});
-          }
-        },
-        [&](GridClear& e) {
-          LOG("GridClear: {}", e.grid);
-          editorState.gridManager.Clear(e);
-        },
-        [&](GridCursorGoto& e) {
-          editorState.gridManager.CursorGoto(e);
-          editorState.winManager.activeWinId = e.grid;
-        },
-        [&](GridLine& e) {
-          editorState.gridManager.Line(e);
-        },
-        [&](GridScroll& e) {
-          editorState.gridManager.Scroll(e);
-        },
-        [&](GridDestroy& e) {
-          LOG("GridDestroy: {}", e.grid);
-          editorState.gridManager.Destroy(e);
-          // TODO: file bug report, win_close not called after tabclose
-          // temp fix for bug
-          editorState.winManager.Close({e.grid});
-        },
-        [&](WinPos& e) {
-          LOG("WinPos: {}", e.grid);
-          editorState.winManager.Pos(e);
-        },
-        [&](WinFloatPos& e) {
-          LOG("WinFloatPos: {}", e.grid);
-          editorState.winManager.FloatPos(e);
-        },
-        [&](WinExternalPos& e) {
-        },
-        [&](WinHide& e) {
-          LOG("WinHide: {}", e.grid);
-          editorState.winManager.Hide(e);
-        },
-        [&](WinClose& e) {
-          LOG("WinClose: {}", e.grid);
-          editorState.winManager.Close(e);
-        },
         [&](MsgSetPos& e) {
           LOG("MsgSetPos: {}", e.grid);
-          // editorState.winManager.MsgSet(e);
           msgSetPos.push_back(&e);
-        },
-        [&](WinViewport& e) {
-          editorState.winManager.Viewport(e);
         },
         [&](WinViewportMargins& e) {
           LOG("WinViewportMargins: {}", e.grid);
-          // editorState.winManager.ViewportMargins(e);
           margins.push_back(&e);
         },
-        [&](WinExtmark& e) {
-        },
-        [&](auto&) {
+        [&](auto& _e) {
+          auto* e = (UiEvent*)&_e;
+          if (gridTypes.contains(e->index())) {
+            gridEvents.push_back(e);
+            return;
+          }
+          if (winTypes.contains(e->index())) {
+            winEvents.push_back(e);
+            return;
+          }
+
           LOG_WARN("unknown event");
-        },
+        }
       }, event);
     }
     uiEvents.queue.pop_front();

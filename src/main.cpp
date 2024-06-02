@@ -127,9 +127,9 @@ int main() {
           sessionManager.RemoveSession("default");
         };
 
-        // LOG_DISABLE();
+        LOG_DISABLE();
         ParseEvents(nvim.client, nvim.uiEvents);
-        // LOG_ENABLE();
+        LOG_ENABLE();
 
         // process events ---------------------------------------
         {
