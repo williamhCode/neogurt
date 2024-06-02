@@ -109,7 +109,7 @@ int main() {
       float idleElasped = 0;
 
       Clock clock;
-      // Timer timer(30);
+      // Timer timer(10);
 
       while (!exitWindow) {
         auto dt = clock.Tick(60);

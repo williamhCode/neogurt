@@ -4,6 +4,7 @@
 #include "utils/color.hpp"
 #include "utils/variant.hpp"
 #include "utils/logger.hpp"
+#include "utils/timer.hpp"
 #include <algorithm>
 #include <deque>
 #include <vector>

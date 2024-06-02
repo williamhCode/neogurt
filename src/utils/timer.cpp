@@ -6,11 +6,11 @@ Timer::Timer(size_t _bufferSize) : bufferSize(_bufferSize) {
 }
 
 void Timer::Start() {
-  start = std::chrono::steady_clock::now();
+  start = Time();
 }
 
 void Timer::End() {
-  auto end = std::chrono::steady_clock::now();
+  auto end = Time();
   durations.push_back(end - start);
   if (durations.size() > bufferSize) durations.pop_front();
 }
