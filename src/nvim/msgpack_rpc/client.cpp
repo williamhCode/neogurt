@@ -6,7 +6,6 @@
 
 #include "messages.hpp"
 #include "utils/logger.hpp"
-#include <iostream>
 #include <thread>
 
 namespace rpc {

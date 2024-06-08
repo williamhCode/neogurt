@@ -36,6 +36,12 @@ void InputHandler::HandleKeyboard(const SDL_KeyboardEvent& event) {
 
     if (!macOptAsAlt && (mod & SDL_KMOD_ALT) && isText) return;
 
+    // reset text input to prevent ime triggered from option key
+    if (macOptAsAlt && (mod & SDL_KMOD_ALT)) {
+      SDL_StopTextInput();
+      SDL_StartTextInput();
+    }
+
     std::string keyName = SDL_GetKeyName(key);
     if (keyName.empty()) return;
 

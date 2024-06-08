@@ -23,6 +23,8 @@ static const auto gridTypes = vIndicesSet<
   GridScroll,
   GridDestroy>();
 
+// doesn't include MsgSetPos, and WinViewportMargins, cuz they should run after
+// all the other win events
 static const auto winTypes = vIndicesSet<
   UiEvent,
   WinPos,
@@ -33,13 +35,14 @@ static const auto winTypes = vIndicesSet<
   WinViewport>();
 
 // clang-format off
-// i hate clang format format on std::visit(overloaded{})
+// i hate clang format on std::visit(overloaded{})
 bool ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
   bool processedEvents = uiEvents.numFlushes > 0;
   for (int i = 0; i < uiEvents.numFlushes; i++) {
     auto& redrawEvents = uiEvents.queue.front();
 
-    std::vector<UiEvent*> gridEvents;
+    // occasionally win events are sent before grid events
+    // so just handle manually
     std::vector<UiEvent*> winEvents;
     // neovim sends these events before appropriate window is created
     std::vector<WinViewportMargins*> margins;
@@ -178,45 +181,38 @@ bool ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
           // own elements with consistent highlighting
           // editorState.hlGroupTable.emplace(e.id, e.name);
         },
+        [&](GridResize& e) {
+          editorState.gridManager.Resize(e);
+          // default window events not send by nvim
+          if (e.grid == 1) {
+            editorState.winManager.Pos({1, {}, 0, 0, e.width, e.height});
+          }
+        },
+        [&](GridClear& e) {
+          editorState.gridManager.Clear(e);
+        },
+        [&](GridCursorGoto& e) {
+          editorState.gridManager.CursorGoto(e);
+          editorState.winManager.activeWinId = e.grid;
+        },
+        [&](GridLine& e) {
+          editorState.gridManager.Line(e);
+        },
+        [&](GridScroll& e) {
+          editorState.gridManager.Scroll(e);
+        },
+        [&](GridDestroy& e) {
+          editorState.gridManager.Destroy(e);
+          // TODO: file bug report, win_close not called after tabclose
+          // temp fix for bug
+          editorState.winManager.Close({e.grid});
+        },
         [&](Flush&) {
           if (redrawEvents.size() <= 1 && uiEvents.numFlushes == 1) {
             processedEvents = false;
           }
 
-          // DONT REMOVE, grid events should always execute first!
-          for (auto* event : gridEvents) {
-            std::visit(overloaded{
-              [&](GridResize& e) {
-                editorState.gridManager.Resize(e);
-                // default window events not send by nvim
-                if (e.grid == 1) {
-                  editorState.winManager.Pos({1, {}, 0, 0, e.width, e.height});
-                }
-              },
-              [&](GridClear& e) {
-                editorState.gridManager.Clear(e);
-              },
-              [&](GridCursorGoto& e) {
-                editorState.gridManager.CursorGoto(e);
-                editorState.winManager.activeWinId = e.grid;
-              },
-              [&](GridLine& e) {
-                editorState.gridManager.Line(e);
-              },
-              [&](GridScroll& e) {
-                editorState.gridManager.Scroll(e);
-              },
-              [&](GridDestroy& e) {
-                editorState.gridManager.Destroy(e);
-                // TODO: file bug report, win_close not called after tabclose
-                // temp fix for bug
-                editorState.winManager.Close({e.grid});
-              },
-              [&](auto&) {
-                LOG_WARN("unknown event");
-              }
-            }, *event);
-          }
+          // DONT REMOVE, win events should always execute last!
           for (auto& event : winEvents) {
             std::visit(overloaded{
               [&](WinPos& e) {
@@ -267,10 +263,6 @@ bool ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
         },
         [&](auto& _e) {
           auto* e = (UiEvent*)&_e;
-          if (gridTypes.contains(e->index())) {
-            gridEvents.push_back(e);
-            return;
-          }
           if (winTypes.contains(e->index())) {
             winEvents.push_back(e);
             return;
