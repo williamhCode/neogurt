@@ -56,11 +56,15 @@ struct QuadRenderData {
     );
   }
 
-  void Render(const wgpu::RenderPassEncoder& passEncoder) const {
-    passEncoder.SetVertexBuffer(0, vertexBuffer, 0, sizeof(VertexType) * vertexCount);
+  // option offset and size in unit of quads
+  void Render(const wgpu::RenderPassEncoder& passEncoder, uint64_t offset = 0, uint64_t size = 0) const {
+    assert(size <= quadCount);
+    if (size == 0) size = quadCount;
+
+    passEncoder.SetVertexBuffer(0, vertexBuffer, offset * 4, sizeof(VertexType) * size * 4);
     passEncoder.SetIndexBuffer(
-      indexBuffer, wgpu::IndexFormat::Uint32, 0, indexCount * sizeof(uint32_t)
+      indexBuffer, wgpu::IndexFormat::Uint32, offset * 6, sizeof(uint32_t) * size * 6
     );
-    passEncoder.DrawIndexed(indexCount);
+    passEncoder.DrawIndexed(size * 6);
   }
 };

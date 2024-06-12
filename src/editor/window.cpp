@@ -28,19 +28,15 @@ void WinManager::InitRenderData(Win& win) {
   auto pos = glm::vec2(win.startCol, win.startRow) * sizes.charSize;
   auto size = glm::vec2(win.width, win.height) * sizes.charSize;
 
-  // std::vector<ColorBytes> colorData(
-  //   size.x * size.y * sizes.dpiScale * sizes.dpiScale, clearColor
-  // );
-  // win.renderTexture =
-  //   RenderTexture(size, sizes.dpiScale, TextureFormat::RGBA8UnormSrgb, colorData.data());
-  win.renderTexture = RenderTexture(size, sizes.dpiScale, TextureFormat::RGBA8UnormSrgb);
-  win.renderTexture.UpdatePos(pos);
+  // win.renderTexture = RenderTexture(size, sizes.dpiScale, TextureFormat::RGBA8UnormSrgb);
+  // win.renderTexture.UpdatePos(pos);
 
-  if (win.id != 1 && win.id != msgWinId) {
-    win.prevRenderTexture =
-      RenderTexture(size, sizes.dpiScale, TextureFormat::RGBA8UnormSrgb);
-    win.prevRenderTexture.UpdatePos(pos);
-  }
+  // if (win.id != 1 && win.id != msgWinId) {
+  //   win.prevRenderTexture =
+  //     RenderTexture(size, sizes.dpiScale, TextureFormat::RGBA8UnormSrgb);
+  //   win.prevRenderTexture.UpdatePos(pos);
+  // }
+  win.sRenderTexture = ScrollableRenderTexture(size, sizes.dpiScale);
 
   auto fbSize = size * sizes.dpiScale;
   Extent3D maskSize(fbSize.x, fbSize.y);
@@ -83,26 +79,23 @@ void WinManager::UpdateRenderData(Win& win) {
   }
 
   if (sizeChanged) {
-    // std::vector<ColorBytes> colorData(
-    //   size.x * size.y * sizes.dpiScale * sizes.dpiScale, clearColor
-    // );
-    // win.renderTexture =
-    //   RenderTexture(size, sizes.dpiScale, TextureFormat::RGBA8UnormSrgb,
-    //   colorData.data());
-    win.renderTexture = RenderTexture(size, sizes.dpiScale, TextureFormat::RGBA8UnormSrgb);
-    win.renderTexture.UpdatePos(pos);
+    // win.renderTexture = RenderTexture(size, sizes.dpiScale, TextureFormat::RGBA8UnormSrgb);
+    // win.renderTexture.UpdatePos(pos);
 
-    if (win.id != 1 && win.id != msgWinId) {
-      win.prevRenderTexture =
-        RenderTexture(size, sizes.dpiScale, TextureFormat::RGBA8UnormSrgb);
-      win.prevRenderTexture.UpdatePos(pos);
-    }
+    // if (win.id != 1 && win.id != msgWinId) {
+    //   win.prevRenderTexture =
+    //     RenderTexture(size, sizes.dpiScale, TextureFormat::RGBA8UnormSrgb);
+    //   win.prevRenderTexture.UpdatePos(pos);
+    // }
+
+    win.sRenderTexture = ScrollableRenderTexture(size, sizes.dpiScale);
   } else {
-    win.renderTexture.UpdatePos(pos);
-    if (win.id != 1 && win.id != msgWinId) {
-      win.prevRenderTexture.UpdatePos(pos);
-    }
+    // win.renderTexture.UpdatePos(pos);
+    // if (win.id != 1 && win.id != msgWinId) {
+    //   win.prevRenderTexture.UpdatePos(pos);
+    // }
   }
+  win.sRenderTexture.UpdatePos(pos);
 
   if (sizeChanged) {
     auto fbSize = size * sizes.dpiScale;
@@ -275,14 +268,17 @@ void WinManager::Viewport(const WinViewport& e) {
   // LOG_INFO("WinManager::Viewport: grid {} scrollDelta {} shouldScroll {}", e.grid,
   // e.scrollDelta,
   //          shouldScroll);
-  if (shouldScroll) {
-    win.scrolling = true;
-    win.scrollDist = e.scrollDelta * sizes.charSize.y;
-    win.scrollElapsed = 0;
+  // if (shouldScroll) {
+  //   win.scrolling = true;
+  //   win.scrollDist = e.scrollDelta * sizes.charSize.y;
+  //   win.scrollElapsed = 0;
 
-    std::swap(win.prevRenderTexture, win.renderTexture);
-    // win.hasPrevRender = true;
-  }
+  //   std::swap(win.prevRenderTexture, win.renderTexture);
+  //   win.hasPrevRender = true;
+  // }
+
+  float scrollDist = shouldScroll ? e.scrollDelta * sizes.charSize.y : 0;
+  win.sRenderTexture.UpdateViewport(scrollDist);
 }
 
 void WinManager::UpdateScrolling(float dt) {
@@ -322,7 +318,7 @@ void WinManager::UpdateScrolling(float dt) {
       float toScroll = scrollDistAbs - scrollCurrAbs;
       bool scrollPositive = win.scrollDist > 0;
 
-      RegionHandle prevRegion{
+      Rect prevRegion{
         .pos{
           margins.left,
           scrollPositive ? margins.top + scrollCurrAbs
@@ -332,7 +328,7 @@ void WinManager::UpdateScrolling(float dt) {
       };
       win.prevRenderTexture.UpdatePos(pos + prevRegion.pos, &prevRegion);
 
-      RegionHandle region{
+      Rect region{
         .pos{margins.left, scrollPositive ? margins.top : margins.top + toScroll},
         .size{innerWidth, innerHeight - toScroll},
       };
@@ -455,4 +451,10 @@ MouseInfo WinManager::GetMouseInfo(int grid, glm::vec2 mousePos) {
   int col = std::max(globalCol - win.startCol, 0);
 
   return {grid, row, col};
+}
+
+Win* WinManager::GetMsgWin() {
+  auto it = windows.find(msgWinId);
+  if (it == windows.end()) return nullptr;
+  return &it->second;
 }

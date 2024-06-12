@@ -12,10 +12,7 @@
 #include "gfx/quad.hpp"
 #include "webgpu_tools/utils/webgpu.hpp"
 #include <ranges>
-
-template <typename R, typename V>
-concept RangeOf =
-  std::ranges::range<R> && std::same_as<std::ranges::range_value_t<R>, V>;
+#include <span>
 
 struct Renderer {
   wgpu::Color clearColor;
@@ -56,7 +53,7 @@ struct Renderer {
 
   void Begin();
   void RenderWindow(Win& win, FontFamily& fontFamily, const HlTable& hlTable);
-  void RenderWindows(const RangeOf<const Win*> auto& windows, const RangeOf<const Win*> auto& floatWindows);
+  void RenderWindows(std::span<const Win*> windows, std::span<const Win*> floatWindows);
   void RenderFinalTexture();
   void RenderCursor(const Cursor& cursor, const HlTable& hlTable);
   void End();

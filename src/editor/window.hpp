@@ -50,12 +50,19 @@ struct Win {
 
   // exists only if window is floating
   std::optional<FloatData> floatData;
+  bool IsFloating() const {
+    return floatData.has_value();
+  }
 
   // rendering data
   glm::vec2 pos;
   glm::vec2 size;
 
   RenderTexture renderTexture;
+  RenderTexture prevRenderTexture;
+  bool hasPrevRender = false;
+
+  ScrollableRenderTexture sRenderTexture;
 
   wgpu::TextureView maskTextureView;
   wgpu::Buffer maskPosBuffer;
@@ -72,9 +79,6 @@ struct Win {
   float scrollCurr;
   float scrollTime = 0.1; // transition time
   float scrollElapsed;
-
-  RenderTexture prevRenderTexture;
-  bool hasPrevRender = false;
 
   QuadRenderData<TextureQuadVertex> marginsData;
 };
@@ -118,4 +122,6 @@ struct WinManager {
 
   MouseInfo GetMouseInfo(glm::vec2 mousePos);
   MouseInfo GetMouseInfo(int grid, glm::vec2 mousePos);
+
+  Win* GetMsgWin();
 };

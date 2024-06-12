@@ -219,17 +219,18 @@ void Renderer::RenderWindow(Win& win, FontFamily& fontFamily, const HlTable& hlT
   }
 }
 
-// jst playing with templates and concepts is a bit unnecessary
 void Renderer::RenderWindows(
-  const RangeOf<const Win*> auto& windows, const RangeOf<const Win*> auto& floatWindows
+  std::span<const Win*> windows, std::span<const Win*> floatWindows
 ) {
   windowsRPD.cColorAttachments[0].clearValue = linearClearColor;
   auto passEncoder = commandEncoder.BeginRenderPass(&windowsRPD);
 
   passEncoder.SetBindGroup(0, finalRenderTexture.camera.viewProjBG);
+
   auto renderWin = [&](const Win* win) {
     passEncoder.SetBindGroup(1, win->renderTexture.textureBG);
     win->renderTexture.renderData.Render(passEncoder);
+
     if (win->scrolling) {
       if (win->hasPrevRender) {
         passEncoder.SetBindGroup(1, win->prevRenderTexture.textureBG);
@@ -258,10 +259,6 @@ void Renderer::RenderWindows(
 
   passEncoder.End();
 }
-// explicit template instantiations
-template void Renderer::RenderWindows(
-  const std::deque<const Win*>& windows, const std::vector<const Win*>& floatWindows
-);
 
 void Renderer::RenderFinalTexture() {
   finalRPD.cColorAttachments[0].view = nextTextureView;

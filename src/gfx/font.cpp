@@ -34,7 +34,11 @@ Font::FromName(const FontDescriptorWithName& desc, float dpiScale) {
     return std::unexpected("Failed to find font for: " + desc.name);
   }
 
-  return Font(fontPath, desc.size, desc.width, dpiScale);
+  try {
+    return Font(fontPath, desc.size, desc.width, dpiScale);
+  } catch (const std::runtime_error& e) {
+    return std::unexpected(e.what());
+  }
 }
 
 Font::Font(std::string _path, int _size, int _width, float _dpiScale)

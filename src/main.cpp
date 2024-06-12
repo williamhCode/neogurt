@@ -66,7 +66,7 @@ int main() {
       LOG_ERR("Failed to create font family: {}", fontFamilyResult.error());
       return 1;
     }
-    FontFamily fontFamily = std::move(*fontFamilyResult);
+    FontFamily fontFamily = std::move(fontFamilyResult.value());
 
     SizeHandler sizes;
     sizes.UpdateSizes(
@@ -253,18 +253,16 @@ int main() {
           if (renderWindows || editorState.winManager.dirty) {
             editorState.winManager.dirty = false;
 
-            std::deque<const Win*> windows;
+            std::vector<const Win*> windows = {editorState.winManager.GetMsgWin()};
             std::vector<const Win*> floatWindows;
             for (auto& [id, win] : editorState.winManager.windows) {
-              if (id == 1) continue;
-              if (id == editorState.winManager.msgWinId) {
-                windows.push_front(&win);
-              } else if (!win.hidden) {
-                if (win.floatData.has_value()) {
-                  floatWindows.push_back(&win);
-                } else {
-                  windows.push_back(&win);
-                }
+              if (id == 1 || id == editorState.winManager.msgWinId || win.hidden) {
+                continue;
+              }
+              if (win.IsFloating()) {
+                floatWindows.push_back(&win);
+              } else {
+                windows.push_back(&win);
               }
             }
             if (auto winIt = editorState.winManager.windows.find(1);

@@ -16,9 +16,7 @@ namespace sdl {
 
 using namespace wgpu;
 
-Window::Window(
-  glm::uvec2 _size, const std::string& title, Options::Window winOpts
-)
+Window::Window(glm::uvec2 _size, const std::string& title, Options::Window winOpts)
     : size(_size) {
   // window ---------------------------------
   int flags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_TRANSPARENT;
