@@ -112,7 +112,9 @@ int main() {
       // Timer timer(10);
 
       while (!exitWindow) {
-        auto dt = clock.Tick(60);
+        auto dt = clock.Tick(
+          options.maxFps == 0 ? std::nullopt : std::optional(options.maxFps)
+        );
         // LOG("dt: {}", dt);
 
         // auto fps = clock.GetFps();

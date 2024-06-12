@@ -34,5 +34,7 @@ void Options::Load(Nvim& nvim) {
   LOAD(bgColor);
   LOAD(transparency);
 
+  LOAD(maxFps);
+
   transparency = int(transparency * 255) / 255.0f;
 }
