@@ -46,8 +46,8 @@ int main() {
   }
 
   try {
-    SessionManager sessionManager;
-    sessionManager.LoadSessions(ROOT_DIR "/sessions.txt");
+    SessionManager sessionManager(SpawnMode::Child);
+    // SessionManager sessionManager(SpawnMode::Detached);
 
     uint16_t port = 2040;
     port = sessionManager.GetOrCreateSession("default");
@@ -388,7 +388,7 @@ int main() {
       // prevents cmd + q exiting window getting stuck
       nvim.Input("<Esc>");
       nvim.UiDetach();
-      LOG_INFO("Detached UI");
+      // LOG_INFO("Detached UI");
     }
 
   } catch (const std::exception& e) {

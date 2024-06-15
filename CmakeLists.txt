@@ -88,11 +88,6 @@ else()
     -Wno-deprecated-declarations
   )
 
-  # fix https://github.com/llvm/llvm-project/issues/77653
-  target_link_libraries(neogui PRIVATE 
-    -L/opt/homebrew/opt/llvm/lib/c++
-  )
-
   # assert in release
   # target_compile_options(neogui PRIVATE -UNDEBUG)
 endif()
