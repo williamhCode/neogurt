@@ -12,11 +12,6 @@
 #include <map>
 #include <optional>
 
-struct FloatData {
-  bool focusable;
-  int zindex;
-};
-
 struct FMargins {
   float top = 0;
   float bottom = 0;
@@ -32,6 +27,11 @@ struct Margins {
 
   bool Empty() const;
   FMargins ToFloat(glm::vec2 size) const;
+};
+
+struct FloatData {
+  bool focusable;
+  int zindex;
 };
 
 struct Win {
@@ -58,9 +58,9 @@ struct Win {
   glm::vec2 pos;
   glm::vec2 size;
 
-  RenderTexture renderTexture;
-  RenderTexture prevRenderTexture;
-  bool hasPrevRender = false;
+  // RenderTexture renderTexture;
+  // RenderTexture prevRenderTexture;
+  // bool hasPrevRender = false;
 
   ScrollableRenderTexture sRenderTexture;
 
@@ -71,14 +71,13 @@ struct Win {
   QuadRenderData<RectQuadVertex> rectData;
   QuadRenderData<TextQuadVertex> textData;
 
-  // scroll related
-  FMargins fmargins; // margin size in pixels
+  // FMargins fmargins; // margin size in pixels
 
-  bool scrolling;
-  float scrollDist;
-  float scrollCurr;
-  float scrollTime = 0.1; // transition time
-  float scrollElapsed;
+  // bool scrolling;
+  // float scrollDist;
+  // float scrollCurr;
+  // float scrollTime = 0.1; // transition time
+  // float scrollElapsed;
 
   QuadRenderData<TextureQuadVertex> marginsData;
 };

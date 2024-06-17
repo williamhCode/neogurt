@@ -11,11 +11,11 @@ struct VertexOutput {
 }
 
 @group(0) @binding(0) var<uniform> viewProj: mat4x4f;
-@group(1) @binding(0) var<uniform> textureSize : vec2f;
+@group(1) @binding(0) var<uniform> textureAtlasSize : vec2f;
 
 @vertex
 fn vs_main(in: VertexInput) -> VertexOutput {
-  let uv = in.regionCoords / textureSize;
+  let uv = in.regionCoords / textureAtlasSize;
   let out = VertexOutput(
     viewProj * vec4f(in.position, 0.0, 1.0),
     uv, ToLinear(in.foreground)

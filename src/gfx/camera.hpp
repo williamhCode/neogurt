@@ -10,5 +10,5 @@ struct Ortho2D {
   Ortho2D() = default;
   Ortho2D(glm::vec2 size);
 
-  void Resize(glm::vec2 size);
+  void Resize(glm::vec2 size, glm::vec2 pos = {0, 0});
 };

@@ -10,6 +10,7 @@
 #include "editor/state.hpp"
 #include "editor/font.hpp"
 #include "gfx/instance.hpp"
+#include "gfx/render_texture.hpp"
 #include "gfx/renderer.hpp"
 #include "glm/ext/vector_float2.hpp"
 #include "glm/gtx/string_cast.hpp"
@@ -109,7 +110,7 @@ int main() {
       float idleElasped = 0;
 
       Clock clock;
-      // Timer timer(10);
+      Timer timer(10);
 
       while (!exitWindow) {
         auto dt = clock.Tick(60);
@@ -213,9 +214,11 @@ int main() {
             sizes.offset;
           editorState.cursor.SetDestPos(cursorPos);
 
-          editorState.cursor.winScrollOffset =
-            win->scrolling ? glm::vec2(0, win->scrollDist - win->scrollCurr)
-                           : glm::vec2(0);
+          // editorState.cursor.winScrollOffset =
+          //   win->scrolling ? glm::vec2(0, win->scrollDist - win->scrollCurr)
+          //                  : glm::vec2(0);
+
+          editorState.cursor.winScrollOffset = {0, 0};
 
           currMaskBG = win->maskBG;
         }

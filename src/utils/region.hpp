@@ -39,25 +39,8 @@ struct Rect {
   }
 };
 
-bool RectIntersect(const Rect& a, const Rect& b) {
-  return a.Left() < b.Right() && a.Right() > b.Left() &&
-         a.Top() < b.Bottom() && a.Bottom() > b.Top();
-}
+// inline bool RectIntersect(const Rect& a, const Rect& b) {
+//   return a.Left() < b.Right() && a.Right() > b.Left() &&
+//          a.Top() < b.Bottom() && a.Bottom() > b.Top();
+// }
 
-
-struct Line {
-  float pos;
-  float length;
-
-  float Top() const {
-    return pos;
-  }
-
-  float Bottom() const {
-    return pos + length;
-  }
-
-  bool Intersects(const Line& other) const {
-    return Top() < other.Bottom() && Bottom() > other.Top();
-  }
-};

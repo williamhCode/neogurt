@@ -28,15 +28,8 @@ void WinManager::InitRenderData(Win& win) {
   auto pos = glm::vec2(win.startCol, win.startRow) * sizes.charSize;
   auto size = glm::vec2(win.width, win.height) * sizes.charSize;
 
-  // win.renderTexture = RenderTexture(size, sizes.dpiScale, TextureFormat::RGBA8UnormSrgb);
-  // win.renderTexture.UpdatePos(pos);
-
-  // if (win.id != 1 && win.id != msgWinId) {
-  //   win.prevRenderTexture =
-  //     RenderTexture(size, sizes.dpiScale, TextureFormat::RGBA8UnormSrgb);
-  //   win.prevRenderTexture.UpdatePos(pos);
-  // }
-  win.sRenderTexture = ScrollableRenderTexture(size, sizes.dpiScale);
+  win.sRenderTexture = ScrollableRenderTexture(size, sizes.dpiScale, sizes.charSize);
+  win.sRenderTexture.UpdatePos(pos);
 
   auto fbSize = size * sizes.dpiScale;
   Extent3D maskSize(fbSize.x, fbSize.y);
@@ -79,21 +72,7 @@ void WinManager::UpdateRenderData(Win& win) {
   }
 
   if (sizeChanged) {
-    // win.renderTexture = RenderTexture(size, sizes.dpiScale, TextureFormat::RGBA8UnormSrgb);
-    // win.renderTexture.UpdatePos(pos);
-
-    // if (win.id != 1 && win.id != msgWinId) {
-    //   win.prevRenderTexture =
-    //     RenderTexture(size, sizes.dpiScale, TextureFormat::RGBA8UnormSrgb);
-    //   win.prevRenderTexture.UpdatePos(pos);
-    // }
-
-    win.sRenderTexture = ScrollableRenderTexture(size, sizes.dpiScale);
-  } else {
-    // win.renderTexture.UpdatePos(pos);
-    // if (win.id != 1 && win.id != msgWinId) {
-    //   win.prevRenderTexture.UpdatePos(pos);
-    // }
+    win.sRenderTexture = ScrollableRenderTexture(size, sizes.dpiScale, sizes.charSize);
   }
   win.sRenderTexture.UpdatePos(pos);
 
@@ -283,61 +262,62 @@ void WinManager::Viewport(const WinViewport& e) {
 
 void WinManager::UpdateScrolling(float dt) {
   for (auto& [id, win] : windows) {
-    if (!win.scrolling) continue;
-
-    win.scrollElapsed += dt;
+    win.sRenderTexture.UpdateScrolling(dt);
     dirty = true;
 
-    auto pos = win.pos;
+    // win.scrollElapsed += dt;
+    // dirty = true;
 
-    if (win.scrollElapsed >= win.scrollTime) {
-      win.scrolling = false;
-      win.scrollElapsed = 0;
+    // auto pos = win.pos;
 
-      win.renderTexture.UpdatePos(pos);
+    // if (win.scrollElapsed >= win.scrollTime) {
+    //   win.scrolling = false;
+    //   win.scrollElapsed = 0;
 
-      auto maskPos = pos * sizes.dpiScale;
-      ctx.queue.WriteBuffer(win.maskPosBuffer, 0, &maskPos, sizeof(glm::vec2));
+    //   win.renderTexture.UpdatePos(pos);
 
-      win.hasPrevRender = true;
+    //   auto maskPos = pos * sizes.dpiScale;
+    //   ctx.queue.WriteBuffer(win.maskPosBuffer, 0, &maskPos, sizeof(glm::vec2));
 
-    } else {
-      auto size = win.size;
-      auto& margins = win.fmargins;
+    //   win.hasPrevRender = true;
 
-      float t = win.scrollElapsed / win.scrollTime;
-      float x = glm::pow(t, 1 / 2.0f);
-      win.scrollCurr =
-        glm::sign(win.scrollDist) * glm::mix(0.0f, glm::abs(win.scrollDist), x);
-      pos.y -= win.scrollCurr;
+    // } else {
+    //   auto size = win.size;
+    //   auto& margins = win.fmargins;
 
-      float scrollCurrAbs = glm::abs(win.scrollCurr);
-      float scrollDistAbs = glm::abs(win.scrollDist);
-      float innerWidth = size.x - margins.left - margins.right;
-      float innerHeight = size.y - margins.top - margins.bottom;
-      float toScroll = scrollDistAbs - scrollCurrAbs;
-      bool scrollPositive = win.scrollDist > 0;
+    //   float t = win.scrollElapsed / win.scrollTime;
+    //   float x = glm::pow(t, 1 / 2.0f);
+    //   win.scrollCurr =
+    //     glm::sign(win.scrollDist) * glm::mix(0.0f, glm::abs(win.scrollDist), x);
+    //   pos.y -= win.scrollCurr;
 
-      Rect prevRegion{
-        .pos{
-          margins.left,
-          scrollPositive ? margins.top + scrollCurrAbs
-                         : size.y - margins.bottom - scrollDistAbs,
-        },
-        .size{innerWidth, toScroll},
-      };
-      win.prevRenderTexture.UpdatePos(pos + prevRegion.pos, &prevRegion);
+    //   float scrollCurrAbs = glm::abs(win.scrollCurr);
+    //   float scrollDistAbs = glm::abs(win.scrollDist);
+    //   float innerWidth = size.x - margins.left - margins.right;
+    //   float innerHeight = size.y - margins.top - margins.bottom;
+    //   float toScroll = scrollDistAbs - scrollCurrAbs;
+    //   bool scrollPositive = win.scrollDist > 0;
 
-      Rect region{
-        .pos{margins.left, scrollPositive ? margins.top : margins.top + toScroll},
-        .size{innerWidth, innerHeight - toScroll},
-      };
-      pos += glm::vec2(0, win.scrollDist);
-      win.renderTexture.UpdatePos(pos + region.pos, &region);
+    //   Rect prevRegion{
+    //     .pos{
+    //       margins.left,
+    //       scrollPositive ? margins.top + scrollCurrAbs
+    //                      : size.y - margins.bottom - scrollDistAbs,
+    //     },
+    //     .size{innerWidth, toScroll},
+    //   };
+    //   win.prevRenderTexture.UpdatePos(pos + prevRegion.pos, &prevRegion);
 
-      auto maskPos = pos * sizes.dpiScale;
-      ctx.queue.WriteBuffer(win.maskPosBuffer, 0, &maskPos, sizeof(glm::vec2));
-    }
+    //   Rect region{
+    //     .pos{margins.left, scrollPositive ? margins.top : margins.top + toScroll},
+    //     .size{innerWidth, innerHeight - toScroll},
+    //   };
+    //   pos += glm::vec2(0, win.scrollDist);
+    //   win.renderTexture.UpdatePos(pos + region.pos, &region);
+
+    //   auto maskPos = pos * sizes.dpiScale;
+    //   ctx.queue.WriteBuffer(win.maskPosBuffer, 0, &maskPos, sizeof(glm::vec2));
+    // }
   }
 }
 
@@ -354,11 +334,11 @@ void WinManager::ViewportMargins(const WinViewportMargins& e) {
   win.margins.left = e.left;
   win.margins.right = e.right;
 
-  win.fmargins = win.margins.ToFloat(sizes.charSize);
+  auto fmargins = win.margins.ToFloat(sizes.charSize);
 
   win.marginsData.ResetCounts();
 
-  auto SetData = [&](glm::vec2 pos, glm::vec2 size) {
+  auto setData = [&](glm::vec2 pos, glm::vec2 size) {
     auto positions = MakeRegion(pos, size);
     auto uvs = MakeRegion(pos, size / win.size);
 
@@ -371,21 +351,21 @@ void WinManager::ViewportMargins(const WinViewportMargins& e) {
   };
 
   if (win.margins.top != 0) {
-    SetData({0, 0}, {win.size.x, win.fmargins.top});
+    setData({0, 0}, {win.size.x, fmargins.top});
   }
   if (win.margins.bottom != 0) {
-    SetData({0, win.size.y - win.fmargins.bottom}, {win.size.x, win.fmargins.bottom});
+    setData({0, win.size.y - fmargins.bottom}, {win.size.x, fmargins.bottom});
   }
   if (win.margins.left != 0) {
-    SetData(
-      {0, win.fmargins.top},
-      {win.fmargins.left, win.size.y - win.fmargins.top - win.fmargins.bottom}
+    setData(
+      {0, fmargins.top},
+      {fmargins.left, win.size.y - fmargins.top - fmargins.bottom}
     );
   }
   if (win.margins.right != 0) {
-    SetData(
-      {win.size.x - win.fmargins.right, win.fmargins.top},
-      {win.fmargins.right, win.size.y - win.fmargins.top - win.fmargins.bottom}
+    setData(
+      {win.size.x - fmargins.right, fmargins.top},
+      {fmargins.right, win.size.y - fmargins.top - fmargins.bottom}
     );
   }
   win.marginsData.WriteBuffers();

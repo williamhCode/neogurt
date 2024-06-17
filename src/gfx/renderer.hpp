@@ -10,6 +10,7 @@
 #include "gfx/font.hpp"
 #include "gfx/pipeline.hpp"
 #include "gfx/quad.hpp"
+#include "gfx/render_texture.hpp"
 #include "webgpu_tools/utils/webgpu.hpp"
 #include <ranges>
 #include <span>
@@ -52,6 +53,7 @@ struct Renderer {
   void SetClearColor(glm::vec4 color);
 
   void Begin();
+  // void RenderText(RenderTexture& dest, FontFamily& fontFamily, const HlTable& hlTable);
   void RenderWindow(Win& win, FontFamily& fontFamily, const HlTable& hlTable);
   void RenderWindows(std::span<const Win*> windows, std::span<const Win*> floatWindows);
   void RenderFinalTexture();

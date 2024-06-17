@@ -28,19 +28,22 @@ struct RenderTexture {
   // pos is the position (top left) of the texture in the screen
   // region is the subregion of the texture to draw
   void UpdatePos(glm::vec2 pos, Rect* region = nullptr);
+  void UpdateCameraPos(glm::vec2 pos);
 };
 
 using RenderTextureHandle = std::unique_ptr<RenderTexture>;
 
 // consists of multiple render textures that can be scrolled
 struct ScrollableRenderTexture {
-  glm::vec2 size;
+  glm::vec2 posOffset;
+  glm::vec2 size; // displayable size
   float dpiScale;
+
+  int maxNumTexPerPage = 6;
   float textureHeight;
 
-  glm::vec2 pos;
+  int rowsPerTexture;
 
-  int numTexPerPage = 2;
   wgpu::TextureFormat format = wgpu::TextureFormat::BGRA8UnormSrgb;
 
   // dynamic variables
@@ -50,21 +53,20 @@ struct ScrollableRenderTexture {
   bool scrolling;
   float scrollDist; // baseOffset + scrollDist = new baseOffset
   float scrollCurr; // 0 <= scrollCurr <= scrollDist
-  float scrollTime = 0.1; // transition time
   float scrollElapsed;
+  float scrollTime = 0.1; // transition time
 
   ScrollableRenderTexture() = default;
   ScrollableRenderTexture(
     glm::vec2 size,
-    float dpiScale
-    // int numTexPerPage,
-    // wgpu::TextureFormat format
+    float dpiScale,
+    glm::vec2 charSize
   );
     
   void UpdatePos(glm::vec2 pos);
   void UpdateViewport(float newScrollDist = 0);
-  void AddOrRemoveTextures();
   void UpdateScrolling(float dt);
 
-  float GetBottomOffset(float topOffset);
+  void AddOrRemoveTextures();
+  void SetTexturePositions();
 };
