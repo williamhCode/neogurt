@@ -125,7 +125,7 @@ void ScrollableRenderTexture::UpdateScrolling(float dt) {
   scrollElapsed += dt;
 
   if (scrollElapsed >= scrollTime) {
-    baseOffset += scrollDist;
+    baseOffset = NextOffset();
 
     scrolling = false;
     scrollDist = 0;
@@ -206,7 +206,7 @@ void ScrollableRenderTexture::AddOrRemoveTextures() {
     renderTextures.push_back(createHandle());
   }
 
-  baseOffset = region.pos;
+  baseOffset = region.pos - posChange;
 }
 
 void ScrollableRenderTexture::SetTexturePositions() {
