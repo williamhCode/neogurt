@@ -132,10 +132,10 @@ void Renderer::Begin() {
 
 void Renderer::RenderWindow(Win& win, FontFamily& fontFamily, const HlTable& hlTable) {
   // keep how many quads to draw for each sub renderTexture
-  int numIntervals = win.sRenderTexture.renderTextures.size();
-  std::vector<int> rectIntervals; rectIntervals.reserve(numIntervals);
-  std::vector<int> textIntervals; textIntervals.reserve(numIntervals);
-  int currRectInterval = 0, currTextInterval = 0;
+  // int numIntervals = win.sRenderTexture.renderTextures.size();
+  // std::vector<int> rectIntervals; rectIntervals.reserve(numIntervals);
+  // std::vector<int> textIntervals; textIntervals.reserve(numIntervals);
+  // int currRectInterval = 0, currTextInterval = 0;
 
   // int rowsPerTexture = win.sRenderTexture.rowsPerTexture;
   // int baseOffset = win.sRenderTexture.baseOffset / rowsPerTexture;
@@ -150,13 +150,6 @@ void Renderer::RenderWindow(Win& win, FontFamily& fontFamily, const HlTable& hlT
   const auto& defaultFont = fontFamily.DefaultFont();
 
   for (size_t row = 0; row < win.grid.lines.Size(); row++) {
-    // if ((baseOffset + row) % rowsPerTexture == 0) {
-    //   rectIntervals.push_back(currRectInterval);
-    //   textIntervals.push_back(currTextInterval);
-    //   currRectInterval = 0;
-    //   currTextInterval = 0;
-    // }
-
     auto& line = win.grid.lines[row];
     textOffset.x = 0;
 
@@ -213,27 +206,29 @@ void Renderer::RenderWindow(Win& win, FontFamily& fontFamily, const HlTable& hlT
   // but still referenced by command encoder
   fontFamily.textureAtlas.Update();
 
-  // background
-  // {
-  //   rectRPD.cColorAttachments[0].view = win.renderTexture.textureView;
-  //   rectRPD.cColorAttachments[0].clearValue = linearClearColor;
-  //   RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&rectRPD);
-  //   passEncoder.SetPipeline(ctx.pipeline.rectRPL);
-  //   passEncoder.SetBindGroup(0, win.renderTexture.camera.viewProjBG);
-  //   rectData.Render(passEncoder);
-  //   passEncoder.End();
-  // }
-  // // text
-  // {
-  //   textRPD.cColorAttachments[0].view = win.renderTexture.textureView;
-  //   textRPD.cColorAttachments[1].view = win.maskTextureView;
-  //   RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textRPD);
-  //   passEncoder.SetPipeline(ctx.pipeline.textRPL);
-  //   passEncoder.SetBindGroup(0, win.renderTexture.camera.viewProjBG);
-  //   passEncoder.SetBindGroup(1, fontFamily.textureAtlas.fontTextureBG);
-  //   textData.Render(passEncoder);
-  //   passEncoder.End();
-  // }
+  for (auto& renderTexture : win.sRenderTexture.renderTextures) {
+    // background
+    {
+      rectRPD.cColorAttachments[0].view = renderTexture->textureView;
+      rectRPD.cColorAttachments[0].clearValue = linearClearColor;
+      RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&rectRPD);
+      passEncoder.SetPipeline(ctx.pipeline.rectRPL);
+      passEncoder.SetBindGroup(0, renderTexture->camera.viewProjBG);
+      rectData.Render(passEncoder);
+      passEncoder.End();
+    }
+    // // text
+    {
+      textRPD.cColorAttachments[0].view = renderTexture->textureView;
+      // textRPD.cColorAttachments[1].view = win.maskTextureView;
+      RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textRPD);
+      passEncoder.SetPipeline(ctx.pipeline.textRPL);
+      passEncoder.SetBindGroup(0, renderTexture->camera.viewProjBG);
+      passEncoder.SetBindGroup(1, fontFamily.textureAtlas.fontTextureBG);
+      textData.Render(passEncoder);
+      passEncoder.End();
+    }
+  }
 }
 
 void Renderer::RenderWindows(

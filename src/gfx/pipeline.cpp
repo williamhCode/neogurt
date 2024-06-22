@@ -65,7 +65,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
         .blend = &utils::BlendState::AlphaBlending,
         // .blend = &utils::BlendState::PremultipliedAlphaBlending,
       },
-      {.format = TextureFormat::R8Unorm},
+      // {.format = TextureFormat::R8Unorm},
     },
   });
 

@@ -78,8 +78,9 @@ ScrollableRenderTexture::ScrollableRenderTexture(
   textureHeight = glm::max(textureHeight, charSize.y);
 
   int numTexPerPage = glm::ceil(size.y / textureHeight);
+  auto texSize = glm::vec2(size.x, textureHeight);
   for (int i = 0; i < numTexPerPage; i++) {
-    renderTextures.push_back(std::make_unique<RenderTexture>(size, dpiScale, format));
+    renderTextures.push_back(std::make_unique<RenderTexture>(texSize, dpiScale, format));
   }
 }
 
@@ -90,18 +91,18 @@ void ScrollableRenderTexture::UpdatePos(glm::vec2 pos) {
 
 void ScrollableRenderTexture::UpdateViewport(float newScrollDist) {
   // not scrolling, reset view and return
-  if (newScrollDist == 0) {
-    baseOffset = 0;
+  // if (newScrollDist == 0) {
+  //   baseOffset = 0;
 
-    scrolling = false;
-    scrollDist = 0;
-    scrollCurr = 0;
-    scrollElapsed = 0;
+  //   scrolling = false;
+  //   scrollDist = 0;
+  //   scrollCurr = 0;
+  //   scrollElapsed = 0;
 
-    AddOrRemoveTextures();
-    SetTexturePositions();
+  //   AddOrRemoveTextures();
+  //   SetTexturePositions();
 
-  } else {
+  // } else {
     // in the middle of scrolling, instead scroll from current pos to new pos
     if (scrolling) {
       baseOffset += scrollCurr;
@@ -115,8 +116,10 @@ void ScrollableRenderTexture::UpdateViewport(float newScrollDist) {
     scrollCurr = 0;
     scrollElapsed = 0;
 
+    // LOG_INFO("scrollDist: {}", scrollDist);
+
     AddOrRemoveTextures();
-  }
+  // }
 }
 
 void ScrollableRenderTexture::UpdateScrolling(float dt) {
@@ -212,8 +215,9 @@ void ScrollableRenderTexture::AddOrRemoveTextures() {
 void ScrollableRenderTexture::SetTexturePositions() {
   for (size_t i = 0; i < renderTextures.size(); i++) {
     float ypos = -(baseOffset + scrollCurr) + (i * textureHeight);
-    auto pos = glm::vec2(0, ypos);
-    renderTextures[i]->UpdatePos(posOffset + pos);
-    // renderTextures[i]->UpdateCameraPos(pos);
+    renderTextures[i]->UpdatePos(posOffset + glm::vec2(0, ypos));
+    
+    float pos = -(baseOffset + scrollDist) + (i * textureHeight);
+    renderTextures[i]->UpdateCameraPos({0, pos});
   }
 }

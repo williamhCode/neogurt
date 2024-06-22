@@ -44,7 +44,7 @@ struct ScrollableRenderTexture {
 
   int rowsPerTexture;
 
-  wgpu::TextureFormat format = wgpu::TextureFormat::BGRA8UnormSrgb;
+  wgpu::TextureFormat format = wgpu::TextureFormat::RGBA8UnormSrgb;
 
   // dynamic variables
   std::deque<RenderTextureHandle> renderTextures;
@@ -57,7 +57,7 @@ struct ScrollableRenderTexture {
   float scrollDist; // baseOffset + scrollDist = new baseOffset
   float scrollCurr; // 0 <= scrollCurr <= scrollDist
   float scrollElapsed;
-  float scrollTime = 0.1; // transition time
+  float scrollTime = 0.5; // transition time
 
   ScrollableRenderTexture() = default;
   ScrollableRenderTexture(

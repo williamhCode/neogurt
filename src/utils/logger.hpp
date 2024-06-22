@@ -1,11 +1,12 @@
 #pragma once
 
 #include "msgpack/v3/object_fwd_decl.hpp"
+#include <atomic>
 #include <string>
 #include <format>
 
 struct Logger {
-  bool enabled = true;
+  std::atomic_bool enabled = true;
 
   void Log(const std::string& message);
 

@@ -245,18 +245,9 @@ void WinManager::Viewport(const WinViewport& e) {
     std::abs(e.scrollDelta) <= win.height - (win.margins.top + win.margins.bottom);
 
   // LOG_INFO("WinManager::Viewport: grid {} scrollDelta {} shouldScroll {}", e.grid,
-  // e.scrollDelta,
-  //          shouldScroll);
-  // if (shouldScroll) {
-  //   win.scrolling = true;
-  //   win.scrollDist = e.scrollDelta * sizes.charSize.y;
-  //   win.scrollElapsed = 0;
 
-  //   std::swap(win.prevRenderTexture, win.renderTexture);
-  //   win.hasPrevRender = true;
-  // }
-
-  float scrollDist = shouldScroll ? e.scrollDelta * sizes.charSize.y : 0;
+  if (!shouldScroll) return;
+  float scrollDist = e.scrollDelta * sizes.charSize.y;
   win.sRenderTexture.UpdateViewport(scrollDist);
 }
 
@@ -264,60 +255,6 @@ void WinManager::UpdateScrolling(float dt) {
   for (auto& [id, win] : windows) {
     win.sRenderTexture.UpdateScrolling(dt);
     dirty = true;
-
-    // win.scrollElapsed += dt;
-    // dirty = true;
-
-    // auto pos = win.pos;
-
-    // if (win.scrollElapsed >= win.scrollTime) {
-    //   win.scrolling = false;
-    //   win.scrollElapsed = 0;
-
-    //   win.renderTexture.UpdatePos(pos);
-
-    //   auto maskPos = pos * sizes.dpiScale;
-    //   ctx.queue.WriteBuffer(win.maskPosBuffer, 0, &maskPos, sizeof(glm::vec2));
-
-    //   win.hasPrevRender = true;
-
-    // } else {
-    //   auto size = win.size;
-    //   auto& margins = win.fmargins;
-
-    //   float t = win.scrollElapsed / win.scrollTime;
-    //   float x = glm::pow(t, 1 / 2.0f);
-    //   win.scrollCurr =
-    //     glm::sign(win.scrollDist) * glm::mix(0.0f, glm::abs(win.scrollDist), x);
-    //   pos.y -= win.scrollCurr;
-
-    //   float scrollCurrAbs = glm::abs(win.scrollCurr);
-    //   float scrollDistAbs = glm::abs(win.scrollDist);
-    //   float innerWidth = size.x - margins.left - margins.right;
-    //   float innerHeight = size.y - margins.top - margins.bottom;
-    //   float toScroll = scrollDistAbs - scrollCurrAbs;
-    //   bool scrollPositive = win.scrollDist > 0;
-
-    //   Rect prevRegion{
-    //     .pos{
-    //       margins.left,
-    //       scrollPositive ? margins.top + scrollCurrAbs
-    //                      : size.y - margins.bottom - scrollDistAbs,
-    //     },
-    //     .size{innerWidth, toScroll},
-    //   };
-    //   win.prevRenderTexture.UpdatePos(pos + prevRegion.pos, &prevRegion);
-
-    //   Rect region{
-    //     .pos{margins.left, scrollPositive ? margins.top : margins.top + toScroll},
-    //     .size{innerWidth, innerHeight - toScroll},
-    //   };
-    //   pos += glm::vec2(0, win.scrollDist);
-    //   win.renderTexture.UpdatePos(pos + region.pos, &region);
-
-    //   auto maskPos = pos * sizes.dpiScale;
-    //   ctx.queue.WriteBuffer(win.maskPosBuffer, 0, &maskPos, sizeof(glm::vec2));
-    // }
   }
 }
 

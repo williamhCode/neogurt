@@ -31,7 +31,7 @@ struct FragmentInput {
 
 struct FragmentOutput {
   @location(0) color: vec4f,
-  @location(1) mask: f32,
+  // @location(1) mask: f32,
 }
 
 @group(1) @binding(1) var fontTexture : texture_2d<f32>;
@@ -44,9 +44,9 @@ fn fs_main(in: FragmentInput) -> FragmentOutput {
   out.color = textureSample(fontTexture, fontSampler, in.uv);
   out.color = in.foreground * out.color;
 
-  if (out.color.a > 0.0) {
-    out.mask = out.color.a;
-  }
+  // if (out.color.a > 0.0) {
+  //   out.mask = out.color.a;
+  // }
 
   return out;
 }

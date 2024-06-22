@@ -5,6 +5,8 @@
 #include "utils/color.hpp"
 #include "utils/logger.hpp"
 #include <deque>
+#include <format>
+#include <iostream>
 #include <vector>
 
 static int VariantAsInt(const msgpack::type::variant& v) {
