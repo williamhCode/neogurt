@@ -17,6 +17,7 @@ vim.g.neogui_opts_default = {
   cursorIdleTime = 10,
   bgColor = 0x000000,
   transparency = 1,
+  maxFps = 0,
 }
 vim.g.resolve_neogui_opts = function()
   vim.g.neogui_opts_resolved = vim.tbl_deep_extend("force", vim.g.neogui_opts_default, vim.g.neogui_opts)

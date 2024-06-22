@@ -25,5 +25,7 @@ struct Options {
   uint32_t bgColor;
   float transparency;
 
+  float maxFps;
+
   void Load(Nvim& nvim);
 };
