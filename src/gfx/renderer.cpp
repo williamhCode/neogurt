@@ -9,7 +9,6 @@
 #include "utils/color.hpp"
 #include "webgpu/webgpu_cpp.h"
 #include "webgpu_tools/utils/webgpu.hpp"
-#include <ostream>
 #include <utility>
 #include <vector>
 #include "glm/gtx/string_cast.hpp"
@@ -206,7 +205,7 @@ void Renderer::RenderWindow(Win& win, FontFamily& fontFamily, const HlTable& hlT
   // but still referenced by command encoder
   fontFamily.textureAtlas.Update();
 
-  for (auto& renderTexture : win.sRenderTexture.renderTextures) {
+  for (const auto& renderTexture : win.sRenderTexture.renderTextures) {
     // background
     {
       rectRPD.cColorAttachments[0].view = renderTexture->textureView;

@@ -17,6 +17,8 @@ struct SizeHandler {
   glm::vec2 fbOffset;
 
   SizeHandler() = default;
+  ~SizeHandler() = default;
+
   // disable copy and assignment
   SizeHandler(const SizeHandler&) = delete;
   SizeHandler& operator=(const SizeHandler&) = delete;

@@ -85,6 +85,12 @@ else()
     -Wall -Wextra -Wshadow -pedantic 
     -Wno-missing-field-initializers
     -Wno-deprecated-declarations
+
+    -fsanitize=address
+  )
+
+  target_link_options(neogui PRIVATE
+    -fsanitize=address
   )
 
   # assert in release

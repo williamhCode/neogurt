@@ -15,8 +15,8 @@ struct QuadRenderData {
   wgpu::Buffer indexBuffer;
 
   void CreateBuffers(size_t numQuads) {
-    quads.reserve(numQuads);
-    indices.reserve(numQuads * 6);
+    quads.resize(numQuads);
+    indices.resize(numQuads * 6);
 
     vertexBuffer =
       wgpu::utils::CreateVertexBuffer(ctx.device, sizeof(VertexType) * 4 * numQuads);

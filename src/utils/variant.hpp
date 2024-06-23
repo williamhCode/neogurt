@@ -29,7 +29,7 @@ constexpr auto vIndicesSet() {
   return std::set<std::size_t>{vIndex<VariantType, Types>()...};
 }
 
-template <typename T>
-auto& vGet(auto& t) noexcept {
-  return *std::get_if<T>(&t);
-}
+// template <typename T>
+// auto& vGet(auto& t) noexcept {
+//   return *std::get_if<T>(&t);
+// }

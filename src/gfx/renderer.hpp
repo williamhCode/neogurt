@@ -7,18 +7,16 @@
 #include "editor/grid.hpp"
 #include "editor/window.hpp"
 #include "gfx/camera.hpp"
-#include "gfx/font.hpp"
 #include "gfx/pipeline.hpp"
 #include "gfx/quad.hpp"
 #include "gfx/render_texture.hpp"
 #include "webgpu_tools/utils/webgpu.hpp"
-#include <ranges>
 #include <span>
 
 struct Renderer {
-  wgpu::Color clearColor;
-  wgpu::Color premultClearColor;
-  wgpu::Color linearClearColor;
+  wgpu::Color clearColor{};
+  wgpu::Color premultClearColor{};
+  wgpu::Color linearClearColor{};
   wgpu::CommandEncoder commandEncoder;
   wgpu::Texture nextTexture;
   wgpu::TextureView nextTextureView;

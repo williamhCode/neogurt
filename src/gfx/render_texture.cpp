@@ -1,11 +1,12 @@
 #include "render_texture.hpp"
 
-#include "utils/logger.hpp"
+#include "glm/ext/scalar_constants.hpp"
 #include "webgpu_tools/utils/webgpu.hpp"
 #include "utils/line.hpp"
 #include "gfx/instance.hpp"
 #include "glm/common.hpp"
 #include "glm/exponential.hpp"
+#include "glm/trigonometric.hpp"
 #include <memory>
 
 using namespace wgpu;
@@ -71,9 +72,10 @@ void RenderTexture::UpdateCameraPos(glm::vec2 pos) {
 ScrollableRenderTexture::ScrollableRenderTexture(
   glm::vec2 _size, float _dpiScale, glm::vec2 charSize
 )
-    : size(_size), dpiScale(_dpiScale), textureHeight(size.y / maxNumTexPerPage),
-      rowsPerTexture(glm::ceil(textureHeight / charSize.y)) {
+    : posOffset(0), size(_size), dpiScale(_dpiScale) {
 
+  textureHeight = size.y / maxNumTexPerPage;
+  rowsPerTexture = glm::ceil(textureHeight / charSize.y);
   textureHeight = rowsPerTexture * charSize.y;
   textureHeight = glm::max(textureHeight, charSize.y);
 
@@ -139,9 +141,14 @@ void ScrollableRenderTexture::UpdateScrolling(float dt) {
     SetTexturePositions();
 
   } else {
+    auto easeOutSine = [](float x) {
+      return glm::sin((x * glm::pi<float>()) / 2);
+    };
+
     float t = scrollElapsed / scrollTime;
-    float x = glm::pow(t, 1 / 2.0f);
-    scrollCurr = glm::sign(scrollDist) * glm::mix(0.0f, glm::abs(scrollDist), x);
+    // float x = glm::pow(t, 1 / 2.0f);
+    float y = easeOutSine(t);
+    scrollCurr = glm::sign(scrollDist) * glm::mix(0.0f, glm::abs(scrollDist), y);
 
     SetTexturePositions();
   }

@@ -30,6 +30,7 @@ void WinManager::InitRenderData(Win& win) {
 
   win.sRenderTexture = ScrollableRenderTexture(size, sizes.dpiScale, sizes.charSize);
   win.sRenderTexture.UpdatePos(pos);
+  // LOG_INFO("sRenderTexture baseOffset address: {}", (void*)&win.sRenderTexture.baseOffset);
 
   auto fbSize = size * sizes.dpiScale;
   Extent3D maskSize(fbSize.x, fbSize.y);

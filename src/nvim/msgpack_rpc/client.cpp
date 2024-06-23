@@ -81,8 +81,14 @@ void Client::GetData() {
           if (type == MessageType::Response) {
             Response msg(obj.convert());
 
-            auto it = responses.find(msg.msgid);
-            if (it != responses.end()) {
+            decltype(responses)::iterator it;
+            bool found;
+            {
+              std::scoped_lock lock(responsesMutex);
+              it = responses.find(msg.msgid);
+              found = it != responses.end();
+            }
+            if (found) {
               auto& promise = it->second;
               if (msg.error.is_nil()) {
                 promise.set_value(

@@ -54,7 +54,7 @@ int main() {
     port = sessionManager.GetOrCreateSession("default");
     Nvim nvim("localhost", port);
 
-    Options options;
+    Options options{};
     options.Load(nvim);
 
     // sdl::Window window({1600, 1000}, "Neovim GUI", options.window);
@@ -69,7 +69,7 @@ int main() {
     }
     FontFamily fontFamily = std::move(fontFamilyResult.value());
 
-    SizeHandler sizes;
+    SizeHandler sizes{};
     sizes.UpdateSizes(
       window.size, window.dpiScale, fontFamily.DefaultFont().charSize, options.margins
     );
@@ -126,7 +126,7 @@ int main() {
 
         // nvim events -------------------------------------------
         if (!nvim.IsConnected()) {
-          exitWindow = true;
+         exitWindow = true;
           sessionManager.RemoveSession("default");
         };
 

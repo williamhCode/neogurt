@@ -58,10 +58,6 @@ struct Win {
   glm::vec2 pos;
   glm::vec2 size;
 
-  // RenderTexture renderTexture;
-  // RenderTexture prevRenderTexture;
-  // bool hasPrevRender = false;
-
   ScrollableRenderTexture sRenderTexture;
 
   wgpu::TextureView maskTextureView;
@@ -70,14 +66,6 @@ struct Win {
 
   QuadRenderData<RectQuadVertex> rectData;
   QuadRenderData<TextQuadVertex> textData;
-
-  // FMargins fmargins; // margin size in pixels
-
-  // bool scrolling;
-  // float scrollDist;
-  // float scrollCurr;
-  // float scrollTime = 0.1; // transition time
-  // float scrollElapsed;
 
   QuadRenderData<TextureQuadVertex> marginsData;
 };

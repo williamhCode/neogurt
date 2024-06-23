@@ -1,5 +1,4 @@
 #include "msgpack.hpp"
-#include "utils/variant.hpp"
 #include <map>
 
 struct SetTitle {

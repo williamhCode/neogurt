@@ -39,7 +39,7 @@ struct ScrollableRenderTexture {
   glm::vec2 size; // displayable size
   float dpiScale;
 
-  int maxNumTexPerPage = 6;
+  int maxNumTexPerPage = 4;
   float textureHeight;
 
   int rowsPerTexture;
@@ -53,10 +53,10 @@ struct ScrollableRenderTexture {
     return baseOffset + scrollDist;
   }
 
-  bool scrolling;
-  float scrollDist; // baseOffset + scrollDist = new baseOffset
-  float scrollCurr; // 0 <= scrollCurr <= scrollDist
-  float scrollElapsed;
+  bool scrolling = false;
+  float scrollDist = 0; // baseOffset + scrollDist = new baseOffset
+  float scrollCurr = 0; // 0 <= scrollCurr <= scrollDist
+  float scrollElapsed = 0;
   float scrollTime = 0.5; // transition time
 
   ScrollableRenderTexture() = default;
