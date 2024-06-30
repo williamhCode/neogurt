@@ -49,15 +49,12 @@ struct ScrollableRenderTexture {
   // dynamic variables
   std::deque<RenderTextureHandle> renderTextures;
   float baseOffset = 0; // offset representing top of viewport (prescroll)
-  float NextOffset() const {
-    return baseOffset + scrollDist;
-  }
 
   bool scrolling = false;
   float scrollDist = 0; // baseOffset + scrollDist = new baseOffset
   float scrollCurr = 0; // 0 <= scrollCurr <= scrollDist
   float scrollElapsed = 0;
-  float scrollTime = 0.5; // transition time
+  float scrollTime = 0.3; // transition time
 
   ScrollableRenderTexture() = default;
   ScrollableRenderTexture(

@@ -28,7 +28,7 @@ void Options::Load(Nvim& nvim) {
   LOAD(margins.right);
 
   LOAD(multigrid);
-  LOAD(macOptAsAlt);
+  LOAD(macOptIsMeta);
   LOAD(cursorIdleTime);
 
   LOAD(bgColor);

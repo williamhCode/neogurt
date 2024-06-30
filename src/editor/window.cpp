@@ -254,8 +254,10 @@ void WinManager::Viewport(const WinViewport& e) {
 
 void WinManager::UpdateScrolling(float dt) {
   for (auto& [id, win] : windows) {
-    win.sRenderTexture.UpdateScrolling(dt);
-    dirty = true;
+    if (win.sRenderTexture.scrolling) {
+      win.sRenderTexture.UpdateScrolling(dt);
+      dirty = true;
+    }
   }
 }
 

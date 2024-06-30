@@ -30,7 +30,8 @@ Window::Window(glm::uvec2 _size, const std::string& title, Options::Window winOp
     );
   }
 
-  SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
+  // SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
+  SDL_SetHint(SDL_HINT_KEYCODE_OPTIONS, "unmodified,french_numbers");
 
   if (winOpts.blur > 0) {
     SetSDLWindowBlur(Get(), winOpts.blur);

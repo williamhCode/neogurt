@@ -13,7 +13,7 @@ vim.g.neogui_opts_default = {
     right = 0,
   },
   multigrid = true,
-  macOptAsAlt = true,
+  macOptIsMeta = true,
   cursorIdleTime = 10,
   bgColor = 0x000000,
   transparency = 1,

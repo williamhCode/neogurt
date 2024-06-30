@@ -1,14 +1,19 @@
 #include "input.hpp"
 
-#include "SDL_events.h"
+#include "SDL3/SDL_events.h"
+#include "SDL3/SDL_keyboard.h"
+#include "SDL3/SDL_keycode.h"
 #include "app/options.hpp"
 #include "editor/window.hpp"
 #include "utils/logger.hpp"
 #include <algorithm>
 #include <set>
 
-InputHandler::InputHandler(Nvim& nvim, WinManager& winManager, bool macOptAsAlt, bool multigrid)
-    : nvim(nvim), winManager(winManager), macOptAsAlt(macOptAsAlt), multigrid(multigrid) {
+InputHandler::InputHandler(
+  Nvim& nvim, WinManager& winManager, bool macOptAsAlt, bool multigrid
+)
+    : nvim(nvim), winManager(winManager), macOptIsMeta(macOptAsAlt),
+      multigrid(multigrid) {
 }
 
 const std::set<SDL_Keycode> specialKeys{
@@ -19,57 +24,82 @@ const std::set<SDL_Keycode> specialKeys{
   SDLK_INSERT, SDLK_PAGEUP, SDLK_PAGEDOWN, SDLK_KP_ENTER,
 };
 
+static bool IsUpperLetter(SDL_Keycode key) {
+  return key >= SDLK_A && key <= SDLK_Z;
+}
+
+static bool IsLowerLetter(SDL_Keycode key) {
+  return key >= SDLK_a && key <= SDLK_z;
+}
+
+static bool IsProcessableKey(SDL_Keycode key) {
+  return key < SDLK_CAPSLOCK || key > SDLK_ENDCALL || specialKeys.contains(key);
+}
+
 void InputHandler::HandleKeyboard(const SDL_KeyboardEvent& event) {
-  auto key = event.keysym.sym;
-  mod = (SDL_Keymod)event.keysym.mod;
+  SDL_Scancode scancode = event.scancode;
+  SDL_Keymod mod = event.mod;
 
   if (event.state == SDL_PRESSED) {
-    bool isText = !specialKeys.contains(key);
-    bool onlyShift = (mod ^ SDL_KMOD_LSHIFT) == 0 || (mod ^ SDL_KMOD_RSHIFT) == 0;
-    bool onlyMod = key >= SDLK_LCTRL && key <= SDLK_RGUI;
-
-    // dont process keys if
-    // 1. is text with no mod keys
-    // 2. is text with only shift mod
-    // 3. only mod keys are pressed
-    if ((isText && (!mod || onlyShift)) || onlyMod) return;
-
-    if (!macOptAsAlt && (mod & SDL_KMOD_ALT) && isText) return;
-
-    // reset text input to prevent ime triggered from option key
-    if (macOptAsAlt && (mod & SDL_KMOD_ALT)) {
-      SDL_StopTextInput();
-      SDL_StartTextInput();
+    auto modstate = mod;
+    if (macOptIsMeta) {
+      // remove alt from modstate
+      modstate &= ~SDL_KMOD_ALT;
     }
+    auto key = SDL_GetKeyFromScancode(scancode, modstate);
+    if (!IsProcessableKey(key)) return;
 
     std::string keyName = SDL_GetKeyName(key);
     if (keyName.empty()) return;
 
-    std::ranges::transform(keyName, keyName.begin(), [](unsigned char c) {
-      return std::tolower(c);
-    });
+    bool modApplied = false;
+    std::string inputStr;
+    if (mod & SDL_KMOD_CTRL) {
+      inputStr += "C-";
+      modApplied = true;
+    }
+    if ((mod & SDL_KMOD_ALT) && macOptIsMeta) {
+      inputStr += "M-";
+      modApplied = true;
+    }
+    if (mod & SDL_KMOD_GUI) {
+      inputStr += "D-";
+      modApplied = true;
+    }
+    // uppercase ctrl sequence needs S- (due to legacy reasons)
+    if ((mod & SDL_KMOD_SHIFT) &&
+        (specialKeys.contains(key) || (IsUpperLetter(key) && (mod & SDL_KMOD_CTRL)))) {
+      inputStr += "S-";
+      modApplied = true;
+    }
 
-    std::string inputStr = "<";
-    if (mod & SDL_KMOD_CTRL) inputStr += "C-";
-    if (mod & SDL_KMOD_ALT) inputStr += "M-";
-    if (mod & SDL_KMOD_GUI) inputStr += "D-";
-    if (mod & SDL_KMOD_SHIFT) inputStr += "S-";
-    inputStr += keyName + ">";
+    // keyname mangling
+    if (!modApplied && keyName == "<") keyName = "<lt>";
+    if (IsLowerLetter(key)) keyName[0] = std::tolower(keyName[0]);
+    inputStr += keyName;
 
-    // LOG_INFO("Key: {}", inputStr);
+    if (modApplied) {
+      inputStr = "<" + inputStr + ">";
+    } else {
+      if (specialKeys.contains(key)) {
+        inputStr = "<" + inputStr + ">";
+      }
+    }
+
+    LOG_INFO("Key: {}", inputStr);
     nvim.Input(inputStr);
   }
 }
 
 void InputHandler::HandleTextInput(const SDL_TextInputEvent& event) {
-  if (macOptAsAlt && (mod & SDL_KMOD_ALT)) return;
+  // if (macOptAsAlt && (mod & SDL_KMOD_ALT)) return;
 
-  std::string inputStr = event.text;
-  if (inputStr == " ") return;
-  if (inputStr == "<") inputStr = "<lt>";
+  // std::string inputStr = event.text;
+  // if (inputStr == " ") return;
+  // if (inputStr == "<") inputStr = "<lt>";
 
-  // LOG_INFO("Text: {}", inputStr);
-  nvim.Input(inputStr);
+  // // LOG_INFO("Text: {}", inputStr);
+  // nvim.Input(inputStr);
 }
 
 void InputHandler::HandleMouseButton(const SDL_MouseButtonEvent& event) {
@@ -92,20 +122,35 @@ void InputHandler::HandleMouseButtonAndMotion(int state, glm::vec2 mousePos) {
   int button = *mouseButton;
   std::string buttonStr;
   switch (button) {
-    case SDL_BUTTON_LEFT: buttonStr = "left"; break;
-    case SDL_BUTTON_MIDDLE: buttonStr = "middle"; break;
-    case SDL_BUTTON_RIGHT: buttonStr = "right"; break;
-    default: return;
+    case SDL_BUTTON_LEFT:
+      buttonStr = "left";
+      break;
+    case SDL_BUTTON_MIDDLE:
+      buttonStr = "middle";
+      break;
+    case SDL_BUTTON_RIGHT:
+      buttonStr = "right";
+      break;
+    default:
+      return;
   }
 
   std::string actionStr;
   switch (state) {
-    case SDL_PRESSED: actionStr = "press"; break;
-    case SDL_RELEASED: actionStr = "release"; break;
-    case -1: actionStr = "drag"; break;
-    default: return;
+    case SDL_PRESSED:
+      actionStr = "press";
+      break;
+    case SDL_RELEASED:
+      actionStr = "release";
+      break;
+    case -1:
+      actionStr = "drag";
+      break;
+    default:
+      return;
   }
 
+  SDL_Keymod mod = SDL_GetModState();
   std::string modStr;
   if (mod & SDL_KMOD_CTRL) modStr += "C-";
   if (mod & SDL_KMOD_ALT) modStr += "M-";
@@ -125,6 +170,7 @@ void InputHandler::HandleMouseButtonAndMotion(int state, glm::vec2 mousePos) {
 }
 
 void InputHandler::HandleMouseWheel(const SDL_MouseWheelEvent& event) {
+  SDL_Keymod mod = SDL_GetModState();
   std::string modStr;
   if (mod & SDL_KMOD_CTRL) modStr += "C-";
   if (mod & SDL_KMOD_ALT) modStr += "M-";

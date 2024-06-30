@@ -1,12 +1,11 @@
 #include "render_texture.hpp"
 
-#include "glm/ext/scalar_constants.hpp"
+#include "utils/logger.hpp"
 #include "webgpu_tools/utils/webgpu.hpp"
-#include "utils/line.hpp"
 #include "gfx/instance.hpp"
 #include "glm/common.hpp"
-#include "glm/exponential.hpp"
-#include "glm/trigonometric.hpp"
+#include "utils/line.hpp"
+#include "utils/easing_funcs.hpp"
 #include <memory>
 
 using namespace wgpu;
@@ -92,45 +91,30 @@ void ScrollableRenderTexture::UpdatePos(glm::vec2 pos) {
 }
 
 void ScrollableRenderTexture::UpdateViewport(float newScrollDist) {
-  // not scrolling, reset view and return
-  // if (newScrollDist == 0) {
-  //   baseOffset = 0;
+  // in the middle of scrolling, instead scroll from current pos to new pos
+  if (scrolling) {
+    baseOffset += scrollCurr;
+    float notScrolled = scrollDist - scrollCurr;
+    scrollDist = newScrollDist + notScrolled;
 
-  //   scrolling = false;
-  //   scrollDist = 0;
-  //   scrollCurr = 0;
-  //   scrollElapsed = 0;
+  } else {
+    scrollDist = newScrollDist;
+  }
 
-  //   AddOrRemoveTextures();
-  //   SetTexturePositions();
+  scrolling = true;
+  scrollCurr = 0;
+  scrollElapsed = 0;
 
-  // } else {
-    // in the middle of scrolling, instead scroll from current pos to new pos
-    if (scrolling) {
-      baseOffset += scrollCurr;
-      float notScrolled = scrollDist - scrollCurr;
-      scrollDist = newScrollDist + notScrolled;
-    } else {
-      scrollDist = newScrollDist;
-    }
+  // LOG_INFO("scrollDist: {}", scrollDist);
 
-    scrolling = true;
-    scrollCurr = 0;
-    scrollElapsed = 0;
-
-    // LOG_INFO("scrollDist: {}", scrollDist);
-
-    AddOrRemoveTextures();
-  // }
+  AddOrRemoveTextures();
 }
 
 void ScrollableRenderTexture::UpdateScrolling(float dt) {
-  if (!scrolling) return;
-
   scrollElapsed += dt;
 
   if (scrollElapsed >= scrollTime) {
-    baseOffset = NextOffset();
+    baseOffset += scrollDist;
 
     scrolling = false;
     scrollDist = 0;
@@ -141,13 +125,11 @@ void ScrollableRenderTexture::UpdateScrolling(float dt) {
     SetTexturePositions();
 
   } else {
-    auto easeOutSine = [](float x) {
-      return glm::sin((x * glm::pi<float>()) / 2);
-    };
 
     float t = scrollElapsed / scrollTime;
     // float x = glm::pow(t, 1 / 2.0f);
     float y = easeOutSine(t);
+    // float y = easeOutElastic(t);
     scrollCurr = glm::sign(scrollDist) * glm::mix(0.0f, glm::abs(scrollDist), y);
 
     SetTexturePositions();
@@ -173,6 +155,7 @@ void ScrollableRenderTexture::AddOrRemoveTextures() {
     removed.push_back(std::move(renderTextures[i]));
     numRemoved++;
   }
+
   renderTextures.erase(renderTextures.begin(), renderTextures.begin() + numRemoved);
   region.pos -= numRemoved * textureHeight;
 
@@ -198,14 +181,16 @@ void ScrollableRenderTexture::AddOrRemoveTextures() {
   };
 
   // add from top
+  int numAdded = 0;
   for (int i = -1;; i--) {
     float currPos = i * textureHeight;
     if (!region.Intersects({currPos, textureHeight})) {
       break;
     }
     renderTextures.push_front(createHandle());
-    region.pos += textureHeight;
+    numAdded++;
   }
+  region.pos += textureHeight * numAdded;
 
   // add from bottom
   for (size_t i = renderTextures.size();; i++) {
@@ -221,10 +206,13 @@ void ScrollableRenderTexture::AddOrRemoveTextures() {
 
 void ScrollableRenderTexture::SetTexturePositions() {
   for (size_t i = 0; i < renderTextures.size(); i++) {
-    float ypos = -(baseOffset + scrollCurr) + (i * textureHeight);
-    renderTextures[i]->UpdatePos(posOffset + glm::vec2(0, ypos));
-    
     float pos = -(baseOffset + scrollDist) + (i * textureHeight);
     renderTextures[i]->UpdateCameraPos({0, pos});
+
+    float ypos = -(baseOffset + scrollCurr) + (i * textureHeight);
+    renderTextures[i]->UpdatePos(posOffset + glm::vec2(0, ypos));
   }
+
+  // LOG_INFO("baseOffset: {}", baseOffset);
+  // LOG_INFO("numTextures: {}", renderTextures.size());
 }

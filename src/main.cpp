@@ -63,6 +63,7 @@ int main() {
     // create font
     std::string guifont = nvim.GetOptionValue("guifont", {})->convert();
     auto fontFamilyResult = FontFamily::FromGuifont(guifont, window.dpiScale);
+    
     if (!fontFamilyResult) {
       LOG_ERR("Failed to create font family: {}", fontFamilyResult.error());
       return 1;
@@ -126,7 +127,7 @@ int main() {
 
         // nvim events -------------------------------------------
         if (!nvim.IsConnected()) {
-         exitWindow = true;
+          exitWindow = true;
           sessionManager.RemoveSession("default");
         };
 
@@ -216,11 +217,10 @@ int main() {
             sizes.offset;
           editorState.cursor.SetDestPos(cursorPos);
 
-          // editorState.cursor.winScrollOffset =
-          //   win->scrolling ? glm::vec2(0, win->scrollDist - win->scrollCurr)
-          //                  : glm::vec2(0);
-
-          editorState.cursor.winScrollOffset = {0, 0};
+          auto& winTex = win->sRenderTexture;
+          editorState.cursor.winScrollOffset =
+            winTex.scrolling ? glm::vec2(0, winTex.scrollDist - winTex.scrollCurr)
+                             : glm::vec2(0);
 
           currMaskBG = win->maskBG;
         }
@@ -258,7 +258,10 @@ int main() {
           if (renderWindows || editorState.winManager.dirty) {
             editorState.winManager.dirty = false;
 
-            std::vector<const Win*> windows = {editorState.winManager.GetMsgWin()};
+            std::vector<const Win*> windows;
+            if (auto* msgWin = editorState.winManager.GetMsgWin()) {
+              windows.push_back(msgWin);
+            }
             std::vector<const Win*> floatWindows;
             for (auto& [id, win] : editorState.winManager.windows) {
               if (id == 1 || id == editorState.winManager.msgWinId || win.hidden) {
@@ -306,12 +309,12 @@ int main() {
 
     // event loop --------------------------------
     InputHandler input(
-      nvim, editorState.winManager, options.macOptAsAlt, options.multigrid
+      nvim, editorState.winManager, options.macOptIsMeta, options.multigrid
     );
 
-    SDL_StartTextInput();
-    // SDL_Rect rect{0, 0, 100, 100};
-    // SDL_SetTextInputRect(&rect);
+    SDL_StartTextInput(window.Get());
+    SDL_Rect rect{0, 0, 100, 100};
+    SDL_SetTextInputArea(window.Get(), &rect, 0);
 
     // resize handling
     sdl::AddEventWatch([&](SDL_Event& event) {

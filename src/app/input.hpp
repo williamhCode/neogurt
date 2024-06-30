@@ -1,6 +1,6 @@
 #pragma once
 
-#include "SDL_events.h"
+#include "SDL3/SDL_events.h"
 #include "editor/window.hpp"
 #include "glm/ext/vector_float2.hpp"
 #include "nvim/nvim.hpp"
@@ -11,11 +11,8 @@ struct InputHandler {
   WinManager& winManager;
 
   // options
-  bool macOptAsAlt;
+  bool macOptIsMeta;
   bool multigrid;
-
-  // shared
-  SDL_Keymod mod = SDL_KMOD_NONE;
 
   // mouse related
   std::optional<int> mouseButton;

@@ -18,7 +18,7 @@ struct Options {
   } margins;
 
   bool multigrid;
-  bool macOptAsAlt;
+  bool macOptIsMeta;
   float cursorIdleTime;
 
   // rgb
