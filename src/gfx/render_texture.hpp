@@ -8,6 +8,7 @@
 #include "gfx/quad.hpp"
 #include "glm/ext/vector_float2.hpp"
 #include <memory>
+#include <optional>
 #include <tuple>
 
 struct RenderTexture {
@@ -19,6 +20,8 @@ struct RenderTexture {
   wgpu::BindGroup textureBG;
 
   QuadRenderData<TextureQuadVertex> renderData;
+
+  bool disabled = false;
 
   RenderTexture() = default;
   RenderTexture(
@@ -42,6 +45,14 @@ struct RenderInfo {
     int start;
     int end;
   } range;
+  std::optional<Rect> clearRegion;
+};
+
+struct MarginTextures {
+  RenderTextureHandle top;
+  RenderTextureHandle bottom;
+  RenderTextureHandle left;
+  RenderTextureHandle right;
 };
 
 // consists of multiple render textures that can be scrolled
@@ -52,16 +63,17 @@ struct ScrollableRenderTexture {
 
   glm::vec2 charSize;
 
-  int maxNumTexPerPage = 4;
+  int maxNumTexPerPage = 2;
   float textureHeight;
   int rowsPerTexture;
 
   wgpu::TextureFormat format = wgpu::TextureFormat::RGBA8UnormSrgb;
 
+  // dynamic variables
   Margins margins;
   FMargins fmargins;
+  MarginTextures marginTextures;
 
-  // dynamic variables
   std::deque<RenderTextureHandle> renderTextures;
   float baseOffset = 0; // offset representing top of viewport (prescroll)
 
@@ -69,14 +81,17 @@ struct ScrollableRenderTexture {
   float scrollDist = 0; // baseOffset + scrollDist = new baseOffset
   float scrollCurr = 0; // 0 <= scrollCurr <= scrollDist
   float scrollElapsed = 0;
-  float scrollTime = 0.3; // transition time
+  float scrollTime = 0.25; // transition time
 
   ScrollableRenderTexture() = default;
   ScrollableRenderTexture(glm::vec2 size, float dpiScale, glm::vec2 charSize);
 
+  float RoundOffset(float offset) const;
+
   void UpdatePos(glm::vec2 pos);
   void UpdateViewport(float newScrollDist = 0);
   void UpdateScrolling(float dt);
+  void UpdateMargins(const Margins& newMargins);
 
   void AddOrRemoveTextures();
   void SetTexturePositions();

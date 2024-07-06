@@ -32,6 +32,12 @@ Renderer::Renderer(const SizeHandler& sizes) {
       .storeOp = StoreOp::Store,
     },
   });
+  rectNoClearRPD = utils::RenderPassDescriptor({
+    RenderPassColorAttachment{
+      .loadOp = LoadOp::Load,
+      .storeOp = StoreOp::Store,
+    },
+  });
 
   // text
   textRPD = utils::RenderPassDescriptor({
@@ -210,33 +216,62 @@ void Renderer::RenderWindow(Win& win, FontFamily& fontFamily, const HlTable& hlT
 
   auto renderInfos = win.sRenderTexture.GetRenderInfos();
   static int i = 0;
+  LOG_DISABLE();
   LOG("{} -------------------", i++);
-  LOG("rows: {}", rows);
-  for (auto [renderTexture, range] : renderInfos) {
-    rectRPD.cColorAttachments[0].view = renderTexture->textureView;
-    rectRPD.cColorAttachments[0].clearValue = linearClearColor;
-    RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&rectRPD);
-    passEncoder.SetPipeline(ctx.pipeline.rectRPL);
-    passEncoder.SetBindGroup(0, renderTexture->camera.viewProjBG);
-    int start = rectIntervals[range.start];
-    int end = rectIntervals[range.end];
-    LOG("1 - start: {}, end: {}", start, end);
-    if (start != end) rectData.Render(passEncoder, start, end - start);
-    passEncoder.End();
+  // LOG("baseOffset: {}, scrollDist: {}", win.sRenderTexture.baseOffset, win.sRenderTexture.scrollDist);
+
+  for (auto [renderTexture, range, clearRegion] : renderInfos) {
+    {
+      auto& currRPD = clearRegion.has_value() ? rectNoClearRPD : rectRPD;
+      currRPD.cColorAttachments[0].view = renderTexture->textureView;
+      currRPD.cColorAttachments[0].clearValue = linearClearColor;
+      RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&currRPD);
+      passEncoder.SetPipeline(ctx.pipeline.rectRPL);
+      passEncoder.SetBindGroup(0, renderTexture->camera.viewProjBG);
+
+      if (clearRegion.has_value()) {
+        LOG(
+          "pos: {}, size: {}", glm::to_string(clearRegion->pos),
+          glm::to_string(clearRegion->size)
+        );
+        QuadRenderData<RectQuadVertex> clearData;
+        clearData.CreateBuffers(1);
+        clearData.ResetCounts();
+        auto region = clearRegion->Region();
+        for (size_t i = 0; i < 4; i++) {
+          auto& vertex = clearData.CurrQuad()[i];
+          vertex.position = region[i];
+          vertex.color = ToGlmColor(clearColor);
+          // vertex.color = {0.8, 0.3, 0.2, 1};
+        }
+        clearData.Increment();
+        clearData.WriteBuffers();
+        clearData.Render(passEncoder);
+      }
+
+      int start = rectIntervals[range.start];
+      int end = rectIntervals[range.end];
+      LOG("1 - start: {}, end: {}", start, end);
+      if (start != end) rectData.Render(passEncoder, start, end - start);
+      passEncoder.End();
+    }
+    {
+      textRPD.cColorAttachments[0].view = renderTexture->textureView;
+      // textRPD.cColorAttachments[1].view = win.maskTextureView;
+      RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textRPD);
+      passEncoder.SetPipeline(ctx.pipeline.textRPL);
+      passEncoder.SetBindGroup(0, renderTexture->camera.viewProjBG);
+      passEncoder.SetBindGroup(1, fontFamily.textureAtlas.fontTextureBG);
+      int start = textIntervals[range.start];
+      int end = textIntervals[range.end];
+      LOG("2 - start: {}, end: {}", start, end);
+      if (start != end) textData.Render(passEncoder, start, end - start);
+      passEncoder.End();
+    }
   }
-  for (auto [renderTexture, range] : renderInfos) {
-    textRPD.cColorAttachments[0].view = renderTexture->textureView;
-    // textRPD.cColorAttachments[1].view = win.maskTextureView;
-    RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textRPD);
-    passEncoder.SetPipeline(ctx.pipeline.textRPL);
-    passEncoder.SetBindGroup(0, renderTexture->camera.viewProjBG);
-    passEncoder.SetBindGroup(1, fontFamily.textureAtlas.fontTextureBG);
-    int start = textIntervals[range.start];
-    int end = textIntervals[range.end];
-    LOG("2 - start: {}, end: {}", start, end);
-    if (start != end) textData.Render(passEncoder, start, end - start);
-    passEncoder.End();
-  }
+
+  rectRPD.cColorAttachments[0].view = nullptr;
+  textRPD.cColorAttachments[0].view = nullptr;
 }
 
 void Renderer::RenderWindows(
@@ -249,27 +284,6 @@ void Renderer::RenderWindows(
 
   auto renderWin = [&](const Win* win) {
     win->sRenderTexture.Render(passEncoder);
-
-    // for (const auto& renderTexture : win->sRenderTexture.renderTextures) {
-    //   passEncoder.SetBindGroup(1, renderTexture->textureBG);
-    //   renderTexture->renderData.Render(passEncoder);
-    // }
-
-    // passEncoder.SetBindGroup(1, win->renderTexture.textureBG);
-    // win->renderTexture.renderData.Render(passEncoder);
-
-    // if (win->scrolling) {
-    //   if (win->hasPrevRender) {
-    //     passEncoder.SetBindGroup(1, win->prevRenderTexture.textureBG);
-    //     win->prevRenderTexture.renderData.Render(passEncoder);
-    //   }
-
-    //   // draw window borders
-    //   if (!win->margins.Empty()) {
-    //     passEncoder.SetBindGroup(1, win->renderTexture.textureBG);
-    //     win->marginsData.Render(passEncoder);
-    //   }
-    // }
   };
 
   passEncoder.SetPipeline(ctx.pipeline.textureNoBlendRPL);
@@ -296,6 +310,7 @@ void Renderer::RenderFinalTexture() {
   passEncoder.SetBindGroup(1, finalRenderTexture.textureBG);
   finalRenderTexture.renderData.Render(passEncoder);
   passEncoder.End();
+  finalRPD.cColorAttachments[0].view = nullptr;
 }
 
 void Renderer::RenderCursor(const Cursor& cursor, const HlTable& hlTable) {
@@ -323,6 +338,7 @@ void Renderer::RenderCursor(const Cursor& cursor, const HlTable& hlTable) {
   passEncoder.SetBindGroup(2, maskOffsetBG);
   cursorData.Render(passEncoder);
   passEncoder.End();
+  cursorRPD.cColorAttachments[0].view = nullptr;
 }
 
 void Renderer::End() {

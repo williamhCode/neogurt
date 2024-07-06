@@ -261,8 +261,7 @@ void WinManager::ViewportMargins(const WinViewportMargins& e) {
   win.margins.left = e.left;
   win.margins.right = e.right;
 
-  win.sRenderTexture.margins = win.margins;
-  win.sRenderTexture.fmargins = win.margins.ToFloat(sizes.charSize);
+  win.sRenderTexture.UpdateMargins(win.margins);
 
   // win.marginsData.ResetCounts();
 

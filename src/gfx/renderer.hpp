@@ -28,6 +28,7 @@ struct Renderer {
 
   // rect (background)
   wgpu::utils::RenderPassDescriptor rectRPD;
+  wgpu::utils::RenderPassDescriptor rectNoClearRPD;
 
   // text
   wgpu::utils::RenderPassDescriptor textRPD;

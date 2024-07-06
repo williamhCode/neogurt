@@ -86,10 +86,22 @@ ScrollableRenderTexture::ScrollableRenderTexture(
   }
 }
 
+// round to prevent floating point errors
+float ScrollableRenderTexture::RoundOffset(float offset) const {
+  return glm::round(offset * dpiScale) / dpiScale;
+}
+
 void ScrollableRenderTexture::UpdatePos(glm::vec2 pos) {
   posOffset = pos;
   SetTexturePositions();
   SetTextureCameraPositions();
+
+  if (marginTextures.top != nullptr) {
+    marginTextures.top->UpdatePos(posOffset);
+  }
+  if (marginTextures.bottom != nullptr) {
+    marginTextures.bottom->UpdatePos(posOffset + glm::vec2(0, size.y - fmargins.bottom));
+  }
 }
 
 void ScrollableRenderTexture::UpdateViewport(float newScrollDist) {
@@ -116,6 +128,7 @@ void ScrollableRenderTexture::UpdateScrolling(float dt) {
 
   if (scrollElapsed >= scrollTime) {
     baseOffset += scrollDist;
+    baseOffset = RoundOffset(baseOffset);
 
     scrolling = false;
     scrollDist = 0;
@@ -123,16 +136,42 @@ void ScrollableRenderTexture::UpdateScrolling(float dt) {
     scrollElapsed = 0;
 
     // AddOrRemoveTextures();
+    SetTextureCameraPositions();
 
   } else {
     float t = scrollElapsed / scrollTime;
-    // float x = glm::pow(t, 1 / 2.0f);
-    float y = easeOutSine(t);
-    // float y = easeOutElastic(t);
+    // float y = glm::pow(t, 1 / 2.0f);
+    // float y = EaseOutSine(t);
+    // float y = EaseOutElastic(t);
+    float y = EaseOutQuad(t);
+
     scrollCurr = glm::sign(scrollDist) * glm::mix(0.0f, glm::abs(scrollDist), y);
   }
 
   SetTexturePositions();
+}
+
+void ScrollableRenderTexture::UpdateMargins(const Margins& newMargins) {
+  margins = newMargins;
+  fmargins = margins.ToFloat(charSize);
+
+  if (margins.top != 0) {
+    glm::vec2 topMarginSize = {size.x, fmargins.top};
+    if (marginTextures.top == nullptr || marginTextures.top->size != topMarginSize) {
+      marginTextures.top = std::make_unique<RenderTexture>(topMarginSize, dpiScale, format);
+      marginTextures.top->UpdatePos(posOffset);
+      marginTextures.top->UpdateCameraPos({0, 0});
+    }
+  }
+
+  if (margins.bottom != 0) {
+    glm::vec2 topMarginSize = {size.x, fmargins.bottom};
+    if (marginTextures.bottom == nullptr || marginTextures.bottom->size != topMarginSize) {
+      marginTextures.bottom = std::make_unique<RenderTexture>(topMarginSize, dpiScale, format);
+      marginTextures.bottom->UpdatePos(posOffset + glm::vec2(0, size.y - fmargins.bottom));
+      marginTextures.bottom->UpdateCameraPos({0, size.y - fmargins.bottom});
+    }
+  }
 }
 
 void ScrollableRenderTexture::AddOrRemoveTextures() {
@@ -206,32 +245,38 @@ void ScrollableRenderTexture::AddOrRemoveTextures() {
 
 void ScrollableRenderTexture::SetTexturePositions() {
   for (size_t i = 0; i < renderTextures.size(); i++) {
+    auto& texture = *renderTextures[i];
     float yposTop = -(baseOffset + scrollCurr) + (i * textureHeight);
     float yposBottom = yposTop + textureHeight;
+
     if (yposBottom <= 0 || yposTop >= size.y) {
-      // don't need to render
+      texture.disabled = true;
       continue;
     }
 
     if (yposTop < 0) {
-      renderTextures[i]->UpdatePos(
-        posOffset + glm::vec2(0, yposTop),
+      texture.UpdatePos(
+        posOffset,
         Rect{
           .pos = {0, -yposTop},
           .size = {size.x, textureHeight + yposTop},
         }
       );
+
     } else if (yposBottom > size.y) {
-      renderTextures[i]->UpdatePos(
+      texture.UpdatePos(
         posOffset + glm::vec2(0, yposTop),
         Rect{
           .pos = {0, 0},
-          .size = {size.x, size.y - yposTop},
+          .size = {size.x, textureHeight - (yposBottom - size.y)},
         }
       );
+
     } else {
-      renderTextures[i]->UpdatePos(posOffset + glm::vec2(0, yposTop));
+      texture.UpdatePos(posOffset + glm::vec2(0, yposTop));
     }
+
+    texture.disabled = false;
   }
 }
 
@@ -245,9 +290,13 @@ void ScrollableRenderTexture::SetTextureCameraPositions() {
 std::vector<RenderInfo> ScrollableRenderTexture::GetRenderInfos() const {
   // top of viewport after scrolling
   float newBaseOffset = baseOffset + scrollDist;
+  newBaseOffset = RoundOffset(newBaseOffset);
 
   int topOffset = newBaseOffset / charSize.y;
   int bottomOffset = (newBaseOffset + size.y) / charSize.y;
+
+  int innerTopOffset = topOffset + margins.top;
+  int innerBottomOffset = bottomOffset - margins.bottom;
 
   int totalRows = size.y / charSize.y;
 
@@ -257,18 +306,49 @@ std::vector<RenderInfo> ScrollableRenderTexture::GetRenderInfos() const {
     int top = i * rowsPerTexture;
     int bottom = (i + 1) * rowsPerTexture;
 
-    if (bottom <= topOffset) continue;
-    if (top >= bottomOffset) break;
+    if (bottom <= innerTopOffset) continue;
+    if (top >= innerBottomOffset) break;
 
-    top = glm::max(top - topOffset, margins.top);
-    bottom = glm::min(bottom - topOffset, totalRows - margins.bottom);
-
-    // top = glm::max(top - topOffset, 0);
-    // bottom = glm::min(bottom - topOffset, totalRows);
-
-    renderInfos.push_back(RenderInfo{
+    auto& renderInfo = renderInfos.emplace_back(RenderInfo{
       .texture = renderTextures[i].get(),
-      .range = {top, bottom},
+    });
+
+    int start = glm::max(top - topOffset, margins.top);
+    int end = glm::min(bottom - topOffset, totalRows - margins.bottom);
+    renderInfo.range = {start, end};
+
+    if (top < innerTopOffset) {
+      renderInfo.clearRegion = Rect{
+        .pos = {0, start * charSize.y},
+        .size =
+          {
+            size.x,
+            (rowsPerTexture - (innerTopOffset - top)) * charSize.y,
+          },
+      };
+    } else if (bottom > innerBottomOffset) {
+      renderInfo.clearRegion = Rect{
+        .pos = {0, start * charSize.y},
+        .size =
+          {
+            size.x,
+            (rowsPerTexture - (bottom - innerBottomOffset)) * charSize.y,
+          },
+      };
+    }
+  }
+
+  // margins
+  if (marginTextures.top != nullptr) {
+    renderInfos.push_back(RenderInfo{
+      .texture = marginTextures.top.get(),
+      .range = {0, margins.top},
+    });
+  }
+  if (marginTextures.bottom != nullptr) {
+    renderInfos.push_back(RenderInfo{
+      .texture = marginTextures.bottom.get(),
+      .range = {totalRows - margins.bottom, totalRows},
     });
   }
 
@@ -276,7 +356,16 @@ std::vector<RenderInfo> ScrollableRenderTexture::GetRenderInfos() const {
 }
 
 void ScrollableRenderTexture::Render(const wgpu::RenderPassEncoder& passEncoder) const {
+  if (marginTextures.top != nullptr) {
+    passEncoder.SetBindGroup(1, marginTextures.top->textureBG);
+    marginTextures.top->renderData.Render(passEncoder);
+  }
+  if (marginTextures.bottom != nullptr) {
+    passEncoder.SetBindGroup(1, marginTextures.bottom->textureBG);
+    marginTextures.bottom->renderData.Render(passEncoder);
+  }
   for (const auto& renderTexture : renderTextures) {
+    if (renderTexture->disabled) continue;
     passEncoder.SetBindGroup(1, renderTexture->textureBG);
     renderTexture->renderData.Render(passEncoder);
   }

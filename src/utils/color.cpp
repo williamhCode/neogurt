@@ -18,6 +18,15 @@ wgpu::Color ToWGPUColor(const glm::vec4& color) {
   };
 }
 
+glm::vec4 ToGlmColor(const wgpu::Color& color) {
+  return {
+    color.r,
+    color.g,
+    color.b,
+    color.a,
+  };
+}
+
 // rgb no alpha
 glm::vec4 IntToColor(uint32_t color) {
   return {
