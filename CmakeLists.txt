@@ -88,20 +88,25 @@ else()
   )
 
   # if debug mode
-  if (CMAKE_BUILD_TYPE MATCHES Debug)
-    target_compile_options(neogui PRIVATE
-      -fsanitize=address
-    )
-    target_link_options(neogui PRIVATE
-      -fsanitize=address
-    )
-  endif()
+  # if (CMAKE_BUILD_TYPE MATCHES Debug)
+  #   target_compile_options(neogui PRIVATE
+  #     -fsanitize=address
+  #   )
+  #   target_link_options(neogui PRIVATE
+  #     -fsanitize=address
+  #   )
+  # endif()
 
   # assert in release
   # target_compile_options(neogui PRIVATE -UNDEBUG)
 endif()
 
 if (XCODE)
+  # https://github.com/llvm/llvm-project/issues/77653
+  target_link_libraries(neogui PRIVATE 
+    -L/opt/homebrew/opt/llvm/lib/c++
+  )
+
   target_compile_definitions(neogui PRIVATE
     XCODE=1
   )

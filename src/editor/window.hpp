@@ -8,26 +8,10 @@
 #include "nvim/events/parse.hpp"
 #include "editor/grid.hpp"
 #include "app/size.hpp"
+#include "utils/margins.hpp"
 
 #include <map>
 #include <optional>
-
-struct FMargins {
-  float top = 0;
-  float bottom = 0;
-  float left = 0;
-  float right = 0;
-};
-
-struct Margins {
-  int top = 0;
-  int bottom = 0;
-  int left = 0;
-  int right = 0;
-
-  bool Empty() const;
-  FMargins ToFloat(glm::vec2 size) const;
-};
 
 struct FloatData {
   bool focusable;
@@ -67,7 +51,7 @@ struct Win {
   QuadRenderData<RectQuadVertex> rectData;
   QuadRenderData<TextQuadVertex> textData;
 
-  QuadRenderData<TextureQuadVertex> marginsData;
+  // QuadRenderData<TextureQuadVertex> marginsData;
 };
 
 // for input handler

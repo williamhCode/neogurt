@@ -27,5 +27,5 @@ struct FontFamily {
   void ChangeDpiScale(float dpiScale);
 
   const Font& DefaultFont() const;
-  const Font::GlyphInfo& GetGlyphInfo(uint32_t codepoint, bool bold, bool italic);
+  const Font::GlyphInfo& GetGlyphInfo(char32_t charcode, bool bold, bool italic);
 };

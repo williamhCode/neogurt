@@ -20,6 +20,8 @@
 #include "utils/color.hpp"
 #include "utils/logger.hpp"
 #include "utils/timer.hpp"
+#include "utils/unicode.hpp"
+#include "webgpu_tools/utils/webgpu.hpp"
 
 #include <algorithm>
 #include <vector>
@@ -63,7 +65,7 @@ int main() {
     // create font
     std::string guifont = nvim.GetOptionValue("guifont", {})->convert();
     auto fontFamilyResult = FontFamily::FromGuifont(guifont, window.dpiScale);
-    
+
     if (!fontFamilyResult) {
       LOG_ERR("Failed to create font family: {}", fontFamilyResult.error());
       return 1;
@@ -129,6 +131,9 @@ int main() {
         if (!nvim.IsConnected()) {
           exitWindow = true;
           sessionManager.RemoveSession("default");
+
+          SDL_Event quitEvent{.type = SDL_EVENT_QUIT};
+          SDL_PushEvent(&quitEvent);
         };
 
         LOG_DISABLE();
@@ -236,19 +241,22 @@ int main() {
 
         if (idle) continue;
         idleElasped += dt;
-        if (idleElasped >= options.cursorIdleTime || !windowFocused) {
+        if (idleElasped >= options.cursorIdleTime) {
           idle = true;
           editorState.cursor.blinkState = BlinkState::On;
         }
+
+        if (!windowFocused) {
+          editorState.cursor.blinkState = BlinkState::On;
+        }
+
         {
           std::scoped_lock lock(wgpuDeviceMutex);
           renderer.Begin();
 
           bool renderWindows = false;
-          // bool renderWindows = true;
           for (auto& [id, win] : editorState.winManager.windows) {
             if (win.grid.dirty) {
-              // if (true) {
               renderer.RenderWindow(win, fontFamily, editorState.hlTable);
               win.grid.dirty = false;
               renderWindows = true;

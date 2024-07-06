@@ -2,8 +2,21 @@
 #include "utils/logger.hpp"
 #include <format>
 
+static std::string CamelToSnakeCase(std::string_view s) {
+  std::string result;
+  for (char c : s) {
+    if (isupper(c)) {
+      result.push_back('_');
+      result.push_back(tolower(c));
+    } else {
+      result.push_back(c);
+    }
+  }
+  return result;
+}
+
 static void LoadOption(Nvim& nvim, std::string_view name, auto& value) {
-  auto luaCode = std::format("return vim.g.neogui_opts_resolved.{}", name);
+  auto luaCode = std::format("return vim.g.neogui_opts.{}", CamelToSnakeCase(name));
   msgpack::object_handle result = nvim.ExecLua(luaCode, {});
   try {
     value = result->convert();
@@ -12,10 +25,8 @@ static void LoadOption(Nvim& nvim, std::string_view name, auto& value) {
   }
 };
 
-#define LOAD(name) LoadOption(nvim, #name, name)
-
 void Options::Load(Nvim& nvim) {
-  nvim.ExecLua("vim.g.resolve_neogui_opts()", {});
+#define LOAD(name) LoadOption(nvim, #name, name)
 
   LOAD(window.vsync);
   LOAD(window.highDpi);

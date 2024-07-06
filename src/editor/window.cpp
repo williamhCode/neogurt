@@ -11,26 +11,14 @@
 
 using namespace wgpu;
 
-bool Margins::Empty() const {
-  return top == 0 && bottom == 0 && left == 0 && right == 0;
-}
-
-FMargins Margins::ToFloat(glm::vec2 size) const {
-  return {
-    top * size.y,
-    bottom * size.y,
-    left * size.x,
-    right * size.x,
-  };
-}
-
 void WinManager::InitRenderData(Win& win) {
   auto pos = glm::vec2(win.startCol, win.startRow) * sizes.charSize;
   auto size = glm::vec2(win.width, win.height) * sizes.charSize;
 
   win.sRenderTexture = ScrollableRenderTexture(size, sizes.dpiScale, sizes.charSize);
   win.sRenderTexture.UpdatePos(pos);
-  // LOG_INFO("sRenderTexture baseOffset address: {}", (void*)&win.sRenderTexture.baseOffset);
+  // LOG_INFO("sRenderTexture baseOffset address: {}",
+  // (void*)&win.sRenderTexture.baseOffset);
 
   auto fbSize = size * sizes.dpiScale;
   Extent3D maskSize(fbSize.x, fbSize.y);
@@ -54,7 +42,7 @@ void WinManager::InitRenderData(Win& win) {
   win.rectData.CreateBuffers(maxTextQuads);
   win.textData.CreateBuffers(maxTextQuads);
 
-  win.marginsData.CreateBuffers(4);
+  // win.marginsData.CreateBuffers(4);
 
   win.grid.dirty = true;
 
@@ -254,10 +242,9 @@ void WinManager::Viewport(const WinViewport& e) {
 
 void WinManager::UpdateScrolling(float dt) {
   for (auto& [id, win] : windows) {
-    if (win.sRenderTexture.scrolling) {
-      win.sRenderTexture.UpdateScrolling(dt);
-      dirty = true;
-    }
+    if (!win.sRenderTexture.scrolling) continue;
+    win.sRenderTexture.UpdateScrolling(dt);
+    dirty = true;
   }
 }
 
@@ -274,41 +261,41 @@ void WinManager::ViewportMargins(const WinViewportMargins& e) {
   win.margins.left = e.left;
   win.margins.right = e.right;
 
-  auto fmargins = win.margins.ToFloat(sizes.charSize);
+  win.sRenderTexture.margins = win.margins;
+  win.sRenderTexture.fmargins = win.margins.ToFloat(sizes.charSize);
 
-  win.marginsData.ResetCounts();
+  // win.marginsData.ResetCounts();
 
-  auto setData = [&](glm::vec2 pos, glm::vec2 size) {
-    auto positions = MakeRegion(pos, size);
-    auto uvs = MakeRegion(pos, size / win.size);
+  // auto setData = [&](glm::vec2 pos, glm::vec2 size) {
+  //   auto positions = MakeRegion(pos, size);
+  //   auto uvs = MakeRegion(pos, size / win.size);
 
-    for (size_t i = 0; i < 4; i++) {
-      auto& vertex = win.marginsData.CurrQuad()[i];
-      vertex.position = win.pos + positions[i];
-      vertex.uv = uvs[i];
-    }
-    win.marginsData.Increment();
-  };
+  //   for (size_t i = 0; i < 4; i++) {
+  //     auto& vertex = win.marginsData.CurrQuad()[i];
+  //     vertex.position = win.pos + positions[i];
+  //     vertex.uv = uvs[i];
+  //   }
+  //   win.marginsData.Increment();
+  // };
 
-  if (win.margins.top != 0) {
-    setData({0, 0}, {win.size.x, fmargins.top});
-  }
-  if (win.margins.bottom != 0) {
-    setData({0, win.size.y - fmargins.bottom}, {win.size.x, fmargins.bottom});
-  }
-  if (win.margins.left != 0) {
-    setData(
-      {0, fmargins.top},
-      {fmargins.left, win.size.y - fmargins.top - fmargins.bottom}
-    );
-  }
-  if (win.margins.right != 0) {
-    setData(
-      {win.size.x - fmargins.right, fmargins.top},
-      {fmargins.right, win.size.y - fmargins.top - fmargins.bottom}
-    );
-  }
-  win.marginsData.WriteBuffers();
+  // if (win.margins.top != 0) {
+  //   setData({0, 0}, {win.size.x, fmargins.top});
+  // }
+  // if (win.margins.bottom != 0) {
+  //   setData({0, win.size.y - fmargins.bottom}, {win.size.x, fmargins.bottom});
+  // }
+  // if (win.margins.left != 0) {
+  //   setData(
+  //     {0, fmargins.top}, {fmargins.left, win.size.y - fmargins.top - fmargins.bottom}
+  //   );
+  // }
+  // if (win.margins.right != 0) {
+  //   setData(
+  //     {win.size.x - fmargins.right, fmargins.top},
+  //     {fmargins.right, win.size.y - fmargins.top - fmargins.bottom}
+  //   );
+  // }
+  // win.marginsData.WriteBuffers();
 }
 
 void WinManager::Extmark(const WinExtmark& e) {
@@ -347,7 +334,8 @@ MouseInfo WinManager::GetMouseInfo(glm::vec2 mousePos) {
     int left = win->startCol;
     int right = win->startCol + win->width;
 
-    if (globalRow >= top && globalRow < bottom && globalCol >= left && globalCol < right) {
+    if (globalRow >= top && globalRow < bottom && globalCol >= left &&
+        globalCol < right) {
       grid = id;
       break;
     }

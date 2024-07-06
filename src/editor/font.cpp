@@ -1,6 +1,7 @@
 #include "font.hpp"
 #include "utils/expected.hpp"
 #include "utils/logger.hpp"
+#include "utils/unicode.hpp"
 #include <ranges>
 #include <string>
 
@@ -128,7 +129,7 @@ const Font& FontFamily::DefaultFont() const {
 }
 
 const Font::GlyphInfo&
-FontFamily::GetGlyphInfo(uint32_t codepoint, bool bold, bool italic) {
+FontFamily::GetGlyphInfo(char32_t charcode, bool bold, bool italic) {
   for (const auto& fontSet : fonts) {
     const auto& font = [&] {
       if (bold && italic) {
@@ -143,14 +144,17 @@ FontFamily::GetGlyphInfo(uint32_t codepoint, bool bold, bool italic) {
       return fontSet.normal;
     }();
 
-    if (const auto* glyphInfo = font->GetGlyphInfo(codepoint, textureAtlas)) {
+    if (const auto* glyphInfo = font->GetGlyphInfo(charcode, textureAtlas)) {
       return *glyphInfo;
     }
   }
 
   const auto* glyphInfo = fonts.front().normal->GetGlyphInfo(' ', textureAtlas);
   if (glyphInfo == nullptr) {
-    LOG_ERR("Failed to get glyph info for codepoint: {}", codepoint);
+    LOG_ERR(
+      "Failed to get glyph info for codepoint: {}, {}", (uint32_t)charcode,
+      UnicodeToUTF8(charcode)
+    );
   }
   return *glyphInfo;
 }

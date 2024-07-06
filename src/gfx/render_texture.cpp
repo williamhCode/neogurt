@@ -39,13 +39,13 @@ RenderTexture::RenderTexture(
   renderData.CreateBuffers(1);
 }
 
-void RenderTexture::UpdatePos(glm::vec2 pos, Rect* region) {
+void RenderTexture::UpdatePos(glm::vec2 pos, std::optional<Rect> region) {
   renderData.ResetCounts();
 
   Region positions;
   Region uvs;
 
-  if (region == nullptr) {
+  if (region == std::nullopt) {
     positions = MakeRegion(pos, size);
     uvs = MakeRegion({0, 0}, {1, 1});
   } else {
@@ -69,25 +69,27 @@ void RenderTexture::UpdateCameraPos(glm::vec2 pos) {
 
 // ------------------------------------------------------------------
 ScrollableRenderTexture::ScrollableRenderTexture(
-  glm::vec2 _size, float _dpiScale, glm::vec2 charSize
+  glm::vec2 _size, float _dpiScale, glm::vec2 _charSize
 )
-    : posOffset(0), size(_size), dpiScale(_dpiScale) {
+    : posOffset(0), size(_size), dpiScale(_dpiScale), charSize(_charSize) {
 
   textureHeight = size.y / maxNumTexPerPage;
   rowsPerTexture = glm::ceil(textureHeight / charSize.y);
+  rowsPerTexture = glm::max(rowsPerTexture, 1);
   textureHeight = rowsPerTexture * charSize.y;
-  textureHeight = glm::max(textureHeight, charSize.y);
 
   int numTexPerPage = glm::ceil(size.y / textureHeight);
   auto texSize = glm::vec2(size.x, textureHeight);
   for (int i = 0; i < numTexPerPage; i++) {
-    renderTextures.push_back(std::make_unique<RenderTexture>(texSize, dpiScale, format));
+    renderTextures.push_back(std::make_unique<RenderTexture>(texSize, dpiScale, format)
+    );
   }
 }
 
 void ScrollableRenderTexture::UpdatePos(glm::vec2 pos) {
   posOffset = pos;
   SetTexturePositions();
+  SetTextureCameraPositions();
 }
 
 void ScrollableRenderTexture::UpdateViewport(float newScrollDist) {
@@ -105,9 +107,8 @@ void ScrollableRenderTexture::UpdateViewport(float newScrollDist) {
   scrollCurr = 0;
   scrollElapsed = 0;
 
-  // LOG_INFO("scrollDist: {}", scrollDist);
-
   AddOrRemoveTextures();
+  SetTextureCameraPositions();
 }
 
 void ScrollableRenderTexture::UpdateScrolling(float dt) {
@@ -121,19 +122,17 @@ void ScrollableRenderTexture::UpdateScrolling(float dt) {
     scrollCurr = 0;
     scrollElapsed = 0;
 
-    AddOrRemoveTextures();
-    SetTexturePositions();
+    // AddOrRemoveTextures();
 
   } else {
-
     float t = scrollElapsed / scrollTime;
     // float x = glm::pow(t, 1 / 2.0f);
     float y = easeOutSine(t);
     // float y = easeOutElastic(t);
     scrollCurr = glm::sign(scrollDist) * glm::mix(0.0f, glm::abs(scrollDist), y);
-
-    SetTexturePositions();
   }
+
+  SetTexturePositions();
 }
 
 void ScrollableRenderTexture::AddOrRemoveTextures() {
@@ -177,7 +176,8 @@ void ScrollableRenderTexture::AddOrRemoveTextures() {
       removed.pop_back();
       return handle;
     }
-    return std::make_unique<RenderTexture>(size, dpiScale, format);
+    auto texSize = glm::vec2(size.x, textureHeight);
+    return std::make_unique<RenderTexture>(texSize, dpiScale, format);
   };
 
   // add from top
@@ -206,13 +206,78 @@ void ScrollableRenderTexture::AddOrRemoveTextures() {
 
 void ScrollableRenderTexture::SetTexturePositions() {
   for (size_t i = 0; i < renderTextures.size(); i++) {
+    float yposTop = -(baseOffset + scrollCurr) + (i * textureHeight);
+    float yposBottom = yposTop + textureHeight;
+    if (yposBottom <= 0 || yposTop >= size.y) {
+      // don't need to render
+      continue;
+    }
+
+    if (yposTop < 0) {
+      renderTextures[i]->UpdatePos(
+        posOffset + glm::vec2(0, yposTop),
+        Rect{
+          .pos = {0, -yposTop},
+          .size = {size.x, textureHeight + yposTop},
+        }
+      );
+    } else if (yposBottom > size.y) {
+      renderTextures[i]->UpdatePos(
+        posOffset + glm::vec2(0, yposTop),
+        Rect{
+          .pos = {0, 0},
+          .size = {size.x, size.y - yposTop},
+        }
+      );
+    } else {
+      renderTextures[i]->UpdatePos(posOffset + glm::vec2(0, yposTop));
+    }
+  }
+}
+
+void ScrollableRenderTexture::SetTextureCameraPositions() {
+  for (size_t i = 0; i < renderTextures.size(); i++) {
     float pos = -(baseOffset + scrollDist) + (i * textureHeight);
     renderTextures[i]->UpdateCameraPos({0, pos});
+  }
+}
 
-    float ypos = -(baseOffset + scrollCurr) + (i * textureHeight);
-    renderTextures[i]->UpdatePos(posOffset + glm::vec2(0, ypos));
+std::vector<RenderInfo> ScrollableRenderTexture::GetRenderInfos() const {
+  // top of viewport after scrolling
+  float newBaseOffset = baseOffset + scrollDist;
+
+  int topOffset = newBaseOffset / charSize.y;
+  int bottomOffset = (newBaseOffset + size.y) / charSize.y;
+
+  int totalRows = size.y / charSize.y;
+
+  std::vector<RenderInfo> renderInfos;
+
+  for (size_t i = 0; i < renderTextures.size(); i++) {
+    int top = i * rowsPerTexture;
+    int bottom = (i + 1) * rowsPerTexture;
+
+    if (bottom <= topOffset) continue;
+    if (top >= bottomOffset) break;
+
+    top = glm::max(top - topOffset, margins.top);
+    bottom = glm::min(bottom - topOffset, totalRows - margins.bottom);
+
+    // top = glm::max(top - topOffset, 0);
+    // bottom = glm::min(bottom - topOffset, totalRows);
+
+    renderInfos.push_back(RenderInfo{
+      .texture = renderTextures[i].get(),
+      .range = {top, bottom},
+    });
   }
 
-  // LOG_INFO("baseOffset: {}", baseOffset);
-  // LOG_INFO("numTextures: {}", renderTextures.size());
+  return renderInfos;
+}
+
+void ScrollableRenderTexture::Render(const wgpu::RenderPassEncoder& passEncoder) const {
+  for (const auto& renderTexture : renderTextures) {
+    passEncoder.SetBindGroup(1, renderTexture->textureBG);
+    renderTexture->renderData.Render(passEncoder);
+  }
 }

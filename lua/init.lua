@@ -1,8 +1,8 @@
 vim.g.neogui = 1
-vim.g.neogui_opts_default = {
+vim.g.neogui_opts = {
   window = {
     vsync = true,
-    highDpi = true,
+    high_dpi = true,
     borderless = false,
     blur = 0,
   },
@@ -13,14 +13,15 @@ vim.g.neogui_opts_default = {
     right = 0,
   },
   multigrid = true,
-  macOptIsMeta = true,
-  cursorIdleTime = 10,
-  bgColor = 0x000000,
+  mac_opt_is_meta = true,
+  cursor_idle_time = 10,
+  bg_color = 0x000000,
   transparency = 1,
-  maxFps = 0,
+  max_fps = 0,
 }
-vim.g.resolve_neogui_opts = function()
-  vim.g.neogui_opts_resolved = vim.tbl_deep_extend("force", vim.g.neogui_opts_default, vim.g.neogui_opts)
+
+vim.g.set_neogui_opts = function(opts)
+  vim.g.neogui_opts = vim.tbl_extend("force", vim.g.neogui_opts, opts)
 end
 
 vim.api.nvim_create_user_command("NeoguiSession", function(opts)

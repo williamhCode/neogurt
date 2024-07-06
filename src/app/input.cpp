@@ -46,10 +46,11 @@ void InputHandler::HandleKeyboard(const SDL_KeyboardEvent& event) {
       // remove alt from modstate
       modstate &= ~SDL_KMOD_ALT;
     }
-    auto key = SDL_GetKeyFromScancode(scancode, modstate);
-    if (!IsProcessableKey(key)) return;
+    auto keycode = SDL_GetKeyFromScancode(scancode, modstate);
+    if (!IsProcessableKey(keycode)) return;
 
-    std::string keyName = SDL_GetKeyName(key);
+    std::string keyName = SDL_GetKeyName(keycode);
+    if (IsLowerLetter(keycode)) keyName[0] = std::tolower(keyName[0]);
     if (keyName.empty()) return;
 
     bool modApplied = false;
@@ -68,25 +69,23 @@ void InputHandler::HandleKeyboard(const SDL_KeyboardEvent& event) {
     }
     // uppercase ctrl sequence needs S- (due to legacy reasons)
     if ((mod & SDL_KMOD_SHIFT) &&
-        (specialKeys.contains(key) || (IsUpperLetter(key) && (mod & SDL_KMOD_CTRL)))) {
+        (specialKeys.contains(keycode) || (IsUpperLetter(keycode) && (mod & SDL_KMOD_CTRL)))) {
       inputStr += "S-";
       modApplied = true;
     }
 
-    // keyname mangling
     if (!modApplied && keyName == "<") keyName = "<lt>";
-    if (IsLowerLetter(key)) keyName[0] = std::tolower(keyName[0]);
     inputStr += keyName;
 
     if (modApplied) {
       inputStr = "<" + inputStr + ">";
     } else {
-      if (specialKeys.contains(key)) {
+      if (specialKeys.contains(keycode)) {
         inputStr = "<" + inputStr + ">";
       }
     }
 
-    LOG_INFO("Key: {}", inputStr);
+    // LOG_INFO("Key: {}", inputStr);
     nvim.Input(inputStr);
   }
 }

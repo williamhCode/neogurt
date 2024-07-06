@@ -1,11 +1,14 @@
 #pragma once
 
+#include "glm/ext/vector_uint2.hpp"
+#include "utils/margins.hpp"
 #include "utils/region.hpp"
 #include "webgpu/webgpu_cpp.h"
 #include "gfx/camera.hpp"
 #include "gfx/quad.hpp"
 #include "glm/ext/vector_float2.hpp"
 #include <memory>
+#include <tuple>
 
 struct RenderTexture {
   Ortho2D camera;
@@ -27,11 +30,19 @@ struct RenderTexture {
 
   // pos is the position (top left) of the texture in the screen
   // region is the subregion of the texture to draw
-  void UpdatePos(glm::vec2 pos, Rect* region = nullptr);
+  void UpdatePos(glm::vec2 pos, std::optional<Rect> region = std::nullopt);
   void UpdateCameraPos(glm::vec2 pos);
 };
 
 using RenderTextureHandle = std::unique_ptr<RenderTexture>;
+
+struct RenderInfo {
+  const RenderTexture* texture;
+  struct {
+    int start;
+    int end;
+  } range;
+};
 
 // consists of multiple render textures that can be scrolled
 struct ScrollableRenderTexture {
@@ -39,12 +50,16 @@ struct ScrollableRenderTexture {
   glm::vec2 size; // displayable size
   float dpiScale;
 
+  glm::vec2 charSize;
+
   int maxNumTexPerPage = 4;
   float textureHeight;
-
   int rowsPerTexture;
 
   wgpu::TextureFormat format = wgpu::TextureFormat::RGBA8UnormSrgb;
+
+  Margins margins;
+  FMargins fmargins;
 
   // dynamic variables
   std::deque<RenderTextureHandle> renderTextures;
@@ -57,16 +72,19 @@ struct ScrollableRenderTexture {
   float scrollTime = 0.3; // transition time
 
   ScrollableRenderTexture() = default;
-  ScrollableRenderTexture(
-    glm::vec2 size,
-    float dpiScale,
-    glm::vec2 charSize
-  );
-    
+  ScrollableRenderTexture(glm::vec2 size, float dpiScale, glm::vec2 charSize);
+
   void UpdatePos(glm::vec2 pos);
   void UpdateViewport(float newScrollDist = 0);
   void UpdateScrolling(float dt);
 
   void AddOrRemoveTextures();
   void SetTexturePositions();
+  void SetTextureCameraPositions();
+
+  // returns pointer to render texture and a row range to render to it
+  std::vector<RenderInfo> GetRenderInfos() const;
+
+  // render entire scrollable render texture
+  void Render(const wgpu::RenderPassEncoder& passEncoder) const;
 };

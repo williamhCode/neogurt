@@ -96,9 +96,10 @@ void Client::GetData() {
                 );
 
               } else {
-                promise.set_exception(std::make_exception_ptr(
-                  std::runtime_error("rpc::Client response error: " + msg.error.via.array.ptr[1].as<std::string>())
-                ));
+                promise.set_exception(std::make_exception_ptr(std::runtime_error(
+                  "rpc::Client response error: " +
+                  msg.error.via.array.ptr[1].as<std::string>()
+                )));
               }
 
               {
