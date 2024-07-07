@@ -36,8 +36,6 @@ struct ModeInfo {
 enum class BlinkState { Wait, On, Off };
 
 struct Cursor {
-  glm::vec2 winScrollOffset; // window smooth scroll offset
-
   glm::vec2 startPos;
   glm::vec2 destPos;
   glm::vec2 pos;
@@ -50,7 +48,7 @@ struct Cursor {
   Region startCorners;
   Region destCorners;
   Region corners;
-  float cornerTime = 0.06; // transition time
+  float cornerTime = 0.06; // shape transition time
   float cornerElasped;
 
   bool blink;

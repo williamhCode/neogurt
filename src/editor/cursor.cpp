@@ -1,6 +1,7 @@
 #include "cursor.hpp"
 #include "glm/common.hpp"
 #include "glm/exponential.hpp"
+#include "utils/easing_funcs.hpp"
 #include "utils/logger.hpp"
 #include "utils/region.hpp"
 
@@ -58,8 +59,8 @@ void Cursor::Update(float dt) {
     } else {
       // use smoothstep
       float t = jumpElasped / jumpTime;
-      float x = glm::pow(t, 1 / 2.8f);
-      pos = glm::mix(startPos, destPos, x);
+      float y = EaseOutCubic(t);
+      pos = glm::mix(startPos, destPos, y);
     }
   }
 
@@ -72,8 +73,8 @@ void Cursor::Update(float dt) {
     } else {
       float t = cornerElasped / cornerTime;
       for (size_t i = 0; i < 4; i++) {
-        float x = glm::pow(t, 1 / 2.8f);
-        corners[i] = glm::mix(startCorners[i], destCorners[i], x);
+        float y = EaseOutQuad(t);
+        corners[i] = glm::mix(startCorners[i], destCorners[i], y);
       }
     }
   }

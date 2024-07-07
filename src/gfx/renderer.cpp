@@ -312,7 +312,7 @@ void Renderer::RenderCursor(const Cursor& cursor, const HlTable& hlTable) {
   cursorData.ResetCounts();
   for (size_t i = 0; i < 4; i++) {
     auto& vertex = cursorData.CurrQuad()[i];
-    vertex.position = cursor.pos + cursor.winScrollOffset + cursor.corners[i];
+    vertex.position = cursor.pos + cursor.corners[i];
     vertex.foreground = foreground;
     vertex.background = background;
   }

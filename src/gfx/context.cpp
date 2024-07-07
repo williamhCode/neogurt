@@ -1,4 +1,5 @@
 #include "context.hpp"
+#include "magic_enum.hpp"
 #include "utils/logger.hpp"
 #include "webgpu_tools/utils/webgpu.hpp"
 #include "webgpu_tools/utils/sdl3webgpu.h"
@@ -51,11 +52,11 @@ void WGPUContext::Init() {
   queue = device.GetQueue();
 
   // auto prefFormat = surface.GetPreferredFormat(adapter);
-  // LOG_INFO("preferred format: {}", (int)prefFormat);
+  // LOG_INFO("preferred format: {}", magic_enum::enum_name(prefFormat));
   surfaceFormat = TextureFormat::BGRA8Unorm;
 
   // apple doesn't support unpremultiplied alpha
-  alphaMode = CompositeAlphaMode::Auto;
+  alphaMode = CompositeAlphaMode::Premultiplied;
 
   SurfaceConfiguration surfaceConfig{
     .device = device,

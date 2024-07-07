@@ -220,12 +220,14 @@ int main() {
             } *
               sizes.charSize +
             sizes.offset;
-          editorState.cursor.SetDestPos(cursorPos);
 
           auto& winTex = win->sRenderTexture;
-          editorState.cursor.winScrollOffset =
-            winTex.scrolling ? glm::vec2(0, winTex.scrollDist - winTex.scrollCurr)
+          auto scrollOffset =
+            winTex.scrolling ? glm::vec2(0, (winTex.scrollDist - winTex.scrollCurr))
                              : glm::vec2(0);
+
+          editorState.cursor.SetDestPos(cursorPos + scrollOffset);
+
 
           currMaskBG = win->maskBG;
         }
