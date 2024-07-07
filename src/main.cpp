@@ -317,7 +317,8 @@ int main() {
 
     // event loop --------------------------------
     InputHandler input(
-      nvim, editorState.winManager, options.macOptIsMeta, options.multigrid
+      nvim, editorState.winManager, options.macOptIsMeta, options.multigrid,
+      options.scrollSpeed
     );
 
     SDL_StartTextInput(window.Get());

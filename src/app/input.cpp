@@ -10,10 +10,14 @@
 #include <set>
 
 InputHandler::InputHandler(
-  Nvim& nvim, WinManager& winManager, bool macOptAsAlt, bool multigrid
+  Nvim& nvim,
+  WinManager& winManager,
+  bool macOptAsAlt,
+  bool multigrid,
+  float scrollSpeed
 )
     : nvim(nvim), winManager(winManager), macOptIsMeta(macOptAsAlt),
-      multigrid(multigrid) {
+      multigrid(multigrid), scrollSpeed(scrollSpeed) {
 }
 
 const std::set<SDL_Keycode> specialKeys{
@@ -68,8 +72,8 @@ void InputHandler::HandleKeyboard(const SDL_KeyboardEvent& event) {
       modApplied = true;
     }
     // uppercase ctrl sequence needs S- (due to legacy reasons)
-    if ((mod & SDL_KMOD_SHIFT) &&
-        (specialKeys.contains(keycode) || (IsUpperLetter(keycode) && (mod & SDL_KMOD_CTRL)))) {
+    if ((mod & SDL_KMOD_SHIFT) && (specialKeys.contains(keycode) ||
+                                   (IsUpperLetter(keycode) && (mod & SDL_KMOD_CTRL)))) {
       inputStr += "S-";
       modApplied = true;
     }
@@ -185,7 +189,6 @@ void InputHandler::HandleMouseWheel(const SDL_MouseWheelEvent& event) {
   }
   if (!multigrid) info.grid = 0;
 
-  double scrollSpeed = 1;
   double scrollUnit = 1 / scrollSpeed;
 
   double yAbs = std::abs(event.y);

@@ -19,7 +19,7 @@ struct SizeHandler {
   SizeHandler() = default;
   ~SizeHandler() = default;
 
-  // disable copy and assignment
+  // disable copy
   SizeHandler(const SizeHandler&) = delete;
   SizeHandler& operator=(const SizeHandler&) = delete;
 

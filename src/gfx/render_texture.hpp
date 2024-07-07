@@ -63,7 +63,7 @@ struct ScrollableRenderTexture {
 
   glm::vec2 charSize;
 
-  int maxNumTexPerPage = 2;
+  int maxNumTexPerPage = 4;
   float textureHeight;
   int rowsPerTexture;
 

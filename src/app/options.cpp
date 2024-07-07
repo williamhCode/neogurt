@@ -41,6 +41,7 @@ void Options::Load(Nvim& nvim) {
   LOAD(multigrid);
   LOAD(macOptIsMeta);
   LOAD(cursorIdleTime);
+  LOAD(scrollSpeed);
 
   LOAD(bgColor);
   LOAD(transparency);

@@ -13,6 +13,7 @@ struct InputHandler {
   // options
   bool macOptIsMeta;
   bool multigrid;
+  float scrollSpeed;
 
   // mouse related
   std::optional<int> mouseButton;
@@ -22,7 +23,13 @@ struct InputHandler {
   double xAccum = 0;
   int scrollDir = 0;
 
-  InputHandler(Nvim& nvim, WinManager& winManager, bool macOptAsAlt, bool multigrid);
+  InputHandler(
+    Nvim& nvim,
+    WinManager& winManager,
+    bool macOptAsAlt,
+    bool multigrid,
+    float scrollSpeed
+  );
 
   void HandleKeyboard(const SDL_KeyboardEvent& event);
   void HandleTextInput(const SDL_TextInputEvent& event);

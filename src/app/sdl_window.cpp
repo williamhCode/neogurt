@@ -36,6 +36,7 @@ Window::Window(glm::uvec2 _size, const std::string& title, Options::Window winOp
   if (winOpts.blur > 0) {
     SetSDLWindowBlur(Get(), winOpts.blur);
   }
+  EnableScrollMomentum();
 
   // sizing ---------------------------------
   dpiScale = SDL_GetWindowPixelDensity(Get());

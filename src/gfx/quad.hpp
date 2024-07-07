@@ -6,13 +6,18 @@
 template <class VertexType>
 struct QuadRenderData {
   using Quad = std::array<VertexType, 4>;
-  size_t quadCount;
-  size_t vertexCount;
-  size_t indexCount;
+  size_t quadCount = 0;
+  size_t vertexCount = 0;
+  size_t indexCount = 0;
   std::vector<Quad> quads;
   std::vector<uint32_t> indices;
   wgpu::Buffer vertexBuffer;
   wgpu::Buffer indexBuffer;
+
+  QuadRenderData() = default;
+  QuadRenderData(size_t numQuads) {
+    CreateBuffers(numQuads);
+  }
 
   void CreateBuffers(size_t numQuads) {
     quads.resize(numQuads);

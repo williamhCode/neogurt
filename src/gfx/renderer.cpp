@@ -230,19 +230,12 @@ void Renderer::RenderWindow(Win& win, FontFamily& fontFamily, const HlTable& hlT
       passEncoder.SetBindGroup(0, renderTexture->camera.viewProjBG);
 
       if (clearRegion.has_value()) {
-        LOG(
-          "pos: {}, size: {}", glm::to_string(clearRegion->pos),
-          glm::to_string(clearRegion->size)
-        );
-        QuadRenderData<RectQuadVertex> clearData;
-        clearData.CreateBuffers(1);
-        clearData.ResetCounts();
+        QuadRenderData<RectQuadVertex> clearData(1);
         auto region = clearRegion->Region();
         for (size_t i = 0; i < 4; i++) {
           auto& vertex = clearData.CurrQuad()[i];
           vertex.position = region[i];
           vertex.color = ToGlmColor(clearColor);
-          // vertex.color = {0.8, 0.3, 0.2, 1};
         }
         clearData.Increment();
         clearData.WriteBuffers();
@@ -282,20 +275,16 @@ void Renderer::RenderWindows(
 
   passEncoder.SetBindGroup(0, finalRenderTexture.camera.viewProjBG);
 
-  auto renderWin = [&](const Win* win) {
-    win->sRenderTexture.Render(passEncoder);
-  };
-
   passEncoder.SetPipeline(ctx.pipeline.textureNoBlendRPL);
   passEncoder.SetStencilReference(1);
   for (const Win* win : windows) {
-    renderWin(win);
+    win->sRenderTexture.Render(passEncoder);
   }
 
   passEncoder.SetPipeline(ctx.pipeline.textureRPL);
   passEncoder.SetStencilReference(0);
   for (const Win* win : floatWindows) {
-    renderWin(win);
+    win->sRenderTexture.Render(passEncoder);
   }
 
   passEncoder.End();

@@ -32,6 +32,10 @@ void WGPUContext::Init() {
   //   .limits = supportedLimits.limits,
   // };
 
+  // SurfaceCapabilities surfaceCaps;
+  // surface.GetCapabilities(adapter, &surfaceCaps);
+  // utils::PrintSurfaceCapabilities(surfaceCaps);
+
   // std::vector<FeatureName> requiredFeatures{
   //   FeatureName::SurfaceCapabilities,
   // };
@@ -51,7 +55,7 @@ void WGPUContext::Init() {
   surfaceFormat = TextureFormat::BGRA8Unorm;
 
   // apple doesn't support unpremultiplied alpha
-  alphaMode = CompositeAlphaMode::Premultiplied;
+  alphaMode = CompositeAlphaMode::Auto;
 
   SurfaceConfiguration surfaceConfig{
     .device = device,

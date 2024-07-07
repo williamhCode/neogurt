@@ -20,12 +20,14 @@ struct Options {
   bool multigrid;
   bool macOptIsMeta;
   float cursorIdleTime;
+  float scrollSpeed;
 
   // rgb
   uint32_t bgColor;
   float transparency;
 
   float maxFps;
+
 
   void Load(Nvim& nvim);
 };

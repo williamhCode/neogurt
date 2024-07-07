@@ -62,3 +62,10 @@ void SetSDLWindowBlur(SDL_Window* window, int blurRadius) {
 #error "Unsupported Target"
 #endif
 }
+
+#import <Foundation/Foundation.h>
+
+void EnableScrollMomentum() {
+  [[NSUserDefaults standardUserDefaults]
+    setBool: YES forKey: @"AppleMomentumScrollSupported"];
+}

@@ -15,13 +15,14 @@ vim.g.neogui_opts = {
   multigrid = true,
   mac_opt_is_meta = true,
   cursor_idle_time = 10,
+  scroll_speed = 1,
   bg_color = 0x000000,
   transparency = 1,
-  max_fps = 0,
+  max_fps = 120,
 }
 
 vim.g.set_neogui_opts = function(opts)
-  vim.g.neogui_opts = vim.tbl_extend("force", vim.g.neogui_opts, opts)
+  vim.g.neogui_opts = vim.tbl_deep_extend("force", vim.g.neogui_opts, opts)
 end
 
 vim.api.nvim_create_user_command("NeoguiSession", function(opts)
