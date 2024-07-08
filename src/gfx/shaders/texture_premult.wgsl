@@ -26,7 +26,7 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 @fragment
 fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
   var color = textureSample(texture, textureSampler, uv);
-  if (color.w == 0.0f) {
+  if (color.a == 0.0f) {
     discard;
   }
   color = ToSrgb(color);

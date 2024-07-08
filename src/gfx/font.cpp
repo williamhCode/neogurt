@@ -5,6 +5,8 @@
 #include "glm/gtx/string_cast.hpp"
 #include <mdspan>
 
+#include "freetype/ftmodapi.h"
+
 using namespace wgpu;
 
 static FT_FacePtr
@@ -19,7 +21,21 @@ CreateFace(FT_Library library, const char* filepath, FT_Long face_index) {
 static FT_Library library;
 
 int FtInit() {
-  return FT_Init_FreeType(&library);
+  auto error = FT_Init_FreeType(&library);
+
+  FT_Bool no_stem_darkening = false;
+  FT_Property_Set(library, "autofitter", "no-stem-darkening", &no_stem_darkening);
+  FT_Property_Set(library, "cff", "no-stem-darkening", &no_stem_darkening);
+  FT_Property_Set(library, "type1", "no-stem-darkening", &no_stem_darkening);
+  FT_Property_Set(library, "t1cid", "no-stem-darkening", &no_stem_darkening);
+
+  // FT_Int darken_params[8] = {500,  550, // x1, y1
+  //                            1000, 150, // x2, y2
+  //                            1500, 0, // x3, y3
+  //                            2000, 0};  // x4, y4
+  // FT_Property_Set(library, "cff", "darkening-parameters", darken_params);
+
+  return error;
 }
 
 void FtDone() {
@@ -77,7 +93,10 @@ Font::GetGlyphInfo(FT_ULong charcode, TextureAtlas& textureAtlas) {
   //   vertOffset = floor(vertOffset * dpiScale) / dpiScale;
   // }
 
-  FT_Load_Glyph(face.get(), glyphIndex, FT_LOAD_RENDER);
+  FT_Int32 loadFlags = FT_LOAD_DEFAULT;
+  FT_Load_Glyph(face.get(), glyphIndex, loadFlags);
+  FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL);
+
   auto& glyph = *(face->glyph);
   auto& bitmap = glyph.bitmap;
 

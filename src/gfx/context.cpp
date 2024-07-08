@@ -1,8 +1,10 @@
 #include "context.hpp"
-#include "magic_enum.hpp"
 #include "utils/logger.hpp"
 #include "webgpu_tools/utils/webgpu.hpp"
 #include "webgpu_tools/utils/sdl3webgpu.h"
+
+#define MAGIC_ENUM_RANGE_MAX 1300
+#include "magic_enum.hpp"
 
 using namespace wgpu;
 
@@ -28,6 +30,12 @@ void WGPUContext::Init() {
   SupportedLimits supportedLimits;
   adapter.GetLimits(&supportedLimits);
   // utils::PrintLimits(supportedLimits.limits);
+
+  // FeatureName features[256];
+  // size_t featureCount = adapter.EnumerateFeatures(features);
+  // for (size_t i = 0; i < featureCount; i++) {
+  //   LOG_INFO("feature: {}", magic_enum::enum_name(features[i]));
+  // }
 
   // RequiredLimits requiredLimits{
   //   .limits = supportedLimits.limits,

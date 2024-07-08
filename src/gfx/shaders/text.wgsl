@@ -44,6 +44,9 @@ fn fs_main(in: FragmentInput) -> FragmentOutput {
   out.color = textureSample(fontTexture, fontSampler, in.uv);
   out.color = in.foreground * out.color;
 
+  // let alpha = textureSample(fontTexture, fontSampler, in.uv).a;
+  // out.color = vec4f(in.foreground.rgb, alpha);
+
   // if (out.color.a > 0.0) {
   //   out.mask = out.color.a;
   // }

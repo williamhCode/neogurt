@@ -21,7 +21,7 @@ TextureAtlas::TextureAtlas(uint _glyphSize, float _dpiScale)
     utils::CreateUniformBuffer(ctx.device, sizeof(glm::vec2), &textureSize);
 
   texture = utils::CreateBindingTexture(
-    ctx.device, Extent3D(bufferSize.x, bufferSize.y), wgpu::TextureFormat::RGBA8UnormSrgb
+    ctx.device, Extent3D(bufferSize.x, bufferSize.y), wgpu::TextureFormat::RGBA8Unorm
   );
 
   textureSampler = ctx.device.CreateSampler(ToPtr(SamplerDescriptor{

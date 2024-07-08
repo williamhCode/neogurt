@@ -1,11 +1,13 @@
 #pragma once
 
-#include "freetype/freetype.h"
 #include "gfx/font/descriptor.hpp"
 #include "gfx/texture_atlas.hpp"
 #include "glm/ext/vector_float2.hpp"
 #include "utils/region.hpp"
 #include <expected>
+
+#include <ft2build.h>
+#include <freetype/freetype.h>
 
 int FtInit();
 void FtDone();
