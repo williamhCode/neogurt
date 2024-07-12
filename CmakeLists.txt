@@ -98,7 +98,7 @@ else()
   # endif()
 
   # assert in release
-  # target_compile_options(neogui PRIVATE -UNDEBUG)
+  target_compile_options(neogui PRIVATE -UNDEBUG)
 endif()
 
 if (XCODE)
@@ -113,10 +113,8 @@ if (XCODE)
   set_target_properties(neogui PROPERTIES
     XCODE_GENERATE_SCHEME ON
     XCODE_SCHEME_ENABLE_GPU_FRAME_CAPTURE_MODE "Metal"
-    XCODE_SCHEME_ENVIRONMENT "
-      PATH=$ENV{PATH};
-      DAWN_DEBUG_BREAK_ON_ERROR=1
-    "
+    XCODE_SCHEME_ENVIRONMENT
+    "PATH=$ENV{PATH};DAWN_DEBUG_BREAK_ON_ERROR=1"
     XCODE_SCHEME_ADDRESS_SANITIZER ON
     XCODE_SCHEME_UNDEFINED_BEHAVIOUR_SANITIZER ON
   )

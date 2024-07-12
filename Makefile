@@ -7,9 +7,9 @@ build:
 	cmake --build build/$(TYPE) --target neogui
 	cp build/$(TYPE)/compile_commands.json .
 
-build-tint:
-	cmake --build build/release --target tint
-	cp build/release/_deps/dawn-build/tint .
+# build-tint:
+# 	cmake --build build/release --target tint
+# 	cp build/release/_deps/dawn-build/tint .
 
 # https://cmake.org/cmake/help/latest/variable/CMAKE_LINKER_TYPE.html
 # mold linker not working
