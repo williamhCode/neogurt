@@ -43,7 +43,6 @@ struct Pipeline {
   wgpu::RenderPipeline finalTextureRPL;
 
   wgpu::BindGroupLayout maskBGL;
-  wgpu::BindGroupLayout maskOffsetBGL; // offset of final texture in actual pixels
   wgpu::RenderPipeline cursorRPL;
 
   Pipeline() = default;

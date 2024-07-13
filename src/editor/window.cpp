@@ -15,36 +15,12 @@ void WinManager::InitRenderData(Win& win) {
   auto pos = glm::vec2(win.startCol, win.startRow) * sizes.charSize;
   auto size = glm::vec2(win.width, win.height) * sizes.charSize;
 
-  win.sRenderTexture = ScrollableRenderTexture(size, sizes.dpiScale, sizes.charSize);
-  win.sRenderTexture.UpdatePos(pos);
-  // LOG_INFO("sRenderTexture baseOffset address: {}",
-  // (void*)&win.sRenderTexture.baseOffset);
-
-  auto fbSize = size * sizes.dpiScale;
-  Extent3D maskSize(fbSize.x, fbSize.y);
-  win.maskTextureView =
-    utils::CreateRenderTexture(ctx.device, maskSize, TextureFormat::R8Unorm)
-      .CreateView();
-
-  auto maskPos = pos * sizes.dpiScale;
-  win.maskPosBuffer =
-    utils::CreateUniformBuffer(ctx.device, sizeof(glm::vec2), &maskPos);
-
-  win.maskBG = utils::MakeBindGroup(
-    ctx.device, ctx.pipeline.maskBGL,
-    {
-      {0, win.maskTextureView},
-      {1, win.maskPosBuffer},
-    }
-  );
-
   const size_t maxTextQuads = win.width * win.height;
   win.rectData.CreateBuffers(maxTextQuads);
   win.textData.CreateBuffers(maxTextQuads);
 
-  // win.marginsData.CreateBuffers(4);
-
-  win.grid.dirty = true;
+  win.sRenderTexture = ScrollableRenderTexture(size, sizes.dpiScale, sizes.charSize);
+  win.sRenderTexture.UpdatePos(pos);
 
   win.pos = pos;
   win.size = size;
@@ -61,39 +37,13 @@ void WinManager::UpdateRenderData(Win& win) {
   }
 
   if (sizeChanged) {
-    win.sRenderTexture = ScrollableRenderTexture(size, sizes.dpiScale, sizes.charSize);
-  }
-  win.sRenderTexture.UpdatePos(pos);
-
-  if (sizeChanged) {
-    auto fbSize = size * sizes.dpiScale;
-    win.maskTextureView =
-      utils::CreateRenderTexture(
-        ctx.device, Extent3D(fbSize.x, fbSize.y), TextureFormat::R8Unorm
-      )
-        .CreateView();
-
-    win.maskBG = utils::MakeBindGroup(
-      ctx.device, ctx.pipeline.maskBGL,
-      {
-        {0, win.maskTextureView},
-        {1, win.maskPosBuffer},
-      }
-    );
-
-    win.grid.dirty = true;
-  }
-
-  if (posChanged) {
-    auto maskPos = pos * sizes.dpiScale;
-    ctx.queue.WriteBuffer(win.maskPosBuffer, 0, &maskPos, sizeof(glm::vec2));
-  }
-
-  if (sizeChanged) {
     const size_t maxTextQuads = win.width * win.height;
     win.rectData.CreateBuffers(maxTextQuads);
     win.textData.CreateBuffers(maxTextQuads);
+
+    win.sRenderTexture = ScrollableRenderTexture(size, sizes.dpiScale, sizes.charSize);
   }
+  win.sRenderTexture.UpdatePos(pos);
 
   win.pos = pos;
   win.size = size;
@@ -262,39 +212,6 @@ void WinManager::ViewportMargins(const WinViewportMargins& e) {
   win.margins.right = e.right;
 
   win.sRenderTexture.UpdateMargins(win.margins);
-
-  // win.marginsData.ResetCounts();
-
-  // auto setData = [&](glm::vec2 pos, glm::vec2 size) {
-  //   auto positions = MakeRegion(pos, size);
-  //   auto uvs = MakeRegion(pos, size / win.size);
-
-  //   for (size_t i = 0; i < 4; i++) {
-  //     auto& vertex = win.marginsData.CurrQuad()[i];
-  //     vertex.position = win.pos + positions[i];
-  //     vertex.uv = uvs[i];
-  //   }
-  //   win.marginsData.Increment();
-  // };
-
-  // if (win.margins.top != 0) {
-  //   setData({0, 0}, {win.size.x, fmargins.top});
-  // }
-  // if (win.margins.bottom != 0) {
-  //   setData({0, win.size.y - fmargins.bottom}, {win.size.x, fmargins.bottom});
-  // }
-  // if (win.margins.left != 0) {
-  //   setData(
-  //     {0, fmargins.top}, {fmargins.left, win.size.y - fmargins.top - fmargins.bottom}
-  //   );
-  // }
-  // if (win.margins.right != 0) {
-  //   setData(
-  //     {win.size.x - fmargins.right, fmargins.top},
-  //     {fmargins.right, win.size.y - fmargins.top - fmargins.bottom}
-  //   );
-  // }
-  // win.marginsData.WriteBuffers();
 }
 
 void WinManager::Extmark(const WinExtmark& e) {

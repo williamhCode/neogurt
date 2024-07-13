@@ -54,12 +54,11 @@ void RenderTexture::UpdatePos(glm::vec2 pos, std::optional<Rect> region) {
     uvs = region->Region();
   }
 
+  auto& quad = renderData.NextQuad();
   for (size_t i = 0; i < 4; i++) {
-    auto& vertex = renderData.CurrQuad()[i];
-    vertex.position = positions[i];
-    vertex.uv = uvs[i];
+    quad[i].position = positions[i];
+    quad[i].uv = uvs[i];
   }
-  renderData.Increment();
   renderData.WriteBuffers();
 }
 

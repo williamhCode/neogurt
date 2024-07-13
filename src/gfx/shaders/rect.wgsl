@@ -27,9 +27,9 @@ fn fs_main(@location(0) color: vec4f) -> @location(0) vec4f {
 
 fn ToLinear(color: vec4f) -> vec4f {
   return vec4f(
-    pow(color.r, 2.2f),
-    pow(color.g, 2.2f),
-    pow(color.b, 2.2f),
+    pow(color.r, 1.8f),
+    pow(color.g, 1.8f),
+    pow(color.b, 1.8f),
     color.a
   );
 }

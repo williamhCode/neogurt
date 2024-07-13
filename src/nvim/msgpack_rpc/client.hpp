@@ -73,7 +73,7 @@ std::future<msgpack::object_handle>
 Client::AsyncCall(std::string_view func_name, auto... args) {
   if (!IsConnected()) return {};
 
-  Request msg{
+  RequestOut msg{
     .msgid = Msgid(),
     .method = func_name,
     .params = std::tuple(args...),

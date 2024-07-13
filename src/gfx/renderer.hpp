@@ -23,7 +23,6 @@ struct Renderer {
 
   // shared
   Ortho2D camera;
-  wgpu::TextureView maskTextureView;
   RenderTexture finalRenderTexture;
 
   // rect (background)
@@ -40,8 +39,10 @@ struct Renderer {
   wgpu::utils::RenderPassDescriptor finalRPD;
 
   // cursor
-  wgpu::Buffer maskOffsetBuffer;
-  wgpu::BindGroup maskOffsetBG;
+  wgpu::TextureView maskTextureView;
+  wgpu::Buffer maskPosBuffer;
+  wgpu::BindGroup maskBG;
+
   QuadRenderData<CursorQuadVertex> cursorData;
   wgpu::utils::RenderPassDescriptor cursorRPD;
 

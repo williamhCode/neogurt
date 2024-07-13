@@ -1,5 +1,6 @@
 #include "pipeline.hpp"
 #include "context.hpp"
+#include "utils/logger.hpp"
 #include "webgpu_tools/utils/webgpu.hpp"
 
 using namespace wgpu;
@@ -165,17 +166,10 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
     }
   );
 
-  maskOffsetBGL = utils::MakeBindGroupLayout(
-    ctx.device,
-    {
-      {0, ShaderStage::Fragment, BufferBindingType::Uniform},
-    }
-  );
-
   cursorRPL = utils::MakeRenderPipeline(ctx.device, {
     .vs = cursorShader,
     .fs = cursorShader,
-    .bgls = {viewProjBGL, maskBGL, maskOffsetBGL},
+    .bgls = {viewProjBGL, maskBGL},
     .buffers = {cursorQuadVBL},
     .targets = {{.format = TextureFormat::BGRA8Unorm}},
   });

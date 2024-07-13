@@ -42,16 +42,10 @@ struct Win {
   glm::vec2 pos;
   glm::vec2 size;
 
-  ScrollableRenderTexture sRenderTexture;
-
-  wgpu::TextureView maskTextureView;
-  wgpu::Buffer maskPosBuffer;
-  wgpu::BindGroup maskBG;
-
   QuadRenderData<RectQuadVertex> rectData;
   QuadRenderData<TextQuadVertex> textData;
 
-  // QuadRenderData<TextureQuadVertex> marginsData;
+  ScrollableRenderTexture sRenderTexture;
 };
 
 // for input handler

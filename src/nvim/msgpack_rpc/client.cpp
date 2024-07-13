@@ -65,7 +65,7 @@ void Client::GetData() {
 
   socket.async_read_some(
     asio::buffer(unpacker.buffer(), readSize),
-    [&](asio::error_code ec, std::size_t length) {
+    [this](asio::error_code ec, std::size_t length) {
       if (!ec) {
         unpacker.buffer_consumed(length);
 
@@ -79,7 +79,7 @@ void Client::GetData() {
 
           int type = obj.via.array.ptr[0].convert();
           if (type == MessageType::Response) {
-            Response msg(obj.convert());
+            ResponseIn msg(obj.convert());
 
             decltype(responses)::iterator it;
             bool found;
@@ -147,6 +147,7 @@ void Client::GetData() {
 
 void Client::Write(msgpack::sbuffer&& buffer) {
   msgsOut.Push(std::move(buffer));
+  // ongoing write
   if (msgsOut.Size() > 1) return;
   DoWrite();
 }
@@ -154,11 +155,11 @@ void Client::Write(msgpack::sbuffer&& buffer) {
 void Client::DoWrite() {
   // send all messages before exiting
   if (msgsOut.Empty()) return;
+
   auto& buffer = msgsOut.Front();
-  asio::async_write(
-    socket, asio::buffer(buffer.data(), buffer.size()),
-    [&](const asio::error_code& ec, size_t length) {
-      (void)length;
+  socket.async_write_some(
+    asio::buffer(buffer.data(), buffer.size()),
+    [this](const asio::error_code& ec, size_t /* length */) {
       if (!ec) {
         if (msgsOut.Empty()) {
           LOG_WARN("Client::DoWrite: msgsOut is empty");

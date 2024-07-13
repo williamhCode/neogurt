@@ -13,7 +13,7 @@ struct MessageType {
 };
 
 template <typename T>
-struct Request {
+struct RequestOut {
   int32_t type = MessageType::Request;
   uint32_t msgid;
   std::string_view method;
@@ -21,13 +21,14 @@ struct Request {
   MSGPACK_DEFINE(type, msgid, method, params);
 };
 
-struct Response {
-  int32_t type;
-  uint32_t msgid;
-  msgpack::object error;
-  msgpack::object result;
-  MSGPACK_DEFINE(type, msgid, error, result);
-};
+// template <typename T>
+// struct ResponseOut {
+//   int32_t type = MessageType::Response;
+//   uint32_t msgid;
+//   msgpack::object error;
+//   msgpack::object result;
+//   MSGPACK_DEFINE(type, msgid, error, result);
+// };
 
 template <typename T>
 struct NotificationOut {
@@ -35,6 +36,22 @@ struct NotificationOut {
   std::string_view method;
   T params;
   MSGPACK_DEFINE(type, method, params);
+};
+
+// struct RequestIn {
+//   int32_t type;
+//   uint32_t msgid;
+//   std::string_view method;
+//   msgpack::object params;
+//   MSGPACK_DEFINE(type, msgid, method, params);
+// };
+
+struct ResponseIn {
+  int32_t type;
+  uint32_t msgid;
+  msgpack::object error;
+  msgpack::object result;
+  MSGPACK_DEFINE(type, msgid, error, result);
 };
 
 struct NotificationIn {

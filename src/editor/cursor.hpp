@@ -55,8 +55,6 @@ struct Cursor {
   float blinkElasped; // in milliseconds
   BlinkState blinkState;
 
-  wgpu::BindGroup currMaskBG;
-
   bool SetDestPos(glm::vec2 destPos);
   void SetMode(ModeInfo* modeInfo);
   void Update(float dt);

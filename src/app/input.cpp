@@ -197,6 +197,7 @@ void InputHandler::HandleMouseWheel(const SDL_MouseWheelEvent& event) {
   bool ypositive = event.y > 0;
   bool xpositive = event.x > 0;
 
+  // only scroll one axis at a time
   if (yAbs > xAbs) {
     xAccum = 0;
     if ((ypositive && scrollDir == -1) || (!ypositive && scrollDir == 1)) {
@@ -212,6 +213,7 @@ void InputHandler::HandleMouseWheel(const SDL_MouseWheelEvent& event) {
       nvim.InputMouse("wheel", actionStr, modStr, info.grid, info.row, info.col);
       yAccum -= scrollUnit;
     }
+
   } else if (xAbs > yAbs) {
     yAccum = 0;
     if ((xpositive && scrollDir == -1) || (!xpositive && scrollDir == 1)) {

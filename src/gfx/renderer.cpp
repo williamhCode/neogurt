@@ -84,12 +84,19 @@ Renderer::Renderer(const SizeHandler& sizes) {
   });
 
   // cursor
-  maskOffsetBuffer =
-    utils::CreateUniformBuffer(ctx.device, sizeof(glm::vec2), &sizes.fbOffset);
-  maskOffsetBG = utils::MakeBindGroup(
-    ctx.device, ctx.pipeline.maskOffsetBGL,
+  maskTextureView =
+    utils::CreateRenderTexture(
+      ctx.device, Extent3D(sizes.charSize.x, sizes.charSize.y), TextureFormat::R8Unorm
+    )
+      .CreateView();
+
+  maskPosBuffer = utils::CreateUniformBuffer(ctx.device, sizeof(glm::vec2));
+
+  maskBG = utils::MakeBindGroup(
+    ctx.device, ctx.pipeline.maskBGL,
     {
-      {0, maskOffsetBuffer},
+      {0, maskTextureView},
+      {1, maskPosBuffer},
     }
   );
 
@@ -118,7 +125,20 @@ void Renderer::Resize(const SizeHandler& sizes) {
       .CreateView();
   windowsRPD.cDepthStencilAttachmentInfo.view = stencilTextureView;
 
-  ctx.queue.WriteBuffer(maskOffsetBuffer, 0, &sizes.fbOffset, sizeof(glm::vec2));
+  // cursor
+  maskTextureView =
+    utils::CreateRenderTexture(
+      ctx.device, Extent3D(sizes.charSize.x, sizes.charSize.y), TextureFormat::R8Unorm
+    )
+      .CreateView();
+
+  maskBG = utils::MakeBindGroup(
+    ctx.device, ctx.pipeline.maskBGL,
+    {
+      {0, maskTextureView},
+      {1, maskPosBuffer},
+    }
+  );
 }
 
 void Renderer::SetClearColor(glm::vec4 color) {
@@ -136,6 +156,18 @@ void Renderer::Begin() {
 }
 
 void Renderer::RenderWindow(Win& win, FontFamily& fontFamily, const HlTable& hlTable) {
+  // if for whatever reason (prob nvim events buggy, events not sent or offsync)
+  // the grid is not the same size as the window
+  // don't render
+  if (win.grid.width != win.width || win.grid.height != win.height) {
+    LOG_WARN(
+      "RenderWindow: grid size not equal to window size for id: {}\n"
+      "Sizes: grid: {}x{}, window: {}x{}",
+      win.id, win.grid.width, win.grid.height, win.width, win.height
+    );
+    return;
+  }
+
   // keep track of quad index after each row
   size_t rows = win.grid.lines.Size();
   std::vector<int> rectIntervals;
@@ -168,13 +200,11 @@ void Renderer::RenderWindow(Win& win, FontFamily& fontFamily, const HlTable& hlT
 
         auto background = *hl.background;
         background.a = hl.bgAlpha;
+        auto& quad = rectData.NextQuad();
         for (size_t i = 0; i < 4; i++) {
-          auto& vertex = rectData.CurrQuad()[i];
-          vertex.position = textOffset + rectPositions[i];
-          vertex.color = background;
+          quad[i].position = textOffset + rectPositions[i];
+          quad[i].color = background;
         }
-
-        rectData.Increment();
       }
 
       if (!cell.text.empty() && cell.text != " ") {
@@ -187,14 +217,12 @@ void Renderer::RenderWindow(Win& win, FontFamily& fontFamily, const HlTable& hlT
         };
 
         glm::vec4 foreground = GetForeground(hlTable, hl);
+        auto& quad = textData.NextQuad();
         for (size_t i = 0; i < 4; i++) {
-          auto& vertex = textData.CurrQuad()[i];
-          vertex.position = textQuadPos + glyphInfo.sizePositions[i];
-          vertex.regionCoords = glyphInfo.region[i];
-          vertex.foreground = foreground;
+          quad[i].position = textQuadPos + glyphInfo.sizePositions[i];
+          quad[i].regionCoords = glyphInfo.region[i];
+          quad[i].foreground = foreground;
         }
-
-        textData.Increment();
       }
 
       textOffset.x += defaultFont.charSize.x;
@@ -218,7 +246,8 @@ void Renderer::RenderWindow(Win& win, FontFamily& fontFamily, const HlTable& hlT
   static int i = 0;
   LOG_DISABLE();
   LOG("{} -------------------", i++);
-  // LOG("baseOffset: {}, scrollDist: {}", win.sRenderTexture.baseOffset, win.sRenderTexture.scrollDist);
+  // LOG("baseOffset: {}, scrollDist: {}", win.sRenderTexture.baseOffset,
+  // win.sRenderTexture.scrollDist);
 
   for (auto [renderTexture, range, clearRegion] : renderInfos) {
     {
@@ -232,12 +261,11 @@ void Renderer::RenderWindow(Win& win, FontFamily& fontFamily, const HlTable& hlT
       if (clearRegion.has_value()) {
         QuadRenderData<RectQuadVertex> clearData(1);
         auto region = clearRegion->Region();
+        auto& quad = clearData.NextQuad();
         for (size_t i = 0; i < 4; i++) {
-          auto& vertex = clearData.CurrQuad()[i];
-          vertex.position = region[i];
-          vertex.color = ToGlmColor(clearColor);
+          quad[i].position = region[i];
+          quad[i].color = ToGlmColor(clearColor);
         }
-        clearData.Increment();
         clearData.WriteBuffers();
         clearData.Render(passEncoder);
       }
@@ -250,7 +278,6 @@ void Renderer::RenderWindow(Win& win, FontFamily& fontFamily, const HlTable& hlT
     }
     {
       textRPD.cColorAttachments[0].view = renderTexture->textureView;
-      // textRPD.cColorAttachments[1].view = win.maskTextureView;
       RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textRPD);
       passEncoder.SetPipeline(ctx.pipeline.textRPL);
       passEncoder.SetBindGroup(0, renderTexture->camera.viewProjBG);
@@ -310,21 +337,19 @@ void Renderer::RenderCursor(const Cursor& cursor, const HlTable& hlTable) {
   if (attrId == 0) std::swap(foreground, background);
 
   cursorData.ResetCounts();
+  auto& quad = cursorData.NextQuad();
   for (size_t i = 0; i < 4; i++) {
-    auto& vertex = cursorData.CurrQuad()[i];
-    vertex.position = cursor.pos + cursor.corners[i];
-    vertex.foreground = foreground;
-    vertex.background = background;
+    quad[i].position = cursor.pos + cursor.corners[i];
+    quad[i].foreground = foreground;
+    quad[i].background = background;
   }
-  cursorData.Increment();
   cursorData.WriteBuffers();
 
   cursorRPD.cColorAttachments[0].view = nextTextureView;
   RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&cursorRPD);
   passEncoder.SetPipeline(ctx.pipeline.cursorRPL);
   passEncoder.SetBindGroup(0, camera.viewProjBG);
-  passEncoder.SetBindGroup(1, cursor.currMaskBG);
-  passEncoder.SetBindGroup(2, maskOffsetBG);
+  passEncoder.SetBindGroup(1, maskBG);
   cursorData.Render(passEncoder);
   passEncoder.End();
   cursorRPD.cColorAttachments[0].view = nullptr;

@@ -35,11 +35,11 @@ struct QuadRenderData {
     indexCount = 0;
   }
 
-  Quad& CurrQuad() {
-    return quads[quadCount];
-  }
+  Quad& NextQuad() {
+    assert(quadCount < quads.size());
 
-  void Increment() {
+    auto& quad = quads[quadCount];
+
     indices[indexCount + 0] = vertexCount + 0;
     indices[indexCount + 1] = vertexCount + 1;
     indices[indexCount + 2] = vertexCount + 2;
@@ -50,6 +50,8 @@ struct QuadRenderData {
     quadCount++;
     vertexCount += 4;
     indexCount += 6;
+
+    return quad;
   }
 
   void WriteBuffers() {

@@ -107,5 +107,5 @@ void Cursor::Update(float dt) {
 
 bool Cursor::ShouldRender() {
   return modeInfo != nullptr && modeInfo->cursorShape != CursorShape::None &&
-         blinkState != BlinkState::Off && currMaskBG != nullptr;
+         blinkState != BlinkState::Off;
 }

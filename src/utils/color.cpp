@@ -49,18 +49,18 @@ glm::vec4 IntToColor(uint32_t color) {
 
 glm::vec4 ToLinear(const glm::vec4& color) {
   return {
-    std::pow(color.r, 2.2f),
-    std::pow(color.g, 2.2f),
-    std::pow(color.b, 2.2f),
+    std::pow(color.r, 1.8f),
+    std::pow(color.g, 1.8f),
+    std::pow(color.b, 1.8f),
     color.a,
   };
 }
 
 glm::vec4 ToSrgb(const glm::vec4& color) {
   return {
-    std::pow(color.r, 1.0f / 2.2f),
-    std::pow(color.g, 1.0f / 2.2f),
-    std::pow(color.b, 1.0f / 2.2f),
+    std::pow(color.r, 1.0f / 1.8f),
+    std::pow(color.g, 1.0f / 1.8f),
+    std::pow(color.b, 1.0f / 1.8f),
     color.a,
   };
 }

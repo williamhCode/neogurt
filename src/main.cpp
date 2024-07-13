@@ -211,7 +211,6 @@ int main() {
 
         editorState.winManager.UpdateScrolling(dt);
 
-        wgpu::BindGroup currMaskBG;
         if (auto* win = editorState.winManager.GetActiveWin()) {
           auto cursorPos =
             glm::vec2{
@@ -227,11 +226,7 @@ int main() {
                              : glm::vec2(0);
 
           editorState.cursor.SetDestPos(cursorPos + scrollOffset);
-
-
-          currMaskBG = win->maskBG;
         }
-        editorState.cursor.currMaskBG = std::move(currMaskBG);
         editorState.cursor.Update(dt);
 
         // render ----------------------------------------------

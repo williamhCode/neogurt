@@ -10,7 +10,23 @@ using namespace wgpu;
 
 WGPUContext::WGPUContext(SDL_Window* window, glm::uvec2 _size, PresentMode _presentMode)
     : size(_size), presentMode(_presentMode) {
-  instance = CreateInstance();
+
+  std::vector<std::string> enabledToggles = {"enable_immediate_error_handling"};
+
+  std::vector<const char*> enabledToggleNames;
+  for (const std::string& toggle : enabledToggles) {
+    enabledToggleNames.push_back(toggle.c_str());
+  }
+
+  wgpu::DawnTogglesDescriptor toggles({
+    .enabledToggleCount = enabledToggleNames.size(),
+    .enabledToggles = enabledToggleNames.data(),
+  });
+
+  InstanceDescriptor desc{
+    .nextInChain = &toggles,
+  };
+  instance = CreateInstance(&desc);
   if (!instance) {
     LOG_ERR("Could not initialize WebGPU!");
     std::exit(1);
@@ -23,7 +39,7 @@ WGPUContext::WGPUContext(SDL_Window* window, glm::uvec2 _size, PresentMode _pres
 void WGPUContext::Init() {
   RequestAdapterOptions adapterOpts{
     .compatibleSurface = surface,
-    .powerPreference = PowerPreference::HighPerformance,
+    .powerPreference = PowerPreference::Undefined,
   };
   adapter = utils::RequestAdapter(instance, &adapterOpts);
 
