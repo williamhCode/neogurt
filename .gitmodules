@@ -10,9 +10,6 @@
 [submodule "deps/utfcpp"]
 	path = deps/utfcpp
 	url = https://github.com/nemtrif/utfcpp.git
-[submodule "deps/tiny_process_library"]
-	path = deps/tiny_process_library
-	url = https://gitlab.com/eidheim/tiny-process-library.git
 [submodule "deps/freetype"]
 	path = deps/freetype
 	url = https://github.com/freetype/freetype.git
