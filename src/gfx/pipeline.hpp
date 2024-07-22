@@ -17,6 +17,11 @@ struct TextQuadVertex {
   glm::vec4 foreground;
 };
 
+struct TextMaskQuadVertex {
+  glm::vec2 position;
+  glm::vec2 regionCoords; // region in the font texture
+};
+
 struct TextureQuadVertex {
   glm::vec2 position;
   glm::vec2 uv;
@@ -35,6 +40,7 @@ struct Pipeline {
 
   wgpu::BindGroupLayout fontTextureBGL;
   wgpu::RenderPipeline textRPL;
+  wgpu::RenderPipeline textMaskRPL;
 
   wgpu::BindGroupLayout textureBGL;
   wgpu::RenderPipeline textureNoBlendRPL;
@@ -42,7 +48,7 @@ struct Pipeline {
 
   wgpu::RenderPipeline finalTextureRPL;
 
-  wgpu::BindGroupLayout maskBGL;
+  wgpu::BindGroupLayout cursorMaskPosBGL;
   wgpu::RenderPipeline cursorRPL;
 
   Pipeline() = default;

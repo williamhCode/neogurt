@@ -53,7 +53,8 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
     .bgls = {viewProjBGL, fontTextureBGL},
     .buffers = {
       {
-        sizeof(TextQuadVertex), {
+        sizeof(TextQuadVertex),
+        {
           {VertexFormat::Float32x2, offsetof(TextQuadVertex, position)},
           {VertexFormat::Float32x2, offsetof(TextQuadVertex, regionCoords)},
           {VertexFormat::Float32x4, offsetof(TextQuadVertex, foreground)},
@@ -64,9 +65,29 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
       {
         .format = TextureFormat::RGBA8UnormSrgb,
         .blend = &utils::BlendState::AlphaBlending,
-        // .blend = &utils::BlendState::PremultipliedAlphaBlending,
       },
-      // {.format = TextureFormat::R8Unorm},
+    },
+  });
+
+  // mask
+  ShaderModule textMaskShader =
+    utils::LoadShaderModule(ctx.device, ROOT_DIR "/src/gfx/shaders/text_mask.wgsl");
+
+  textMaskRPL = utils::MakeRenderPipeline(ctx.device, {
+    .vs = textMaskShader,
+    .fs = textMaskShader,
+    .bgls = {viewProjBGL, fontTextureBGL},
+    .buffers = {
+      {
+        sizeof(TextMaskQuadVertex),
+        {
+          {VertexFormat::Float32x2, offsetof(TextMaskQuadVertex, position)},
+          {VertexFormat::Float32x2, offsetof(TextMaskQuadVertex, regionCoords)},
+        }
+      }
+    },
+    .targets = {
+      { .format = TextureFormat::R8Unorm },
     },
   });
 
@@ -158,18 +179,17 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
     }
   };
 
-  maskBGL = utils::MakeBindGroupLayout(
+  cursorMaskPosBGL = utils::MakeBindGroupLayout(
     ctx.device,
     {
-      {0, ShaderStage::Fragment, TextureSampleType::UnfilterableFloat},
-      {1, ShaderStage::Fragment, BufferBindingType::Uniform},
+      {0, ShaderStage::Vertex, BufferBindingType::Uniform},
     }
   );
 
   cursorRPL = utils::MakeRenderPipeline(ctx.device, {
     .vs = cursorShader,
     .fs = cursorShader,
-    .bgls = {viewProjBGL, maskBGL},
+    .bgls = {viewProjBGL, viewProjBGL, cursorMaskPosBGL, textureBGL},
     .buffers = {cursorQuadVBL},
     .targets = {{.format = TextureFormat::BGRA8Unorm}},
   });

@@ -1,8 +1,6 @@
 #pragma once
 
 #include "glm/ext/vector_float2.hpp"
-#include "webgpu/webgpu_cpp.h"
-
 #include "gfx/quad.hpp"
 #include "gfx/render_texture.hpp"
 #include "nvim/events/parse.hpp"
@@ -82,11 +80,9 @@ struct WinManager {
   void ViewportMargins(const WinViewportMargins& e);
   void Extmark(const WinExtmark& e);
 
-  int activeWinId = 0;
-  Win* GetActiveWin();
-
   MouseInfo GetMouseInfo(glm::vec2 mousePos);
   MouseInfo GetMouseInfo(int grid, glm::vec2 mousePos);
 
+  Win* GetWin(int id);
   Win* GetMsgWin();
 };

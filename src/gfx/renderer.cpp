@@ -7,7 +7,6 @@
 #include "utils/region.hpp"
 #include "utils/unicode.hpp"
 #include "utils/color.hpp"
-#include "webgpu/webgpu_cpp.h"
 #include "webgpu_tools/utils/webgpu.hpp"
 #include <utility>
 #include <vector>
@@ -45,6 +44,9 @@ Renderer::Renderer(const SizeHandler& sizes) {
       .loadOp = LoadOp::Load,
       .storeOp = StoreOp::Store,
     },
+  });
+
+  textMaskRPD = utils::RenderPassDescriptor({
     RenderPassColorAttachment{
       .loadOp = LoadOp::Clear,
       .storeOp = StoreOp::Store,
@@ -54,10 +56,8 @@ Renderer::Renderer(const SizeHandler& sizes) {
 
   // windows
   auto stencilTextureView =
-    utils::CreateRenderTexture(
-      ctx.device, Extent3D(sizes.uiFbSize.x, sizes.uiFbSize.y), TextureFormat::Stencil8
-    )
-      .CreateView();
+    utils::CreateRenderTexture(ctx.device, sizes.uiFbSize, TextureFormat::Stencil8)
+    .CreateView();
 
   windowsRPD = utils::RenderPassDescriptor(
     {
@@ -84,22 +84,6 @@ Renderer::Renderer(const SizeHandler& sizes) {
   });
 
   // cursor
-  maskTextureView =
-    utils::CreateRenderTexture(
-      ctx.device, Extent3D(sizes.charSize.x, sizes.charSize.y), TextureFormat::R8Unorm
-    )
-      .CreateView();
-
-  maskPosBuffer = utils::CreateUniformBuffer(ctx.device, sizeof(glm::vec2));
-
-  maskBG = utils::MakeBindGroup(
-    ctx.device, ctx.pipeline.maskBGL,
-    {
-      {0, maskTextureView},
-      {1, maskPosBuffer},
-    }
-  );
-
   cursorData.CreateBuffers(1);
 
   cursorRPD = utils::RenderPassDescriptor({
@@ -119,26 +103,9 @@ void Renderer::Resize(const SizeHandler& sizes) {
   windowsRPD.cColorAttachments[0].view = finalRenderTexture.textureView;
 
   auto stencilTextureView =
-    utils::CreateRenderTexture(
-      ctx.device, Extent3D(sizes.uiFbSize.x, sizes.uiFbSize.y), TextureFormat::Stencil8
-    )
-      .CreateView();
+    utils::CreateRenderTexture(ctx.device, sizes.uiFbSize, TextureFormat::Stencil8)
+    .CreateView();
   windowsRPD.cDepthStencilAttachmentInfo.view = stencilTextureView;
-
-  // cursor
-  maskTextureView =
-    utils::CreateRenderTexture(
-      ctx.device, Extent3D(sizes.charSize.x, sizes.charSize.y), TextureFormat::R8Unorm
-    )
-      .CreateView();
-
-  maskBG = utils::MakeBindGroup(
-    ctx.device, ctx.pipeline.maskBGL,
-    {
-      {0, maskTextureView},
-      {1, maskPosBuffer},
-    }
-  );
 }
 
 void Renderer::SetClearColor(glm::vec4 color) {
@@ -155,7 +122,9 @@ void Renderer::Begin() {
   nextTextureView = nextTexture.CreateView();
 }
 
-void Renderer::RenderWindow(Win& win, FontFamily& fontFamily, const HlTable& hlTable) {
+void Renderer::RenderToWindow(
+  Win& win, FontFamily& fontFamily, const HlTable& hlTable
+) {
   // if for whatever reason (prob nvim events buggy, events not sent or offsync)
   // the grid is not the same size as the window
   // don't render
@@ -170,10 +139,8 @@ void Renderer::RenderWindow(Win& win, FontFamily& fontFamily, const HlTable& hlT
 
   // keep track of quad index after each row
   size_t rows = win.grid.lines.Size();
-  std::vector<int> rectIntervals;
-  rectIntervals.reserve(rows + 1);
-  std::vector<int> textIntervals;
-  textIntervals.reserve(rows + 1);
+  std::vector<int> rectIntervals; rectIntervals.reserve(rows + 1);
+  std::vector<int> textIntervals; textIntervals.reserve(rows + 1);
 
   auto& rectData = win.rectData;
   auto& textData = win.textData;
@@ -192,7 +159,7 @@ void Renderer::RenderWindow(Win& win, FontFamily& fontFamily, const HlTable& hlT
     textIntervals.push_back(textData.quadCount);
 
     for (auto& cell : line) {
-      Highlight hl = hlTable.at(cell.hlId);
+      const Highlight& hl = hlTable.at(cell.hlId);
       // don't render background if default
       if (cell.hlId != 0 && hl.background.has_value() &&
           hl.background != hlTable.at(0).background) {
@@ -246,8 +213,6 @@ void Renderer::RenderWindow(Win& win, FontFamily& fontFamily, const HlTable& hlT
   static int i = 0;
   LOG_DISABLE();
   LOG("{} -------------------", i++);
-  // LOG("baseOffset: {}, scrollDist: {}", win.sRenderTexture.baseOffset,
-  // win.sRenderTexture.scrollDist);
 
   for (auto [renderTexture, range, clearRegion] : renderInfos) {
     {
@@ -292,6 +257,46 @@ void Renderer::RenderWindow(Win& win, FontFamily& fontFamily, const HlTable& hlT
 
   rectRPD.cColorAttachments[0].view = nullptr;
   textRPD.cColorAttachments[0].view = nullptr;
+}
+
+void Renderer::RenderCursorMask(
+  const Cursor& cursor, const Win& win, FontFamily& fontFamily, const HlTable& hlTable
+) {
+  auto& cell = win.grid.lines[cursor.row][cursor.col];
+
+  if (!cell.text.empty() && cell.text != " ") {
+    char32_t charcode = UTF8ToUnicode(cell.text);
+    const auto& hl = hlTable.at(cell.hlId);
+    const auto& glyphInfo = fontFamily.GetGlyphInfo(charcode, hl.bold, hl.italic);
+
+    glm::vec2 textQuadPos{
+      glyphInfo.bearing.x,
+      -glyphInfo.bearing.y + fontFamily.DefaultFont().size,
+    };
+
+    textMaskRPD.cColorAttachments[0].view = cursor.maskRenderTexture.textureView;
+    RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textMaskRPD);
+    passEncoder.SetPipeline(ctx.pipeline.textMaskRPL);
+    passEncoder.SetBindGroup(0, cursor.maskRenderTexture.camera.viewProjBG);
+    passEncoder.SetBindGroup(1, fontFamily.textureAtlas.fontTextureBG);
+    QuadRenderData<TextMaskQuadVertex> textMaskData(1);
+    auto& quad = textMaskData.NextQuad();
+    for (size_t i = 0; i < 4; i++) {
+      quad[i].position = textQuadPos + glyphInfo.sizePositions[i];
+      quad[i].regionCoords = glyphInfo.region[i];
+    }
+    textMaskData.WriteBuffers();
+    textMaskData.Render(passEncoder);
+    passEncoder.End();
+
+  } else {
+    // just clear the texture if there's nothing
+    textMaskRPD.cColorAttachments[0].view = cursor.maskRenderTexture.textureView;
+    RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textMaskRPD);
+    passEncoder.End();
+  }
+
+  textMaskRPD.cColorAttachments[0].view = nullptr;
 }
 
 void Renderer::RenderWindows(
@@ -349,7 +354,9 @@ void Renderer::RenderCursor(const Cursor& cursor, const HlTable& hlTable) {
   RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&cursorRPD);
   passEncoder.SetPipeline(ctx.pipeline.cursorRPL);
   passEncoder.SetBindGroup(0, camera.viewProjBG);
-  passEncoder.SetBindGroup(1, maskBG);
+  passEncoder.SetBindGroup(1, cursor.maskRenderTexture.camera.viewProjBG);
+  passEncoder.SetBindGroup(2, cursor.maskPosBG);
+  passEncoder.SetBindGroup(3, cursor.maskRenderTexture.textureBG);
   cursorData.Render(passEncoder);
   passEncoder.End();
   cursorRPD.cColorAttachments[0].view = nullptr;

@@ -21,7 +21,7 @@ TextureAtlas::TextureAtlas(uint _glyphSize, float _dpiScale)
     utils::CreateUniformBuffer(ctx.device, sizeof(glm::vec2), &textureSize);
 
   texture = utils::CreateBindingTexture(
-    ctx.device, Extent3D(bufferSize.x, bufferSize.y), wgpu::TextureFormat::RGBA8Unorm
+    ctx.device, bufferSize, wgpu::TextureFormat::RGBA8Unorm
   );
 
   textureSampler = ctx.device.CreateSampler(ToPtr(SamplerDescriptor{
@@ -99,7 +99,7 @@ void TextureAtlas::Update() {
       utils::CreateUniformBuffer(ctx.device, sizeof(glm::vec2), &textureSize);
 
     texture = utils::CreateBindingTexture(
-      ctx.device, Extent3D(bufferSize.x, bufferSize.y), wgpu::TextureFormat::RGBA8UnormSrgb
+      ctx.device, bufferSize, wgpu::TextureFormat::RGBA8UnormSrgb
     );
 
     fontTextureBG = utils::MakeBindGroup(
@@ -113,8 +113,6 @@ void TextureAtlas::Update() {
     resized = false;
   }
 
-  utils::WriteTexture(
-    ctx.device, texture, Extent3D(bufferSize.x, bufferSize.y), dataRaw.data()
-  );
+  utils::WriteTexture(ctx.device, texture, bufferSize, dataRaw.data());
   dirty = false;
 }

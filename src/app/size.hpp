@@ -9,6 +9,7 @@ struct SizeHandler {
   glm::vec2 uiSize;
   glm::vec2 uiFbSize;
   glm::vec2 charSize;
+  glm::vec2 charFbSize;
   int uiWidth;
   int uiHeight;
   float dpiScale;

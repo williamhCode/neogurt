@@ -10,9 +10,6 @@ struct Grid {
   int width;
   int height;
 
-  int cursorRow;
-  int cursorCol;
-
   struct Cell {
     std::string text;
     int hlId = 0;
@@ -29,7 +26,6 @@ struct GridManager {
 
   void Resize(const GridResize& e);
   void Clear(const GridClear& e);
-  void CursorGoto(const GridCursorGoto& e);
   void Line(const GridLine& e);
   void Scroll(const GridScroll& e);
   void Destroy(const GridDestroy& e);

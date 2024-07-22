@@ -196,11 +196,13 @@ bool ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
           editorState.gridManager.Clear(e);
         },
         [&](GridCursorGoto& e) {
-          editorState.gridManager.CursorGoto(e);
-          editorState.winManager.activeWinId = e.grid;
+          editorState.cursor.Goto(e);
         },
         [&](GridLine& e) {
           editorState.gridManager.Line(e);
+          if (e.grid == editorState.cursor.grid) {
+            editorState.cursor.dirty = true;
+          }
         },
         [&](GridScroll& e) {
           editorState.gridManager.Scroll(e);

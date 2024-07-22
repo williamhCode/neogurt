@@ -28,6 +28,5 @@ struct Options {
 
   float maxFps;
 
-
   void Load(Nvim& nvim);
 };

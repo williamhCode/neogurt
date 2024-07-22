@@ -17,8 +17,7 @@ RenderTexture::RenderTexture(
   camera = Ortho2D(size);
 
   auto fbSize = size * dpiScale;
-  texture =
-    utils::CreateRenderTexture(ctx.device, Extent3D(fbSize.x, fbSize.y), format, data);
+  texture = utils::CreateRenderTexture(ctx.device, fbSize, format, data);
   textureView = texture.CreateView();
 
   auto textureSampler = ctx.device.CreateSampler(ToPtr(SamplerDescriptor{
@@ -85,7 +84,7 @@ ScrollableRenderTexture::ScrollableRenderTexture(
   }
 }
 
-// round to prevent floating point errors
+// round to prevent floating point errors (very sus but it works)
 float ScrollableRenderTexture::RoundOffset(float offset) const {
   return glm::round(offset * dpiScale) / dpiScale;
 }

@@ -1,7 +1,9 @@
 #pragma once
 
+#include "gfx/render_texture.hpp"
 #include "webgpu/webgpu_cpp.h"
 #include "glm/ext/vector_float2.hpp"
+#include "nvim/events/parse.hpp"
 #include "utils/region.hpp"
 #include <string>
 
@@ -36,6 +38,13 @@ struct ModeInfo {
 enum class BlinkState { Wait, On, Off };
 
 struct Cursor {
+  glm::vec2 size;
+
+  bool dirty;
+  int grid;
+  int row;
+  int col;
+
   glm::vec2 startPos;
   glm::vec2 destPos;
   glm::vec2 pos;
@@ -44,7 +53,6 @@ struct Cursor {
 
   ModeInfo* modeInfo;
 
-  glm::vec2 fullSize;
   Region startCorners;
   Region destCorners;
   Region corners;
@@ -55,6 +63,12 @@ struct Cursor {
   float blinkElasped; // in milliseconds
   BlinkState blinkState;
 
+  RenderTexture maskRenderTexture;
+  wgpu::Buffer maskPosBuffer;
+  wgpu::BindGroup maskPosBG;
+
+  void Init(glm::vec2 size, float dpi);
+  void Goto(const GridCursorGoto& e);
   bool SetDestPos(glm::vec2 destPos);
   void SetMode(ModeInfo* modeInfo);
   void Update(float dt);

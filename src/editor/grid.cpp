@@ -46,18 +46,6 @@ void GridManager::Clear(const GridClear& e) {
   }
 }
 
-void GridManager::CursorGoto(const GridCursorGoto& e) {
-  auto it = grids.find(e.grid);
-  if (it == grids.end()) {
-    LOG_ERR("GridManager::CursorGoto: grid {} not found", e.grid);
-    return;
-  }
-  auto& grid = it->second;
-
-  grid.cursorRow = e.row;
-  grid.cursorCol = e.col;
-}
-
 void GridManager::Line(const GridLine& e) {
   auto it = grids.find(e.grid);
   if (it == grids.end()) {

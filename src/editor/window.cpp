@@ -1,9 +1,5 @@
 #include "window.hpp"
-#include "gfx/instance.hpp"
-#include "glm/common.hpp"
-#include "glm/exponential.hpp"
 #include "glm/ext/vector_float2.hpp"
-#include "webgpu_tools/utils/webgpu.hpp"
 #include "utils/logger.hpp"
 #include <algorithm>
 #include <cstdlib>
@@ -217,12 +213,6 @@ void WinManager::ViewportMargins(const WinViewportMargins& e) {
 void WinManager::Extmark(const WinExtmark& e) {
 }
 
-Win* WinManager::GetActiveWin() {
-  auto it = windows.find(activeWinId);
-  if (it == windows.end()) return nullptr;
-  return &it->second;
-}
-
 MouseInfo WinManager::GetMouseInfo(glm::vec2 mousePos) {
   mousePos -= sizes.offset;
   int globalRow = mousePos.y / sizes.charSize.y;
@@ -277,8 +267,12 @@ MouseInfo WinManager::GetMouseInfo(int grid, glm::vec2 mousePos) {
   return {grid, row, col};
 }
 
-Win* WinManager::GetMsgWin() {
-  auto it = windows.find(msgWinId);
+Win* WinManager::GetWin(int id) {
+  auto it = windows.find(id);
   if (it == windows.end()) return nullptr;
   return &it->second;
+}
+
+Win* WinManager::GetMsgWin() {
+  return GetWin(msgWinId);
 }

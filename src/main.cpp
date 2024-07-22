@@ -23,6 +23,8 @@
 #include "utils/unicode.hpp"
 #include "webgpu_tools/utils/webgpu.hpp"
 
+#include <boost/core/demangle.hpp>
+#include <typeinfo>
 #include <algorithm>
 #include <vector>
 #include <deque>
@@ -56,7 +58,7 @@ int main() {
     port = sessionManager.GetOrCreateSession("default");
     Nvim nvim("localhost", port);
 
-    Options options{};
+    Options options;
     options.Load(nvim);
 
     // sdl::Window window({1600, 1000}, "Neovim GUI", options.window);
@@ -65,12 +67,11 @@ int main() {
     // create font
     std::string guifont = nvim.GetOptionValue("guifont", {})->convert();
     auto fontFamilyResult = FontFamily::FromGuifont(guifont, window.dpiScale);
-
     if (!fontFamilyResult) {
       LOG_ERR("Failed to create font family: {}", fontFamilyResult.error());
       return 1;
     }
-    FontFamily fontFamily = std::move(fontFamilyResult.value());
+    FontFamily fontFamily = std::move(*fontFamilyResult);
 
     SizeHandler sizes{};
     sizes.UpdateSizes(
@@ -81,9 +82,10 @@ int main() {
 
     EditorState editorState{
       .winManager{.sizes = sizes},
-      .cursor{.fullSize = sizes.charSize},
     };
     editorState.winManager.gridManager = &editorState.gridManager;
+    editorState.cursor.Init(sizes.charSize, sizes.dpiScale);
+
     if (options.transparency < 1) {
       auto& hl = editorState.hlTable[0];
       hl.background = IntToColor(options.bgColor);
@@ -211,19 +213,21 @@ int main() {
 
         editorState.winManager.UpdateScrolling(dt);
 
-        if (auto* win = editorState.winManager.GetActiveWin()) {
+        auto* activeWin = editorState.winManager.GetWin(editorState.cursor.grid);
+        if (activeWin) {
           auto cursorPos =
             glm::vec2{
-              win->startCol + win->grid.cursorCol,
-              win->startRow + win->grid.cursorRow,
+              activeWin->startCol + editorState.cursor.col,
+              activeWin->startRow + editorState.cursor.row,
             } *
               sizes.charSize +
             sizes.offset;
 
-          auto& winTex = win->sRenderTexture;
-          auto scrollOffset =
-            winTex.scrolling ? glm::vec2(0, (winTex.scrollDist - winTex.scrollCurr))
-                             : glm::vec2(0);
+          auto& winTex = activeWin->sRenderTexture;
+          auto scrollOffset = //
+            winTex.scrolling  //
+              ? glm::vec2(0, (winTex.scrollDist - winTex.scrollCurr))
+              : glm::vec2(0);
 
           editorState.cursor.SetDestPos(cursorPos + scrollOffset);
         }
@@ -254,10 +258,17 @@ int main() {
           bool renderWindows = false;
           for (auto& [id, win] : editorState.winManager.windows) {
             if (win.grid.dirty) {
-              renderer.RenderWindow(win, fontFamily, editorState.hlTable);
+              renderer.RenderToWindow(win, fontFamily, editorState.hlTable);
               win.grid.dirty = false;
               renderWindows = true;
             }
+          }
+
+          if (editorState.cursor.dirty && activeWin != nullptr) {
+            renderer.RenderCursorMask(
+              editorState.cursor, *activeWin, fontFamily, editorState.hlTable
+            );
+            editorState.cursor.dirty = false;
           }
 
           if (renderWindows || editorState.winManager.dirty) {
@@ -381,7 +392,7 @@ int main() {
           if (prevDpiScale == window.dpiScale) break;
           // LOG("display scale changed: {}", window.dpiScale);
           fontFamily.ChangeDpiScale(window.dpiScale);
-          editorState.cursor.fullSize = fontFamily.DefaultFont().charSize;
+          editorState.cursor.Init(sizes.charSize, sizes.dpiScale);
           break;
         }
 
@@ -402,7 +413,10 @@ int main() {
     }
 
   } catch (const std::exception& e) {
-    LOG_ERR("{}", e.what());
+    LOG_ERR(
+      "Exception of type {} caught: {}", boost::core::demangled_name(typeid(e)),
+      e.what()
+    );
     LOG_ERR("Exiting...");
   }
   // destructors cleans up window and font before quitting sdl and freetype

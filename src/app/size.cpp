@@ -10,6 +10,7 @@ void SizeHandler::UpdateSizes(
   charSize = _charSize;
 
   fbSize = size * dpiScale;
+  charFbSize = charSize * dpiScale;
 
   glm::vec2 innerSize{
     size.x - margins.left - margins.right,

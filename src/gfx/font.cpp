@@ -45,11 +45,9 @@ void FtDone() {
 std::expected<Font, std::string>
 Font::FromName(const FontDescriptorWithName& desc, float dpiScale) {
   auto fontPath = GetFontPathFromName(desc);
-  // LOG("Font path: {}, size: {}", fontPath, desc.size);
   if (fontPath.empty()) {
     return std::unexpected("Failed to find font for: " + desc.name);
   }
-
   try {
     return Font(fontPath, desc.size, desc.width, dpiScale);
   } catch (const std::runtime_error& e) {
