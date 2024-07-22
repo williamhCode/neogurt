@@ -51,7 +51,8 @@ static const std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
   }},
 
   {"flush", [](const msgpack::object&, UiEvents& uiEvents) {
-    LOG("flush ---------------------------- ");
+    static int i = 0;
+    LOG("flush {} ---------------------------- ", i++);
     uiEvents.Curr().emplace_back(Flush{});
     uiEvents.queue.emplace_back();
     uiEvents.numFlushes++;

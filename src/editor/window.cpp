@@ -18,6 +18,9 @@ void WinManager::InitRenderData(Win& win) {
   win.sRenderTexture = ScrollableRenderTexture(size, sizes.dpiScale, sizes.charSize);
   win.sRenderTexture.UpdatePos(pos);
 
+  // used if hiding window removes window completely
+  // win.grid.dirty = true;
+
   win.pos = pos;
   win.size = size;
 }
@@ -40,6 +43,9 @@ void WinManager::UpdateRenderData(Win& win) {
     win.sRenderTexture = ScrollableRenderTexture(size, sizes.dpiScale, sizes.charSize);
   }
   win.sRenderTexture.UpdatePos(pos);
+
+  // used if hiding window removes window completely
+  // win.grid.dirty = true;
 
   win.pos = pos;
   win.size = size;
@@ -120,19 +126,20 @@ void WinManager::ExternalPos(const WinExternalPos& e) {
 }
 
 void WinManager::Hide(const WinHide& e) {
-  // auto it = windows.find(e.grid);
-  // if (it == windows.end()) {
-  //   LOG_ERR("WinManager::Hide: window {} not found", e.grid);
-  //   return;
-  // }
-  // auto& win = it->second;
-  // win.hidden = true;
+  auto it = windows.find(e.grid);
+  if (it == windows.end()) {
+    LOG_ERR("WinManager::Hide: window {} not found", e.grid);
+    return;
+  }
+  auto& win = it->second;
+  win.hidden = true;
 
   // save memory when tabs get hidden
-  auto removed = windows.erase(e.grid);
-  if (removed == 0) {
-    LOG_ERR("WinManager::Hide: window {} not found", e.grid);
-  }
+  // NOTE: as of now ViewportMargins event is not always sent when switching tabs (so removing makes it margins weird)
+  // auto removed = windows.erase(e.grid);
+  // if (removed == 0) {
+  //   LOG_ERR("WinManager::Hide: window {} not found", e.grid);
+  // }
 }
 
 void WinManager::Close(const WinClose& e) {
