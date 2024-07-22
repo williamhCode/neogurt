@@ -14,7 +14,7 @@ struct TextureAtlas {
   static constexpr uint glyphsPerRow = 16;
 
   float dpiScale;
-  uint trueGlyphSize;
+  uint trueGlyphSize; // only used for approximate scale, no precision needed
   glm::vec2 textureSize; // virtual size of texture (used in shader)
   glm::uvec2 bufferSize; // size of texture in texels
 

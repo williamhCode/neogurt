@@ -50,7 +50,7 @@ enum class FontSlant { Normal, Italic, Oblique };
 
 struct FontDescriptorWithName {
   std::string name;
-  float size = 12;
+  float height = 12;
   float width = 0;
   bool bold = false;
   bool italic = false;
@@ -60,7 +60,7 @@ struct FontDescriptorWithFamily {
   std::string family;
   FontWeight weight = FontWeight::Normal;
   FontSlant slant = FontSlant::Normal;
-  float size = 12;
+  float height = 12;
   float width = 0;
   bool bold = false;
   bool italic = false;

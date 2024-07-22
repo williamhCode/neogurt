@@ -181,7 +181,7 @@ void Renderer::RenderToWindow(
 
         glm::vec2 textQuadPos{
           textOffset.x + glyphInfo.bearing.x,
-          textOffset.y - glyphInfo.bearing.y + defaultFont.size,
+          textOffset.y - glyphInfo.bearing.y + defaultFont.ascender,
         };
 
         glm::vec4 foreground = GetForeground(hlTable, hl);
@@ -272,7 +272,7 @@ void Renderer::RenderCursorMask(
 
     glm::vec2 textQuadPos{
       glyphInfo.bearing.x,
-      -glyphInfo.bearing.y + fontFamily.DefaultFont().size,
+      -glyphInfo.bearing.y + fontFamily.DefaultFont().ascender,
     };
 
     textMaskRPD.cColorAttachments[0].view = cursor.maskRenderTexture.textureView;

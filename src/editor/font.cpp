@@ -20,7 +20,7 @@ FontFamily::FromGuifont(std::string_view guifont, float dpiScale) {
 
   // split string by colon, first string is required, options args can be any length
   std::string_view fontsStr;
-  float size = 12;
+  float height = 12;
   float width = 0;
   bool bold = false;
   bool italic = false;
@@ -33,7 +33,7 @@ FontFamily::FromGuifont(std::string_view guifont, float dpiScale) {
     } else {
       using namespace boost::conversion;
       if (token.starts_with("h")) {
-        if (!try_lexical_convert(token.substr(1), size))
+        if (!try_lexical_convert(token.substr(1), height))
           return std::unexpected("Invalid guifont height: " + std::string(token));
       } else if (token.starts_with("w")) {
         if (!try_lexical_convert(token.substr(1), width))
@@ -56,7 +56,7 @@ FontFamily::FromGuifont(std::string_view guifont, float dpiScale) {
               auto font = Font::FromName(
                 {
                   .name = std::string(fontName),
-                  .size = size,
+                  .height = height,
                   .width = width,
                   .bold = bold,
                   .italic = italic,
@@ -84,7 +84,7 @@ FontFamily::FromGuifont(std::string_view guifont, float dpiScale) {
         }) |
         std::ranges::to<std::vector>(),
 
-      .textureAtlas = {size, dpiScale},
+      .textureAtlas{height, dpiScale},
     };
   } catch (const std::bad_expected_access<std::string>& e) {
     return std::unexpected(e.error());
@@ -101,7 +101,7 @@ void FontFamily::ChangeDpiScale(float dpiScale) {
         return newFontSet.normal;
       }
       return std::make_shared<Font>(
-        fontHandle->path, fontHandle->size, fontHandle->width, dpiScale
+        fontHandle->path, fontHandle->height, fontHandle->width, dpiScale
       );
     };
 
@@ -112,7 +112,7 @@ void FontFamily::ChangeDpiScale(float dpiScale) {
   }
   fonts = std::move(newFonts);
 
-  textureAtlas = TextureAtlas(DefaultFont().size, dpiScale);
+  textureAtlas = TextureAtlas(DefaultFont().height, dpiScale);
 }
 
 const Font& FontFamily::DefaultFont() const {

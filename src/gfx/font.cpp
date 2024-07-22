@@ -1,6 +1,6 @@
 #include "font.hpp"
-#include "utils/logger.hpp"
 #include "gfx/font/locator.hpp"
+#include "utils/logger.hpp"
 #include "utils/region.hpp"
 #include "glm/gtx/string_cast.hpp"
 #include <mdspan>
@@ -49,29 +49,30 @@ Font::FromName(const FontDescriptorWithName& desc, float dpiScale) {
     return std::unexpected("Failed to find font for: " + desc.name);
   }
   try {
-    return Font(fontPath, desc.size, desc.width, dpiScale);
+    return Font(fontPath, desc.height, desc.width, dpiScale);
   } catch (const std::runtime_error& e) {
     return std::unexpected(e.what());
   }
 }
 
-Font::Font(std::string _path, float _size, float _width, float _dpiScale)
-    : path(std::move(_path)), size(_size), width(_width), dpiScale(_dpiScale) {
+Font::Font(std::string _path, float _height, float _width, float _dpiScale)
+    : path(std::move(_path)), height(_height), width(_width), dpiScale(_dpiScale) {
   if (face = CreateFace(library, path.c_str(), 0); face == nullptr) {
     throw std::runtime_error("Failed to create FT_Face for: " + path);
   }
 
   // winding order is clockwise starting from top left
-  trueSize = size * dpiScale;
-  size = trueSize / dpiScale; // round down to nearest trueSize
+  trueHeight = height * dpiScale;
+  height = trueHeight / dpiScale; // round down to nearest trueSize
   int trueWidth = width * dpiScale;
   width = trueWidth / dpiScale; // round down to nearest trueWidth
-  FT_Set_Pixel_Sizes(face.get(), trueWidth, trueSize);
+  FT_Set_Pixel_Sizes(face.get(), trueWidth, trueHeight);
 
   charSize.x = (face->size->metrics.max_advance >> 6) / dpiScale;
   charSize.y = (face->size->metrics.height >> 6) / dpiScale;
-  // LOG_INFO("Font: {}, size: {}, dpiScale: {}, charSize: {}",
-  //          path, size, dpiScale, glm::to_string(charSize));
+  ascender = (face->size->metrics.ascender >> 6) / dpiScale;
+  LOG_INFO("Font: {}, size: {}, dpiScale: {}, charSize: {}, ascender: {}",
+            path, height, dpiScale, glm::to_string(charSize), ascender);
 }
 
 const Font::GlyphInfo*
@@ -97,8 +98,8 @@ Font::GetGlyphInfo(FT_ULong charcode, TextureAtlas& textureAtlas) {
   FT_Load_Glyph(face.get(), glyphIndex, loadFlags);
   FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL);
 
-  auto& glyph = *(face->glyph);
-  auto& bitmap = glyph.bitmap;
+  FT_GlyphSlot slot = face->glyph;
+  FT_Bitmap& bitmap = slot->bitmap;
 
   auto region = textureAtlas.AddGlyph({
     bitmap.buffer,
@@ -117,8 +118,8 @@ Font::GetGlyphInfo(FT_ULong charcode, TextureAtlas& textureAtlas) {
       ),
       .bearing =
         glm::vec2{
-          glyph.bitmap_left / dpiScale,
-          glyph.bitmap_top / dpiScale,
+          slot->bitmap_left / dpiScale,
+          slot->bitmap_top / dpiScale,
         },
       // .advance = (glyph.advance.x >> 6) / dpiScale,
       .region = region,
