@@ -34,6 +34,6 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
 
 // adjust alpha due to srgb blending
 fn AdjustAlpha(color: vec4f) -> vec4f {
-  return vec4f(color.rgb, pow(color.a, 1.0f / 1.8f));
-  // return color;
+  // return vec4f(color.rgb, pow(color.a, 1.0f / 1.8f));
+  return color;
 }

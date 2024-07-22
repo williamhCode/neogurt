@@ -159,9 +159,9 @@ int main() {
           SDL_PushEvent(&quitEvent);
         };
 
-        // LOG_DISABLE();
+        LOG_DISABLE();
         ParseEvents(nvim.client, nvim.uiEvents);
-        // LOG_ENABLE();
+        LOG_ENABLE();
 
         // process events ---------------------------------------
         {

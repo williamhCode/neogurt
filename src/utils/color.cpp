@@ -1,4 +1,14 @@
 #include "color.hpp"
+#include <cmath>
+
+glm::vec4 AdjustAlpha(const glm::vec4& color) {
+  return {
+    color.r,
+    color.g,
+    color.b,
+    std::pow(color.a, 1.0f / 1.8f),
+  };
+}
 
 glm::vec4 PremultiplyAlpha(const glm::vec4& color) {
   return {

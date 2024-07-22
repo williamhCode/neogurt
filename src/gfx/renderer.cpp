@@ -111,6 +111,7 @@ void Renderer::Resize(const SizeHandler& sizes) {
 void Renderer::SetClearColor(glm::vec4 color) {
   clearColor = ToWGPUColor(color);
   premultClearColor = ToWGPUColor(PremultiplyAlpha(color));
+  // premultClearColor = ToWGPUColor(PremultiplyAlpha(AdjustAlpha(color)));
   linearClearColor = ToWGPUColor(ToLinear(color));
 }
 
