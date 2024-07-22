@@ -54,8 +54,8 @@ public:
   Client& operator=(const Client&) = delete;
   ~Client();
 
-  bool Connect(const std::string& command);
-  bool Connect(std::string_view host, uint16_t port);
+  bool ConnectStdio(const std::string& command);
+  bool ConnectTcp(std::string_view host, uint16_t port);
   void Disconnect();
   bool IsConnected();
 

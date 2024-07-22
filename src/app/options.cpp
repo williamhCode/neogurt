@@ -17,7 +17,7 @@ static std::string CamelToSnakeCase(std::string_view s) {
 
 static void LoadOption(Nvim& nvim, std::string_view name, auto& value) {
   auto luaCode = std::format("return vim.g.neogui_opts.{}", CamelToSnakeCase(name));
-  msgpack::object_handle result = nvim.ExecLua(luaCode, {});
+  msgpack::object_handle result = nvim.ExecLua(luaCode, {}).get();
   try {
     value = result->convert();
   } catch (const std::exception& e) {

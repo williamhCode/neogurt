@@ -64,8 +64,8 @@ struct ScrollableRenderTexture {
   glm::vec2 charSize;
 
   int maxNumTexPerPage = 4;
-  float textureHeight;
-  int rowsPerTexture;
+  float textureHeight; // height of single RenderTexture segment
+  int rowsPerTexture; // number of text rows per RenderTexture segment
 
   wgpu::TextureFormat format = wgpu::TextureFormat::RGBA8UnormSrgb;
 

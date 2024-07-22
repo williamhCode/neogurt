@@ -62,7 +62,7 @@ struct WinManager {
   ColorBytes clearColor;
 
   // not unordered because telescope float background overlaps text
-  // so have to render floats in reverse order else text will be covered
+  // so have to render floats in order else text will be covered
   std::map<int, Win> windows;
   int msgWinId = -1;
 

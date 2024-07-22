@@ -67,8 +67,8 @@ static uint16_t FindFreePort() {
 void SessionManager::SpawnNvimProcess(uint16_t port) {
   std::string luaInitPath = ROOT_DIR "/lua/init.lua";
   std::string cmd = "nvim --listen localhost:" + std::to_string(port) +
-                    " --headless " +
-                    "--cmd \"luafile " + luaInitPath + "\"";
+                    " --headless ";
+  LOG_INFO("Spawning nvim process: {}", cmd);
   bp::child child(cmd);
   if (mode == SpawnMode::Child) {
     processes.push_back(std::move(child));

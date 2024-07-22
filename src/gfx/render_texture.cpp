@@ -150,26 +150,31 @@ void ScrollableRenderTexture::UpdateScrolling(float dt) {
 }
 
 void ScrollableRenderTexture::UpdateMargins(const Margins& newMargins) {
-  margins = newMargins;
-  fmargins = margins.ToFloat(charSize);
+  fmargins = newMargins.ToFloat(charSize);
 
-  if (margins.top != 0) {
-    glm::vec2 topMarginSize = {size.x, fmargins.top};
-    if (marginTextures.top == nullptr || marginTextures.top->size != topMarginSize) {
+  if (newMargins.top != 0) {
+    if (marginTextures.top == nullptr || margins.top != newMargins.top) {
+      glm::vec2 topMarginSize = {size.x, fmargins.top};
       marginTextures.top = std::make_unique<RenderTexture>(topMarginSize, dpiScale, format);
       marginTextures.top->UpdatePos(posOffset);
       marginTextures.top->UpdateCameraPos({0, 0});
     }
+  } else {
+    marginTextures.top = nullptr;
   }
 
-  if (margins.bottom != 0) {
-    glm::vec2 topMarginSize = {size.x, fmargins.bottom};
-    if (marginTextures.bottom == nullptr || marginTextures.bottom->size != topMarginSize) {
+  if (newMargins.bottom != 0) {
+    if (marginTextures.bottom == nullptr || margins.bottom != newMargins.bottom) {
+      glm::vec2 topMarginSize = {size.x, fmargins.bottom};
       marginTextures.bottom = std::make_unique<RenderTexture>(topMarginSize, dpiScale, format);
       marginTextures.bottom->UpdatePos(posOffset + glm::vec2(0, size.y - fmargins.bottom));
       marginTextures.bottom->UpdateCameraPos({0, size.y - fmargins.bottom});
     }
+  } else {
+    marginTextures.bottom = nullptr;
   }
+
+  margins = newMargins;
 }
 
 void ScrollableRenderTexture::AddOrRemoveTextures() {

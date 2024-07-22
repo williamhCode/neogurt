@@ -63,7 +63,7 @@ Renderer::Renderer(const SizeHandler& sizes) {
     {
       RenderPassColorAttachment{
         .view = finalRenderTexture.textureView,
-        .loadOp = LoadOp::Clear,
+        .loadOp = LoadOp::Undefined, // set later in RenderWindows
         .storeOp = StoreOp::Store,
       },
     },
@@ -303,23 +303,28 @@ void Renderer::RenderWindows(
   std::span<const Win*> windows, std::span<const Win*> floatWindows
 ) {
   windowsRPD.cColorAttachments[0].clearValue = linearClearColor;
-  auto passEncoder = commandEncoder.BeginRenderPass(&windowsRPD);
-
-  passEncoder.SetBindGroup(0, finalRenderTexture.camera.viewProjBG);
-
-  passEncoder.SetPipeline(ctx.pipeline.textureNoBlendRPL);
-  passEncoder.SetStencilReference(1);
-  for (const Win* win : windows) {
-    win->sRenderTexture.Render(passEncoder);
+  windowsRPD.cColorAttachments[0].loadOp = LoadOp::Clear;
+  {
+    auto passEncoder = commandEncoder.BeginRenderPass(&windowsRPD);
+    passEncoder.SetPipeline(ctx.pipeline.textureNoBlendRPL);
+    passEncoder.SetStencilReference(1);
+    passEncoder.SetBindGroup(0, finalRenderTexture.camera.viewProjBG);
+    for (const Win* win : windows) {
+      win->sRenderTexture.Render(passEncoder);
+    }
+    passEncoder.End();
   }
-
-  passEncoder.SetPipeline(ctx.pipeline.textureRPL);
-  passEncoder.SetStencilReference(0);
-  for (const Win* win : floatWindows) {
-    win->sRenderTexture.Render(passEncoder);
+  windowsRPD.cColorAttachments[0].loadOp = LoadOp::Load;
+  {
+    auto passEncoder = commandEncoder.BeginRenderPass(&windowsRPD);
+    passEncoder.SetPipeline(ctx.pipeline.textureRPL);
+    passEncoder.SetStencilReference(1);
+    passEncoder.SetBindGroup(0, finalRenderTexture.camera.viewProjBG);
+    for (const Win* win : floatWindows) {
+      win->sRenderTexture.Render(passEncoder);
+    }
+    passEncoder.End();
   }
-
-  passEncoder.End();
 }
 
 void Renderer::RenderFinalTexture() {

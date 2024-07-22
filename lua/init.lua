@@ -1,4 +1,3 @@
-vim.g.neogui = 1
 vim.g.neogui_opts = {
   window = {
     vsync = true,

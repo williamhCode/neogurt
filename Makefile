@@ -19,8 +19,6 @@ build-tint:
 build-setup:
 	cmake . -B build/debug \
 		-DCMAKE_BUILD_TYPE=Debug \
-		-DCMAKE_C_FLAGS_DEBUG="-g -O1" \
-		-DCMAKE_CXX_FLAGS_DEBUG="-g -O1" \
 		-GNinja \
 		-DCMAKE_C_COMPILER=clang \
 		-DCMAKE_CXX_COMPILER=clang++ \

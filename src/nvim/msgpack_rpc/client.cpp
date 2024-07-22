@@ -26,7 +26,7 @@ Client::~Client() {
   context.stop();
 }
 
-bool Client::Connect(const std::string& command) {
+bool Client::ConnectStdio(const std::string& command) {
   clientType = ClientType::Stdio;
   readPipe = std::make_unique<bp::async_pipe>(context);
   writePipe = std::make_unique<bp::async_pipe>(context);
@@ -52,7 +52,7 @@ bool Client::Connect(const std::string& command) {
   return true;
 }
 
-bool Client::Connect(std::string_view host, uint16_t port) {
+bool Client::ConnectTcp(std::string_view host, uint16_t port) {
   clientType = ClientType::Tcp;
   socket = std::make_unique<asio::ip::tcp::socket>(context);
 

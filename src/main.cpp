@@ -51,25 +51,40 @@ int main() {
   }
 
   try {
-    SessionManager sessionManager(SpawnMode::Child);
+    // SessionManager sessionManager(SpawnMode::Child);
     // SessionManager sessionManager(SpawnMode::Detached);
 
-    uint16_t port = 2040;
-    port = sessionManager.GetOrCreateSession("default");
+    // uint16_t port = 2040;
+    // port = sessionManager.GetOrCreateSession("default");
+    // Nvim nvim;
+    // if (!nvim.ConnectTcp("localhost", port)) {
+    //   LOG_ERR("Failed to connect to nvim");
+    //   return 1;
+    // }
+
     Nvim nvim;
-    if (!nvim.Connect("localhost", port)) {
+    if (!nvim.ConnectStdio()) {
       LOG_ERR("Failed to connect to nvim");
       return 1;
     }
 
-    Options options;
+    nvim.UiAttach(
+      100, 50,
+      {
+        {"rgb", true},
+        {"ext_multigrid", true},
+        {"ext_linegrid", true},
+      }
+    ).wait();
+
+    Options options{};
     options.Load(nvim);
 
     // sdl::Window window({1600, 1000}, "Neovim GUI", options.window);
     sdl::Window window({1200, 800}, "Neovim GUI", options.window);
 
     // create font
-    std::string guifont = nvim.GetOptionValue("guifont", {})->convert();
+    std::string guifont = nvim.GetOptionValue("guifont", {}).get()->convert();
     auto fontFamilyResult = FontFamily::FromGuifont(guifont, window.dpiScale);
     if (!fontFamilyResult) {
       LOG_ERR("Failed to create font family: {}", fontFamilyResult.error());
@@ -96,14 +111,16 @@ int main() {
       hl.background->a = options.transparency;
     }
 
-    nvim.UiAttach(
-      sizes.uiWidth, sizes.uiHeight,
-      {
-        {"rgb", true},
-        {"ext_multigrid", options.multigrid},
-        {"ext_linegrid", true},
-      }
-    );
+    // nvim.UiAttach(
+    //   sizes.uiWidth, sizes.uiHeight,
+    //   {
+    //     {"rgb", true},
+    //     {"ext_multigrid", true},
+    //     {"ext_linegrid", true},
+    //   }
+    // );
+
+    nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight).wait();
 
     // main loop -----------------------------------
     // lock whenever ctx.device is used
@@ -136,15 +153,15 @@ int main() {
         // nvim events -------------------------------------------
         if (!nvim.IsConnected()) {
           exitWindow = true;
-          sessionManager.RemoveSession("default");
+          // sessionManager.RemoveSession("default");
 
           SDL_Event quitEvent{.type = SDL_EVENT_QUIT};
           SDL_PushEvent(&quitEvent);
         };
 
-        LOG_DISABLE();
+        // LOG_DISABLE();
         ParseEvents(nvim.client, nvim.uiEvents);
-        LOG_ENABLE();
+        // LOG_ENABLE();
 
         // process events ---------------------------------------
         {
@@ -297,9 +314,6 @@ int main() {
                 winIt != editorState.winManager.windows.end()) {
               windows.push_back(&winIt->second);
             }
-
-            // see editor/window.hpp comment for WinManager::windows
-            std::ranges::reverse(floatWindows);
 
             // sort floating windows by zindex
             std::ranges::sort(floatWindows, [](const Win* win, const Win* other) {
