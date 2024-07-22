@@ -23,9 +23,9 @@ struct Font {
   FT_FacePtr face;
 
   std::string path;
-  int size;     // font size
+  float size;     // font size
   int trueSize; // font size * dpiScale
-  int width;
+  float width;
   float dpiScale;
 
   glm::vec2 charSize;
@@ -44,7 +44,7 @@ struct Font {
   FromName(const FontDescriptorWithName& desc, float dpiScale);
 
   Font() = default;
-  Font(std::string path, int size, int width, float dpiScale);
+  Font(std::string path, float size, float width, float dpiScale);
 
   // returns nullptr when charcode is not found.
   // updates glyphInfoMap when charcode not in map.

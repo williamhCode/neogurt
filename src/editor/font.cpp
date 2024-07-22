@@ -56,8 +56,8 @@ FontFamily::FromGuifont(std::string_view guifont, float dpiScale) {
               auto font = Font::FromName(
                 {
                   .name = std::string(fontName),
-                  .size = static_cast<int>(size),
-                  .width = static_cast<int>(width),
+                  .size = size,
+                  .width = width,
                   .bold = bold,
                   .italic = italic,
                 },
@@ -84,7 +84,7 @@ FontFamily::FromGuifont(std::string_view guifont, float dpiScale) {
         }) |
         std::ranges::to<std::vector>(),
 
-      .textureAtlas = {(uint)size, dpiScale},
+      .textureAtlas = {size, dpiScale},
     };
   } catch (const std::bad_expected_access<std::string>& e) {
     return std::unexpected(e.error());

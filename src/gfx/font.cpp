@@ -55,7 +55,7 @@ Font::FromName(const FontDescriptorWithName& desc, float dpiScale) {
   }
 }
 
-Font::Font(std::string _path, int _size, int _width, float _dpiScale)
+Font::Font(std::string _path, float _size, float _width, float _dpiScale)
     : path(std::move(_path)), size(_size), width(_width), dpiScale(_dpiScale) {
   if (face = CreateFace(library, path.c_str(), 0); face == nullptr) {
     throw std::runtime_error("Failed to create FT_Face for: " + path);
@@ -63,7 +63,9 @@ Font::Font(std::string _path, int _size, int _width, float _dpiScale)
 
   // winding order is clockwise starting from top left
   trueSize = size * dpiScale;
+  size = trueSize / dpiScale; // round down to nearest trueSize
   int trueWidth = width * dpiScale;
+  width = trueWidth / dpiScale; // round down to nearest trueWidth
   FT_Set_Pixel_Sizes(face.get(), trueWidth, trueSize);
 
   charSize.x = (face->size->metrics.max_advance >> 6) / dpiScale;

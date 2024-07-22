@@ -38,7 +38,7 @@ struct TextureAtlas {
   bool resized = false;
 
   TextureAtlas() = default;
-  TextureAtlas(uint glyphSize, float dpiScale);
+  TextureAtlas(float glyphSize, float dpiScale);
 
   // Adds data to texture atlas, and returns the region where the data was added.
   // Region coordinates is relative to textureSize.

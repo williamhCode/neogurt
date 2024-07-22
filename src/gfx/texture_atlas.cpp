@@ -5,7 +5,7 @@
 
 using namespace wgpu;
 
-TextureAtlas::TextureAtlas(uint _glyphSize, float _dpiScale)
+TextureAtlas::TextureAtlas(float _glyphSize, float _dpiScale)
     : dpiScale(_dpiScale), trueGlyphSize(_glyphSize * dpiScale) {
 
   uint initialTextureHeight = trueGlyphSize * 3;
