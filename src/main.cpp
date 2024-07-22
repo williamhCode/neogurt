@@ -56,7 +56,11 @@ int main() {
 
     uint16_t port = 2040;
     port = sessionManager.GetOrCreateSession("default");
-    Nvim nvim("localhost", port);
+    Nvim nvim;
+    if (!nvim.Connect("localhost", port)) {
+      LOG_ERR("Failed to connect to nvim");
+      return 1;
+    }
 
     Options options;
     options.Load(nvim);

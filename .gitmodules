@@ -4,9 +4,6 @@
 [submodule "deps/msgpack"]
 	path = deps/msgpack
 	url = https://github.com/msgpack/msgpack-c.git
-[submodule "deps/asio"]
-	path = deps/asio
-	url = https://github.com/chriskohlhoff/asio.git
 [submodule "deps/utfcpp"]
 	path = deps/utfcpp
 	url = https://github.com/nemtrif/utfcpp.git

@@ -1,22 +1,42 @@
 #pragma once
 
 #include "msgpack.hpp"
-#include "asio/io_context.hpp"
-#include "asio/ip/tcp.hpp"
+
+#include "boost/asio/io_context.hpp"
+#include "boost/asio/ip/tcp.hpp"
+#include "boost/process/async_pipe.hpp"
+#include "boost/process/child.hpp"
 
 #include "nvim/msgpack_rpc/messages.hpp"
 #include "tsqueue.hpp"
 
+#include <memory>
 #include <string_view>
 #include <unordered_map>
 #include <future>
+#include <thread>
 
 namespace rpc {
 
+enum class ClientType {
+  Stdio,
+  Tcp,
+};
+
 struct Client {
 private:
-  asio::io_context context;
-  asio::ip::tcp::socket socket{context};
+  boost::asio::io_context context;
+
+  ClientType clientType;
+
+  // stdio
+  std::unique_ptr<boost::process::async_pipe> readPipe;
+  std::unique_ptr<boost::process::async_pipe> writePipe;
+  boost::process::child process;
+
+  // tcp
+  std::unique_ptr<boost::asio::ip::tcp::socket> socket;
+
   std::thread contextThr;
   std::atomic_bool exit;
   std::unordered_map<u_int32_t, std::promise<msgpack::object_handle>> responses;
@@ -34,13 +54,13 @@ public:
   Client& operator=(const Client&) = delete;
   ~Client();
 
+  bool Connect(const std::string& command);
   bool Connect(std::string_view host, uint16_t port);
   void Disconnect();
   bool IsConnected();
 
   msgpack::object_handle Call(std::string_view method, auto... args);
-  std::future<msgpack::object_handle>
-  AsyncCall(std::string_view func_name, auto... args);
+  std::future<msgpack::object_handle> AsyncCall(std::string_view func_name, auto... args);
   void Send(std::string_view func_name, auto... args);
 
   // returns next notification at front of queue

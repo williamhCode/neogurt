@@ -2,7 +2,7 @@
 #include "utils/logger.hpp"
 #include <thread>
 
-Nvim::Nvim(std::string_view host, uint16_t port) {
+bool Nvim::Connect(std::string_view host, uint16_t port) {
   using namespace std::chrono_literals;
   auto timeout = 500ms;
   auto elapsed = 0ms;
@@ -14,12 +14,7 @@ Nvim::Nvim(std::string_view host, uint16_t port) {
     elapsed += delay;
   }
 
-  if (client.IsConnected()) {
-    // std::cout << "Connected to nvim" << std::endl;
-    LOG_INFO("Connected to nvim");
-  } else {
-    throw std::runtime_error("Failed to connect to port " + std::to_string(port));
-  }
+  if (!client.IsConnected()) return false;
 
   SetClientInfo(
     "neogui",
@@ -34,6 +29,7 @@ Nvim::Nvim(std::string_view host, uint16_t port) {
   // auto result = client.Call("nvim_get_api_info");
   // channelId = result->via.array.ptr[0].convert();
   // LOG_INFO("nvim_get_api_info: {}", channelId);
+  return true;
 }
 
 Nvim::~Nvim() {

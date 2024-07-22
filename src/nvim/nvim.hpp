@@ -11,7 +11,7 @@ struct Nvim {
   // int channelId;
 
   Nvim() = default;
-  Nvim(std::string_view host, uint16_t port);
+  bool Connect(std::string_view host, uint16_t port);
   Nvim(const Nvim&) = delete;
   Nvim& operator=(const Nvim&) = delete;
   ~Nvim();
