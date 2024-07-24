@@ -55,7 +55,7 @@ struct MouseInfo {
 
 struct WinManager {
   GridManager* gridManager;
-  const SizeHandler& sizes;
+  const SizeHandler* sizes;
   bool dirty; // true if window pos updated from scrolling
 
   using ColorBytes = glm::vec<4, uint8_t>;

@@ -52,7 +52,7 @@ struct Renderer {
   void Begin();
   void RenderToWindow(Win& win, FontFamily& fontFamily, const HlTable& hlTable);
   void RenderCursorMask(
-    const Cursor& cursor, const Win& win, FontFamily& fontFamily, const HlTable& hlTable
+    const Win& win, const Cursor& cursor, FontFamily& fontFamily, const HlTable& hlTable
   );
   void RenderWindows(std::span<const Win*> windows, std::span<const Win*> floatWindows);
   void RenderFinalTexture();

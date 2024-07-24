@@ -48,13 +48,13 @@ bool Cursor::SetDestPos(glm::vec2 _destPos) {
   return true;
 }
 
-void Cursor::SetMode(ModeInfo* _modeInfo) {
-  modeInfo = _modeInfo;
+void Cursor::SetMode(CursorMode* _modeInfo) {
+  cursorMode = _modeInfo;
 
-  float ratio = modeInfo->cellPercentage / 100.0;
+  float ratio = cursorMode->cellPercentage / 100.0;
   glm::vec2 currSize = this->size;
   glm::vec2 offset(0, 0);
-  switch (modeInfo->cursorShape) {
+  switch (cursorMode->cursorShape) {
     case CursorShape::Block: break;
     case CursorShape::Horizontal:
       currSize.y *= ratio;
@@ -74,7 +74,7 @@ void Cursor::SetMode(ModeInfo* _modeInfo) {
     blinkState = BlinkState::Wait;
     blinkElasped = 0.0;
   }
-  blink = modeInfo->blinkwait != 0 && modeInfo->blinkon != 0 && modeInfo->blinkoff != 0;
+  blink = cursorMode->blinkwait != 0 && cursorMode->blinkon != 0 && cursorMode->blinkoff != 0;
 }
 
 void Cursor::Update(float dt) {
@@ -112,19 +112,19 @@ void Cursor::Update(float dt) {
     blinkElasped += dt * 1000; // in milliseconds
     switch (blinkState) {
       case BlinkState::Wait:
-        if (blinkElasped >= modeInfo->blinkwait) {
+        if (blinkElasped >= cursorMode->blinkwait) {
           blinkState = BlinkState::On;
           blinkElasped = 0.0;
         }
         break;
       case BlinkState::On:
-        if (blinkElasped >= modeInfo->blinkon) {
+        if (blinkElasped >= cursorMode->blinkon) {
           blinkState = BlinkState::Off;
           blinkElasped = 0.0;
         }
         break;
       case BlinkState::Off:
-        if (blinkElasped >= modeInfo->blinkoff) {
+        if (blinkElasped >= cursorMode->blinkoff) {
           blinkState = BlinkState::On;
           blinkElasped = 0.0;
         }
@@ -134,6 +134,6 @@ void Cursor::Update(float dt) {
 }
 
 bool Cursor::ShouldRender() {
-  return modeInfo != nullptr && modeInfo->cursorShape != CursorShape::None &&
+  return cursorMode != nullptr && cursorMode->cursorShape != CursorShape::None &&
          blinkState != BlinkState::Off;
 }

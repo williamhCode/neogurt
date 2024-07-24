@@ -8,14 +8,14 @@
 using namespace wgpu;
 
 void WinManager::InitRenderData(Win& win) {
-  auto pos = glm::vec2(win.startCol, win.startRow) * sizes.charSize;
-  auto size = glm::vec2(win.width, win.height) * sizes.charSize;
+  auto pos = glm::vec2(win.startCol, win.startRow) * sizes->charSize;
+  auto size = glm::vec2(win.width, win.height) * sizes->charSize;
 
   const size_t maxTextQuads = win.width * win.height;
   win.rectData.CreateBuffers(maxTextQuads);
   win.textData.CreateBuffers(maxTextQuads);
 
-  win.sRenderTexture = ScrollableRenderTexture(size, sizes.dpiScale, sizes.charSize);
+  win.sRenderTexture = ScrollableRenderTexture(size, sizes->dpiScale, sizes->charSize);
   win.sRenderTexture.UpdatePos(pos);
 
   // used if hiding window removes window completely
@@ -26,8 +26,8 @@ void WinManager::InitRenderData(Win& win) {
 }
 
 void WinManager::UpdateRenderData(Win& win) {
-  auto pos = glm::vec2(win.startCol, win.startRow) * sizes.charSize;
-  auto size = glm::vec2(win.width, win.height) * sizes.charSize;
+  auto pos = glm::vec2(win.startCol, win.startRow) * sizes->charSize;
+  auto size = glm::vec2(win.width, win.height) * sizes->charSize;
 
   bool posChanged = pos != win.pos;
   bool sizeChanged = size != win.size;
@@ -40,7 +40,7 @@ void WinManager::UpdateRenderData(Win& win) {
     win.rectData.CreateBuffers(maxTextQuads);
     win.textData.CreateBuffers(maxTextQuads);
 
-    win.sRenderTexture = ScrollableRenderTexture(size, sizes.dpiScale, sizes.charSize);
+    win.sRenderTexture = ScrollableRenderTexture(size, sizes->dpiScale, sizes->charSize);
   }
   win.sRenderTexture.UpdatePos(pos);
 
@@ -189,7 +189,7 @@ void WinManager::Viewport(const WinViewport& e) {
   // LOG_INFO("WinManager::Viewport: grid {} scrollDelta {} shouldScroll {}", e.grid,
 
   if (!shouldScroll) return;
-  float scrollDist = e.scrollDelta * sizes.charSize.y;
+  float scrollDist = e.scrollDelta * sizes->charSize.y;
   win.sRenderTexture.UpdateViewport(scrollDist);
 }
 
@@ -221,9 +221,9 @@ void WinManager::Extmark(const WinExtmark& e) {
 }
 
 MouseInfo WinManager::GetMouseInfo(glm::vec2 mousePos) {
-  mousePos -= sizes.offset;
-  int globalRow = mousePos.y / sizes.charSize.y;
-  int globalCol = mousePos.x / sizes.charSize.x;
+  mousePos -= sizes->offset;
+  int globalRow = mousePos.y / sizes->charSize.y;
+  int globalCol = mousePos.x / sizes->charSize.x;
 
   std::vector<std::pair<int, const Win*>> sortedWins;
   for (auto& [id, win] : windows) {
@@ -264,9 +264,9 @@ MouseInfo WinManager::GetMouseInfo(glm::vec2 mousePos) {
 MouseInfo WinManager::GetMouseInfo(int grid, glm::vec2 mousePos) {
   auto& win = windows.at(grid);
 
-  mousePos -= sizes.offset;
-  int globalRow = mousePos.y / sizes.charSize.y;
-  int globalCol = mousePos.x / sizes.charSize.x;
+  mousePos -= sizes->offset;
+  int globalRow = mousePos.y / sizes->charSize.y;
+  int globalCol = mousePos.x / sizes->charSize.x;
 
   int row = std::max(globalRow - win.startRow, 0);
   int col = std::max(globalCol - win.startCol, 0);

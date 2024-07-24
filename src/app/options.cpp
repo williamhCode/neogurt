@@ -17,16 +17,15 @@ static std::string CamelToSnakeCase(std::string_view s) {
 
 static void LoadOption(Nvim& nvim, std::string_view name, auto& value) {
   auto luaCode = std::format("return vim.g.neogui_opts.{}", CamelToSnakeCase(name));
-  msgpack::object_handle result = nvim.ExecLua(luaCode, {}).get();
   try {
-    value = result->convert();
+    value = nvim.ExecLua(luaCode, {}).get()->convert();
   } catch (const std::exception& e) {
     LOG_ERR("Failed to load option {}: {}", name, e.what());
   }
 };
 
 void Options::Load(Nvim& nvim) {
-#define LOAD(name) LoadOption(nvim, #name, name)
+  #define LOAD(name) LoadOption(nvim, #name, name)
 
   LOAD(window.vsync);
   LOAD(window.highDpi);

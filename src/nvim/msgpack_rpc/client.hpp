@@ -19,6 +19,7 @@
 namespace rpc {
 
 enum class ClientType {
+  Unknown,
   Stdio,
   Tcp,
 };
@@ -27,7 +28,7 @@ struct Client {
 private:
   boost::asio::io_context context;
 
-  ClientType clientType;
+  ClientType clientType = ClientType::Unknown;
 
   // stdio
   std::unique_ptr<boost::process::async_pipe> readPipe;

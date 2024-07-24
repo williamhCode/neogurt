@@ -14,7 +14,7 @@ enum class CursorShape {
   None,
 };
 
-struct ModeInfo {
+struct CursorMode {
   CursorShape cursorShape = CursorShape::None;
 
   int cellPercentage = 0;
@@ -51,7 +51,7 @@ struct Cursor {
   float jumpTime = 0.06;
   float jumpElasped;
 
-  ModeInfo* modeInfo;
+  CursorMode* cursorMode;
 
   Region startCorners;
   Region destCorners;
@@ -70,7 +70,7 @@ struct Cursor {
   void Init(glm::vec2 size, float dpi);
   void Goto(const GridCursorGoto& e);
   bool SetDestPos(glm::vec2 destPos);
-  void SetMode(ModeInfo* modeInfo);
+  void SetMode(CursorMode* modeInfo);
   void Update(float dt);
   bool ShouldRender();
 };

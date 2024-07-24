@@ -1,5 +1,7 @@
 #include "ui.hpp"
 #include "utils/logger.hpp"
+#include <unordered_map>
+#include <span>
 
 // clang-format off
 using UiEventFunc = void (*)(const msgpack::object& args, UiEvents& state);
@@ -181,12 +183,12 @@ static const std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
 // clang-format on
 
 void ParseUiEvent(const msgpack::object& params, UiEvents& uiEvents) {
-  std::span<const msgpack::object> paramList(params.via.array);
+  std::span<const msgpack::object> events = params.via.array;
 
-  for (const auto& param : paramList) {
-    const auto& paramArr = param.via.array;
-    std::string_view eventName(paramArr.ptr[0].convert());
-    std::span<const msgpack::object> eventArgs(&paramArr.ptr[1], paramArr.size - 1);
+  for (const msgpack::object& eventObj : events) {
+    std::span<const msgpack::object> args = eventObj.via.array;
+    std::string_view eventName = args[0].convert();
+    auto eventArgs = args.subspan(1);
 
     auto it = uiEventFuncs.find(eventName);
     if (it == uiEventFuncs.end()) {
@@ -195,7 +197,7 @@ void ParseUiEvent(const msgpack::object& params, UiEvents& uiEvents) {
     }
     auto uiEventFunc = it->second;
 
-    for (const auto& arg : eventArgs) {
+    for (const msgpack::object& arg : eventArgs) {
       uiEventFunc(arg, uiEvents);
     }
   }

@@ -261,7 +261,7 @@ void Renderer::RenderToWindow(
 }
 
 void Renderer::RenderCursorMask(
-  const Cursor& cursor, const Win& win, FontFamily& fontFamily, const HlTable& hlTable
+  const Win& win, const Cursor& cursor, FontFamily& fontFamily, const HlTable& hlTable
 ) {
   auto& cell = win.grid.lines[cursor.row][cursor.col];
 
@@ -341,7 +341,7 @@ void Renderer::RenderFinalTexture() {
 }
 
 void Renderer::RenderCursor(const Cursor& cursor, const HlTable& hlTable) {
-  auto attrId = cursor.modeInfo->attrId;
+  auto attrId = cursor.cursorMode->attrId;
   const auto& hl = hlTable.at(attrId);
   auto foreground = GetForeground(hlTable, hl);
   auto background = GetBackground(hlTable, hl);

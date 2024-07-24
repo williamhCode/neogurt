@@ -62,7 +62,7 @@ bool ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
         },
         [&](ModeInfoSet& e) {
           for (auto& elem : e.modeInfo) {
-            auto& modeInfo = editorState.modeInfoList.emplace_back();
+            auto& modeInfo = editorState.cursorModes.emplace_back();
             for (auto& [key, value] : elem) {
               if (key == "cursor_shape") {
                 auto shape = value.as_string();
@@ -113,7 +113,7 @@ bool ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
           // LOG("chdir");
         },
         [&](ModeChange& e) {
-          editorState.cursor.SetMode(&editorState.modeInfoList[e.modeIdx]);
+          editorState.cursor.SetMode(&editorState.cursorModes[e.modeIdx]);
         },
         [&](MouseOn&) {
           // LOG("mouse_on");

@@ -2,18 +2,14 @@
 
 #include "msgpack_rpc/client.hpp"
 #include "nvim/events/parse.hpp"
+#include <memory>
 #include <string_view>
 
 // Nvim client that wraps the rpc client.
 struct Nvim {
-  rpc::Client client;
+  std::unique_ptr<rpc::Client> client = std::make_unique<rpc::Client>();
   UiEvents uiEvents;
   // int channelId;
-
-  Nvim() = default;
-  Nvim(const Nvim&) = delete;
-  Nvim& operator=(const Nvim&) = delete;
-  ~Nvim();
 
   bool ConnectStdio();
   bool ConnectTcp(std::string_view host, uint16_t port);
@@ -25,21 +21,21 @@ struct Nvim {
   using MapRef = const std::map<std::string_view, VariantRef>&;
   using VectorRef = const std::vector<VariantRef>&;
 
-  using Msg = std::future<msgpack::object_handle>;
+  using Response = std::future<msgpack::object_handle>;
 
-  Msg SetClientInfo(
+  Response SetClientInfo(
     std::string_view name,
     MapRef version,
     std::string_view type,
     MapRef methods,
     MapRef attributes
   );
-  Msg SetVar(std::string_view name, VariantRef value);
-  Msg UiAttach(int width, int height, MapRef options);
-  Msg UiDetach();
-  Msg UiTryResize(int width, int height);
-  Msg Input(std::string_view input);
-  Msg InputMouse(
+  Response SetVar(std::string_view name, VariantRef value);
+  Response UiAttach(int width, int height, MapRef options);
+  Response UiDetach();
+  Response UiTryResize(int width, int height);
+  Response Input(std::string_view input);
+  Response InputMouse(
     std::string_view button,
     std::string_view action,
     std::string_view modifier,
@@ -47,9 +43,9 @@ struct Nvim {
     int row,
     int col
   );
-  void ListUis();
-  Msg GetOptionValue(std::string_view name, MapRef opts);
-  Msg GetVar(std::string_view name);
-  Msg ExecLua(std::string_view code, VectorRef args);
-  Msg Command(std::string_view command);
+  Response ListUis();
+  Response GetOptionValue(std::string_view name, MapRef opts);
+  Response GetVar(std::string_view name);
+  Response ExecLua(std::string_view code, VectorRef args);
+  Response Command(std::string_view command);
 };

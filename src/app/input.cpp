@@ -10,8 +10,8 @@
 #include <set>
 
 InputHandler::InputHandler(
-  Nvim& nvim,
-  WinManager& winManager,
+  Nvim* nvim,
+  WinManager* winManager,
   bool macOptAsAlt,
   bool multigrid,
   float scrollSpeed
@@ -90,7 +90,7 @@ void InputHandler::HandleKeyboard(const SDL_KeyboardEvent& event) {
     }
 
     // LOG_INFO("Key: {}", inputStr);
-    nvim.Input(inputStr);
+    nvim->Input(inputStr);
   }
 }
 
@@ -102,7 +102,7 @@ void InputHandler::HandleTextInput(const SDL_TextInputEvent& event) {
   // if (inputStr == "<") inputStr = "<lt>";
 
   // // LOG_INFO("Text: {}", inputStr);
-  // nvim.Input(inputStr);
+  // nvim->Input(inputStr);
 }
 
 void InputHandler::HandleMouseButton(const SDL_MouseButtonEvent& event) {
@@ -162,14 +162,14 @@ void InputHandler::HandleMouseButtonAndMotion(int state, glm::vec2 mousePos) {
 
   MouseInfo info;
   if (!currGrid.has_value()) {
-    info = winManager.GetMouseInfo(mousePos);
+    info = winManager->GetMouseInfo(mousePos);
     currGrid = info.grid;
   } else {
-    info = winManager.GetMouseInfo(*currGrid, mousePos);
+    info = winManager->GetMouseInfo(*currGrid, mousePos);
   }
   if (!multigrid) info.grid = 0;
 
-  nvim.InputMouse(buttonStr, actionStr, modStr, info.grid, info.row, info.col);
+  nvim->InputMouse(buttonStr, actionStr, modStr, info.grid, info.row, info.col);
 }
 
 void InputHandler::HandleMouseWheel(const SDL_MouseWheelEvent& event) {
@@ -183,9 +183,9 @@ void InputHandler::HandleMouseWheel(const SDL_MouseWheelEvent& event) {
   MouseInfo info;
   glm::vec2 mousePos(event.mouse_x, event.mouse_y);
   if (!currGrid.has_value()) {
-    info = winManager.GetMouseInfo(mousePos);
+    info = winManager->GetMouseInfo(mousePos);
   } else {
-    info = winManager.GetMouseInfo(*currGrid, mousePos);
+    info = winManager->GetMouseInfo(*currGrid, mousePos);
   }
   if (!multigrid) info.grid = 0;
 
@@ -210,7 +210,7 @@ void InputHandler::HandleMouseWheel(const SDL_MouseWheelEvent& event) {
 
     std::string actionStr = ypositive ? "up" : "down";
     while (yAccum >= scrollUnit) {
-      nvim.InputMouse("wheel", actionStr, modStr, info.grid, info.row, info.col);
+      nvim->InputMouse("wheel", actionStr, modStr, info.grid, info.row, info.col);
       yAccum -= scrollUnit;
     }
 
@@ -226,7 +226,7 @@ void InputHandler::HandleMouseWheel(const SDL_MouseWheelEvent& event) {
 
     std::string actionStr = xpositive ? "right" : "left";
     while (xAccum >= scrollUnit) {
-      nvim.InputMouse("wheel", actionStr, modStr, info.grid, info.row, info.col);
+      nvim->InputMouse("wheel", actionStr, modStr, info.grid, info.row, info.col);
       xAccum -= scrollUnit;
     }
   }

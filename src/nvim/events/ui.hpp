@@ -1,5 +1,4 @@
 #include "msgpack.hpp"
-#include <map>
 
 struct SetTitle {
   std::string title;

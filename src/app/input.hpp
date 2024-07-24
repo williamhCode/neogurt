@@ -7,8 +7,8 @@
 #include <optional>
 
 struct InputHandler {
-  Nvim& nvim;
-  WinManager& winManager;
+  Nvim* nvim;
+  WinManager* winManager;
 
   // options
   bool macOptIsMeta;
@@ -23,9 +23,10 @@ struct InputHandler {
   double xAccum = 0;
   int scrollDir = 0;
 
+  InputHandler() = default;
   InputHandler(
-    Nvim& nvim,
-    WinManager& winManager,
+    Nvim* nvim,
+    WinManager* winManager,
     bool macOptAsAlt,
     bool multigrid,
     float scrollSpeed

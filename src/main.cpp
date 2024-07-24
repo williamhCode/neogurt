@@ -14,7 +14,6 @@
 #include "gfx/renderer.hpp"
 #include "glm/ext/vector_float2.hpp"
 #include "glm/gtx/string_cast.hpp"
-#include "nvim/nvim.hpp"
 #include "session/manager.hpp"
 #include "utils/clock.hpp"
 #include "utils/color.hpp"
@@ -51,76 +50,31 @@ int main() {
   }
 
   try {
-    // SessionManager sessionManager(SpawnMode::Child);
-    // SessionManager sessionManager(SpawnMode::Detached);
-
-    // uint16_t port = 2040;
-    // port = sessionManager.GetOrCreateSession("default");
-    // Nvim nvim;
-    // if (!nvim.ConnectTcp("localhost", port)) {
-    //   LOG_ERR("Failed to connect to nvim");
-    //   return 1;
-    // }
-
-    Nvim nvim;
-    if (!nvim.ConnectStdio()) {
-      LOG_ERR("Failed to connect to nvim");
-      return 1;
-    }
-
-    nvim.UiAttach(
-      100, 50,
-      {
-        {"rgb", true},
-        {"ext_multigrid", true},
-        {"ext_linegrid", true},
-      }
-    ).wait();
-
+    // global variables ---------------------
     Options options{};
-    options.Load(nvim);
-
-    // sdl::Window window({1600, 1000}, "Neovim GUI", options.window);
-    sdl::Window window({1200, 800}, "Neovim GUI", options.window);
-
-    // create font
-    std::string guifont = nvim.GetOptionValue("guifont", {}).get()->convert();
-    auto fontFamilyResult = FontFamily::FromGuifont(guifont, window.dpiScale);
-    if (!fontFamilyResult) {
-      LOG_ERR("Failed to create font family: {}", fontFamilyResult.error());
-      return 1;
-    }
-    FontFamily fontFamily = std::move(*fontFamilyResult);
-
+    sdl::Window window;
     SizeHandler sizes{};
+    Renderer renderer;
+
+    // setup session
+    SessionManager sessionManager(SpawnMode::Child);
+
+    SessionState* session = &sessionManager.NewSession("default");
+    session->InitNvim(options);
+
+    window = sdl::Window({1200, 800}, "Neovim GUI", options.window);
+
+    session->LoadFont(window.dpiScale);
+
     sizes.UpdateSizes(
-      window.size, window.dpiScale, fontFamily.DefaultFont().charSize, options.margins
+      window.size, window.dpiScale,
+      session->editorState.fontFamily.DefaultFont().charSize, options.margins
     );
+    renderer = Renderer(sizes);
 
-    Renderer renderer(sizes);
-
-    EditorState editorState{
-      .winManager{.sizes = sizes},
-    };
-    editorState.winManager.gridManager = &editorState.gridManager;
-    editorState.cursor.Init(sizes.charSize, sizes.dpiScale);
-
-    if (options.transparency < 1) {
-      auto& hl = editorState.hlTable[0];
-      hl.background = IntToColor(options.bgColor);
-      hl.background->a = options.transparency;
-    }
-
-    // nvim.UiAttach(
-    //   sizes.uiWidth, sizes.uiHeight,
-    //   {
-    //     {"rgb", true},
-    //     {"ext_multigrid", true},
-    //     {"ext_linegrid", true},
-    //   }
-    // );
-
-    nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight).wait();
+    session->InitEditorState(options, sizes);
+    session->InitInputHandler(options);
+    session->nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight).wait();
 
     // main loop -----------------------------------
     // lock whenever ctx.device is used
@@ -150,8 +104,8 @@ int main() {
 
         // timer.Start();
 
-        // nvim events -------------------------------------------
-        if (!nvim.IsConnected()) {
+        // session->nvim events -------------------------------------------
+        if (!session->nvim.IsConnected()) {
           exitWindow = true;
           // sessionManager.RemoveSession("default");
 
@@ -160,14 +114,14 @@ int main() {
         };
 
         LOG_DISABLE();
-        ParseEvents(nvim.client, nvim.uiEvents);
+        ParseEvents(*session->nvim.client, session->nvim.uiEvents);
         LOG_ENABLE();
 
         // process events ---------------------------------------
         {
           std::scoped_lock lock(wgpuDeviceMutex);
           LOG_DISABLE();
-          if (ParseEditorState(nvim.uiEvents, editorState)) {
+          if (ParseEditorState(session->nvim.uiEvents, session->editorState)) {
             idle = false;
             idleElasped = 0;
           }
@@ -191,13 +145,14 @@ int main() {
 
                 std::scoped_lock lock(wgpuDeviceMutex);
                 sizes.UpdateSizes(
-                  window.size, window.dpiScale, fontFamily.DefaultFont().charSize,
+                  window.size, window.dpiScale,
+                  session->editorState.fontFamily.DefaultFont().charSize,
                   options.margins
                 );
 
                 sdl::Window::_ctx.Resize(sizes.fbSize);
                 renderer.Resize(sizes);
-                nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight);
+                session->nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight);
                 break;
               }
             }
@@ -212,8 +167,8 @@ int main() {
               windowFocused = true;
               idle = false;
               idleElasped = 0;
-              editorState.cursor.blinkState = BlinkState::Wait;
-              editorState.cursor.blinkElasped = 0;
+              session->editorState.cursor.blinkState = BlinkState::Wait;
+              session->editorState.cursor.blinkElasped = 0;
               break;
             case SDL_EVENT_WINDOW_FOCUS_LOST:
               windowFocused = false;
@@ -221,25 +176,26 @@ int main() {
               // case SDL_EVENT_KEY_DOWN:
               //   if (event.key.keysym.sym == SDLK_1) {
               //     LOG("key down: {}", event.key.keysym.sym);
-              //     nvim.NvimListUis();
+              //     session->nvim.NvimListUis();
               //   }
               //   if (event.key.keysym.sym == SDLK_2) {
               //     LOG("key down: {}", event.key.keysym.sym);
-              //     nvim.UiDetach();
+              //     session->nvim.UiDetach();
               //   }
               //   break;
           }
           sdlEvents.Pop();
         }
 
-        editorState.winManager.UpdateScrolling(dt);
+        session->editorState.winManager.UpdateScrolling(dt);
 
-        auto* activeWin = editorState.winManager.GetWin(editorState.cursor.grid);
+        auto* activeWin =
+          session->editorState.winManager.GetWin(session->editorState.cursor.grid);
         if (activeWin) {
           auto cursorPos =
             glm::vec2{
-              activeWin->startCol + editorState.cursor.col,
-              activeWin->startRow + editorState.cursor.row,
+              activeWin->startCol + session->editorState.cursor.col,
+              activeWin->startRow + session->editorState.cursor.row,
             } *
               sizes.charSize +
             sizes.offset;
@@ -250,13 +206,13 @@ int main() {
               ? glm::vec2(0, (winTex.scrollDist - winTex.scrollCurr))
               : glm::vec2(0);
 
-          editorState.cursor.SetDestPos(cursorPos + scrollOffset);
+          session->editorState.cursor.SetDestPos(cursorPos + scrollOffset);
         }
-        editorState.cursor.Update(dt);
+        session->editorState.cursor.Update(dt);
 
         // render ----------------------------------------------
-        if (auto hlIter = editorState.hlTable.find(0);
-            hlIter != editorState.hlTable.end()) {
+        if (auto hlIter = session->editorState.hlTable.find(0);
+            hlIter != session->editorState.hlTable.end()) {
           auto color = hlIter->second.background.value();
           renderer.SetClearColor(color);
         }
@@ -265,11 +221,11 @@ int main() {
         idleElasped += dt;
         if (idleElasped >= options.cursorIdleTime) {
           idle = true;
-          editorState.cursor.blinkState = BlinkState::On;
+          session->editorState.cursor.blinkState = BlinkState::On;
         }
 
         if (!windowFocused) {
-          editorState.cursor.blinkState = BlinkState::On;
+          session->editorState.cursor.blinkState = BlinkState::On;
         }
 
         {
@@ -277,31 +233,35 @@ int main() {
           renderer.Begin();
 
           bool renderWindows = false;
-          for (auto& [id, win] : editorState.winManager.windows) {
+          for (auto& [id, win] : session->editorState.winManager.windows) {
             if (win.grid.dirty) {
-              renderer.RenderToWindow(win, fontFamily, editorState.hlTable);
+              renderer.RenderToWindow(
+                win, session->editorState.fontFamily, session->editorState.hlTable
+              );
               win.grid.dirty = false;
               renderWindows = true;
             }
           }
 
-          if (editorState.cursor.dirty && activeWin != nullptr) {
+          if (session->editorState.cursor.dirty && activeWin != nullptr) {
             renderer.RenderCursorMask(
-              editorState.cursor, *activeWin, fontFamily, editorState.hlTable
+              *activeWin, session->editorState.cursor, session->editorState.fontFamily,
+              session->editorState.hlTable
             );
-            editorState.cursor.dirty = false;
+            session->editorState.cursor.dirty = false;
           }
 
-          if (renderWindows || editorState.winManager.dirty) {
-            editorState.winManager.dirty = false;
+          if (renderWindows || session->editorState.winManager.dirty) {
+            session->editorState.winManager.dirty = false;
 
             std::vector<const Win*> windows;
-            if (auto* msgWin = editorState.winManager.GetMsgWin()) {
+            if (auto* msgWin = session->editorState.winManager.GetMsgWin()) {
               windows.push_back(msgWin);
             }
             std::vector<const Win*> floatWindows;
-            for (auto& [id, win] : editorState.winManager.windows) {
-              if (id == 1 || id == editorState.winManager.msgWinId || win.hidden) {
+            for (auto& [id, win] : session->editorState.winManager.windows) {
+              if (id == 1 || id == session->editorState.winManager.msgWinId ||
+                  win.hidden) {
                 continue;
               }
               if (win.IsFloating()) {
@@ -310,8 +270,8 @@ int main() {
                 windows.push_back(&win);
               }
             }
-            if (auto winIt = editorState.winManager.windows.find(1);
-                winIt != editorState.winManager.windows.end()) {
+            if (auto winIt = session->editorState.winManager.windows.find(1);
+                winIt != session->editorState.winManager.windows.end()) {
               windows.push_back(&winIt->second);
             }
 
@@ -325,8 +285,10 @@ int main() {
 
           renderer.RenderFinalTexture();
 
-          if (editorState.cursor.ShouldRender()) {
-            renderer.RenderCursor(editorState.cursor, editorState.hlTable);
+          if (session->editorState.cursor.ShouldRender()) {
+            renderer.RenderCursor(
+              session->editorState.cursor, session->editorState.hlTable
+            );
           }
 
           renderer.End();
@@ -342,11 +304,6 @@ int main() {
     });
 
     // event loop --------------------------------
-    InputHandler input(
-      nvim, editorState.winManager, options.macOptIsMeta, options.multigrid,
-      options.scrollSpeed
-    );
-
     SDL_StartTextInput(window.Get());
     SDL_Rect rect{0, 0, 100, 100};
     SDL_SetTextInputArea(window.Get(), &rect, 0);
@@ -380,26 +337,26 @@ int main() {
         // keyboard handling ----------------------
         case SDL_EVENT_KEY_DOWN:
         case SDL_EVENT_KEY_UP:
-          input.HandleKeyboard(event.key);
+          session->inputHandler.HandleKeyboard(event.key);
           sdlEvents.Push(event);
           break;
 
         case SDL_EVENT_TEXT_EDITING:
           break;
         case SDL_EVENT_TEXT_INPUT:
-          input.HandleTextInput(event.text);
+          session->inputHandler.HandleTextInput(event.text);
           break;
 
         // mouse handling ------------------------
         case SDL_EVENT_MOUSE_BUTTON_DOWN:
         case SDL_EVENT_MOUSE_BUTTON_UP:
-          input.HandleMouseButton(event.button);
+          session->inputHandler.HandleMouseButton(event.button);
           break;
         case SDL_EVENT_MOUSE_MOTION:
-          input.HandleMouseMotion(event.motion);
+          session->inputHandler.HandleMouseMotion(event.motion);
           break;
         case SDL_EVENT_MOUSE_WHEEL:
-          input.HandleMouseWheel(event.wheel);
+          session->inputHandler.HandleMouseWheel(event.wheel);
           break;
 
         // window handling -----------------------
@@ -409,8 +366,8 @@ int main() {
           window.dpiScale = SDL_GetWindowPixelDensity(window.Get());
           if (prevDpiScale == window.dpiScale) break;
           // LOG("display scale changed: {}", window.dpiScale);
-          fontFamily.ChangeDpiScale(window.dpiScale);
-          editorState.cursor.Init(sizes.charSize, sizes.dpiScale);
+          session->editorState.fontFamily.ChangeDpiScale(window.dpiScale);
+          session->editorState.cursor.Init(sizes.charSize, sizes.dpiScale);
           break;
         }
 
@@ -422,11 +379,11 @@ int main() {
     }
 
     renderThread.join();
-    if (nvim.IsConnected()) {
-      // send escape so nvim doesn't get stuck when reattaching
+    if (session->nvim.IsConnected()) {
+      // send escape so session->nvim doesn't get stuck when reattaching
       // prevents cmd + q exiting window getting stuck
-      nvim.Input("<Esc>");
-      nvim.UiDetach();
+      session->nvim.Input("<Esc>");
+      session->nvim.UiDetach();
       // LOG_INFO("Detached UI");
     }
 

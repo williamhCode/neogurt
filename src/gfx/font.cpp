@@ -71,8 +71,8 @@ Font::Font(std::string _path, float _height, float _width, float _dpiScale)
   charSize.x = (face->size->metrics.max_advance >> 6) / dpiScale;
   charSize.y = (face->size->metrics.height >> 6) / dpiScale;
   ascender = (face->size->metrics.ascender >> 6) / dpiScale;
-  LOG_INFO("Font: {}, size: {}, dpiScale: {}, charSize: {}, ascender: {}",
-            path, height, dpiScale, glm::to_string(charSize), ascender);
+  // LOG_INFO("Font: {}, size: {}, dpiScale: {}, charSize: {}, ascender: {}",
+  //           path, height, dpiScale, glm::to_string(charSize), ascender);
 }
 
 const Font::GlyphInfo*
