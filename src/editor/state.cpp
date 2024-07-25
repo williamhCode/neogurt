@@ -1,11 +1,19 @@
 #include "state.hpp"
 #include "glm/gtx/string_cast.hpp"
-#include "nvim/events/parse.hpp"
 #include "utils/color.hpp"
 #include "utils/logger.hpp"
 #include <deque>
 #include <vector>
 #include "utils/variant.hpp"
+
+void EditorState::Init(const SizeHandler& sizes) {
+  winManager.sizes = &sizes;
+  winManager.gridManager = &gridManager;
+  cursor.Init(sizes.charSize, sizes.dpiScale);
+}
+
+// parse ------------------------------------------
+using namespace event;
 
 static int VariantAsInt(const msgpack::type::variant& v) {
   if (v.is_uint64_t()) return v.as_uint64_t();
@@ -258,7 +266,7 @@ bool ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
             editorState.winManager.ViewportMargins(*e);
           }
           for (auto* e : msgSetPos) {
-            editorState.winManager.MsgSet(*e);
+            editorState.winManager.MsgSetPos(*e);
           }
         },
         [&](auto& _e) {

@@ -2,7 +2,6 @@
 
 #include "gfx/font/descriptor.hpp"
 #include "gfx/texture_atlas.hpp"
-#include "glm/ext/vector_float2.hpp"
 #include "utils/region.hpp"
 #include <expected>
 

@@ -18,6 +18,27 @@
 
 namespace rpc {
 
+struct Notification {
+  std::string_view method;
+  msgpack::object params;
+  msgpack::unique_ptr<msgpack::zone> _zone; // holds the lifetime of the data
+};
+
+struct Request {
+  std::string_view method;
+  msgpack::object params;
+  msgpack::unique_ptr<msgpack::zone> _zone; // holds the lifetime of the data
+  std::promise<msgpack::type::variant> promise;
+
+  void SetValue(msgpack::type::variant&& value) {
+    promise.set_value(std::move(value));
+  }
+
+  void SetError(msgpack::type::variant&& error) {
+    promise.set_exception(std::make_exception_ptr(std::move(error)));
+  }
+};
+
 enum class ClientType {
   Unknown,
   Stdio,
@@ -40,22 +61,20 @@ private:
 
   std::thread contextThr;
   std::atomic_bool exit;
+
   std::unordered_map<u_int32_t, std::promise<msgpack::object_handle>> responses;
   std::mutex responsesMutex;
 
-public:
-  struct NotificationData {
-    std::string_view method;
-    msgpack::object params;
-    msgpack::unique_ptr<msgpack::zone> _zone; // holds the lifetime of the data
-  };
+  TSQueue<Request> requests;
+  TSQueue<Notification> notifications;
 
+public:
   Client() = default;
   Client(const Client&) = delete;
   Client& operator=(const Client&) = delete;
   ~Client();
 
-  bool ConnectStdio(const std::string& command);
+  bool ConnectStdio(const std::string& command, const std::string& dir = {});
   bool ConnectTcp(std::string_view host, uint16_t port);
   void Disconnect();
   bool IsConnected();
@@ -64,14 +83,15 @@ public:
   std::future<msgpack::object_handle> AsyncCall(std::string_view func_name, auto... args);
   void Send(std::string_view func_name, auto... args);
 
-  // returns next notification at front of queue
-  NotificationData PopNotification();
+  Request PopRequest();
+  bool HasRequest();
+
+  Notification PopNotification();
   bool HasNotification();
 
 private:
   msgpack::unpacker unpacker;
   static constexpr std::size_t readSize = 1024 << 10;
-  TSQueue<NotificationData> msgsIn;
   TSQueue<msgpack::sbuffer> msgsOut;
   uint32_t currId = 0;
 

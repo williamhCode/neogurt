@@ -1,64 +1,159 @@
 #include "manager.hpp"
-#include "utils/logger.hpp"
-
-// #include "boost/asio/io_service.hpp"
-// #include "boost/asio/ip/tcp.hpp"
-// #include "utils/logger.hpp"
-// #include <fstream>
-// #include <sstream>
-// #include <filesystem>
-
-namespace bp = boost::process;
-namespace fs = std::filesystem;
-
-SessionManager::SessionManager(SpawnMode _mode) : mode(_mode) {
-  if (mode == SpawnMode::Child) {
-
-  } else if (mode == SpawnMode::Detached) {
-    // std::string filename = ROOT_DIR "nvim-sessions.txt";
-    // LoadSessions(filename);
-  }
-}
+#include "session/state.hpp"
+#include "app/options.hpp"
+#include "app/sdl_window.hpp"
+#include "gfx/renderer.hpp"
+#include "utils/color.hpp"
 
 SessionManager::~SessionManager() {
-  if (mode == SpawnMode::Child) {
-
-  } else if (mode == SpawnMode::Detached) {
-    // std::string filename = ROOT_DIR "nvim-sessions.txt";
-    // SaveSessions(filename);
-  }
 }
 
-SessionState& SessionManager::NewSession(std::string name) {
-  if (mode == SpawnMode::Child) {
-    int id = currId++;
-    return sessions.emplace_back(SessionState{
-      .id = id,
-      .name = std::move(name),
-      .nvim{},
-      .editorState{},
-      .inputHandler{},
-    });
-  }
-  assert(false);
+SessionManager::SessionManager(
+  SpawnMode _mode,
+  Options& _options,
+  sdl::Window& _window,
+  SizeHandler& _sizes,
+  Renderer& _renderer
+)
+  : mode(_mode), options(_options), window(_window), sizes(_sizes),
+    renderer(_renderer) {
 }
 
-SessionState* SessionManager::GetSession(int id) {
-  for (auto& session : sessions) {
-    if (session.id == id) {
-      return &session;
+std::string SessionManager::NewSession(const NewSessionOpts& opts) {
+  bool first = sessions.empty();
+  int id = currId++;
+  auto [it, success] = sessions.try_emplace(id, SessionState{
+    .id = id,
+    .name = opts.name,
+    .nvim{},
+    .editorState{},
+    .inputHandler{},
+  });
+  if (!success) {
+    return "Session with id " + std::to_string(id) + " already exists";
+  }
+
+  auto& session = it->second;
+  if (!session.nvim.ConnectStdio(opts.dir)) {
+    return "Failed to connect to nvim";
+  }
+
+  options.Load(session.nvim);
+
+  if (first) {
+    window = sdl::Window({1200, 800}, "Neovim GUI", options.window);
+  }
+
+  std::string guifont = session.nvim.GetOptionValue("guifont", {}).get()->convert();
+  auto fontFamilyResult = FontFamily::FromGuifont(guifont, window.dpiScale);
+  if (!fontFamilyResult) {
+    return "Failed to create font family: " + fontFamilyResult.error();
+  }
+  session.editorState.fontFamily = std::move(*fontFamilyResult);
+
+  sizes.UpdateSizes(
+    window.size, window.dpiScale,
+    session.editorState.fontFamily.DefaultFont().charSize, options.margins
+  );
+
+  if (first) {
+    renderer = Renderer(sizes);
+  }
+
+  session.editorState.Init(sizes);
+
+  if (options.transparency < 1) {
+    auto& hl = session.editorState.hlTable[0];
+    hl.background = IntToColor(options.bgColor);
+    hl.background->a = options.transparency;
+  }
+
+  session.inputHandler = InputHandler(
+    &session.nvim, &session.editorState.winManager, options.macOptIsMeta,
+    options.multigrid, options.scrollSpeed
+  );
+
+  if (opts.switchTo) {
+    session.nvim.UiAttach(
+      sizes.uiWidth, sizes.uiHeight,
+      {
+        {"rgb", true},
+        {"ext_multigrid", options.multigrid},
+        {"ext_linegrid", true},
+      }
+    ).wait();
+
+    if (currSession != nullptr) {
+      // currSession->nvim.UiDetach().wait();
+      // currSession->editorState = {};
+      // currSession->inputHandler = {};
     }
+    prevSession = currSession;
+    currSession = &session;
   }
-  return nullptr;
+
+  return "";
 }
 
-SessionState* SessionManager::GetSession(std::string_view name) {
-  for (auto& session : sessions) {
-    if (session.name == name) {
-      return &session;
-    }
+std::string SessionManager::SwitchSession(int id) {
+  auto it = sessions.find(id);
+  if (it == sessions.end()) {
+    return "Session with id " + std::to_string(id) + " not found";
   }
-  return nullptr;
+
+  auto& session = it->second;
+  session.nvim.UiAttach(
+    sizes.uiWidth, sizes.uiHeight,
+    {
+      {"rgb", true},
+      {"ext_multigrid", options.multigrid},
+      {"ext_linegrid", true},
+    }
+  ).wait();
+
+  currSession->nvim.UiDetach().wait();
+
+  prevSession = currSession;
+  currSession = &session;
+
+  return "";
+}
+
+bool SessionManager::Update() {
+  if (!currSession->nvim.IsConnected()) {
+    sessions.erase(currSession->id);
+    if (prevSession == nullptr) return true;
+
+    currSession = prevSession;
+    prevSession = nullptr;
+    auto& session = *currSession;
+
+    options.Load(session.nvim);
+
+    sizes.UpdateSizes(
+      window.size, window.dpiScale,
+      session.editorState.fontFamily.DefaultFont().charSize, options.margins
+    );
+
+    renderer.Resize(sizes);
+
+    if (options.transparency < 1) {
+      auto& hl = session.editorState.hlTable[0];
+      hl.background = IntToColor(options.bgColor);
+      hl.background->a = options.transparency;
+    }
+
+    // session.nvim.UiAttach(
+    //   sizes.uiWidth, sizes.uiHeight,
+    //   {
+    //     {"rgb", true},
+    //     {"ext_multigrid", options.multigrid},
+    //     {"ext_linegrid", true},
+    //   }
+    // ).wait();
+  }
+
+  return sessions.empty();
 }
 
 // void SessionManager::LoadSessions(std::string_view filename) {

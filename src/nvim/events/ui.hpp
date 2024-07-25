@@ -1,4 +1,9 @@
+#pragma once
+
 #include "msgpack.hpp"
+#include "nvim/msgpack_rpc/client.hpp"
+
+namespace event {
 
 struct SetTitle {
   std::string title;
@@ -168,37 +173,39 @@ struct WinExtmark {
   MSGPACK_DEFINE(grid, win, nsId, markId, row, col);
 };
 
+}
+
 using UiEvent = std::variant<
-  SetTitle,
-  SetIcon,
-  ModeInfoSet,
-  OptionSet,
-  Chdir,
-  ModeChange,
-  MouseOn,
-  MouseOff,
-  BusyStart,
-  BusyStop,
-  UpdateMenu,
-  DefaultColorsSet,
-  HlAttrDefine,
-  HlGroupSet,
-  Flush,
-  GridResize,
-  GridClear,
-  GridCursorGoto,
-  GridLine,
-  GridScroll,
-  GridDestroy,
-  WinPos,
-  WinFloatPos,
-  WinExternalPos,
-  WinHide,
-  WinClose,
-  MsgSetPos,
-  WinViewport,
-  WinViewportMargins,
-  WinExtmark>;
+  event::SetTitle,
+  event::SetIcon,
+  event::ModeInfoSet,
+  event::OptionSet,
+  event::Chdir,
+  event::ModeChange,
+  event::MouseOn,
+  event::MouseOff,
+  event::BusyStart,
+  event::BusyStop,
+  event::UpdateMenu,
+  event::DefaultColorsSet,
+  event::HlAttrDefine,
+  event::HlGroupSet,
+  event::Flush,
+  event::GridResize,
+  event::GridClear,
+  event::GridCursorGoto,
+  event::GridLine,
+  event::GridScroll,
+  event::GridDestroy,
+  event::WinPos,
+  event::WinFloatPos,
+  event::WinExternalPos,
+  event::WinHide,
+  event::WinClose,
+  event::MsgSetPos,
+  event::WinViewport,
+  event::WinViewportMargins,
+  event::WinExtmark>;
 
 struct UiEvents {
   int numFlushes = 0;
@@ -213,4 +220,4 @@ struct UiEvents {
   }
 };
 
-void ParseUiEvent(const msgpack::object& params, UiEvents& uiEvents);
+void ParseUiEvents(rpc::Client& client, UiEvents& uiEvents);

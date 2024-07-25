@@ -2,7 +2,7 @@
 #include "utils/logger.hpp"
 #include <algorithm>
 
-void GridManager::Resize(const GridResize& e) {
+void GridManager::Resize(const event::GridResize& e) {
   auto [it, first] = grids.try_emplace(e.grid);
   auto& grid = it->second;
 
@@ -30,7 +30,7 @@ void GridManager::Resize(const GridResize& e) {
   grid.dirty = true;
 }
 
-void GridManager::Clear(const GridClear& e) {
+void GridManager::Clear(const event::GridClear& e) {
   auto it = grids.find(e.grid);
   if (it == grids.end()) {
     LOG_ERR("GridManager::Clear: grid {} not found", e.grid);
@@ -46,7 +46,7 @@ void GridManager::Clear(const GridClear& e) {
   }
 }
 
-void GridManager::Line(const GridLine& e) {
+void GridManager::Line(const event::GridLine& e) {
   auto it = grids.find(e.grid);
   if (it == grids.end()) {
     LOG_ERR("GridManager::Line: grid {} not found", e.grid);
@@ -68,7 +68,7 @@ void GridManager::Line(const GridLine& e) {
   grid.dirty = true;
 }
 
-void GridManager::Scroll(const GridScroll& e) {
+void GridManager::Scroll(const event::GridScroll& e) {
   auto it = grids.find(e.grid);
   if (it == grids.end()) {
     LOG_ERR("GridManager::Scroll: grid {} not found", e.grid);
@@ -104,7 +104,7 @@ void GridManager::Scroll(const GridScroll& e) {
   grid.dirty = true;
 }
 
-void GridManager::Destroy(const GridDestroy& e) {
+void GridManager::Destroy(const event::GridDestroy& e) {
   auto removed = grids.erase(e.grid);
   if (removed == 0) {
     LOG_ERR("GridManager::Destroy: grid {} not found", e.grid);

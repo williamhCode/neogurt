@@ -1,11 +1,9 @@
 #pragma once
 
+#include "utils/region.hpp"
 #include "gfx/render_texture.hpp"
 #include "webgpu/webgpu_cpp.h"
-#include "glm/ext/vector_float2.hpp"
-#include "nvim/events/parse.hpp"
-#include "utils/region.hpp"
-#include <string>
+#include "nvim/events/ui.hpp"
 
 enum class CursorShape {
   Block,
@@ -68,7 +66,7 @@ struct Cursor {
   wgpu::BindGroup maskPosBG;
 
   void Init(glm::vec2 size, float dpi);
-  void Goto(const GridCursorGoto& e);
+  void Goto(const event::GridCursorGoto& e);
   bool SetDestPos(glm::vec2 destPos);
   void SetMode(CursorMode* modeInfo);
   void Update(float dt);

@@ -1,13 +1,13 @@
 #pragma once
 
-#include "glm/ext/vector_float2.hpp"
 #include "gfx/quad.hpp"
 #include "gfx/render_texture.hpp"
-#include "nvim/events/parse.hpp"
+
+#include "utils/margins.hpp"
 #include "editor/grid.hpp"
 #include "app/size.hpp"
-#include "utils/margins.hpp"
 
+#include "glm/ext/vector_float2.hpp"
 #include <map>
 #include <optional>
 
@@ -69,16 +69,18 @@ struct WinManager {
   void InitRenderData(Win& win);
   void UpdateRenderData(Win& win);
 
-  void Pos(const WinPos& e);
-  void FloatPos(const WinFloatPos& e);
-  void ExternalPos(const WinExternalPos& e);
-  void Hide(const WinHide& e);
-  void Close(const WinClose& e);
-  void MsgSet(const MsgSetPos& e);
-  void Viewport(const WinViewport& e);
+  void Pos(const event::WinPos& e);
+  void FloatPos(const event::WinFloatPos& e);
+  void ExternalPos(const event::WinExternalPos& e);
+  void Hide(const event::WinHide& e);
+  void Close(const event::WinClose& e);
+  void MsgSetPos(const event::MsgSetPos& e);
+  void Viewport(const event::WinViewport& e);
   void UpdateScrolling(float dt);
-  void ViewportMargins(const WinViewportMargins& e);
-  void Extmark(const WinExtmark& e);
+  void ViewportMargins(const event::WinViewportMargins& e);
+  void Extmark(const event::WinExtmark& e);
+
+  Grid* GetGrid(int id);
 
   MouseInfo GetMouseInfo(glm::vec2 mousePos);
   MouseInfo GetMouseInfo(int grid, glm::vec2 mousePos);

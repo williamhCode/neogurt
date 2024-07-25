@@ -17,6 +17,7 @@ private:
 
 public:
   Clock();
-  double Tick(std::optional<double> fps = std::nullopt);
+  // non positive fps means as fast as possible
+  double Tick(double fps = 0);
   double GetFps();
 };

@@ -1,11 +1,6 @@
 #include "input.hpp"
 
-#include "SDL3/SDL_events.h"
-#include "SDL3/SDL_keyboard.h"
-#include "SDL3/SDL_keycode.h"
-#include "app/options.hpp"
 #include "editor/window.hpp"
-#include "utils/logger.hpp"
 #include <algorithm>
 #include <set>
 

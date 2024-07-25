@@ -48,41 +48,39 @@ FontFamily::FromGuifont(std::string_view guifont, float dpiScale) {
 
   try {
     return FontFamily{
-      .fonts =
-        SplitStr(fontsStr, ',') | std::views::transform([&](auto&& fontName) {
-          FontSet fontSet;
-          auto makeFontHandle =
-            [&](bool bold, bool italic) {
-              auto font = Font::FromName(
-                {
-                  .name = std::string(fontName),
-                  .height = height,
-                  .width = width,
-                  .bold = bold,
-                  .italic = italic,
-                },
-                dpiScale
-              )
-              .value();  // allow exception to propagate
-              // reuse the existing FontHandle
-              if (fontSet.normal && font.path == fontSet.normal->path) {
-                return fontSet.normal;
-              }
-              // otherwise, create a new FontHandle
-              return std::make_shared<Font>(std::move(font));
-            };
-          
-          fontSet.normal = makeFontHandle(bold, italic);
-
-          if (!(bold || italic)) {
-            fontSet.bold = makeFontHandle(true, false);
-            fontSet.italic = makeFontHandle(false, true);
-            fontSet.boldItalic = makeFontHandle(true, true);
+      .fonts = SplitStr(fontsStr, ',') | std::views::transform([&](auto&& fontName) {
+        FontSet fontSet;
+        auto makeFontHandle = [&](bool bold, bool italic) {
+          auto font = Font::FromName(
+            {
+              .name = std::string(fontName),
+              .height = height,
+              .width = width,
+              .bold = bold,
+              .italic = italic,
+            },
+            dpiScale
+          )
+          .value(); // allow exception to propagate
+          // reuse the existing FontHandle
+          if (fontSet.normal && font.path == fontSet.normal->path) {
+            return fontSet.normal;
           }
+          // otherwise, create a new FontHandle
+          return std::make_shared<Font>(std::move(font));
+        };
 
-          return fontSet;
-        }) |
-        std::ranges::to<std::vector>(),
+        fontSet.normal = makeFontHandle(bold, italic);
+
+        if (!(bold || italic)) {
+          fontSet.bold = makeFontHandle(true, false);
+          fontSet.italic = makeFontHandle(false, true);
+          fontSet.boldItalic = makeFontHandle(true, true);
+        }
+
+        return fontSet;
+      }) |
+      std::ranges::to<std::vector>(),
 
       .textureAtlas{height, dpiScale},
     };

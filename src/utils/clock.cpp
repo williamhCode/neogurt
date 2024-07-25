@@ -9,8 +9,8 @@ Clock::Clock() {
   prevTime = steady_clock::now();
 }
 
-double Clock::Tick(std::optional<double> fps) {
-  if (fps.has_value()) {
+double Clock::Tick(double fps) {
+  if (fps > 0) {
     // nextFrame not catching up when app is paused for a while
     auto now = steady_clock::now();
     if (nextFrame < now) {
@@ -18,7 +18,7 @@ double Clock::Tick(std::optional<double> fps) {
     }
 
     std::this_thread::sleep_until(nextFrame);
-    double deltaSecs = 1.0 / *fps;
+    double deltaSecs = 1.0 / fps;
     auto delta = nanoseconds(static_cast<long long>(deltaSecs * 1e9));
     nextFrame += delta;
   }

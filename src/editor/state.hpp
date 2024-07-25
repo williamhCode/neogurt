@@ -1,12 +1,11 @@
 #pragma once
 
+#include "editor/ui_options.hpp"
+#include "editor/grid.hpp"
+#include "editor/window.hpp"
+#include "editor/highlight.hpp"
 #include "editor/cursor.hpp"
 #include "editor/font.hpp"
-#include "editor/grid.hpp"
-#include "editor/highlight.hpp"
-#include "editor/ui_options.hpp"
-#include "editor/window.hpp"
-#include "nvim/events/parse.hpp"
 #include <vector>
 
 // All state information that gets parsed from ui events.
@@ -21,11 +20,7 @@ struct EditorState {
   FontFamily fontFamily;
   // std::map<int, std::string> hlGroupTable;
 
-  void Init(const SizeHandler& sizes) {
-    winManager.sizes = &sizes;
-    winManager.gridManager = &gridManager;
-    cursor.Init(sizes.charSize, sizes.dpiScale);
-  }
+  void Init(const SizeHandler& sizes);
 };
 
 // returns true if there were events processed

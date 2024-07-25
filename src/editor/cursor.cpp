@@ -24,7 +24,7 @@ void Cursor::Init(glm::vec2 _size, float dpi) {
   );
 }
 
-void Cursor::Goto(const GridCursorGoto& e) {
+void Cursor::Goto(const event::GridCursorGoto& e) {
   dirty = true;
   grid = e.grid;
   row = e.row;

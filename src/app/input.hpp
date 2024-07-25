@@ -1,9 +1,10 @@
 #pragma once
 
 #include "SDL3/SDL_events.h"
-#include "editor/window.hpp"
-#include "glm/ext/vector_float2.hpp"
+
 #include "nvim/nvim.hpp"
+#include "editor/window.hpp"
+
 #include <optional>
 
 struct InputHandler {

@@ -51,9 +51,14 @@ void WinManager::UpdateRenderData(Win& win) {
   win.size = size;
 }
 
-void WinManager::Pos(const WinPos& e) {
+void WinManager::Pos(const event::WinPos& e) {
+  auto gridIt = gridManager->grids.find(e.grid);
+  if (gridIt == gridManager->grids.end()) {
+    LOG_ERR("WinManager::Pos: grid {} not found", e.grid);
+    return;
+  }
   auto [it, first] = windows.try_emplace(
-    e.grid, Win{.id = e.grid, .grid = gridManager->grids.at(e.grid)}
+    e.grid, Win{.id = e.grid, .grid = gridIt->second}
   );
   auto& win = it->second;
 
@@ -72,9 +77,14 @@ void WinManager::Pos(const WinPos& e) {
   }
 }
 
-void WinManager::FloatPos(const WinFloatPos& e) {
+void WinManager::FloatPos(const event::WinFloatPos& e) {
+  auto gridIt = gridManager->grids.find(e.grid);
+  if (gridIt == gridManager->grids.end()) {
+    LOG_ERR("WinManager::FloatPos: grid {} not found", e.grid);
+    return;
+  }
   auto [winIt, first] = windows.try_emplace(
-    e.grid, Win{.id = e.grid, .grid = gridManager->grids.at(e.grid)}
+    e.grid, Win{.id = e.grid, .grid = gridIt->second}
   );
   auto& win = winIt->second;
 
@@ -122,10 +132,10 @@ void WinManager::FloatPos(const WinFloatPos& e) {
   }
 }
 
-void WinManager::ExternalPos(const WinExternalPos& e) {
+void WinManager::ExternalPos(const event::WinExternalPos& e) {
 }
 
-void WinManager::Hide(const WinHide& e) {
+void WinManager::Hide(const event::WinHide& e) {
   auto it = windows.find(e.grid);
   if (it == windows.end()) {
     LOG_ERR("WinManager::Hide: window {} not found", e.grid);
@@ -142,7 +152,7 @@ void WinManager::Hide(const WinHide& e) {
   // }
 }
 
-void WinManager::Close(const WinClose& e) {
+void WinManager::Close(const event::WinClose& e) {
   auto removed = windows.erase(e.grid);
   if (removed == 0) {
     // see editor/state.cpp GridDestroy
@@ -151,9 +161,14 @@ void WinManager::Close(const WinClose& e) {
   }
 }
 
-void WinManager::MsgSet(const MsgSetPos& e) {
+void WinManager::MsgSetPos(const event::MsgSetPos& e) {
+  auto gridIt = gridManager->grids.find(e.grid);
+  if (gridIt == gridManager->grids.end()) {
+    LOG_ERR("WinManager::MsgSet: grid {} not found", e.grid);
+    return;
+  }
   auto [winIt, first] = windows.try_emplace(
-    e.grid, Win{.id = e.grid, .grid = gridManager->grids.at(e.grid)}
+    e.grid, Win{.id = e.grid, .grid = gridIt->second}
   );
   auto& win = winIt->second;
 
@@ -174,10 +189,10 @@ void WinManager::MsgSet(const MsgSetPos& e) {
   }
 }
 
-void WinManager::Viewport(const WinViewport& e) {
+void WinManager::Viewport(const event::WinViewport& e) {
   auto it = windows.find(e.grid);
   if (it == windows.end()) {
-    // LOG_ERR("WinManager::Viewport: window {} not found", e.grid);
+    LOG_ERR("WinManager::Viewport: window {} not found", e.grid);
     return;
   }
   auto& win = it->second;
@@ -201,7 +216,7 @@ void WinManager::UpdateScrolling(float dt) {
   }
 }
 
-void WinManager::ViewportMargins(const WinViewportMargins& e) {
+void WinManager::ViewportMargins(const event::WinViewportMargins& e) {
   auto it = windows.find(e.grid);
   if (it == windows.end()) {
     // LOG_ERR("WinManager::ViewportMargins: window {} not found", e.grid);
@@ -217,7 +232,7 @@ void WinManager::ViewportMargins(const WinViewportMargins& e) {
   win.sRenderTexture.UpdateMargins(win.margins);
 }
 
-void WinManager::Extmark(const WinExtmark& e) {
+void WinManager::Extmark(const event::WinExtmark& e) {
 }
 
 MouseInfo WinManager::GetMouseInfo(glm::vec2 mousePos) {

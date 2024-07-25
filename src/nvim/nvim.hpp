@@ -1,17 +1,21 @@
 #pragma once
 
-#include "msgpack_rpc/client.hpp"
-#include "nvim/events/parse.hpp"
+#include "nvim/events/ui.hpp"
+#include <future>
 #include <memory>
 #include <string_view>
 
+// Forward declaration
+// (reduce compile time cuz nvim.cpp calls a lot of templated functions)
+namespace rpc { struct Client; }
+
 // Nvim client that wraps the rpc client.
 struct Nvim {
-  std::unique_ptr<rpc::Client> client = std::make_unique<rpc::Client>();
+  std::unique_ptr<rpc::Client> client;
   UiEvents uiEvents;
   // int channelId;
 
-  bool ConnectStdio();
+  bool ConnectStdio(const std::string& dir = {});
   bool ConnectTcp(std::string_view host, uint16_t port);
   void Setup();
   bool IsConnected();

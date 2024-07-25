@@ -1,8 +1,11 @@
 #include "client.hpp"
 
 #include "boost/process/io.hpp"
+#include "boost/process/start_dir.hpp"
 #include "boost/asio/connect.hpp"
 #include "messages.hpp"
+#include "msgpack/v3/adaptor/nil_decl.hpp"
+#include "msgpack/v3/object_fwd_decl.hpp"
 #include "utils/logger.hpp"
 
 namespace bp = boost::process;
@@ -26,14 +29,15 @@ Client::~Client() {
   context.stop();
 }
 
-bool Client::ConnectStdio(const std::string& command) {
+bool Client::ConnectStdio(const std::string& command, const std::string& dir) {
   clientType = ClientType::Stdio;
   readPipe = std::make_unique<bp::async_pipe>(context);
   writePipe = std::make_unique<bp::async_pipe>(context);
 
-  // Launch Neovim process with pipes for stdin and stdout
+  LOG_INFO("Starting process: {}, {}", command, dir);
   process = bp::child(
     command,
+    bp::start_dir = dir,
     bp::std_out > *readPipe,
     bp::std_in < *writePipe
   );
@@ -83,15 +87,24 @@ bool Client::IsConnected() {
   return !exit;
 }
 
-// returns next notification at front of queue
-Client::NotificationData Client::PopNotification() {
-  auto msg = std::move(msgsIn.Front());
-  msgsIn.Pop();
+Request Client::PopRequest() {
+  auto req = std::move(requests.Front());
+  requests.Pop();
+  return req;
+}
+
+bool Client::HasRequest() {
+  return !requests.Empty();
+}
+
+Notification Client::PopNotification() {
+  auto msg = std::move(notifications.Front());
+  notifications.Pop();
   return msg;
 }
 
 bool Client::HasNotification() {
-  return !msgsIn.Empty();
+  return !notifications.Empty();
 }
 
 uint32_t Client::Msgid() {
@@ -115,27 +128,57 @@ void Client::GetData() {
         }
 
         int type = obj.via.array.ptr[0].convert();
-        if (type == MessageType::Response) {
-          ResponseIn msg(obj.convert());
+        if (type == MessageType::Request) {
+          RequestIn request(obj.convert());
+
+          std::promise<msgpack::type::variant> promise;
+          auto future = promise.get_future();
+
+          requests.Push(Request{
+            .method = request.method,
+            .params = request.params,
+            ._zone = std::move(handle.zone()),
+            .promise = std::move(promise),
+          });
+
+          std::thread([this, msgid = request.msgid, future = std::move(future)] mutable {
+            ResponseOut msg;
+            try {
+              msgpack::type::variant result = future.get();
+              msg.msgid = msgid;
+              msg.result = std::move(result);
+
+            } catch (msgpack::type::variant& error) {
+              msg.msgid = msgid;
+              msg.error = std::move(error);
+            }
+            msgpack::sbuffer buffer;
+            msgpack::pack(buffer, msg);
+            Write(std::move(buffer));
+          })
+          .detach();
+
+        } else if (type == MessageType::Response) {
+          ResponseIn response(obj.convert());
 
           decltype(responses)::iterator it;
           bool found;
           {
             std::scoped_lock lock(responsesMutex);
-            it = responses.find(msg.msgid);
+            it = responses.find(response.msgid);
             found = it != responses.end();
           }
           if (found) {
             auto& promise = it->second;
-            if (msg.error.is_nil()) {
+            if (response.error.is_nil()) {
               promise.set_value(
-                msgpack::object_handle(msg.result, std::move(handle.zone()))
+                msgpack::object_handle(response.result, std::move(handle.zone()))
               );
 
             } else {
               promise.set_exception(std::make_exception_ptr(std::runtime_error(
                 "rpc::Client response error: " +
-                msg.error.via.array.ptr[1].as<std::string>()
+                response.error.via.array.ptr[1].as<std::string>()
               )));
             }
 
@@ -145,14 +188,14 @@ void Client::GetData() {
             }
 
           } else {
-            LOG_WARN("Client::GetData: Response not found for msgid: {}", msg.msgid);
+            LOG_WARN("Client::GetData: Response not found for msgid: {}", response.msgid);
           }
 
         } else if (type == MessageType::Notification) {
-          NotificationIn msg(obj.convert());
-          msgsIn.Push(NotificationData{
-            .method = msg.method,
-            .params = msg.params,
+          NotificationIn notification(obj.convert());
+          notifications.Push(Notification{
+            .method = notification.method,
+            .params = notification.params,
             ._zone = std::move(handle.zone()),
           });
 

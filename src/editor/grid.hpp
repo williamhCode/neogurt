@@ -1,8 +1,7 @@
 #pragma once
 
-#include "nvim/events/parse.hpp"
 #include "utils/ring_buffer.hpp"
-#include <vector>
+#include "nvim/events/ui.hpp"
 
 struct Win; // forward decl
 
@@ -24,9 +23,9 @@ struct Grid {
 struct GridManager {
   std::unordered_map<int, Grid> grids;
 
-  void Resize(const GridResize& e);
-  void Clear(const GridClear& e);
-  void Line(const GridLine& e);
-  void Scroll(const GridScroll& e);
-  void Destroy(const GridDestroy& e);
+  void Resize(const event::GridResize& e);
+  void Clear(const event::GridClear& e);
+  void Line(const event::GridLine& e);
+  void Scroll(const event::GridScroll& e);
+  void Destroy(const event::GridDestroy& e);
 };

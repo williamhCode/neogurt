@@ -1,5 +1,4 @@
 #include "SDL3/SDL_init.h"
-#include "SDL3/SDL_keycode.h"
 #include "app/size.hpp"
 #include "app/input.hpp"
 #include "app/sdl_window.hpp"
@@ -14,19 +13,17 @@
 #include "gfx/renderer.hpp"
 #include "glm/ext/vector_float2.hpp"
 #include "glm/gtx/string_cast.hpp"
+#include "nvim/events/ui.hpp"
+#include "nvim/events/user.hpp"
 #include "session/manager.hpp"
 #include "utils/clock.hpp"
-#include "utils/color.hpp"
 #include "utils/logger.hpp"
 #include "utils/timer.hpp"
-#include "utils/unicode.hpp"
-#include "webgpu_tools/utils/webgpu.hpp"
+#include "session/state.hpp"
 
 #include <boost/core/demangle.hpp>
-#include <typeinfo>
 #include <algorithm>
 #include <vector>
-#include <deque>
 #include <atomic>
 #include <iostream>
 #include <format>
@@ -50,31 +47,19 @@ int main() {
   }
 
   try {
-    // global variables ---------------------
+    // init variables ---------------------
     Options options{};
     sdl::Window window;
     SizeHandler sizes{};
     Renderer renderer;
 
-    // setup session
-    SessionManager sessionManager(SpawnMode::Child);
-
-    SessionState* session = &sessionManager.NewSession("default");
-    session->InitNvim(options);
-
-    window = sdl::Window({1200, 800}, "Neovim GUI", options.window);
-
-    session->LoadFont(window.dpiScale);
-
-    sizes.UpdateSizes(
-      window.size, window.dpiScale,
-      session->editorState.fontFamily.DefaultFont().charSize, options.margins
-    );
-    renderer = Renderer(sizes);
-
-    session->InitEditorState(options, sizes);
-    session->InitInputHandler(options);
-    session->nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight).wait();
+    SessionManager sessionManager(SpawnMode::Child, options, window, sizes, renderer);
+    auto errMsg = sessionManager.NewSession();
+    if (!errMsg.empty()) {
+      LOG_ERR("Failed to create default session: {}", errMsg);
+      return 1;
+    }
+    SessionState* session = sessionManager.currSession;
 
     // main loop -----------------------------------
     // lock whenever ctx.device is used
@@ -84,37 +69,43 @@ int main() {
     TSQueue<SDL_Event> resizeEvents;
     TSQueue<SDL_Event> sdlEvents;
 
+    // int frameCount = 0;
+
     std::thread renderThread([&] {
       bool windowFocused = true;
       bool idle = false;
       float idleElasped = 0;
 
       Clock clock;
-      Timer timer(10);
+      // Timer timer(10);
 
       while (!exitWindow) {
-        auto dt = clock.Tick(
-          options.maxFps == 0 ? std::nullopt : std::optional(options.maxFps)
-        );
-        // LOG("dt: {}", dt);
+        float targetFps = options.window.vsync && !idle ? 0 : options.maxFps;
+        float dt = clock.Tick(targetFps);
 
-        // auto fps = clock.GetFps();
-        // auto fpsStr = std::format("fps: {:.2f}", fps);
-        // std::cout << '\r' << fpsStr << std::string(10, ' ') << std::flush;
+        // frameCount++;
+        // if (frameCount % 60 == 0) {
+        //   frameCount = 0;
+        //   auto fps = clock.GetFps();
+        //   auto fpsStr = std::format("fps: {:.2f}", fps);
+        //   std::cout << '\r' << fpsStr << std::string(10, ' ') << std::flush;
+        // }
 
         // timer.Start();
 
         // session->nvim events -------------------------------------------
-        if (!session->nvim.IsConnected()) {
-          exitWindow = true;
-          // sessionManager.RemoveSession("default");
-
+        if (sessionManager.Update()) {
           SDL_Event quitEvent{.type = SDL_EVENT_QUIT};
           SDL_PushEvent(&quitEvent);
+          break;
         };
+        session = sessionManager.currSession;
+
+        ProcessUserEvents(*session->nvim.client, sessionManager);
+        session = sessionManager.currSession;
 
         LOG_DISABLE();
-        ParseEvents(*session->nvim.client, session->nvim.uiEvents);
+        ParseUiEvents(*session->nvim.client, session->nvim.uiEvents);
         LOG_ENABLE();
 
         // process events ---------------------------------------
@@ -379,13 +370,13 @@ int main() {
     }
 
     renderThread.join();
-    if (session->nvim.IsConnected()) {
+    // if (session->nvim.IsConnected()) {
       // send escape so session->nvim doesn't get stuck when reattaching
       // prevents cmd + q exiting window getting stuck
-      session->nvim.Input("<Esc>");
-      session->nvim.UiDetach();
+      // session->nvim.Input("<Esc>");
+      // session->nvim.UiDetach();
       // LOG_INFO("Detached UI");
-    }
+    // }
 
   } catch (const std::exception& e) {
     LOG_ERR(

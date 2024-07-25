@@ -3,8 +3,10 @@
 #include <unordered_map>
 #include <span>
 
+using namespace event;
+
 // clang-format off
-using UiEventFunc = void (*)(const msgpack::object& args, UiEvents& state);
+using UiEventFunc = void (*)(const msgpack::object& args, UiEvents& uiEvents);
 static const std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
   // Global Events ----------------------------------------------------------
   {"set_title", [](const msgpack::object& args, UiEvents& uiEvents) {
@@ -94,7 +96,7 @@ static const std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
       args.as<std::tuple<int, int, int, msgpack::object, bool>>();
     GridLine gridLine{grid, row, col_start, {}};
 
-    std::span<const msgpack::object> cellsList(cells.via.array);
+    std::span<const msgpack::object> cellsList = cells.via.array;
     gridLine.cells.reserve(cellsList.size());
 
     int recent_hl_id;
@@ -182,7 +184,7 @@ static const std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
 };
 // clang-format on
 
-void ParseUiEvent(const msgpack::object& params, UiEvents& uiEvents) {
+static void ParseUiEvents(const msgpack::object& params, UiEvents& uiEvents) {
   std::span<const msgpack::object> events = params.via.array;
 
   for (const msgpack::object& eventObj : events) {
@@ -202,3 +204,16 @@ void ParseUiEvent(const msgpack::object& params, UiEvents& uiEvents) {
     }
   }
 }
+
+void ParseUiEvents(rpc::Client& client, UiEvents& uiEvents) {
+  uiEvents.numFlushes = 0;
+
+  while (client.HasNotification()) {
+    auto notification = client.PopNotification();
+
+    if (notification.method == "redraw") {
+      ParseUiEvents(notification.params, uiEvents);
+    }
+  }
+}
+
