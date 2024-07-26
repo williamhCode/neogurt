@@ -37,7 +37,7 @@ local convert_command_args = function(opts)
 
   local cmd = table.remove(args, 1)
   -- placeholder so rpc request is sends empty table not array
-  local cmd_opts = { placeholder = "" }
+  local cmd_opts = {}
   for _, arg in ipairs(args) do
     local key, value = arg:match("([^=]+)=(.*)")
     if not key or not value then
@@ -55,15 +55,40 @@ end
 ---@param opts? table command options
 vim.g.neogui_session = function(cmd, opts)
   local uis = vim.api.nvim_list_uis()
+
   for _, ui in ipairs(uis) do
     local chan_id = ui.chan
     local client = vim.api.nvim_get_chan_info(chan_id).client
+
     if client and client.name == "neogui" and client.type == "ui" then
-      local response = vim.rpcrequest(chan_id, "neogui_session", cmd, opts)
-      vim.print(response)
-      -- if errMsg ~= nil then
-      --   vim.api.nvim_err_writeln("NeoguiSession error: " .. errMsg)
-      -- end
+      if cmd == "new" then
+        local default_opts = {
+          name = "",
+          dir = "",
+          switch_to = "true",
+        }
+        opts = vim.tbl_extend("force", default_opts, opts)
+
+        -- validate opts
+        opts.dir = vim.fn.fnamemodify(opts.dir, ":p")
+        if vim.fn.isdirectory(opts.dir) == 0 then
+          vim.api.nvim_err_writeln("Directory does not exist: " .. opts.dir)
+          return
+        end
+        if (opts.switch_to ~= "true" and opts.switch_to ~= "false") then
+          vim.api.nvim_err_writeln("Invalid switch_to value. Expected true or false.")
+          return
+        end
+        opts.switch_to = opts.switch_to == "true"
+        vim.rpcrequest(chan_id, "neogui_session", cmd, opts)
+
+      elseif cmd == "prev" then
+        local success = vim.rpcrequest(chan_id, "neogui_session", cmd)
+        if not success then
+          vim.print("No previous session")
+        end
+      end
+
     end
   end
 end

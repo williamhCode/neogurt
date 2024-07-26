@@ -54,11 +54,7 @@ int main() {
     Renderer renderer;
 
     SessionManager sessionManager(SpawnMode::Child, options, window, sizes, renderer);
-    auto errMsg = sessionManager.NewSession();
-    if (!errMsg.empty()) {
-      LOG_ERR("Failed to create default session: {}", errMsg);
-      return 1;
-    }
+    sessionManager.NewSession();
     SessionState* session = sessionManager.Curr();
 
     // main loop -----------------------------------

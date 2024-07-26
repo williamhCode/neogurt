@@ -6,7 +6,7 @@ namespace event {
 
 struct Session {
   std::string cmd;
-  std::map<std::string, std::string> opts;
+  std::map<std::string, msgpack::type::variant> opts;
   MSGPACK_DEFINE(cmd, opts);
 };
 

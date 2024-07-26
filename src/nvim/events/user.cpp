@@ -10,29 +10,24 @@ void ProcessUserEvents(rpc::Client& client, SessionManager& sessionManager) {
 
     if (request.method == "neogui_session") {
       LOG_INFO("neogui_session: {}", ToString(request.params));
-      event::Session session = request.params.convert();
-      if (session.cmd == "new") {
-        NewSessionOpts opts{
-          .name = session.opts["name"],
-          .dir = session.opts["dir"],
-        };
-        auto switchTo = session.opts["switch_to"];
-        if (!switchTo.empty()) {
-          if (switchTo == "true") {
-            opts.switchTo = true;
-          } else if (switchTo == "false") {
-            opts.switchTo = false;
-          } else {
-            request.SetError("Invalid switch_to value: " + switchTo);
-            continue;
-          }
+
+      try {
+        event::Session session = request.params.convert();
+        if (session.cmd == "new") {
+          sessionManager.NewSession({
+            .name = session.opts.at("name").as_string(),
+            .dir = session.opts.at("dir").as_string(),
+            .switchTo = session.opts["switch_to"].as_bool(),
+          });
+          request.SetValue(msgpack::type::nil_t());
+
+        } else if (session.cmd == "prev") {
+          bool success = sessionManager.PrevSession();
+          request.SetValue(success);
         }
-        auto err = sessionManager.NewSession(opts);
-        if (err.empty()) {
-          request.SetValue("");
-        } else {
-          request.SetError(err);
-        }
+
+      } catch (const std::exception& e) {
+        request.SetError(e.what());
       }
     }
   }

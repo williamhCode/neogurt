@@ -1,6 +1,7 @@
 #include "manager.hpp"
 #include "utils/color.hpp"
 #include <algorithm>
+#include <stdexcept>
 
 SessionManager::SessionManager(
   SpawnMode _mode,
@@ -13,7 +14,7 @@ SessionManager::SessionManager(
     renderer(_renderer) {
 }
 
-std::string SessionManager::NewSession(const NewSessionOpts& opts) {
+void SessionManager::NewSession(const NewSessionOpts& opts) {
   bool first = sessions.empty();
   int id = currId++;
   auto [it, success] = sessions.try_emplace(id, SessionState{
@@ -24,12 +25,12 @@ std::string SessionManager::NewSession(const NewSessionOpts& opts) {
     .inputHandler{},
   });
   if (!success) {
-    return "Session with id " + std::to_string(id) + " already exists";
+    throw std::runtime_error("Session with id " + std::to_string(id) + " already exists");
   }
 
   auto& session = it->second;
   if (!session.nvim.ConnectStdio(opts.dir)) {
-    return "Failed to connect to nvim";
+    throw std::runtime_error("Failed to connect to nvim");
   }
 
   options.Load(session.nvim);
@@ -41,7 +42,7 @@ std::string SessionManager::NewSession(const NewSessionOpts& opts) {
   std::string guifont = session.nvim.GetOptionValue("guifont", {}).get()->convert();
   auto fontFamilyResult = FontFamily::FromGuifont(guifont, window.dpiScale);
   if (!fontFamilyResult) {
-    return "Failed to create font family: " + fontFamilyResult.error();
+    throw std::runtime_error("Invalid guifont: " + fontFamilyResult.error());
   }
   session.editorState.fontFamily = std::move(*fontFamilyResult);
 
@@ -84,18 +85,35 @@ std::string SessionManager::NewSession(const NewSessionOpts& opts) {
   } else {
     sessionsOrder.push_back(&session);
   }
-
-  return "";
 }
 
-std::string SessionManager::SwitchSession(int id) {
+bool SessionManager::PrevSession() {
+  if (sessionsOrder.size() < 2) {
+    return false;
+  }
+  SwitchSession(sessionsOrder[1]->id);
+  return true;
+}
+
+void SessionManager::SwitchSession(int id) {
   auto it = sessions.find(id);
   if (it == sessions.end()) {
-    return "Session with id " + std::to_string(id) + " not found";
+    throw std::runtime_error(
+      "Session with id " + std::to_string(id) + " does not exist"
+    );
   }
+  Curr()->nvim.UiDetach().wait();
+
   auto& session = it->second;
 
-  Curr()->nvim.UiDetach().wait();
+  options.Load(session.nvim);
+
+  sizes.UpdateSizes(
+    window.size, window.dpiScale,
+    session.editorState.fontFamily.DefaultFont().charSize, options.margins
+  );
+
+  renderer.Resize(sizes);
 
   session.nvim.UiAttach(
     sizes.uiWidth, sizes.uiHeight,
@@ -112,8 +130,6 @@ std::string SessionManager::SwitchSession(int id) {
     sessionsOrder.erase(currIt);
     sessionsOrder.push_front(&session);
   }
-
-  return "";
 }
 
 bool SessionManager::Update() {

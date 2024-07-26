@@ -45,9 +45,11 @@ struct SessionManager {
     Renderer& renderer
   );
 
-  // return string if error
-  std::string NewSession(const NewSessionOpts& opts = {});
-  std::string SwitchSession(int id);
+  // creates new session
+  void NewSession(const NewSessionOpts& opts = {});
+  // return true if successful
+  bool PrevSession();
+  void SwitchSession(int id);
 
   // returns true if all sessions are closed
   bool Update();
