@@ -192,7 +192,7 @@ void WinManager::MsgSetPos(const event::MsgSetPos& e) {
 void WinManager::Viewport(const event::WinViewport& e) {
   auto it = windows.find(e.grid);
   if (it == windows.end()) {
-    LOG_ERR("WinManager::Viewport: window {} not found", e.grid);
+    // LOG_ERR("WinManager::Viewport: window {} not found", e.grid);
     return;
   }
   auto& win = it->second;

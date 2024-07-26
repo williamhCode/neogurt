@@ -1,14 +1,10 @@
 #pragma once
 
-#include <map>
-#include <string>
-
-// Forward decl
-struct Options;
-namespace sdl { struct Window; }
-struct SizeHandler;
-struct Renderer;
-struct SessionState;
+#include "session/state.hpp"
+#include "app/options.hpp"
+#include "app/sdl_window.hpp"
+#include "gfx/renderer.hpp"
+#include <deque>
 
 enum class SpawnMode {
   Child,
@@ -23,6 +19,7 @@ struct NewSessionOpts {
 
 struct SessionManager {
   SpawnMode mode;
+
   Options& options;
   sdl::Window& window;
   SizeHandler& sizes;
@@ -30,8 +27,15 @@ struct SessionManager {
 
   int currId = 0;
   std::map<int, SessionState> sessions;
-  SessionState* prevSession = nullptr;
-  SessionState* currSession = nullptr;
+  // SessionState* prevSession = nullptr;
+  // SessionState* currSession = nullptr;
+
+  // front to back = recency
+  std::deque<SessionState*> sessionsOrder;
+  inline SessionState* Curr() {
+    auto it = sessionsOrder.begin();
+    return it == sessionsOrder.end() ? nullptr : *it;
+  }
 
   SessionManager(
     SpawnMode mode,
@@ -40,7 +44,6 @@ struct SessionManager {
     SizeHandler& sizes,
     Renderer& renderer
   );
-  ~SessionManager();
 
   // return string if error
   std::string NewSession(const NewSessionOpts& opts = {});

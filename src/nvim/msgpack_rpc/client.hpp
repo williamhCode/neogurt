@@ -30,8 +30,16 @@ struct Request {
   msgpack::unique_ptr<msgpack::zone> _zone; // holds the lifetime of the data
   std::promise<msgpack::type::variant> promise;
 
+  void SetValue(const msgpack::type::variant& value) {
+    promise.set_value(value);
+  }
+
   void SetValue(msgpack::type::variant&& value) {
     promise.set_value(std::move(value));
+  }
+
+  void SetError(const msgpack::type::variant& error) {
+    promise.set_exception(std::make_exception_ptr(error));
   }
 
   void SetError(msgpack::type::variant&& error) {

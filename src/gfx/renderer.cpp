@@ -97,6 +97,10 @@ Renderer::Renderer(const SizeHandler& sizes) {
 void Renderer::Resize(const SizeHandler& sizes) {
   camera.Resize(sizes.size);
 
+  if (!prevFinalRenderTexture.texture) {
+    prevFinalRenderTexture = std::move(finalRenderTexture);
+  }
+
   finalRenderTexture =
     RenderTexture(sizes.uiSize, sizes.dpiScale, TextureFormat::RGBA8UnormSrgb);
   finalRenderTexture.UpdatePos(sizes.offset);
@@ -334,8 +338,13 @@ void Renderer::RenderFinalTexture() {
   auto passEncoder = commandEncoder.BeginRenderPass(&finalRPD);
   passEncoder.SetPipeline(ctx.pipeline.finalTextureRPL);
   passEncoder.SetBindGroup(0, camera.viewProjBG);
-  passEncoder.SetBindGroup(1, finalRenderTexture.textureBG);
-  finalRenderTexture.renderData.Render(passEncoder);
+  if (prevFinalRenderTexture.texture) {
+    passEncoder.SetBindGroup(1, prevFinalRenderTexture.textureBG);
+    prevFinalRenderTexture.renderData.Render(passEncoder);
+  } else {
+    passEncoder.SetBindGroup(1, finalRenderTexture.textureBG);
+    finalRenderTexture.renderData.Render(passEncoder);
+  }
   passEncoder.End();
   finalRPD.cColorAttachments[0].view = nullptr;
 }

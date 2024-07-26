@@ -1,12 +1,6 @@
 #include "manager.hpp"
-#include "session/state.hpp"
-#include "app/options.hpp"
-#include "app/sdl_window.hpp"
-#include "gfx/renderer.hpp"
 #include "utils/color.hpp"
-
-SessionManager::~SessionManager() {
-}
+#include <algorithm>
 
 SessionManager::SessionManager(
   SpawnMode _mode,
@@ -83,13 +77,12 @@ std::string SessionManager::NewSession(const NewSessionOpts& opts) {
       }
     ).wait();
 
-    if (currSession != nullptr) {
-      // currSession->nvim.UiDetach().wait();
-      // currSession->editorState = {};
-      // currSession->inputHandler = {};
+    if (Curr() != nullptr) {
+      Curr()->nvim.UiDetach().wait();
     }
-    prevSession = currSession;
-    currSession = &session;
+    sessionsOrder.push_front(&session);
+  } else {
+    sessionsOrder.push_back(&session);
   }
 
   return "";
@@ -100,8 +93,10 @@ std::string SessionManager::SwitchSession(int id) {
   if (it == sessions.end()) {
     return "Session with id " + std::to_string(id) + " not found";
   }
-
   auto& session = it->second;
+
+  Curr()->nvim.UiDetach().wait();
+
   session.nvim.UiAttach(
     sizes.uiWidth, sizes.uiHeight,
     {
@@ -111,22 +106,28 @@ std::string SessionManager::SwitchSession(int id) {
     }
   ).wait();
 
-  currSession->nvim.UiDetach().wait();
-
-  prevSession = currSession;
-  currSession = &session;
+  auto currIt = std::ranges::find(sessionsOrder, &session);
+  // move to front
+  if (currIt != sessionsOrder.end()) {
+    sessionsOrder.erase(currIt);
+    sessionsOrder.push_front(&session);
+  }
 
   return "";
 }
 
 bool SessionManager::Update() {
-  if (!currSession->nvim.IsConnected()) {
-    sessions.erase(currSession->id);
-    if (prevSession == nullptr) return true;
+  auto* curr = Curr();
+  if (!curr->nvim.IsConnected()) {
+    sessions.erase(curr->id);
+    sessionsOrder.pop_front();
 
-    currSession = prevSession;
-    prevSession = nullptr;
-    auto& session = *currSession;
+    curr = Curr();
+    if (curr == nullptr) {
+      return true;
+    }
+
+    auto& session = *curr;
 
     options.Load(session.nvim);
 
@@ -137,23 +138,17 @@ bool SessionManager::Update() {
 
     renderer.Resize(sizes);
 
-    if (options.transparency < 1) {
-      auto& hl = session.editorState.hlTable[0];
-      hl.background = IntToColor(options.bgColor);
-      hl.background->a = options.transparency;
-    }
-
-    // session.nvim.UiAttach(
-    //   sizes.uiWidth, sizes.uiHeight,
-    //   {
-    //     {"rgb", true},
-    //     {"ext_multigrid", options.multigrid},
-    //     {"ext_linegrid", true},
-    //   }
-    // ).wait();
+    session.nvim.UiAttach(
+      sizes.uiWidth, sizes.uiHeight,
+      {
+        {"rgb", true},
+        {"ext_multigrid", options.multigrid},
+        {"ext_linegrid", true},
+      }
+    ).wait();
   }
 
-  return sessions.empty();
+  return false;
 }
 
 // void SessionManager::LoadSessions(std::string_view filename) {

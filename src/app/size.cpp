@@ -23,7 +23,8 @@ void SizeHandler::UpdateSizes(
   uiSize = uiWidthHeight * charSize;
   uiFbSize = uiSize * dpiScale;
 
-  offset = (size - uiSize) / 2.0f;
+  // offset = (size - uiSize) / 2.0f;
+  offset = {margins.left, margins.top};
   offset = glm::round(offset * dpiScale) / dpiScale;
   fbOffset = offset * dpiScale;
 }

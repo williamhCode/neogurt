@@ -59,7 +59,7 @@ int main() {
       LOG_ERR("Failed to create default session: {}", errMsg);
       return 1;
     }
-    SessionState* session = sessionManager.currSession;
+    SessionState* session = sessionManager.Curr();
 
     // main loop -----------------------------------
     // lock whenever ctx.device is used
@@ -99,10 +99,10 @@ int main() {
           SDL_PushEvent(&quitEvent);
           break;
         };
-        session = sessionManager.currSession;
+        session = sessionManager.Curr();
 
         ProcessUserEvents(*session->nvim.client, sessionManager);
-        session = sessionManager.currSession;
+        session = sessionManager.Curr();
 
         LOG_DISABLE();
         ParseUiEvents(*session->nvim.client, session->nvim.uiEvents);
@@ -135,15 +135,22 @@ int main() {
                 window.fbSize = {event.window.data1, event.window.data2};
 
                 std::scoped_lock lock(wgpuDeviceMutex);
+                auto uiFbSize = sizes.uiFbSize;
                 sizes.UpdateSizes(
                   window.size, window.dpiScale,
                   session->editorState.fontFamily.DefaultFont().charSize,
                   options.margins
                 );
-
                 sdl::Window::_ctx.Resize(sizes.fbSize);
-                renderer.Resize(sizes);
-                session->nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight);
+
+                if (uiFbSize == sizes.uiFbSize) {
+                  renderer.camera.Resize(sizes.size);
+                  renderer.finalRenderTexture.UpdatePos(sizes.offset);
+
+                } else {
+                  renderer.Resize(sizes);
+                  session->nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight);
+                }
                 break;
               }
             }
@@ -272,6 +279,10 @@ int main() {
             });
 
             renderer.RenderWindows(windows, floatWindows);
+            // switch to current texture only after rendering to it
+            if (renderer.prevFinalRenderTexture.texture) {
+              renderer.prevFinalRenderTexture = {};
+            }
           }
 
           renderer.RenderFinalTexture();
