@@ -2,10 +2,6 @@
 
 #include "nvim/nvim.hpp"
 #include "editor/state.hpp"
-#include "app/input.hpp"
-
-#include "app/options.hpp"
-#include "app/size.hpp"
 
 struct SessionState {
   int id;
@@ -14,5 +10,5 @@ struct SessionState {
   // session data ----------------------
   Nvim nvim;
   EditorState editorState;
-  InputHandler inputHandler;
+  // InputHandler inputHandler;
 };

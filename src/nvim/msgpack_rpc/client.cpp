@@ -188,7 +188,7 @@ void Client::GetData() {
             }
 
           } else {
-            LOG_WARN("Client::GetData: Response not found for msgid: {}", response.msgid);
+            LOG_ERR("Client::GetData: Response not found for msgid: {}", response.msgid);
           }
 
         } else if (type == MessageType::Notification) {

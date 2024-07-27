@@ -8,22 +8,17 @@ SessionManager::SessionManager(
   Options& _options,
   sdl::Window& _window,
   SizeHandler& _sizes,
-  Renderer& _renderer
+  Renderer& _renderer,
+  InputHandler& _inputHandler
 )
   : mode(_mode), options(_options), window(_window), sizes(_sizes),
-    renderer(_renderer) {
+    renderer(_renderer), inputHandler(_inputHandler) {
 }
 
 void SessionManager::NewSession(const NewSessionOpts& opts) {
   bool first = sessions.empty();
   int id = currId++;
-  auto [it, success] = sessions.try_emplace(id, SessionState{
-    .id = id,
-    .name = opts.name,
-    .nvim{},
-    .editorState{},
-    .inputHandler{},
-  });
+  auto [it, success] = sessions.try_emplace(id, id, opts.name);
   if (!success) {
     throw std::runtime_error("Session with id " + std::to_string(id) + " already exists");
   }
@@ -63,7 +58,7 @@ void SessionManager::NewSession(const NewSessionOpts& opts) {
     hl.background->a = options.transparency;
   }
 
-  session.inputHandler = InputHandler(
+  inputHandler = InputHandler(
     &session.nvim, &session.editorState.winManager, options.macOptIsMeta,
     options.multigrid, options.scrollSpeed
   );
@@ -102,7 +97,6 @@ void SessionManager::SwitchSession(int id) {
       "Session with id " + std::to_string(id) + " does not exist"
     );
   }
-  Curr()->nvim.UiDetach().wait();
 
   auto& session = it->second;
 
@@ -115,6 +109,11 @@ void SessionManager::SwitchSession(int id) {
 
   renderer.Resize(sizes);
 
+  inputHandler = InputHandler(
+    &session.nvim, &session.editorState.winManager, options.macOptIsMeta,
+    options.multigrid, options.scrollSpeed
+  );
+
   session.nvim.UiAttach(
     sizes.uiWidth, sizes.uiHeight,
     {
@@ -124,6 +123,8 @@ void SessionManager::SwitchSession(int id) {
     }
   ).wait();
 
+  Curr()->nvim.UiDetach().wait();
+
   auto currIt = std::ranges::find(sessionsOrder, &session);
   // move to front
   if (currIt != sessionsOrder.end()) {
@@ -132,7 +133,7 @@ void SessionManager::SwitchSession(int id) {
   }
 }
 
-bool SessionManager::Update() {
+bool SessionManager::ShouldQuit() {
   auto* curr = Curr();
   if (!curr->nvim.IsConnected()) {
     sessions.erase(curr->id);
@@ -153,6 +154,11 @@ bool SessionManager::Update() {
     );
 
     renderer.Resize(sizes);
+
+    inputHandler = InputHandler(
+      &session.nvim, &session.editorState.winManager, options.macOptIsMeta,
+      options.multigrid, options.scrollSpeed
+    );
 
     session.nvim.UiAttach(
       sizes.uiWidth, sizes.uiHeight,

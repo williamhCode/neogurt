@@ -1,5 +1,6 @@
 #pragma once
 
+#include "app/input.hpp"
 #include "session/state.hpp"
 #include "app/options.hpp"
 #include "app/sdl_window.hpp"
@@ -24,6 +25,7 @@ struct SessionManager {
   sdl::Window& window;
   SizeHandler& sizes;
   Renderer& renderer;
+  InputHandler& inputHandler;
 
   int currId = 0;
   std::map<int, SessionState> sessions;
@@ -42,7 +44,8 @@ struct SessionManager {
     Options& options,
     sdl::Window& window,
     SizeHandler& sizes,
-    Renderer& renderer
+    Renderer& renderer,
+    InputHandler& inputHandler
   );
 
   // creates new session
@@ -52,7 +55,7 @@ struct SessionManager {
   void SwitchSession(int id);
 
   // returns true if all sessions are closed
-  bool Update();
+  bool ShouldQuit();
 
   // void LoadSessions(std::string_view filename);
   // void SaveSessions(std::string_view filename);

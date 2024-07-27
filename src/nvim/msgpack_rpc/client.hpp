@@ -10,6 +10,7 @@
 #include "nvim/msgpack_rpc/messages.hpp"
 #include "tsqueue.hpp"
 
+#include <atomic>
 #include <memory>
 #include <string_view>
 #include <unordered_map>
@@ -76,6 +77,8 @@ public:
 
   bool ConnectStdio(const std::string& command, const std::string& dir = {});
   bool ConnectTcp(std::string_view host, uint16_t port);
+
+  // public functions below are thread-safe
   void Disconnect();
   bool IsConnected();
 
@@ -93,7 +96,7 @@ private:
   msgpack::unpacker unpacker;
   static constexpr std::size_t readSize = 1024 << 10;
   TSQueue<msgpack::sbuffer> msgsOut;
-  uint32_t currId = 0;
+  std::atomic_uint32_t currId = 0;
 
   uint32_t Msgid();
   void GetData();

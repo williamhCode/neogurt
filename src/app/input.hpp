@@ -9,7 +9,7 @@
 
 struct InputHandler {
   Nvim* nvim;
-  WinManager* winManager;
+  const WinManager* winManager;
 
   // options
   bool macOptIsMeta;
@@ -22,7 +22,6 @@ struct InputHandler {
 
   double yAccum = 0;
   double xAccum = 0;
-  int scrollDir = 0;
 
   InputHandler() = default;
   InputHandler(

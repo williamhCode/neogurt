@@ -52,6 +52,7 @@ void WinManager::UpdateRenderData(Win& win) {
 }
 
 void WinManager::Pos(const event::WinPos& e) {
+  std::lock_guard lock(windowsMutex);
   auto gridIt = gridManager->grids.find(e.grid);
   if (gridIt == gridManager->grids.end()) {
     LOG_ERR("WinManager::Pos: grid {} not found", e.grid);
@@ -78,6 +79,7 @@ void WinManager::Pos(const event::WinPos& e) {
 }
 
 void WinManager::FloatPos(const event::WinFloatPos& e) {
+  std::lock_guard lock(windowsMutex);
   auto gridIt = gridManager->grids.find(e.grid);
   if (gridIt == gridManager->grids.end()) {
     LOG_ERR("WinManager::FloatPos: grid {} not found", e.grid);
@@ -136,6 +138,7 @@ void WinManager::ExternalPos(const event::WinExternalPos& e) {
 }
 
 void WinManager::Hide(const event::WinHide& e) {
+  std::lock_guard lock(windowsMutex);
   auto it = windows.find(e.grid);
   if (it == windows.end()) {
     LOG_ERR("WinManager::Hide: window {} not found", e.grid);
@@ -153,6 +156,7 @@ void WinManager::Hide(const event::WinHide& e) {
 }
 
 void WinManager::Close(const event::WinClose& e) {
+  std::lock_guard lock(windowsMutex);
   auto removed = windows.erase(e.grid);
   if (removed == 0) {
     // see editor/state.cpp GridDestroy
@@ -162,6 +166,7 @@ void WinManager::Close(const event::WinClose& e) {
 }
 
 void WinManager::MsgSetPos(const event::MsgSetPos& e) {
+  std::lock_guard lock(windowsMutex);
   auto gridIt = gridManager->grids.find(e.grid);
   if (gridIt == gridManager->grids.end()) {
     LOG_ERR("WinManager::MsgSet: grid {} not found", e.grid);
@@ -190,6 +195,7 @@ void WinManager::MsgSetPos(const event::MsgSetPos& e) {
 }
 
 void WinManager::Viewport(const event::WinViewport& e) {
+  std::lock_guard lock(windowsMutex);
   auto it = windows.find(e.grid);
   if (it == windows.end()) {
     // LOG_ERR("WinManager::Viewport: window {} not found", e.grid);
@@ -209,6 +215,7 @@ void WinManager::Viewport(const event::WinViewport& e) {
 }
 
 void WinManager::UpdateScrolling(float dt) {
+  std::lock_guard lock(windowsMutex);
   for (auto& [id, win] : windows) {
     if (!win.sRenderTexture.scrolling) continue;
     win.sRenderTexture.UpdateScrolling(dt);
@@ -217,6 +224,7 @@ void WinManager::UpdateScrolling(float dt) {
 }
 
 void WinManager::ViewportMargins(const event::WinViewportMargins& e) {
+  std::lock_guard lock(windowsMutex);
   auto it = windows.find(e.grid);
   if (it == windows.end()) {
     // LOG_ERR("WinManager::ViewportMargins: window {} not found", e.grid);
@@ -235,13 +243,14 @@ void WinManager::ViewportMargins(const event::WinViewportMargins& e) {
 void WinManager::Extmark(const event::WinExtmark& e) {
 }
 
-MouseInfo WinManager::GetMouseInfo(glm::vec2 mousePos) {
+MouseInfo WinManager::GetMouseInfo(glm::vec2 mousePos) const {
+  std::lock_guard lock(windowsMutex);
   mousePos -= sizes->offset;
   int globalRow = mousePos.y / sizes->charSize.y;
   int globalCol = mousePos.x / sizes->charSize.x;
 
   std::vector<std::pair<int, const Win*>> sortedWins;
-  for (auto& [id, win] : windows) {
+  for (const auto& [id, win] : windows) {
     if (win.hidden || id == 1) continue;
     sortedWins.emplace_back(id, &win);
   }
@@ -269,15 +278,16 @@ MouseInfo WinManager::GetMouseInfo(glm::vec2 mousePos) {
     }
   }
 
-  auto& win = windows.at(grid);
+  const auto& win = windows.at(grid);
   int row = std::max(globalRow - win.startRow, 0);
   int col = std::max(globalCol - win.startCol, 0);
 
   return {grid, row, col};
 }
 
-MouseInfo WinManager::GetMouseInfo(int grid, glm::vec2 mousePos) {
-  auto& win = windows.at(grid);
+MouseInfo WinManager::GetMouseInfo(int grid, glm::vec2 mousePos) const {
+  std::lock_guard lock(windowsMutex);
+  const auto& win = windows.at(grid);
 
   mousePos -= sizes->offset;
   int globalRow = mousePos.y / sizes->charSize.y;
@@ -289,12 +299,12 @@ MouseInfo WinManager::GetMouseInfo(int grid, glm::vec2 mousePos) {
   return {grid, row, col};
 }
 
-Win* WinManager::GetWin(int id) {
+const Win* WinManager::GetWin(int id) const {
   auto it = windows.find(id);
   if (it == windows.end()) return nullptr;
   return &it->second;
 }
 
-Win* WinManager::GetMsgWin() {
+const Win* WinManager::GetMsgWin() const {
   return GetWin(msgWinId);
 }

@@ -186,43 +186,38 @@ void InputHandler::HandleMouseWheel(const SDL_MouseWheelEvent& event) {
 
   double scrollUnit = 1 / scrollSpeed;
 
+  double yDelta = event.y;
+  double xDelta = event.x;
   double yAbs = std::abs(event.y);
   double xAbs = std::abs(event.x);
 
-  bool ypositive = event.y > 0;
-  bool xpositive = event.x > 0;
-
   // only scroll one axis at a time
   if (yAbs > xAbs) {
-    xAccum = 0;
-    if ((ypositive && scrollDir == -1) || (!ypositive && scrollDir == 1)) {
-      yAccum = 0;
-    }
-    scrollDir = ypositive ? 1 : -1;
-
-    yAccum += yAbs;
+    yAccum += yDelta;
     yAccum = std::min(yAccum, 100.0);
+    yAccum = std::max(yAccum, -100.0);
 
-    std::string actionStr = ypositive ? "up" : "down";
     while (yAccum >= scrollUnit) {
-      nvim->InputMouse("wheel", actionStr, modStr, info.grid, info.row, info.col);
+      nvim->InputMouse("wheel", "up", modStr, info.grid, info.row, info.col);
       yAccum -= scrollUnit;
+    }
+    while (yAccum < 0) {
+      nvim->InputMouse("wheel", "down", modStr, info.grid, info.row, info.col);
+      yAccum += scrollUnit;
     }
 
   } else if (xAbs > yAbs) {
-    yAccum = 0;
-    if ((xpositive && scrollDir == -1) || (!xpositive && scrollDir == 1)) {
-      xAccum = 0;
-    }
-    scrollDir = xpositive ? 1 : -1;
-
-    xAccum += xAbs;
+    xAccum += xDelta;
     xAccum = std::min(xAccum, 100.0);
+    xAccum = std::max(xAccum, -100.0);
 
-    std::string actionStr = xpositive ? "right" : "left";
     while (xAccum >= scrollUnit) {
-      nvim->InputMouse("wheel", actionStr, modStr, info.grid, info.row, info.col);
+      nvim->InputMouse("wheel", "right", modStr, info.grid, info.row, info.col);
       xAccum -= scrollUnit;
+    }
+    while (xAccum < 0) {
+      nvim->InputMouse("wheel", "left", modStr, info.grid, info.row, info.col);
+      xAccum += scrollUnit;
     }
   }
 }

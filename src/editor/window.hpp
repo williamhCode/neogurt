@@ -9,6 +9,7 @@
 
 #include "glm/ext/vector_float2.hpp"
 #include <map>
+#include <memory>
 #include <optional>
 
 struct FloatData {
@@ -58,17 +59,21 @@ struct WinManager {
   const SizeHandler* sizes;
   bool dirty; // true if window pos updated from scrolling
 
-  using ColorBytes = glm::vec<4, uint8_t>;
-  ColorBytes clearColor;
-
   // not unordered because telescope float background overlaps text
   // so have to render floats in order else text will be covered
   std::map<int, Win> windows;
   int msgWinId = -1;
 
+  // added to public functions called in main thread that reads (main thread doesn't write)
+  // added to public functions called in render thread that writes
+  mutable std::mutex windowsMutex;
+
+private:
+
   void InitRenderData(Win& win);
   void UpdateRenderData(Win& win);
 
+public:
   void Pos(const event::WinPos& e);
   void FloatPos(const event::WinFloatPos& e);
   void ExternalPos(const event::WinExternalPos& e);
@@ -82,9 +87,9 @@ struct WinManager {
 
   Grid* GetGrid(int id);
 
-  MouseInfo GetMouseInfo(glm::vec2 mousePos);
-  MouseInfo GetMouseInfo(int grid, glm::vec2 mousePos);
+  MouseInfo GetMouseInfo(glm::vec2 mousePos) const;
+  MouseInfo GetMouseInfo(int grid, glm::vec2 mousePos) const;
 
-  Win* GetWin(int id);
-  Win* GetMsgWin();
+  const Win* GetWin(int id) const;
+  const Win* GetMsgWin() const;
 };

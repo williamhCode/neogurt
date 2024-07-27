@@ -146,12 +146,6 @@ bool ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
             hl.background = IntToColor(e.rgbBg);
           }
           hl.special = IntToColor(e.rgbSp);
-
-          auto& color = editorState.winManager.clearColor;
-          color.r = hl.background->r * 255;
-          color.g = hl.background->g * 255;
-          color.b = hl.background->b * 255;
-          color.a = hl.background->a * 255;
         },
         [&](HlAttrDefine& e) {
           // LOG("hl_attr_define");
