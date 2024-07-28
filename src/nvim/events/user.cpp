@@ -9,7 +9,7 @@ void ProcessUserEvents(rpc::Client& client, SessionManager& sessionManager) {
     auto request = client.PopRequest();
 
     if (request.method == "neogui_session") {
-      LOG_INFO("neogui_session: {}", ToString(request.params));
+      LOG("neogui_session: {}", ToString(request.params));
 
       try {
         event::Session session = request.params.convert();

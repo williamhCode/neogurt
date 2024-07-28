@@ -97,8 +97,9 @@ int main() {
         };
         session = sessionManager.Curr();
 
+        LOG_DISABLE();
         ProcessUserEvents(*session->nvim.client, sessionManager);
-        session = sessionManager.Curr();
+        LOG_ENABLE();
 
         LOG_DISABLE();
         ParseUiEvents(*session->nvim.client, session->nvim.uiEvents);
@@ -135,19 +136,18 @@ int main() {
             auto& event = resizeEvents.Front();
             switch (event.type) {
               case SDL_EVENT_WINDOW_RESIZED:
-                LOG("window resized: {} {}", event.window.data1, event.window.data2);
                 window.size = {event.window.data1, event.window.data2};
                 break;
               case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: {
-                float prevDpiScale = window.dpiScale;
-                window.dpiScale = SDL_GetWindowPixelDensity(window.Get());
-                bool dpiChanged = prevDpiScale != window.dpiScale;
-                if (dpiChanged) LOG("display scale changed: {}", window.dpiScale);
-                session->editorState.fontFamily.ChangeDpiScale(window.dpiScale);
-                session->editorState.cursor.Init(sizes.charSize, sizes.dpiScale);
-
-                LOG("window pixel size changed: {} {}", event.window.data1, event.window.data2);
                 window.fbSize = {event.window.data1, event.window.data2};
+
+                float prevDpiScale = window.dpiScale;
+                window.dpiScale = window.fbSize.x / window.size.x;
+                bool dpiChanged = prevDpiScale != window.dpiScale;
+
+                if (dpiChanged) {
+                  session->editorState.fontFamily.ChangeDpiScale(window.dpiScale);
+                }
 
                 auto uiFbSize = sizes.uiFbSize;
                 sizes.UpdateSizes(
@@ -155,16 +155,22 @@ int main() {
                   session->editorState.fontFamily.DefaultFont().charSize,
                   options.margins
                 );
+
+                if (dpiChanged) {
+                  session->editorState.cursor.Init(sizes.charSize, sizes.dpiScale);
+                  // force nvim to resend all events to update dpiScale
+                  session->nvim.UiTryResize(sizes.uiWidth + 1, sizes.uiHeight);
+                }
+
                 sdl::Window::_ctx.Resize(sizes.fbSize);
 
-                if (uiFbSize == sizes.uiFbSize && !dpiChanged) {
+                if (uiFbSize == sizes.uiFbSize) {
                   renderer.camera.Resize(sizes.size);
                   renderer.finalRenderTexture.UpdatePos(sizes.offset);
 
                 } else {
                   renderer.Resize(sizes);
                   session->nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight);
-                  LOG("ui size: {} {}", sizes.uiWidth, sizes.uiHeight);
                 }
                 break;
               }

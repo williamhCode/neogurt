@@ -216,8 +216,7 @@ void Renderer::RenderToWindow(
 
   auto renderInfos = win.sRenderTexture.GetRenderInfos();
   static int i = 0;
-  LOG_DISABLE();
-  LOG("{} -------------------", i++);
+  // LOG("{} -------------------", i++);
 
   for (auto [renderTexture, range, clearRegion] : renderInfos) {
     {
@@ -242,7 +241,7 @@ void Renderer::RenderToWindow(
 
       int start = rectIntervals[range.start];
       int end = rectIntervals[range.end];
-      LOG("1 - start: {}, end: {}", start, end);
+      // LOG("1 - start: {}, end: {}", start, end);
       if (start != end) rectData.Render(passEncoder, start, end - start);
       passEncoder.End();
     }
@@ -254,7 +253,7 @@ void Renderer::RenderToWindow(
       passEncoder.SetBindGroup(1, fontFamily.textureAtlas.fontTextureBG);
       int start = textIntervals[range.start];
       int end = textIntervals[range.end];
-      LOG("2 - start: {}, end: {}", start, end);
+      // LOG("2 - start: {}, end: {}", start, end);
       if (start != end) textData.Render(passEncoder, start, end - start);
       passEncoder.End();
     }

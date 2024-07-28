@@ -73,8 +73,9 @@ void SessionManager::NewSession(const NewSessionOpts& opts) {
       }
     ).wait();
 
-    if (Curr() != nullptr) {
-      Curr()->nvim.UiDetach().wait();
+    auto* curr = Curr();
+    if (curr != nullptr) {
+      curr->nvim.UiDetach().wait();
     }
     sessionsOrder.push_front(&session);
   } else {

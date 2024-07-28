@@ -44,6 +44,8 @@ void GridManager::Clear(const event::GridClear& e) {
       cell = Grid::Cell{" "};
     }
   }
+
+  grid.dirty = true;
 }
 
 void GridManager::Line(const event::GridLine& e) {
