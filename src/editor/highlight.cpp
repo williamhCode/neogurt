@@ -47,8 +47,9 @@ glm::vec4 GetSpecial(const HlTable& table, const Highlight& hl) {
       LOG_ERR("GetSpecial: default highlight table entry (0) not found");
       return std::make_optional<glm::vec4>(0, 0, 0, 1);
     }
-    return it->second.special.or_else([&] {
-      LOG_ERR("GetSpecial: default highlight table entry (0) has no special color");
+    // use foreground cuz special color is weird
+    return it->second.foreground.or_else([&] {
+      LOG_ERR("GetSpecial: default highlight table entry (0) has no foreground color");
       return std::make_optional<glm::vec4>(0, 0, 0, 1);
     });
   }).value();

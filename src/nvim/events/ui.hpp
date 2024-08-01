@@ -40,11 +40,11 @@ struct BusyStop {};
 struct UpdateMenu {};
 struct Flush {};
 struct DefaultColorsSet {
-  int rgbFg;
-  int rgbBg;
-  int rgbSp;
-  int ctermFg;
-  int ctermBg;
+  uint32_t rgbFg;
+  uint32_t rgbBg;
+  uint32_t rgbSp;
+  uint32_t ctermFg;
+  uint32_t ctermBg;
   MSGPACK_DEFINE(rgbFg, rgbBg, rgbSp, ctermFg, ctermBg);
 };
 struct HlAttrDefine {

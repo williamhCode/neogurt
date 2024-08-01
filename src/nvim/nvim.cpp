@@ -44,7 +44,7 @@ bool Nvim::ConnectTcp(std::string_view host, uint16_t port) {
 }
 
 void Nvim::Setup() {
-  Command("runtime! ginit.vim").wait();
+  // Command("runtime! ginit.vim").get();
 
   SetClientInfo(
     "neogui",
@@ -54,7 +54,7 @@ void Nvim::Setup() {
       {"patch", 0},
     },
     "ui", {}, {}
-  ).wait();
+  ).get();
 
   // std::string luaInitPath = ROOT_DIR "/lua/init.lua";
   // std::ifstream stream(luaInitPath);

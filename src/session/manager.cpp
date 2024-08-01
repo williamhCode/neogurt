@@ -71,7 +71,7 @@ void SessionManager::NewSession(const NewSessionOpts& opts) {
         {"ext_multigrid", options.multigrid},
         {"ext_linegrid", true},
       }
-    ).wait();
+    ).get();
 
     // auto* curr = Curr();
     // if (curr != nullptr) {
@@ -124,7 +124,7 @@ void SessionManager::SwitchSession(int id) {
   //     {"ext_linegrid", true},
   //   }
   // ).wait();
-  session.nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight).wait();
+  session.nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight).get();
   session.reattached = true;
 
   // Curr()->nvim.UiDetach().wait();
@@ -172,7 +172,7 @@ bool SessionManager::ShouldQuit() {
     //     {"ext_linegrid", true},
     //   }
     // ).wait();
-    session.nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight).wait();
+    session.nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight).get();
     session.reattached = true;
   }
 

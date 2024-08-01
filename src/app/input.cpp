@@ -86,7 +86,7 @@ void InputHandler::HandleKeyboard(const SDL_KeyboardEvent& event) {
       }
     }
 
-    LOG_INFO("Key: {}", inputStr);
+    // LOG_INFO("Key: {}", inputStr);
     nvim->Input(inputStr);
   }
 }
@@ -100,7 +100,7 @@ void InputHandler::HandleTextInput(const SDL_TextInputEvent& event) {
   if (inputStr == " ") return;
   if (inputStr == "<") inputStr = "<lt>";
 
-  LOG_INFO("Text: {}", inputStr);
+  // LOG_INFO("Text: {}", inputStr);
   // nvim->Input(inputStr);
 }
 
