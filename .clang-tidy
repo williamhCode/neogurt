@@ -20,6 +20,7 @@ Checks: '
 
   modernize-*,
   -modernize-use-trailing-return-type,
+  -modernize-use-using,
 
   readability-*,
   -readability-magic-numbers,

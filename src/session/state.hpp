@@ -10,5 +10,5 @@ struct SessionState {
   // session data ----------------------
   Nvim nvim;
   EditorState editorState;
-  // InputHandler inputHandler;
+  bool reattached = false;
 };

@@ -1,5 +1,6 @@
 #include "renderer.hpp"
 #include "editor/grid.hpp"
+#include "editor/highlight.hpp"
 #include "editor/window.hpp"
 #include "gfx/instance.hpp"
 #include "gfx/pipeline.hpp"
@@ -146,12 +147,15 @@ void Renderer::RenderToWindow(
   size_t rows = win.grid.lines.Size();
   std::vector<int> rectIntervals; rectIntervals.reserve(rows + 1);
   std::vector<int> textIntervals; textIntervals.reserve(rows + 1);
+  std::vector<int> lineIntervals; lineIntervals.reserve(rows + 1);
 
   auto& rectData = win.rectData;
   auto& textData = win.textData;
+  auto& lineData = win.lineData;
 
   rectData.ResetCounts();
   textData.ResetCounts();
+  lineData.ResetCounts();
 
   glm::vec2 textOffset(0, 0);
   const auto& defaultFont = fontFamily.DefaultFont();
@@ -162,6 +166,7 @@ void Renderer::RenderToWindow(
 
     rectIntervals.push_back(rectData.quadCount);
     textIntervals.push_back(textData.quadCount);
+    lineIntervals.push_back(lineData.quadCount);
 
     for (auto& cell : line) {
       const Highlight& hl = hlTable.at(cell.hlId);
@@ -192,8 +197,44 @@ void Renderer::RenderToWindow(
         auto& quad = textData.NextQuad();
         for (size_t i = 0; i < 4; i++) {
           quad[i].position = textQuadPos + glyphInfo.sizePositions[i];
-          quad[i].regionCoords = glyphInfo.region[i];
+          quad[i].regionCoord = glyphInfo.region[i];
           quad[i].foreground = foreground;
+        }
+      }
+
+      if (hl.underline.has_value()) {
+        static auto coords = MakeRegion({0, 0}, {1, 1});
+        auto underlineColor = GetSpecial(hlTable, hl);
+        auto underlineType = *hl.underline;
+
+        float thicknessScale = 1.0f;
+        if (underlineType == UnderlineType::Undercurl) {
+          thicknessScale = 3.5f;
+        } else if (underlineType == UnderlineType::Underdouble) {
+          thicknessScale = 2.0f;
+        }
+        float thickness = defaultFont.underlineThickness * thicknessScale;
+        if (underlineType == UnderlineType::Underdouble) {
+          thickness = std::max(thickness, 3.0f / defaultFont.dpiScale);
+        }
+
+        glm::vec2 lineQuadPos{
+          textOffset.x,
+          textOffset.y + defaultFont.ascender - defaultFont.underlinePosition -
+            thickness / 2,
+        };
+        glm::vec2 lineQuadSize{
+          defaultFont.charSize.x,
+          thickness,
+        };
+        auto lineQuadRegion = MakeRegion(lineQuadPos, lineQuadSize);
+
+        auto& quad = lineData.NextQuad();
+        for (size_t i = 0; i < 4; i++) {
+          quad[i].position = lineQuadRegion[i];
+          quad[i].coord = coords[i];
+          quad[i].color = underlineColor;
+          quad[i].lineType = std::to_underlying(underlineType);
         }
       }
 
@@ -205,9 +246,11 @@ void Renderer::RenderToWindow(
 
   rectIntervals.push_back(rectData.quadCount);
   textIntervals.push_back(textData.quadCount);
+  lineIntervals.push_back(lineData.quadCount);
 
   rectData.WriteBuffers();
   textData.WriteBuffers();
+  lineData.WriteBuffers();
 
   // gpu texture is reallocated if resized
   // old gpu texture is not referenced by texture atlas anymore
@@ -215,7 +258,7 @@ void Renderer::RenderToWindow(
   fontFamily.textureAtlas.Update();
 
   auto renderInfos = win.sRenderTexture.GetRenderInfos();
-  static int i = 0;
+  // static int i = 0;
   // LOG("{} -------------------", i++);
 
   for (auto [renderTexture, range, clearRegion] : renderInfos) {
@@ -257,6 +300,15 @@ void Renderer::RenderToWindow(
       if (start != end) textData.Render(passEncoder, start, end - start);
       passEncoder.End();
     }
+    {
+      RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textRPD);
+      passEncoder.SetPipeline(ctx.pipeline.lineRPL);
+      passEncoder.SetBindGroup(0, renderTexture->camera.viewProjBG);
+      int start = lineIntervals[range.start];
+      int end = lineIntervals[range.end];
+      if (start != end) lineData.Render(passEncoder, start, end - start);
+      passEncoder.End();
+    }
   }
 
   rectRPD.cColorAttachments[0].view = nullptr;
@@ -287,7 +339,7 @@ void Renderer::RenderCursorMask(
     auto& quad = textMaskData.NextQuad();
     for (size_t i = 0; i < 4; i++) {
       quad[i].position = textQuadPos + glyphInfo.sizePositions[i];
-      quad[i].regionCoords = glyphInfo.region[i];
+      quad[i].regionCoord = glyphInfo.region[i];
     }
     textMaskData.WriteBuffers();
     textMaskData.Render(passEncoder);

@@ -56,8 +56,35 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
         sizeof(TextQuadVertex),
         {
           {VertexFormat::Float32x2, offsetof(TextQuadVertex, position)},
-          {VertexFormat::Float32x2, offsetof(TextQuadVertex, regionCoords)},
+          {VertexFormat::Float32x2, offsetof(TextQuadVertex, regionCoord)},
           {VertexFormat::Float32x4, offsetof(TextQuadVertex, foreground)},
+        }
+      }
+    },
+    .targets = {
+      {
+        .format = TextureFormat::RGBA8UnormSrgb,
+        .blend = &utils::BlendState::AlphaBlending,
+      },
+    },
+  });
+
+  // line
+  ShaderModule lineShader =
+    utils::LoadShaderModule(ctx.device, ROOT_DIR "/src/gfx/shaders/line.wgsl");
+
+  lineRPL = utils::MakeRenderPipeline(ctx.device, {
+    .vs = lineShader,
+    .fs = lineShader,
+    .bgls = {viewProjBGL},
+    .buffers = {
+      {
+        sizeof(LineQuadVertex),
+        {
+          {VertexFormat::Float32x2, offsetof(LineQuadVertex, position)},
+          {VertexFormat::Float32x2, offsetof(LineQuadVertex, coord)},
+          {VertexFormat::Float32x4, offsetof(LineQuadVertex, color)},
+          {VertexFormat::Uint32, offsetof(LineQuadVertex, lineType)},
         }
       }
     },
@@ -82,7 +109,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
         sizeof(TextMaskQuadVertex),
         {
           {VertexFormat::Float32x2, offsetof(TextMaskQuadVertex, position)},
-          {VertexFormat::Float32x2, offsetof(TextMaskQuadVertex, regionCoords)},
+          {VertexFormat::Float32x2, offsetof(TextMaskQuadVertex, regionCoord)},
         }
       }
     },

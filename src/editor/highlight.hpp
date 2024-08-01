@@ -4,7 +4,7 @@
 #include <optional>
 #include <unordered_map>
 
-enum class UnderlineType : uint8_t {
+enum class UnderlineType : uint32_t {
   Underline,
   Undercurl,
   Underdouble,

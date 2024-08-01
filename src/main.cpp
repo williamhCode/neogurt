@@ -58,6 +58,8 @@ int main() {
     SessionManager sessionManager(SpawnMode::Child, options, window, sizes, renderer, input);
     sessionManager.NewSession();
     SessionState* session = sessionManager.Curr();
+    Nvim* nvim = &session->nvim;
+    EditorState* editorState = &session->editorState;
 
     // main loop -----------------------------------
     std::atomic_bool exitWindow = false;
@@ -96,17 +98,19 @@ int main() {
           break;
         };
         session = sessionManager.Curr();
+        nvim = &session->nvim;
+        editorState = &session->editorState;
 
         LOG_DISABLE();
-        ProcessUserEvents(*session->nvim.client, sessionManager);
+        ProcessUserEvents(*nvim->client, sessionManager);
         LOG_ENABLE();
 
         LOG_DISABLE();
-        ParseUiEvents(*session->nvim.client, session->nvim.uiEvents);
+        ParseUiEvents(*nvim->client, nvim->uiEvents);
         LOG_ENABLE();
 
         LOG_DISABLE();
-        if (ParseEditorState(session->nvim.uiEvents, session->editorState)) {
+        if (ParseEditorState(nvim->uiEvents, session->editorState)) {
           idle = false;
           idleElasped = 0;
         }
@@ -120,8 +124,8 @@ int main() {
               windowFocused = true;
               idle = false;
               idleElasped = 0;
-              session->editorState.cursor.blinkState = BlinkState::Wait;
-              session->editorState.cursor.blinkElasped = 0;
+              editorState->cursor.blinkState = BlinkState::Wait;
+              editorState->cursor.blinkElasped = 0;
               break;
             case SDL_EVENT_WINDOW_FOCUS_LOST:
               windowFocused = false;
@@ -146,20 +150,20 @@ int main() {
                 bool dpiChanged = prevDpiScale != window.dpiScale;
 
                 if (dpiChanged) {
-                  session->editorState.fontFamily.ChangeDpiScale(window.dpiScale);
+                  editorState->fontFamily.ChangeDpiScale(window.dpiScale);
                 }
 
                 auto uiFbSize = sizes.uiFbSize;
                 sizes.UpdateSizes(
                   window.size, window.dpiScale,
-                  session->editorState.fontFamily.DefaultFont().charSize,
+                  editorState->fontFamily.DefaultFont().charSize,
                   options.margins
                 );
 
                 if (dpiChanged) {
-                  session->editorState.cursor.Init(sizes.charSize, sizes.dpiScale);
+                  editorState->cursor.Init(sizes.charSize, sizes.dpiScale);
                   // force nvim to resend all events to update dpiScale
-                  session->nvim.UiTryResize(sizes.uiWidth + 1, sizes.uiHeight);
+                  nvim->UiTryResize(sizes.uiWidth + 1, sizes.uiHeight);
                 }
 
                 sdl::Window::_ctx.Resize(sizes.fbSize);
@@ -170,7 +174,7 @@ int main() {
 
                 } else {
                   renderer.Resize(sizes);
-                  session->nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight);
+                  nvim->UiTryResize(sizes.uiWidth, sizes.uiHeight);
                 }
                 break;
               }
@@ -180,15 +184,15 @@ int main() {
         }
 
         // update --------------------------------------------
-        session->editorState.winManager.UpdateScrolling(dt);
+        editorState->winManager.UpdateScrolling(dt);
 
         const auto* activeWin =
-          session->editorState.winManager.GetWin(session->editorState.cursor.grid);
+          editorState->winManager.GetWin(editorState->cursor.grid);
         if (activeWin) {
           auto cursorPos =
             glm::vec2{
-              activeWin->startCol + session->editorState.cursor.col,
-              activeWin->startRow + session->editorState.cursor.row,
+              activeWin->startCol + editorState->cursor.col,
+              activeWin->startRow + editorState->cursor.row,
             } *
               sizes.charSize +
             sizes.offset;
@@ -199,13 +203,13 @@ int main() {
               ? glm::vec2(0, (winTex.scrollDist - winTex.scrollCurr))
               : glm::vec2(0);
 
-          session->editorState.cursor.SetDestPos(cursorPos + scrollOffset);
+          editorState->cursor.SetDestPos(cursorPos + scrollOffset);
         }
-        session->editorState.cursor.Update(dt);
+        editorState->cursor.Update(dt);
 
         // render ----------------------------------------------
-        if (auto hlIter = session->editorState.hlTable.find(0);
-            hlIter != session->editorState.hlTable.end()) {
+        if (auto hlIter = editorState->hlTable.find(0);
+            hlIter != editorState->hlTable.end()) {
           auto color = hlIter->second.background.value();
           renderer.SetClearColor(color);
         }
@@ -214,44 +218,44 @@ int main() {
         idleElasped += dt;
         if (idleElasped >= options.cursorIdleTime) {
           idle = true;
-          session->editorState.cursor.blinkState = BlinkState::On;
+          editorState->cursor.blinkState = BlinkState::On;
         }
 
         if (!windowFocused) {
-          session->editorState.cursor.blinkState = BlinkState::On;
+          editorState->cursor.blinkState = BlinkState::On;
         }
 
         renderer.Begin();
 
-        bool renderWindows = false;
-        for (auto& [id, win] : session->editorState.winManager.windows) {
+        bool renderWindows = session->reattached;
+        for (auto& [id, win] : editorState->winManager.windows) {
           if (win.grid.dirty) {
             renderer.RenderToWindow(
-              win, session->editorState.fontFamily, session->editorState.hlTable
+              win, editorState->fontFamily, editorState->hlTable
             );
             win.grid.dirty = false;
             renderWindows = true;
           }
         }
 
-        if (session->editorState.cursor.dirty && activeWin != nullptr) {
+        if (editorState->cursor.dirty && activeWin != nullptr) {
           renderer.RenderCursorMask(
-            *activeWin, session->editorState.cursor, session->editorState.fontFamily,
-            session->editorState.hlTable
+            *activeWin, editorState->cursor, editorState->fontFamily,
+            editorState->hlTable
           );
-          session->editorState.cursor.dirty = false;
+          editorState->cursor.dirty = false;
         }
 
-        if (renderWindows || session->editorState.winManager.dirty) {
-          session->editorState.winManager.dirty = false;
+        if (renderWindows || editorState->winManager.dirty) {
+          editorState->winManager.dirty = false;
 
           std::vector<const Win*> windows;
-          if (const auto* msgWin = session->editorState.winManager.GetMsgWin()) {
+          if (const auto* msgWin = editorState->winManager.GetMsgWin()) {
             windows.push_back(msgWin);
           }
           std::vector<const Win*> floatWindows;
-          for (auto& [id, win] : session->editorState.winManager.windows) {
-            if (id == 1 || id == session->editorState.winManager.msgWinId ||
+          for (auto& [id, win] : editorState->winManager.windows) {
+            if (id == 1 || id == editorState->winManager.msgWinId ||
                 win.hidden) {
               continue;
             }
@@ -261,8 +265,8 @@ int main() {
               windows.push_back(&win);
             }
           }
-          if (auto winIt = session->editorState.winManager.windows.find(1);
-              winIt != session->editorState.winManager.windows.end()) {
+          if (auto winIt = editorState->winManager.windows.find(1);
+              winIt != editorState->winManager.windows.end()) {
             windows.push_back(&winIt->second);
           }
 
@@ -276,13 +280,15 @@ int main() {
           if (renderer.prevFinalRenderTexture.texture) {
             renderer.prevFinalRenderTexture = {};
           }
+          // reset reattached flag after rendering
+          session->reattached = false;
         }
 
         renderer.RenderFinalTexture();
 
-        if (session->editorState.cursor.ShouldRender()) {
+        if (editorState->cursor.ShouldRender()) {
           renderer.RenderCursor(
-            session->editorState.cursor, session->editorState.hlTable
+            editorState->cursor, editorState->hlTable
           );
         }
 

@@ -87,6 +87,9 @@ vim.g.neogui_session = function(cmd, opts)
         if not success then
           vim.print("No previous session")
         end
+
+      else
+        vim.api.nvim_err_writeln("Invalid command: " .. cmd)
       end
 
     end

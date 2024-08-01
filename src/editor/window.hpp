@@ -1,5 +1,6 @@
 #pragma once
 
+#include "gfx/pipeline.hpp"
 #include "gfx/quad.hpp"
 #include "gfx/render_texture.hpp"
 
@@ -43,6 +44,7 @@ struct Win {
 
   QuadRenderData<RectQuadVertex> rectData;
   QuadRenderData<TextQuadVertex> textData;
+  QuadRenderData<LineQuadVertex> lineData;
 
   ScrollableRenderTexture sRenderTexture;
 };

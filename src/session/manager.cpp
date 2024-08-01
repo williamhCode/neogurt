@@ -73,10 +73,11 @@ void SessionManager::NewSession(const NewSessionOpts& opts) {
       }
     ).wait();
 
-    auto* curr = Curr();
-    if (curr != nullptr) {
-      curr->nvim.UiDetach().wait();
-    }
+    // auto* curr = Curr();
+    // if (curr != nullptr) {
+    //   curr->nvim.UiDetach().wait();
+    // }
+
     sessionsOrder.push_front(&session);
   } else {
     sessionsOrder.push_back(&session);
@@ -123,8 +124,9 @@ void SessionManager::SwitchSession(int id) {
       {"ext_linegrid", true},
     }
   ).wait();
+  session.reattached = true;
 
-  Curr()->nvim.UiDetach().wait();
+  // Curr()->nvim.UiDetach().wait();
 
   auto currIt = std::ranges::find(sessionsOrder, &session);
   // move to front
@@ -169,6 +171,7 @@ bool SessionManager::ShouldQuit() {
         {"ext_linegrid", true},
       }
     ).wait();
+    session.reattached = true;
   }
 
   return false;

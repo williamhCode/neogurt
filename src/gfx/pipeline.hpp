@@ -13,13 +13,21 @@ struct RectQuadVertex {
 
 struct TextQuadVertex {
   glm::vec2 position;
-  glm::vec2 regionCoords; // region in the font texture
+  glm::vec2 regionCoord; // region in the font texture
   glm::vec4 foreground;
+};
+
+// underline, strikethrough, undercurl, etc.
+struct LineQuadVertex {
+  glm::vec2 position;
+  glm::vec2 coord;
+  glm::vec4 color;
+  uint32_t lineType;
 };
 
 struct TextMaskQuadVertex {
   glm::vec2 position;
-  glm::vec2 regionCoords; // region in the font texture
+  glm::vec2 regionCoord; // region in the font texture
 };
 
 struct TextureQuadVertex {
@@ -41,6 +49,8 @@ struct Pipeline {
   wgpu::BindGroupLayout fontTextureBGL;
   wgpu::RenderPipeline textRPL;
   wgpu::RenderPipeline textMaskRPL;
+
+  wgpu::RenderPipeline lineRPL;
 
   wgpu::BindGroupLayout textureBGL;
   wgpu::RenderPipeline textureNoBlendRPL;

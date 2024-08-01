@@ -71,8 +71,17 @@ Font::Font(std::string _path, float _height, float _width, float _dpiScale)
   charSize.x = (face->size->metrics.max_advance >> 6) / dpiScale;
   charSize.y = (face->size->metrics.height >> 6) / dpiScale;
   ascender = (face->size->metrics.ascender >> 6) / dpiScale;
-  // LOG_INFO("Font: {}, size: {}, dpiScale: {}, charSize: {}, ascender: {}",
-  //           path, height, dpiScale, glm::to_string(charSize), ascender);
+
+  float y_scale = face->size->metrics.y_scale;
+  underlinePosition = (FT_MulFix(face->underline_position, y_scale) >> 6) / dpiScale;
+  underlineThickness = (FT_MulFix(face->underline_thickness, y_scale) >> 6) / dpiScale;
+
+  LOG_INFO(
+    "Font: {}, size: {}, dpiScale: {}, charSize: {}, ascender: {}, underlinePosition: "
+    "{}, underlineThickness: {}",
+    path, height, dpiScale, glm::to_string(charSize), ascender, underlinePosition,
+    underlineThickness
+  );
 }
 
 const Font::GlyphInfo*

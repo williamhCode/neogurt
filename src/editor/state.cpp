@@ -178,7 +178,7 @@ bool ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
             } else if (key == "blend") {
               hl.bgAlpha = 1 - (VariantAsInt(value) / 100.0f);
             } else {
-              LOG_WARN("unknown hl attr key: {}", key);
+              LOG_WARN("unknown hl attr key: {}, type: {}", key, value.type().name());
             }
           }
         },

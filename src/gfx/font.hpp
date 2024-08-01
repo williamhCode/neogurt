@@ -29,6 +29,8 @@ struct Font {
 
   glm::vec2 charSize;
   float ascender;
+  float underlinePosition;
+  float underlineThickness;
 
   struct GlyphInfo {
     // floats because of high dpi
