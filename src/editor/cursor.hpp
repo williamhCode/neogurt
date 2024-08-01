@@ -37,6 +37,7 @@ enum class BlinkState { Wait, On, Off };
 
 struct Cursor {
   glm::vec2 size;
+  glm::vec2 currSize;
 
   bool dirty;
   int grid;

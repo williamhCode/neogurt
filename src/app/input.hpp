@@ -33,6 +33,7 @@ struct InputHandler {
   );
 
   void HandleKeyboard(const SDL_KeyboardEvent& event);
+  void HandleTextEditing(const SDL_TextEditingEvent& event);
   void HandleTextInput(const SDL_TextInputEvent& event);
   void HandleMouseButton(const SDL_MouseButtonEvent& event);
   void HandleMouseMotion(const SDL_MouseMotionEvent& event);

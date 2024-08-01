@@ -40,7 +40,7 @@ Renderer::Renderer(const SizeHandler& sizes) {
   });
 
   // text
-  textRPD = utils::RenderPassDescriptor({
+  textLineRPD = utils::RenderPassDescriptor({
     RenderPassColorAttachment{
       .loadOp = LoadOp::Load,
       .storeOp = StoreOp::Store,
@@ -212,6 +212,8 @@ void Renderer::RenderToWindow(
           thicknessScale = 3.5f;
         } else if (underlineType == UnderlineType::Underdouble) {
           thicknessScale = 2.0f;
+        } else if (underlineType == UnderlineType::Underdotted) {
+          thicknessScale = 1.5f;
         }
         float thickness = defaultFont.underlineThickness * thicknessScale;
         if (underlineType == UnderlineType::Underdouble) {
@@ -262,6 +264,8 @@ void Renderer::RenderToWindow(
   // LOG("{} -------------------", i++);
 
   for (auto [renderTexture, range, clearRegion] : renderInfos) {
+    int start = rectIntervals[range.start];
+    int end = rectIntervals[range.end];
     {
       auto& currRPD = clearRegion.has_value() ? rectNoClearRPD : rectRPD;
       currRPD.cColorAttachments[0].view = renderTexture->textureView;
@@ -281,38 +285,36 @@ void Renderer::RenderToWindow(
         clearData.WriteBuffers();
         clearData.Render(passEncoder);
       }
-
-      int start = rectIntervals[range.start];
-      int end = rectIntervals[range.end];
-      // LOG("1 - start: {}, end: {}", start, end);
       if (start != end) rectData.Render(passEncoder, start, end - start);
       passEncoder.End();
     }
-    {
-      textRPD.cColorAttachments[0].view = renderTexture->textureView;
-      RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textRPD);
+
+    start = textIntervals[range.start];
+    end = textIntervals[range.end];
+    if (start != end) {
+      textLineRPD.cColorAttachments[0].view = renderTexture->textureView;
+      RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textLineRPD);
       passEncoder.SetPipeline(ctx.pipeline.textRPL);
       passEncoder.SetBindGroup(0, renderTexture->camera.viewProjBG);
       passEncoder.SetBindGroup(1, fontFamily.textureAtlas.fontTextureBG);
-      int start = textIntervals[range.start];
-      int end = textIntervals[range.end];
-      // LOG("2 - start: {}, end: {}", start, end);
-      if (start != end) textData.Render(passEncoder, start, end - start);
+      textData.Render(passEncoder, start, end - start);
       passEncoder.End();
     }
-    {
-      RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textRPD);
+
+    start = lineIntervals[range.start];
+    end = lineIntervals[range.end];
+    if (start != end) {
+      textLineRPD.cColorAttachments[0].view = renderTexture->textureView;
+      RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textLineRPD);
       passEncoder.SetPipeline(ctx.pipeline.lineRPL);
       passEncoder.SetBindGroup(0, renderTexture->camera.viewProjBG);
-      int start = lineIntervals[range.start];
-      int end = lineIntervals[range.end];
-      if (start != end) lineData.Render(passEncoder, start, end - start);
+      lineData.Render(passEncoder, start, end - start);
       passEncoder.End();
     }
   }
 
   rectRPD.cColorAttachments[0].view = nullptr;
-  textRPD.cColorAttachments[0].view = nullptr;
+  textLineRPD.cColorAttachments[0].view = nullptr;
 }
 
 void Renderer::RenderCursorMask(

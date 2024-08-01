@@ -116,14 +116,15 @@ void SessionManager::SwitchSession(int id) {
     options.multigrid, options.scrollSpeed
   );
 
-  session.nvim.UiAttach(
-    sizes.uiWidth, sizes.uiHeight,
-    {
-      {"rgb", true},
-      {"ext_multigrid", options.multigrid},
-      {"ext_linegrid", true},
-    }
-  ).wait();
+  // session.nvim.UiAttach(
+  //   sizes.uiWidth, sizes.uiHeight,
+  //   {
+  //     {"rgb", true},
+  //     {"ext_multigrid", options.multigrid},
+  //     {"ext_linegrid", true},
+  //   }
+  // ).wait();
+  session.nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight).wait();
   session.reattached = true;
 
   // Curr()->nvim.UiDetach().wait();
@@ -163,14 +164,15 @@ bool SessionManager::ShouldQuit() {
       options.multigrid, options.scrollSpeed
     );
 
-    session.nvim.UiAttach(
-      sizes.uiWidth, sizes.uiHeight,
-      {
-        {"rgb", true},
-        {"ext_multigrid", options.multigrid},
-        {"ext_linegrid", true},
-      }
-    ).wait();
+    // session.nvim.UiAttach(
+    //   sizes.uiWidth, sizes.uiHeight,
+    //   {
+    //     {"rgb", true},
+    //     {"ext_multigrid", options.multigrid},
+    //     {"ext_linegrid", true},
+    //   }
+    // ).wait();
+    session.nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight).wait();
     session.reattached = true;
   }
 

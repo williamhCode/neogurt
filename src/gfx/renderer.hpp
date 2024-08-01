@@ -31,8 +31,8 @@ struct Renderer {
   wgpu::utils::RenderPassDescriptor rectRPD;
   wgpu::utils::RenderPassDescriptor rectNoClearRPD;
 
-  // text
-  wgpu::utils::RenderPassDescriptor textRPD;
+  // text and line
+  wgpu::utils::RenderPassDescriptor textLineRPD;
   wgpu::utils::RenderPassDescriptor textMaskRPD;
 
   // windows

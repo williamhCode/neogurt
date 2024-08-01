@@ -52,7 +52,7 @@ void Cursor::SetMode(CursorMode* _modeInfo) {
   cursorMode = _modeInfo;
 
   float ratio = cursorMode->cellPercentage / 100.0;
-  glm::vec2 currSize = this->size;
+  currSize = this->size;
   glm::vec2 offset(0, 0);
   switch (cursorMode->cursorShape) {
     case CursorShape::Block: break;

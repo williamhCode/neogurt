@@ -186,24 +186,28 @@ int main() {
         // update --------------------------------------------
         editorState->winManager.UpdateScrolling(dt);
 
-        const auto* activeWin =
-          editorState->winManager.GetWin(editorState->cursor.grid);
+        auto& cursor = editorState->cursor;
+        const auto* activeWin = editorState->winManager.GetWin(cursor.grid);
         if (activeWin) {
           auto cursorPos =
             glm::vec2{
-              activeWin->startCol + editorState->cursor.col,
-              activeWin->startRow + editorState->cursor.row,
+              activeWin->startCol + cursor.col,
+              activeWin->startRow + cursor.row,
             } *
-              sizes.charSize +
+            sizes.charSize +
             sizes.offset;
 
           const auto& winTex = activeWin->sRenderTexture;
-          auto scrollOffset = //
-            winTex.scrolling  //
-              ? glm::vec2(0, (winTex.scrollDist - winTex.scrollCurr))
-              : glm::vec2(0);
+          auto scrollOffset =
+            winTex.scrolling
+            ? glm::vec2(0, (winTex.scrollDist - winTex.scrollCurr))
+            : glm::vec2(0);
 
-          editorState->cursor.SetDestPos(cursorPos + scrollOffset);
+          auto finalPos = cursorPos + scrollOffset;
+          if (cursor.SetDestPos(finalPos)) {
+            SDL_Rect rect(finalPos.x, finalPos.y, sizes.charSize.x, sizes.charSize.y);
+            SDL_SetTextInputArea(window.Get(), &rect, 0);
+          }
         }
         editorState->cursor.Update(dt);
 
@@ -305,8 +309,6 @@ int main() {
 
     // event loop --------------------------------
     SDL_StartTextInput(window.Get());
-    SDL_Rect rect{0, 0, 100, 100};
-    SDL_SetTextInputArea(window.Get(), &rect, 0);
 
     // resize handling
     sdl::AddEventWatch([&](SDL_Event& event) {
@@ -337,7 +339,7 @@ int main() {
         case SDL_EVENT_KEY_DOWN:
         case SDL_EVENT_KEY_UP:
           input.HandleKeyboard(event.key);
-          sdlEvents.Push(event);
+          // sdlEvents.Push(event);
           break;
 
         case SDL_EVENT_TEXT_EDITING:

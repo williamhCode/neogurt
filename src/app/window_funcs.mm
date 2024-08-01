@@ -18,9 +18,7 @@ extern "C" {
 
 void SetSDLWindowBlur(SDL_Window* window, int blurRadius) {
 #if defined(SDL_PLATFORM_MACOS)
-  NSWindow* nswindow = (__bridge NSWindow*)SDL_GetProperty(
-    SDL_GetWindowProperties(window), SDL_PROP_WINDOW_COCOA_WINDOW_POINTER, NULL
-  );
+  NSWindow *nswindow = (__bridge NSWindow *)SDL_GetPointerProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_COCOA_WINDOW_POINTER, NULL);
   if (nswindow) {
     NSInteger windowNumber = [nswindow windowNumber];
     CGSConnectionID conn = CGSMainConnectionID();
@@ -28,33 +26,23 @@ void SetSDLWindowBlur(SDL_Window* window, int blurRadius) {
   }
 
 #elif defined(SDL_PLATFORM_WIN32)
-  HWND hwnd = (HWND)SDL_GetProperty(
-    SDL_GetWindowProperties(window), SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL
-  );
+  HWND hwnd = (HWND)SDL_GetPointerProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
   if (hwnd) {
     LOG_ERR("SetSDLWindowBlur: Not implemented for Windows");
   }
 
 #elif defined(SDL_PLATFORM_LINUX)
   if (SDL_strcmp(SDL_GetCurrentVideoDriver(), "x11") == 0) {
-    Display* xdisplay = (Display*)SDL_GetProperty(
-      SDL_GetWindowProperties(window), SDL_PROP_WINDOW_X11_DISPLAY_POINTER, NULL
-    );
-    Window xwindow = (Window)SDL_GetNumberProperty(
-      SDL_GetWindowProperties(window), SDL_PROP_WINDOW_X11_WINDOW_NUMBER, 0
-    );
+    Display *xdisplay = (Display *)SDL_GetPointerProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_X11_DISPLAY_POINTER, NULL);
+    Window xwindow = (Window)SDL_GetNumberProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_X11_WINDOW_NUMBER, 0);
     if (xdisplay && xwindow) {
-      LOG_ERR("SetSDLWindowBlur: Not implemented for X11");
+      LOG_ERR("SetSDLWindowBlur: Not implemented for x11");
     }
   } else if (SDL_strcmp(SDL_GetCurrentVideoDriver(), "wayland") == 0) {
-    struct wl_display* display = (struct wl_display*)SDL_GetProperty(
-      SDL_GetWindowProperties(window), SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER, NULL
-    );
-    struct wl_surface* surface = (struct wl_surface*)SDL_GetProperty(
-      SDL_GetWindowProperties(window), SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, NULL
-    );
+    struct wl_display *display = (struct wl_display *)SDL_GetPointerProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER, NULL);
+    struct wl_surface *surface = (struct wl_surface *)SDL_GetPointerProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, NULL);
     if (display && surface) {
-      LOG_ERR("SetSDLWindowBlur: Not implemented for Wayland");
+      LOG_ERR("SetSDLWindowBlur: Not implemented for wayland");
     }
   }
 

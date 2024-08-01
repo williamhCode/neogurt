@@ -34,7 +34,7 @@ bool Client::ConnectStdio(const std::string& command, const std::string& dir) {
   readPipe = std::make_unique<bp::async_pipe>(context);
   writePipe = std::make_unique<bp::async_pipe>(context);
 
-  LOG_INFO("Starting process: {}, {}", command, dir);
+  // LOG_INFO("Starting process: {}, {}", command, dir);
   process = bp::child(
     command,
     bp::start_dir = dir,

@@ -1,6 +1,8 @@
 #include "input.hpp"
 
+#include "SDL3/SDL_oldnames.h"
 #include "editor/window.hpp"
+#include "utils/logger.hpp"
 #include <algorithm>
 #include <set>
 
@@ -11,11 +13,11 @@ InputHandler::InputHandler(
   bool multigrid,
   float scrollSpeed
 )
-    : nvim(nvim), winManager(winManager), macOptIsMeta(macOptAsAlt),
-      multigrid(multigrid), scrollSpeed(scrollSpeed) {
+  : nvim(nvim), winManager(winManager), macOptIsMeta(macOptAsAlt),
+    multigrid(multigrid), scrollSpeed(scrollSpeed) {
 }
 
-const std::set<SDL_Keycode> specialKeys{
+static const std::set<SDL_Keycode> specialKeys{
   SDLK_SPACE,  SDLK_UP,     SDLK_DOWN,     SDLK_LEFT,     SDLK_RIGHT, SDLK_BACKSPACE,
   SDLK_DELETE, SDLK_END,    SDLK_RETURN,   SDLK_ESCAPE,   SDLK_TAB,   SDLK_F1,
   SDLK_F2,     SDLK_F3,     SDLK_F4,       SDLK_F5,       SDLK_F6,    SDLK_F7,
@@ -24,11 +26,11 @@ const std::set<SDL_Keycode> specialKeys{
 };
 
 static bool IsUpperLetter(SDL_Keycode key) {
-  return key >= SDLK_A && key <= SDLK_Z;
+  return key >= 65 && key <= 90;
 }
 
 static bool IsLowerLetter(SDL_Keycode key) {
-  return key >= SDLK_a && key <= SDLK_z;
+  return key >= 97 && key <= 122;
 }
 
 static bool IsProcessableKey(SDL_Keycode key) {
@@ -49,8 +51,8 @@ void InputHandler::HandleKeyboard(const SDL_KeyboardEvent& event) {
     if (!IsProcessableKey(keycode)) return;
 
     std::string keyName = SDL_GetKeyName(keycode);
-    if (IsLowerLetter(keycode)) keyName[0] = std::tolower(keyName[0]);
     if (keyName.empty()) return;
+    if (IsLowerLetter(keycode)) keyName[0] = std::tolower(keyName[0]);
 
     bool modApplied = false;
     std::string inputStr;
@@ -84,19 +86,21 @@ void InputHandler::HandleKeyboard(const SDL_KeyboardEvent& event) {
       }
     }
 
-    // LOG_INFO("Key: {}", inputStr);
+    LOG_INFO("Key: {}", inputStr);
     nvim->Input(inputStr);
   }
 }
 
+void InputHandler::HandleTextEditing(const SDL_TextEditingEvent& event) {
+
+}
+
 void InputHandler::HandleTextInput(const SDL_TextInputEvent& event) {
-  // if (macOptAsAlt && (mod & SDL_KMOD_ALT)) return;
+  std::string inputStr = event.text;
+  if (inputStr == " ") return;
+  if (inputStr == "<") inputStr = "<lt>";
 
-  // std::string inputStr = event.text;
-  // if (inputStr == " ") return;
-  // if (inputStr == "<") inputStr = "<lt>";
-
-  // // LOG_INFO("Text: {}", inputStr);
+  LOG_INFO("Text: {}", inputStr);
   // nvim->Input(inputStr);
 }
 
