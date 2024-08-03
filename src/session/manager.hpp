@@ -27,7 +27,7 @@ struct SessionListOpts {
 struct SessionListEntry {
   int id;
   std::string name;
-  MSGPACK_DEFINE(id, name);
+  MSGPACK_DEFINE_MAP(id, name);
 };
 
 struct SessionManager {

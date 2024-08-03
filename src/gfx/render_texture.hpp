@@ -98,7 +98,8 @@ struct ScrollableRenderTexture {
   void SetTextureCameraPositions();
 
   // returns pointer to render texture and a row range to render to it
-  std::vector<RenderInfo> GetRenderInfos() const;
+  // limit max rows, so when win.height != grid.height, doesn't blow up
+  std::vector<RenderInfo> GetRenderInfos(int maxRows) const;
 
   // render entire scrollable render texture
   void Render(const wgpu::RenderPassEncoder& passEncoder) const;

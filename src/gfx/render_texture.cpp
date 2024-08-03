@@ -290,7 +290,7 @@ void ScrollableRenderTexture::SetTextureCameraPositions() {
   }
 }
 
-std::vector<RenderInfo> ScrollableRenderTexture::GetRenderInfos() const {
+std::vector<RenderInfo> ScrollableRenderTexture::GetRenderInfos(int maxRows) const {
   // top of viewport after scrolling
   float newBaseOffset = baseOffset + scrollDist;
   newBaseOffset = RoundOffset(newBaseOffset);
@@ -318,6 +318,8 @@ std::vector<RenderInfo> ScrollableRenderTexture::GetRenderInfos() const {
 
     int start = glm::max(top - topOffset, margins.top);
     int end = glm::min(bottom - topOffset, totalRows - margins.bottom);
+    start = glm::min(start, maxRows);
+    end = glm::min(end, maxRows);
     renderInfo.range = {start, end};
 
     if (top < innerTopOffset) {

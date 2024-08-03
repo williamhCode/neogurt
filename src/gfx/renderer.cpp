@@ -133,18 +133,17 @@ void Renderer::RenderToWindow(
 ) {
   // if for whatever reason (prob nvim events buggy, events not sent or offsync)
   // the grid is not the same size as the window
-  // don't render
   if (win.grid.width != win.width || win.grid.height != win.height) {
     LOG_WARN(
       "RenderWindow: grid size not equal to window size for id: {}\n"
       "Sizes: grid: {}x{}, window: {}x{}",
       win.id, win.grid.width, win.grid.height, win.width, win.height
     );
-    return;
+    // return;
   }
 
   // keep track of quad index after each row
-  size_t rows = win.grid.lines.Size();
+  size_t rows = std::min(win.grid.height, win.height);
   std::vector<int> rectIntervals; rectIntervals.reserve(rows + 1);
   std::vector<int> textIntervals; textIntervals.reserve(rows + 1);
   std::vector<int> lineIntervals; lineIntervals.reserve(rows + 1);
@@ -259,7 +258,7 @@ void Renderer::RenderToWindow(
   // but still referenced by command encoder if used by previous windows
   fontFamily.textureAtlas.Update();
 
-  auto renderInfos = win.sRenderTexture.GetRenderInfos();
+  auto renderInfos = win.sRenderTexture.GetRenderInfos(rows);
   // static int i = 0;
   // LOG("{} -------------------", i++);
 

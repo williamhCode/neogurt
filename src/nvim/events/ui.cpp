@@ -92,6 +92,7 @@ static const std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
   }},
 
   {"grid_line", [](const msgpack::object& args, UiEvents& uiEvents) {
+    // LOG("grid_line: {}", ToString(args));
     auto [grid, row, col_start, cells, wrap] =
       args.as<std::tuple<int, int, int, msgpack::object, bool>>();
     GridLine gridLine{grid, row, col_start, {}};

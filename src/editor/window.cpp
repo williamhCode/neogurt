@@ -20,7 +20,7 @@ void WinManager::InitRenderData(Win& win) {
   win.sRenderTexture.UpdatePos(pos);
 
   // used if hiding window removes window completely
-  // win.grid.dirty = true;
+  win.grid.dirty = true;
 
   win.pos = pos;
   win.size = size;
@@ -47,7 +47,7 @@ void WinManager::UpdateRenderData(Win& win) {
   win.sRenderTexture.UpdatePos(pos);
 
   // used if hiding window removes window completely
-  // win.grid.dirty = true;
+  win.grid.dirty = true;
 
   win.pos = pos;
   win.size = size;
@@ -68,6 +68,9 @@ void WinManager::Pos(const event::WinPos& e) {
   win.startRow = e.startRow;
   win.startCol = e.startCol;
 
+  // if (win.grid.width != e.width || win.grid.height != e.height) {
+  //   return;
+  // }
   win.width = e.width;
   win.height = e.height;
 

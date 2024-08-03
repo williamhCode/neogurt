@@ -35,7 +35,16 @@ vim.api.nvim_create_user_command("NeoguiSession", function(cmd_opts)
     return
   end
 
-  return vim.g.neogui_session(cmd, opts)
+  -- handle command output
+  local result = vim.g.neogui_session(cmd, opts)
+  if cmd == "new" then
+  elseif cmd == "prev" then
+    if result == false then
+      print("No previous session")
+    end
+  elseif cmd == "list" then
+    vim.print(result)
+  end
 
 end, { nargs = "*" })
 
@@ -67,15 +76,13 @@ vim.g.neogui_session = function(cmd, opts)
 
   elseif cmd == "prev" then
     local success = vim.rpcrequest(chan_id, "neogui_session", cmd)
-    if not success then
-      vim.print("No previous session")
-    end
     return success
 
   elseif cmd == "switch" then
     return vim.rpcrequest(chan_id, "neogui_session", cmd, opts)
 
   elseif cmd == "list" then
-    return vim.rpcrequest(chan_id, "neogui_session", cmd, opts)
+    local list = vim.rpcrequest(chan_id, "neogui_session", cmd, opts)
+    return list
   end
 end
