@@ -18,9 +18,9 @@ static std::string CamelToSnakeCase(std::string_view s) {
 static void LoadOption(Nvim& nvim, std::string_view name, auto& value) {
   auto luaCode = std::format("return vim.g.neogui_opts.{}", CamelToSnakeCase(name));
   try {
-    value = nvim.ExecLua(luaCode, {}).get()->convert();
+    nvim.ExecLua(luaCode, {}).get()->convert_if_not_nil(value);
   } catch (const std::exception& e) {
-    LOG_ERR("Failed to load option {}: {}", name, e.what());
+    LOG_ERR("Failed to load option: {} {}", name, e.what());
   }
 };
 
@@ -43,9 +43,9 @@ void Options::Load(Nvim& nvim) {
   LOAD(scrollSpeed);
 
   LOAD(bgColor);
-  LOAD(transparency);
+  LOAD(opacity);
 
   LOAD(maxFps);
 
-  transparency = int(transparency * 255) / 255.0f;
+  opacity = int(opacity * 255) / 255.0f;
 }

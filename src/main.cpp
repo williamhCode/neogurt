@@ -57,7 +57,7 @@ int main() {
 
     SessionManager sessionManager(SpawnMode::Child, options, window, sizes, renderer, input);
     sessionManager.NewSession();
-    SessionState* session = sessionManager.Curr();
+    SessionState* session = sessionManager.CurrSession();
     Nvim* nvim = &session->nvim;
     EditorState* editorState = &session->editorState;
 
@@ -97,7 +97,7 @@ int main() {
           SDL_PushEvent(&quitEvent);
           break;
         };
-        session = sessionManager.Curr();
+        session = sessionManager.CurrSession();
         nvim = &session->nvim;
         editorState = &session->editorState;
 
@@ -377,8 +377,8 @@ int main() {
     );
     LOG_ERR("Exiting...");
   }
-  // destructors cleans up window and font before quitting sdl and freetype
 
-  FtDone();
-  SDL_Quit();
+  // destructors cleans up window and font before quitting sdl and freetype
+  // FtDone();
+  // SDL_Quit();
 }

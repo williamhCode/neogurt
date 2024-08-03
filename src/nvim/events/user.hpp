@@ -5,8 +5,8 @@
 namespace event {
 
 struct Session {
-  std::string cmd;
-  std::map<std::string, msgpack::type::variant> opts;
+  std::string_view cmd;
+  std::map<std::string_view, msgpack::object> opts;
   MSGPACK_DEFINE(cmd, opts);
 };
 

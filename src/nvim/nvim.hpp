@@ -34,7 +34,6 @@ struct Nvim {
     MapRef methods,
     MapRef attributes
   );
-  Response SetVar(std::string_view name, VariantRef value);
   Response UiAttach(int width, int height, MapRef options);
   Response UiDetach();
   Response UiTryResize(int width, int height);
@@ -49,6 +48,7 @@ struct Nvim {
   );
   Response ListUis();
   Response GetOptionValue(std::string_view name, MapRef opts);
+  Response SetVar(std::string_view name, VariantRef value);
   Response GetVar(std::string_view name);
   Response ExecLua(std::string_view code, VectorRef args);
   Response Command(std::string_view command);

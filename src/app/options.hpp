@@ -4,29 +4,29 @@
 
 struct Options {
   struct Window {
-    bool vsync;
-    bool highDpi;
-    bool borderless;
-    int blur;
+    bool vsync = true;
+    bool highDpi = true;
+    bool borderless = false;
+    int blur = 0;
   } window;
 
   struct Margins {
-    int top;
-    int bottom;
-    int left;
-    int right;
+    int top = 0;
+    int bottom = 0;
+    int left = 0;
+    int right = 0;
   } margins;
 
-  bool multigrid;
-  bool macOptIsMeta;
-  float cursorIdleTime;
-  float scrollSpeed;
+  bool multigrid = true;
+  bool macOptIsMeta = true;
+  float cursorIdleTime = 10;
+  float scrollSpeed = 1;
 
   // rgb
-  uint32_t bgColor;
-  float transparency;
+  uint32_t bgColor = 0x000000;
+  float opacity = 1;
 
-  float maxFps;
+  float maxFps = 60;
 
   void Load(Nvim& nvim);
 };

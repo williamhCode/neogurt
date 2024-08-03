@@ -19,6 +19,7 @@ struct NewSessionOpts {
 };
 
 struct SessionManager {
+private:
   SpawnMode mode;
 
   Options& options;
@@ -29,16 +30,11 @@ struct SessionManager {
 
   int currId = 0;
   std::map<int, SessionState> sessions;
-  // SessionState* prevSession = nullptr;
-  // SessionState* currSession = nullptr;
 
   // front to back = recency
   std::deque<SessionState*> sessionsOrder;
-  inline SessionState* Curr() {
-    auto it = sessionsOrder.begin();
-    return it == sessionsOrder.end() ? nullptr : *it;
-  }
 
+public:
   SessionManager(
     SpawnMode mode,
     Options& options,
@@ -48,10 +44,13 @@ struct SessionManager {
     InputHandler& inputHandler
   );
 
-  // creates new session
+  inline SessionState* CurrSession() {
+    auto it = sessionsOrder.begin();
+    return it == sessionsOrder.end() ? nullptr : *it;
+  }
+
   void NewSession(const NewSessionOpts& opts = {});
-  // return true if successful
-  bool PrevSession();
+  bool PrevSession(); // return true if successful
   void SwitchSession(int id);
 
   // returns true if all sessions are closed

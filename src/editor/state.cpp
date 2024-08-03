@@ -6,12 +6,6 @@
 #include <vector>
 #include "utils/variant.hpp"
 
-void EditorState::Init(const SizeHandler& sizes) {
-  winManager.sizes = &sizes;
-  winManager.gridManager = &gridManager;
-  cursor.Init(sizes.charSize, sizes.dpiScale);
-}
-
 // parse ------------------------------------------
 using namespace event;
 

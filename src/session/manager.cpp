@@ -50,12 +50,14 @@ void SessionManager::NewSession(const NewSessionOpts& opts) {
     renderer = Renderer(sizes);
   }
 
-  session.editorState.Init(sizes);
+  session.editorState.winManager.sizes = &sizes;
+  session.editorState.winManager.gridManager = &session.editorState.gridManager;
+  session.editorState.cursor.Init(sizes.charSize, sizes.dpiScale);
 
-  if (options.transparency < 1) {
+  if (options.opacity < 1) {
     auto& hl = session.editorState.hlTable[0];
     hl.background = IntToColor(options.bgColor);
-    hl.background->a = options.transparency;
+    hl.background->a = options.opacity;
   }
 
   inputHandler = InputHandler(
@@ -63,24 +65,19 @@ void SessionManager::NewSession(const NewSessionOpts& opts) {
     options.multigrid, options.scrollSpeed
   );
 
-  if (opts.switchTo) {
-    session.nvim.UiAttach(
-      sizes.uiWidth, sizes.uiHeight,
-      {
-        {"rgb", true},
-        {"ext_multigrid", options.multigrid},
-        {"ext_linegrid", true},
-      }
-    ).get();
+  session.nvim.UiAttach(
+    sizes.uiWidth, sizes.uiHeight,
+    {
+      {"rgb", true},
+      {"ext_multigrid", options.multigrid},
+      {"ext_linegrid", true},
+    }
+  ).get();
 
-    // auto* curr = Curr();
-    // if (curr != nullptr) {
-    //   curr->nvim.UiDetach().wait();
-    // }
+  sessionsOrder.push_front(&session);
 
-    sessionsOrder.push_front(&session);
-  } else {
-    sessionsOrder.push_back(&session);
+  if (!opts.switchTo) {
+    PrevSession();
   }
 }
 
@@ -116,18 +113,8 @@ void SessionManager::SwitchSession(int id) {
     options.multigrid, options.scrollSpeed
   );
 
-  // session.nvim.UiAttach(
-  //   sizes.uiWidth, sizes.uiHeight,
-  //   {
-  //     {"rgb", true},
-  //     {"ext_multigrid", options.multigrid},
-  //     {"ext_linegrid", true},
-  //   }
-  // ).wait();
   session.nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight).get();
   session.reattached = true;
-
-  // Curr()->nvim.UiDetach().wait();
 
   auto currIt = std::ranges::find(sessionsOrder, &session);
   // move to front
@@ -138,12 +125,12 @@ void SessionManager::SwitchSession(int id) {
 }
 
 bool SessionManager::ShouldQuit() {
-  auto* curr = Curr();
+  auto* curr = CurrSession();
   if (!curr->nvim.IsConnected()) {
     sessions.erase(curr->id);
     sessionsOrder.pop_front();
 
-    curr = Curr();
+    curr = CurrSession();
     if (curr == nullptr) {
       return true;
     }
@@ -164,14 +151,6 @@ bool SessionManager::ShouldQuit() {
       options.multigrid, options.scrollSpeed
     );
 
-    // session.nvim.UiAttach(
-    //   sizes.uiWidth, sizes.uiHeight,
-    //   {
-    //     {"rgb", true},
-    //     {"ext_multigrid", options.multigrid},
-    //     {"ext_linegrid", true},
-    //   }
-    // ).wait();
     session.nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight).get();
     session.reattached = true;
   }

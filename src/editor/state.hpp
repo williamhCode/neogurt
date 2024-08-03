@@ -19,8 +19,6 @@ struct EditorState {
   std::vector<CursorMode> cursorModes;
   FontFamily fontFamily;
   // std::map<int, std::string> hlGroupTable;
-
-  void Init(const SizeHandler& sizes);
 };
 
 // returns true if there were events processed

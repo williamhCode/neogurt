@@ -8,7 +8,9 @@ bool Nvim::ConnectStdio(const std::string& dir) {
 
   std::string luaInitPath = ROOT_DIR "/lua/init.lua";
   std::string cmd = "nvim --embed --headless "
-    "--cmd \"luafile " + luaInitPath + "\"";
+                  "--cmd \"set runtimepath+=" ROOT_DIR "\" "
+                  "--cmd \"luafile " + luaInitPath + "\"";
+  // std::string cmd = "nvim --embed";
 
   if (!client->ConnectStdio(cmd, dir)) {
     return false;
@@ -44,7 +46,9 @@ bool Nvim::ConnectTcp(std::string_view host, uint16_t port) {
 }
 
 void Nvim::Setup() {
-  // Command("runtime! ginit.vim").get();
+  // SetVar("neogui", true).get();
+
+  Command("runtime! ginit.vim").get();
 
   SetClientInfo(
     "neogui",
@@ -61,7 +65,7 @@ void Nvim::Setup() {
   // std::stringstream buffer;
   // buffer << stream.rdbuf();
 
-  // ExecLua(buffer.str(), {}).wait();
+  // ExecLua(buffer.str(), {}).get();
 }
 
 bool Nvim::IsConnected() {
@@ -76,10 +80,6 @@ Nvim::Response Nvim::SetClientInfo(
   MapRef attributes
 ) {
   return client->AsyncCall("nvim_set_client_info", name, version, type, methods, attributes);
-}
-
-Nvim::Response Nvim::SetVar(std::string_view name, VariantRef value) {
-  return client->AsyncCall("nvim_set_var", name, value);
 }
 
 Nvim::Response Nvim::UiAttach(int width, int height, MapRef options) {
@@ -115,6 +115,10 @@ Nvim::Response Nvim::ListUis() {
 
 Nvim::Response Nvim::GetOptionValue(std::string_view name, MapRef opts) {
   return client->AsyncCall("nvim_get_option_value", name, opts);
+}
+
+Nvim::Response Nvim::SetVar(std::string_view name, VariantRef value) {
+  return client->AsyncCall("nvim_set_var", name, value);
 }
 
 Nvim::Response Nvim::GetVar(std::string_view name) {
