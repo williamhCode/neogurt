@@ -1,11 +1,9 @@
 #include "font.hpp"
-#include "utils/expected.hpp"
 #include "utils/logger.hpp"
 #include "utils/unicode.hpp"
 #include <ranges>
 #include <string>
 #include <boost/lexical_cast.hpp>
-#include <typeinfo>
 
 static auto SplitStr(std::string_view str, char delim) {
   return std::views::split(str, delim) |

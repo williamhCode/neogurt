@@ -131,7 +131,7 @@ void Client::GetData() {
         if (type == MessageType::Request) {
           RequestIn request(obj.convert());
 
-          std::promise<msgpack::type::variant> promise;
+          std::promise<RequestValue> promise;
           auto future = promise.get_future();
 
           requests.Push(Request{
@@ -143,15 +143,15 @@ void Client::GetData() {
 
           std::thread([this, msgid = request.msgid, future = std::move(future)] mutable {
             ResponseOut msg;
-            try {
-              msgpack::type::variant result = future.get();
-              msg.msgid = msgid;
-              msg.result = std::move(result);
 
-            } catch (msgpack::type::variant& error) {
+            if (auto result = future.get()) {
               msg.msgid = msgid;
-              msg.error = std::move(error);
+              msg.result = (*result).get();
+            } else {
+              msg.msgid = msgid;
+              msg.error = result.error().get();
             }
+
             msgpack::sbuffer buffer;
             msgpack::pack(buffer, msg);
             Write(std::move(buffer));

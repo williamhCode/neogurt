@@ -1,6 +1,10 @@
 #include "options.hpp"
 #include "utils/logger.hpp"
 #include <format>
+#include <chrono>
+#include <future>
+#include <boost/core/demangle.hpp>
+#include "utils/future.hpp"
 
 static std::string CamelToSnakeCase(std::string_view s) {
   std::string result;
@@ -15,17 +19,26 @@ static std::string CamelToSnakeCase(std::string_view s) {
   return result;
 }
 
-static void LoadOption(Nvim& nvim, std::string_view name, auto& value) {
-  auto luaCode = std::format("return vim.g.neogui_opts.{}", CamelToSnakeCase(name));
+static std::future<void> LoadOption(Nvim& nvim, std::string_view name, auto& value) {
   try {
-    nvim.ExecLua(luaCode, {}).get()->convert_if_not_nil(value);
+    auto luaCode = std::format("return vim.g.neogui_opts.{}", name);
+    auto result = co_await nvim.ExecLua(luaCode, {});
+    result->convert_if_not_nil(value);
+
+  } catch (const msgpack::type_error& e) {
+    LOG_ERR(
+      "Failed to load option '{}': expected type '{}'",
+      name, boost::core::demangled_name(typeid(value))
+    );
+
   } catch (const std::exception& e) {
-    LOG_ERR("Failed to load option: {} {}", name, e.what());
+    LOG_ERR("Failed to load option '{}': {}", name, e.what());
   }
 };
 
-void Options::Load(Nvim& nvim) {
-  #define LOAD(name) LoadOption(nvim, #name, name)
+std::future<Options> LoadOptions(Nvim& nvim) {
+  Options options;
+  #define LOAD(name) co_await LoadOption(nvim, CamelToSnakeCase(#name), options.name);
 
   LOAD(window.vsync);
   LOAD(window.highDpi);
@@ -47,5 +60,7 @@ void Options::Load(Nvim& nvim) {
 
   LOAD(maxFps);
 
-  opacity = int(opacity * 255) / 255.0f;
+  options.opacity = int(options.opacity * 255) / 255.0f;
+
+  co_return options;
 }

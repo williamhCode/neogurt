@@ -2,11 +2,13 @@
 
 #include "msgpack/v3/object_fwd_decl.hpp"
 #include <atomic>
+#include <mutex>
 #include <string>
 #include <format>
 
 struct Logger {
   std::atomic_bool enabled = true;
+  std::mutex mutex;
 
   void Log(const std::string& message);
 

@@ -2,26 +2,27 @@
 
 #include "msgpack_rpc/client.hpp"
 #include <fstream>
+#include "utils/future.hpp"
 
-bool Nvim::ConnectStdio(const std::string& dir) {
+std::future<bool> Nvim::ConnectStdio(const std::string& dir) {
   client = std::make_unique<rpc::Client>();
 
-  std::string luaInitPath = ROOT_DIR "/lua/init.lua";
-  std::string cmd = "nvim --embed --headless "
-                  "--cmd \"set runtimepath+=" ROOT_DIR "\" "
-                  "--cmd \"luafile " + luaInitPath + "\"";
-  // std::string cmd = "nvim --embed";
+  // std::string luaInitPath = ROOT_DIR "/lua/init.lua";
+  // std::string cmd = "nvim --embed --headless "
+  //                 "--cmd \"set runtimepath+=" ROOT_DIR "\" "
+  //                 "--cmd \"luafile " + luaInitPath + "\"";
+  std::string cmd = "nvim --embed";
 
   if (!client->ConnectStdio(cmd, dir)) {
-    return false;
+    co_return false;
   }
 
-  Setup();
+  co_await Setup();
 
-  return true;
+  co_return true;
 }
 
-bool Nvim::ConnectTcp(std::string_view host, uint16_t port) {
+std::future<bool> Nvim::ConnectTcp(std::string_view host, uint16_t port) {
   client = std::make_unique<rpc::Client>();
 
   using namespace std::chrono_literals;
@@ -35,22 +36,22 @@ bool Nvim::ConnectTcp(std::string_view host, uint16_t port) {
     elapsed += delay;
   }
 
-  if (!client->IsConnected()) return false;
+  if (!client->IsConnected()) co_return false;
 
-  Setup();
+  co_await Setup();
 
   // auto result = client->Call("nvim_get_api_info");
   // channelId = result->via.array.ptr[0].convert();
   // LOG_INFO("nvim_get_api_info: {}", channelId);
-  return true;
+  co_return true;
 }
 
-void Nvim::Setup() {
-  // SetVar("neogui", true).get();
+std::future<void> Nvim::Setup() {
+  co_await SetVar("neogui", true);
 
-  Command("runtime! ginit.vim").get();
+  co_await Command("runtime! ginit.vim");
 
-  SetClientInfo(
+  co_await SetClientInfo(
     "neogui",
     {
       {"major", 0},
@@ -58,14 +59,16 @@ void Nvim::Setup() {
       {"patch", 0},
     },
     "ui", {}, {}
-  ).get();
+  );
 
-  // std::string luaInitPath = ROOT_DIR "/lua/init.lua";
-  // std::ifstream stream(luaInitPath);
-  // std::stringstream buffer;
-  // buffer << stream.rdbuf();
+  co_await Command("set runtimepath+=" ROOT_DIR);
 
-  // ExecLua(buffer.str(), {}).get();
+  std::string luaInitPath = ROOT_DIR "/lua/init.lua";
+  std::ifstream stream(luaInitPath);
+  std::stringstream buffer;
+  buffer << stream.rdbuf();
+
+  co_await ExecLua(buffer.str(), {});
 }
 
 bool Nvim::IsConnected() {

@@ -27,6 +27,6 @@ struct Options {
   float opacity = 1;
 
   float maxFps = 60;
-
-  void Load(Nvim& nvim);
 };
+
+std::future<Options> LoadOptions(Nvim& nvim);

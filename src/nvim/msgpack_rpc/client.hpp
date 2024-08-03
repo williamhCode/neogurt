@@ -7,6 +7,7 @@
 #include "boost/process/async_pipe.hpp"
 #include "boost/process/child.hpp"
 
+#include "msgpack/v3/object_decl.hpp"
 #include "nvim/msgpack_rpc/messages.hpp"
 #include "tsqueue.hpp"
 
@@ -16,6 +17,7 @@
 #include <unordered_map>
 #include <future>
 #include <thread>
+#include <expected>
 
 namespace rpc {
 
@@ -25,18 +27,24 @@ struct Notification {
   msgpack::unique_ptr<msgpack::zone> _zone; // holds the lifetime of the data
 };
 
+using RequestValue = std::expected<msgpack::object_handle, msgpack::object_handle>;
+
 struct Request {
   std::string_view method;
   msgpack::object params;
   msgpack::unique_ptr<msgpack::zone> _zone; // holds the lifetime of the data
-  std::promise<msgpack::type::variant> promise;
+  std::promise<RequestValue> promise;
 
-  void SetValue(msgpack::type::variant&& value) {
-    promise.set_value(std::move(value));
+  void SetValue(auto&& value) {
+    msgpack::object_handle handle;
+    handle.set({value, *handle.zone()});
+    promise.set_value(std::move(handle));
   }
 
-  void SetError(msgpack::type::variant&& error) {
-    promise.set_exception(std::make_exception_ptr(std::move(error)));
+  void SetError(auto&& error) {
+    msgpack::object_handle handle;
+    handle.set({error, *handle.zone()});
+    promise.set_value(std::unexpected(std::move(handle)));
   }
 };
 

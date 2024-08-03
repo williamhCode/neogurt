@@ -14,7 +14,7 @@ void ProcessUserEvents(rpc::Client& client, SessionManager& sessionManager) {
       try {
         event::Session session = request.params.convert();
         if (session.cmd == "new") {
-          sessionManager.NewSession({
+          sessionManager.New({
             .name = session.opts.at("name").convert(),
             .dir = session.opts.at("dir").convert(),
             .switchTo = session.opts.at("switch_to").convert(),
@@ -22,12 +22,19 @@ void ProcessUserEvents(rpc::Client& client, SessionManager& sessionManager) {
           request.SetValue(msgpack::type::nil_t());
 
         } else if (session.cmd == "prev") {
-          bool success = sessionManager.PrevSession();
+          bool success = sessionManager.Prev();
           request.SetValue(success);
 
         } else if (session.cmd == "switch") {
-          sessionManager.SwitchSession(session.opts.at("id").convert());
+          sessionManager.Switch(session.opts.at("id").convert());
           request.SetValue(msgpack::type::nil_t());
+
+        } else if (session.cmd == "list") {
+          // std::vector<SessionListEntry> list = sessionManager.List({
+          //   .sort = session.opts.at("sort").convert(),
+          //   .reverse = session.opts.at("reverse").convert(),
+          // });
+          // request.SetValue(list);
 
         } else {
           request.SetError("Unknown command: " + std::string(session.cmd));

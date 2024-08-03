@@ -12,10 +12,22 @@ enum class SpawnMode {
   Detached,
 };
 
-struct NewSessionOpts {
+struct SessionNewOpts {
   std::string name;
   std::string dir;
   bool switchTo = true;
+};
+
+struct SessionListOpts {
+  // id, name, time (recency)
+  std::string sort = "id";
+  bool reverse = false;
+};
+
+struct SessionListEntry {
+  int id;
+  std::string name;
+  MSGPACK_DEFINE(id, name);
 };
 
 struct SessionManager {
@@ -49,9 +61,10 @@ public:
     return it == sessionsOrder.end() ? nullptr : *it;
   }
 
-  void NewSession(const NewSessionOpts& opts = {});
-  bool PrevSession(); // return true if successful
-  void SwitchSession(int id);
+  void New(const SessionNewOpts& opts = {});
+  bool Prev(); // return true if successful
+  void Switch(int id);
+  std::vector<SessionListEntry> List(const SessionListOpts& opts = {});
 
   // returns true if all sessions are closed
   bool ShouldQuit();

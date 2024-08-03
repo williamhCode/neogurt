@@ -24,8 +24,8 @@ struct RequestOut {
 struct ResponseOut {
   int type = MessageType::Response;
   uint32_t msgid;
-  msgpack::type::variant error;
-  msgpack::type::variant result;
+  msgpack::object error;
+  msgpack::object result;
   MSGPACK_DEFINE(type, msgid, error, result);
 };
 
