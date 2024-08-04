@@ -17,6 +17,11 @@ local session_table = {
     -- id, name, time (recency)
     sort = "id",
     reverse = false,
+  },
+  select = {
+    -- forwarded to list opts
+    sort = "id",
+    reverse = false,
   }
 }
 
@@ -72,7 +77,8 @@ vim.g.neogui_session = function(cmd, opts)
       return
     end
 
-    return vim.rpcrequest(chan_id, "neogui_session", cmd, opts)
+    local id = vim.rpcrequest(chan_id, "neogui_session", cmd, opts)
+    return id
 
   elseif cmd == "prev" then
     local success = vim.rpcrequest(chan_id, "neogui_session", cmd)
@@ -84,5 +90,23 @@ vim.g.neogui_session = function(cmd, opts)
   elseif cmd == "list" then
     local list = vim.rpcrequest(chan_id, "neogui_session", cmd, opts)
     return list
+
+  elseif cmd == "select" then
+    local curr_id = vim.g.neogui_session("list", { sort = "time" })[1].id
+    local list = vim.g.neogui_session("list", opts)
+    vim.ui.select(list, {
+      prompt = "Select a session",
+      format_item = function(item)
+        local line = "(" .. item.id .. ") - " .. item.name
+        if item.id == curr_id then
+          line = line .. " (current)"
+        end
+        return line
+      end
+    }, function(choice)
+      if choice == nil then return end
+      vim.g.neogui_session("switch", { id = choice.id })
+    end)
   end
 end
+

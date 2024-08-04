@@ -19,7 +19,6 @@ void WinManager::InitRenderData(Win& win) {
   win.sRenderTexture = ScrollableRenderTexture(size, sizes->dpiScale, sizes->charSize);
   win.sRenderTexture.UpdatePos(pos);
 
-  // used if hiding window removes window completely
   win.grid.dirty = true;
 
   win.pos = pos;
@@ -46,7 +45,6 @@ void WinManager::UpdateRenderData(Win& win) {
   }
   win.sRenderTexture.UpdatePos(pos);
 
-  // used if hiding window removes window completely
   win.grid.dirty = true;
 
   win.pos = pos;
@@ -68,9 +66,6 @@ void WinManager::Pos(const event::WinPos& e) {
   win.startRow = e.startRow;
   win.startCol = e.startCol;
 
-  // if (win.grid.width != e.width || win.grid.height != e.height) {
-  //   return;
-  // }
   win.width = e.width;
   win.height = e.height;
 
@@ -81,6 +76,31 @@ void WinManager::Pos(const event::WinPos& e) {
   } else {
     UpdateRenderData(win);
   }
+}
+
+void WinManager::FloatPos(int grid) {
+  std::lock_guard lock(windowsMutex);
+  auto gridIt = gridManager->grids.find(grid);
+  if (gridIt == gridManager->grids.end()) {
+    LOG_ERR("WinManager::FloatPos: grid {} not found", grid);
+    return;
+  }
+
+  auto winIt = windows.find(grid);
+  if (winIt == windows.end()) {
+    LOG_ERR("WinManager::FloatPos: window {} not found", grid);
+    return;
+  }
+  auto& win = winIt->second;
+
+  if (!win.IsFloating()) return;
+
+  win.width = win.grid.width;
+  win.height = win.grid.height;
+
+  win.hidden = false;
+
+  UpdateRenderData(win);
 }
 
 void WinManager::FloatPos(const event::WinFloatPos& e) {
@@ -134,9 +154,9 @@ void WinManager::FloatPos(const event::WinFloatPos& e) {
 
   if (first) {
     InitRenderData(win);
-  } else {
+  }/*  else {
     UpdateRenderData(win);
-  }
+  } */
 }
 
 void WinManager::ExternalPos(const event::WinExternalPos& e) {
@@ -190,6 +210,10 @@ void WinManager::MsgSetPos(const event::MsgSetPos& e) {
 
   win.hidden = false;
 
+  if (msgWinId != -1 && msgWinId != e.grid) {
+    Close({.grid = msgWinId});
+    gridManager->Destroy({.grid = msgWinId});
+  }
   msgWinId = e.grid;
 
   if (first) {

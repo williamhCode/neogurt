@@ -105,9 +105,9 @@ int main() {
         ProcessUserEvents(*nvim->client, sessionManager);
         LOG_ENABLE();
 
-        LOG_DISABLE();
+        // LOG_DISABLE();
         ParseUiEvents(*nvim->client, nvim->uiEvents);
-        LOG_ENABLE();
+        // LOG_ENABLE();
 
         LOG_DISABLE();
         if (ParseEditorState(nvim->uiEvents, session->editorState)) {
@@ -276,7 +276,7 @@ int main() {
 
           // sort floating windows by zindex
           std::ranges::sort(floatWindows, [](const Win* win, const Win* other) {
-            return win->floatData->zindex < other->floatData->zindex;
+            return win->floatData->zindex > other->floatData->zindex;
           });
 
           renderer.RenderWindows(windows, floatWindows);

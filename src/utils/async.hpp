@@ -5,6 +5,7 @@
 #include <future>
 #include <thread>
 #include <type_traits>
+#include <chrono>
 
 // Enable the use of std::future<T> as a coroutine type
 // by using a std::promise<T> as the promise type.
@@ -59,7 +60,7 @@ struct std::coroutine_traits<std::future<void>, Args...> {
 // Allow co_await'ing std::future<T> and std::future<void>
 // by naively spawning a new thread for each co_await.
 template <typename T>
-auto operator co_await(std::future<T> future) noexcept
+inline auto operator co_await(std::future<T> future) noexcept
   requires(!std::is_reference_v<T>)
 {
   struct awaiter : std::future<T> {
@@ -82,4 +83,47 @@ auto operator co_await(std::future<T> future) noexcept
   };
 
   return awaiter{std::move(future)};
+}
+
+[[nodiscard]] inline std::future<void> async_sleep_for(const std::chrono::nanoseconds& duration) {
+  return std::async(std::launch::async, [duration]() {
+    std::this_thread::sleep_for(duration);
+  });
+}
+
+// wait for all futures to complete in parallel
+template <typename... Futures>
+auto when_all(Futures&&... futures) -> std::future<std::tuple<std::decay_t<Futures>...>> {
+  return std::async(
+    std::launch::async,
+    [futures = std::make_tuple(std::forward<Futures>(futures)...)]() mutable {
+      std::apply([](auto&&... futures) { (futures.wait(), ...); }, futures);
+      return std::move(futures);
+    }
+  );
+}
+
+auto future_get(auto&& future) {
+  if constexpr (std::is_same_v<decltype(future.get()), void>) {
+    return std::monostate{};
+  } else {
+    return future.get();
+  }
+}
+
+// returns all future results when all futures are ready in parallel
+// returns std::monoate if value type is void
+template <typename... Futures>
+auto get_all(Futures&&... futures) -> std::future<std::tuple<decltype(future_get(futures))...>> {
+  return std::async(
+    std::launch::async,
+    [futures = std::make_tuple(std::forward<Futures>(futures)...)]() mutable {
+      return std::apply(
+        [](auto&&... futures) {
+          return std::make_tuple(future_get(std::forward<Futures>(futures))...);
+        },
+        futures
+      );
+    }
+  );
 }

@@ -182,10 +182,15 @@ bool ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
           // editorState.hlGroupTable.emplace(e.id, e.name);
         },
         [&](GridResize& e) {
+          // LOG_INFO("GridResize: {}, {}, {}", e.grid, e.width, e.height);
           editorState.gridManager.Resize(e);
           // default window events not send by nvim
           if (e.grid == 1) {
             editorState.winManager.Pos({1, {}, 0, 0, e.width, e.height});
+          } else {
+            // weird workaround for nvim only sending GridResize
+            // but not WinFloatPos for when float resizes
+            editorState.winManager.FloatPos(e.grid);
           }
         },
         [&](GridClear& e) {
@@ -226,7 +231,23 @@ bool ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
           for (auto *event : winEvents) {
             std::visit(overloaded{
               [&](WinPos& e) {
-                editorState.winManager.Pos(e);
+                // LOG_INFO("WinPos {} {} {}", e.grid, e.width, e.height);
+                // if no corresponding GridResize was sent, defer event
+                auto it = editorState.gridManager.grids.find(e.grid);
+                if (it == editorState.gridManager.grids.end()) {
+                  uiEvents.Curr().emplace_back(e);
+                  return;
+                }
+                auto& grid = it->second;
+
+                if (grid.width == e.width && grid.height == e.height) {
+                  editorState.winManager.Pos(e);
+                } else {
+                  // defer event to next flush
+                  LOG_INFO("deferred WinPos {} {} {} {} {}",
+                    e.grid, grid.width, grid.height, e.width, e.height);
+                  uiEvents.queue[0].emplace_front(e);
+                }
               },
               [&](WinFloatPos& e) {
                 editorState.winManager.FloatPos(e);
@@ -256,6 +277,7 @@ bool ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
           for (auto* e : msgSetPos) {
             editorState.winManager.MsgSetPos(*e);
           }
+          LOG_INFO("flush");
         },
         [&](auto& _e) {
           auto* e = (UiEvent*)&_e;

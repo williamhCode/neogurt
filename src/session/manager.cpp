@@ -17,7 +17,7 @@ SessionManager::SessionManager(
     renderer(_renderer), inputHandler(_inputHandler) {
 }
 
-void SessionManager::New(const SessionNewOpts& opts) {
+int SessionManager::New(const SessionNewOpts& opts) {
   using namespace std::chrono_literals;
   bool first = sessions.empty();
 
@@ -99,6 +99,8 @@ void SessionManager::New(const SessionNewOpts& opts) {
   if (!opts.switchTo) {
     Prev();
   }
+
+  return id;
 }
 
 bool SessionManager::Prev() {

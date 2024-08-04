@@ -4,7 +4,7 @@
 #include <chrono>
 #include <future>
 #include <boost/core/demangle.hpp>
-#include "utils/future.hpp"
+#include "utils/async.hpp"
 
 static std::string CamelToSnakeCase(std::string_view s) {
   std::string result;
@@ -38,27 +38,31 @@ static std::future<void> LoadOption(Nvim& nvim, std::string_view name, auto& val
 
 std::future<Options> LoadOptions(Nvim& nvim) {
   Options options;
-  #define LOAD(name) co_await LoadOption(nvim, CamelToSnakeCase(#name), options.name);
 
-  LOAD(window.vsync);
-  LOAD(window.highDpi);
-  LOAD(window.borderless);
-  LOAD(window.blur);
+  #define LOAD(name) LoadOption(nvim, CamelToSnakeCase(#name), options.name)
 
-  LOAD(margins.top);
-  LOAD(margins.bottom);
-  LOAD(margins.left);
-  LOAD(margins.right);
+  // load options in parallel
+  co_await when_all(
+    LOAD(window.vsync),
+    LOAD(window.highDpi),
+    LOAD(window.borderless),
+    LOAD(window.blur),
 
-  LOAD(multigrid);
-  LOAD(macOptIsMeta);
-  LOAD(cursorIdleTime);
-  LOAD(scrollSpeed);
+    LOAD(margins.top),
+    LOAD(margins.bottom),
+    LOAD(margins.left),
+    LOAD(margins.right),
 
-  LOAD(bgColor);
-  LOAD(opacity);
+    LOAD(multigrid),
+    LOAD(macOptIsMeta),
+    LOAD(cursorIdleTime),
+    LOAD(scrollSpeed),
 
-  LOAD(maxFps);
+    LOAD(bgColor),
+    LOAD(opacity),
+
+    LOAD(maxFps)
+  );
 
   options.opacity = int(options.opacity * 255) / 255.0f;
 

@@ -2,7 +2,11 @@
 
 #include "msgpack_rpc/client.hpp"
 #include <fstream>
-#include "utils/future.hpp"
+#include <future>
+#include "utils/async.hpp"
+#include "utils/logger.hpp"
+
+using namespace std::chrono_literals;
 
 std::future<bool> Nvim::ConnectStdio(const std::string& dir) {
   client = std::make_unique<rpc::Client>();
@@ -25,14 +29,13 @@ std::future<bool> Nvim::ConnectStdio(const std::string& dir) {
 std::future<bool> Nvim::ConnectTcp(std::string_view host, uint16_t port) {
   client = std::make_unique<rpc::Client>();
 
-  using namespace std::chrono_literals;
   auto timeout = 500ms;
   auto elapsed = 0ms;
   auto delay = 50ms;
   while (elapsed < timeout) {
     if (client->ConnectTcp(host, port)) break;
     // if (client->Connect("data.cs.purdue.edu", port)) break;
-    std::this_thread::sleep_for(delay);
+    co_await async_sleep_for(delay);
     elapsed += delay;
   }
 
@@ -47,28 +50,28 @@ std::future<bool> Nvim::ConnectTcp(std::string_view host, uint16_t port) {
 }
 
 std::future<void> Nvim::Setup() {
-  co_await SetVar("neogui", true);
-
-  co_await Command("runtime! ginit.vim");
-
-  co_await SetClientInfo(
-    "neogui",
-    {
-      {"major", 0},
-      {"minor", 0},
-      {"patch", 0},
-    },
-    "ui", {}, {}
-  );
-
-  co_await Command("set runtimepath+=" ROOT_DIR);
-
-  std::string luaInitPath = ROOT_DIR "/lua/init.lua";
-  std::ifstream stream(luaInitPath);
   std::stringstream buffer;
-  buffer << stream.rdbuf();
+  co_await std::async(std::launch::async, [&buffer] {
+    std::string luaInitPath = ROOT_DIR "/lua/init.lua";
+    std::ifstream stream(luaInitPath);
+    buffer << stream.rdbuf();
+  });
 
-  co_await ExecLua(buffer.str(), {});
+  co_await when_all(
+    SetVar("neogui", true),
+    Command("runtime! ginit.vim"),
+    SetClientInfo(
+      "neogui",
+      {
+        {"major", 0},
+        {"minor", 0},
+        {"patch", 0},
+      },
+      "ui", {}, {}
+    ),
+    Command("set runtimepath+=" ROOT_DIR),
+    ExecLua(buffer.str(), {})
+  );
 }
 
 bool Nvim::IsConnected() {

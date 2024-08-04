@@ -61,7 +61,7 @@ public:
     return it == sessionsOrder.end() ? nullptr : *it;
   }
 
-  void New(const SessionNewOpts& opts = {});
+  int New(const SessionNewOpts& opts = {}); // return session id
   bool Prev(); // return true if successful
   void Switch(int id);
   std::vector<SessionListEntry> List(const SessionListOpts& opts = {});

@@ -136,14 +136,18 @@ void Renderer::RenderToWindow(
   if (win.grid.width != win.width || win.grid.height != win.height) {
     LOG_WARN(
       "RenderWindow: grid size not equal to window size for id: {}\n"
-      "Sizes: grid: {}x{}, window: {}x{}",
-      win.id, win.grid.width, win.grid.height, win.width, win.height
+      "Sizes: grid: {}x{}, window: {}x{}\n"
+      "IsFloat: {}",
+      win.id, win.grid.width, win.grid.height, win.width, win.height,
+      win.IsFloating()
     );
-    // return;
+
+    // if (win.grid.width != win.width) return;
   }
 
   // keep track of quad index after each row
   size_t rows = std::min(win.grid.height, win.height);
+  size_t cols = std::min(win.grid.width, win.width);
   std::vector<int> rectIntervals; rectIntervals.reserve(rows + 1);
   std::vector<int> textIntervals; textIntervals.reserve(rows + 1);
   std::vector<int> lineIntervals; lineIntervals.reserve(rows + 1);
@@ -167,7 +171,8 @@ void Renderer::RenderToWindow(
     textIntervals.push_back(textData.quadCount);
     lineIntervals.push_back(lineData.quadCount);
 
-    for (auto& cell : line) {
+    for (size_t col = 0; col < cols; col++) {
+      auto& cell = line[col];
       const Highlight& hl = hlTable.at(cell.hlId);
       // don't render background if default
       if (cell.hlId != 0 && hl.background.has_value() &&

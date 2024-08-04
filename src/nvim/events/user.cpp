@@ -14,12 +14,12 @@ void ProcessUserEvents(rpc::Client& client, SessionManager& sessionManager) {
       try {
         event::Session session = request.params.convert();
         if (session.cmd == "new") {
-          sessionManager.New({
+          int id = sessionManager.New({
             .name = session.opts.at("name").convert(),
             .dir = session.opts.at("dir").convert(),
             .switchTo = session.opts.at("switch_to").convert(),
           });
-          request.SetValue(msgpack::type::nil_t());
+          request.SetValue(id);
 
         } else if (session.cmd == "prev") {
           bool success = sessionManager.Prev();

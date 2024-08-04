@@ -209,7 +209,7 @@ using UiEvent = std::variant<
 
 struct UiEvents {
   int numFlushes = 0;
-  std::deque<std::vector<UiEvent>> queue;
+  std::deque<std::deque<UiEvent>> queue;
 
   UiEvents() {
     queue.emplace_back();
