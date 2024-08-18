@@ -52,12 +52,12 @@ struct Renderer {
   void SetClearColor(glm::vec4 color);
 
   void Begin();
-  void RenderToWindow(Win& win, FontFamily& fontFamily, const HlTable& hlTable);
+  void RenderToWindow(Win& win, FontFamily& fontFamily, HlTable& hlTable);
   void RenderCursorMask(
-    const Win& win, const Cursor& cursor, FontFamily& fontFamily, const HlTable& hlTable
+    const Win& win, const Cursor& cursor, FontFamily& fontFamily, HlTable& hlTable
   );
   void RenderWindows(std::span<const Win*> windows, std::span<const Win*> floatWindows);
   void RenderFinalTexture();
-  void RenderCursor(const Cursor& cursor, const HlTable& hlTable);
+  void RenderCursor(const Cursor& cursor, HlTable& hlTable);
   void End();
 };

@@ -129,7 +129,7 @@ void Renderer::Begin() {
 }
 
 void Renderer::RenderToWindow(
-  Win& win, FontFamily& fontFamily, const HlTable& hlTable
+  Win& win, FontFamily& fontFamily, HlTable& hlTable
 ) {
   // if for whatever reason (prob nvim events buggy, events not sent or offsync)
   // the grid is not the same size as the window
@@ -173,10 +173,10 @@ void Renderer::RenderToWindow(
 
     for (size_t col = 0; col < cols; col++) {
       auto& cell = line[col];
-      const Highlight& hl = hlTable.at(cell.hlId);
+      const Highlight& hl = hlTable[cell.hlId];
       // don't render background if default
       if (cell.hlId != 0 && hl.background.has_value() &&
-          hl.background != hlTable.at(0).background) {
+          hl.background != hlTable[0].background) {
         auto rectPositions = MakeRegion({0, 0}, defaultFont.charSize);
 
         auto background = *hl.background;
@@ -322,13 +322,13 @@ void Renderer::RenderToWindow(
 }
 
 void Renderer::RenderCursorMask(
-  const Win& win, const Cursor& cursor, FontFamily& fontFamily, const HlTable& hlTable
+  const Win& win, const Cursor& cursor, FontFamily& fontFamily, HlTable& hlTable
 ) {
   auto& cell = win.grid.lines[cursor.row][cursor.col];
 
   if (!cell.text.empty() && cell.text != " ") {
     char32_t charcode = UTF8ToUnicode(cell.text);
-    const auto& hl = hlTable.at(cell.hlId);
+    const auto& hl = hlTable[cell.hlId];
     const auto& glyphInfo = fontFamily.GetGlyphInfo(charcode, hl.bold, hl.italic);
 
     glm::vec2 textQuadPos{
@@ -406,9 +406,9 @@ void Renderer::RenderFinalTexture() {
   finalRPD.cColorAttachments[0].view = nullptr;
 }
 
-void Renderer::RenderCursor(const Cursor& cursor, const HlTable& hlTable) {
+void Renderer::RenderCursor(const Cursor& cursor, HlTable& hlTable) {
   auto attrId = cursor.cursorMode->attrId;
-  const auto& hl = hlTable.at(attrId);
+  const auto& hl = hlTable[attrId];
   auto foreground = GetForeground(hlTable, hl);
   auto background = GetBackground(hlTable, hl);
   if (attrId == 0) std::swap(foreground, background);
@@ -437,4 +437,6 @@ void Renderer::RenderCursor(const Cursor& cursor, const HlTable& hlTable) {
 void Renderer::End() {
   auto commandBuffer = commandEncoder.Finish();
   ctx.queue.Submit(1, &commandBuffer);
+  nextTexture = nullptr;
+  nextTextureView = nullptr;
 }

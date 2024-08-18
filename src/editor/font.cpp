@@ -60,6 +60,7 @@ FontFamily::FromGuifont(std::string_view guifont, float dpiScale) {
             dpiScale
           )
           .value(); // allow exception to propagate
+
           // reuse the existing FontHandle
           if (fontSet.normal && font.path == fontSet.normal->path) {
             return fontSet.normal;

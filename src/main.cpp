@@ -68,7 +68,7 @@ int main() {
 
     // int frameCount = 0;
 
-    std::thread renderThread([&] {
+    std::jthread renderThread([&](std::stop_token stopToken) {
       bool windowFocused = true;
       bool idle = false;
       float idleElasped = 0;
@@ -76,7 +76,7 @@ int main() {
       Clock clock;
       // Timer timer(10);
 
-      while (!exitWindow) {
+      while (!exitWindow && !stopToken.stop_requested()) {
         float targetFps = options.window.vsync && !idle ? 0 : options.maxFps;
         float dt = clock.Tick(targetFps);
 
@@ -105,9 +105,9 @@ int main() {
         ProcessUserEvents(*nvim->client, sessionManager);
         LOG_ENABLE();
 
-        // LOG_DISABLE();
+        LOG_DISABLE();
         ParseUiEvents(*nvim->client, nvim->uiEvents);
-        // LOG_ENABLE();
+        LOG_ENABLE();
 
         LOG_DISABLE();
         if (ParseEditorState(nvim->uiEvents, session->editorState)) {
@@ -120,7 +120,7 @@ int main() {
         while (!sdlEvents.Empty()) {
           auto& event = sdlEvents.Front();
           switch (event.type) {
-             case SDL_EVENT_WINDOW_FOCUS_GAINED:
+            case SDL_EVENT_WINDOW_FOCUS_GAINED:
               windowFocused = true;
               idle = false;
               idleElasped = 0;
@@ -308,7 +308,7 @@ int main() {
     });
 
     // event loop --------------------------------
-    SDL_StartTextInput(window.Get());
+    // SDL_StartTextInput(window.Get());
 
     // resize handling
     sdl::AddEventWatch([&](SDL_Event& event) {
@@ -367,8 +367,6 @@ int main() {
           break;
       }
     }
-
-    renderThread.join();
 
   } catch (const std::exception& e) {
     LOG_ERR(

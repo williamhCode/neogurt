@@ -42,7 +42,7 @@ std::future<Options> LoadOptions(Nvim& nvim) {
   #define LOAD(name) LoadOption(nvim, CamelToSnakeCase(#name), options.name)
 
   // load options in parallel
-  co_await when_all(
+  co_await WhenAll(
     LOAD(window.vsync),
     LOAD(window.highDpi),
     LOAD(window.borderless),

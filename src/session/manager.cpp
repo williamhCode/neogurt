@@ -41,10 +41,10 @@ int SessionManager::New(const SessionNewOpts& opts) {
       {"ext_multigrid", true},
       {"ext_linegrid", true},
     }
-  );
+  ).get();
 
   auto optionsFut = LoadOptions(session.nvim);
-  if (optionsFut.wait_for(500ms) == std::future_status::ready) {
+  if (optionsFut.wait_for(1s) == std::future_status::ready) {
     options = optionsFut.get();
   } else {
     LOG_WARN("Failed to load options (timeout)");
@@ -56,7 +56,7 @@ int SessionManager::New(const SessionNewOpts& opts) {
 
   auto guifontFut = session.nvim.GetOptionValue("guifont", {});
   std::string guifont;
-  if (guifontFut.wait_for(500ms) == std::future_status::ready) {
+  if (guifontFut.wait_for(1s) == std::future_status::ready) {
     guifont = guifontFut.get()->as<std::string>();
   } else {
     LOG_WARN("Failed to load guifont option (timeout), using default");

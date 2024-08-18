@@ -43,7 +43,7 @@ bool Client::ConnectStdio(const std::string& command, const std::string& dir) {
   );
 
   if (!process.running()) {
-    LOG_ERR("Failed to start process");
+    LOG_ERR("Failed to start process: {}", command);
     exit = true;
     return false;
   }

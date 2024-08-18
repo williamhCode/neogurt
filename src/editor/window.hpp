@@ -85,7 +85,7 @@ public:
   void MsgSetPos(const event::MsgSetPos& e);
   void Viewport(const event::WinViewport& e);
   void UpdateScrolling(float dt);
-  void ViewportMargins(const event::WinViewportMargins& e);
+  bool ViewportMargins(const event::WinViewportMargins& e);
   void Extmark(const event::WinExtmark& e);
 
   Grid* GetGrid(int id);

@@ -3,6 +3,7 @@
 #include "utils/logger.hpp"
 #include <algorithm>
 #include <cstdlib>
+#include <stdexcept>
 #include <utility>
 
 using namespace wgpu;
@@ -45,6 +46,10 @@ void WinManager::UpdateRenderData(Win& win) {
   }
   win.sRenderTexture.UpdatePos(pos);
 
+  if (sizeChanged) {
+    win.sRenderTexture.UpdateMargins(win.margins);
+  }
+
   win.grid.dirty = true;
 
   win.pos = pos;
@@ -78,6 +83,8 @@ void WinManager::Pos(const event::WinPos& e) {
   }
 }
 
+// TODO: find a more robust way to handle
+// grid and win events not syncing up
 void WinManager::FloatPos(int grid) {
   std::lock_guard lock(windowsMutex);
   auto gridIt = gridManager->grids.find(grid);
@@ -88,7 +95,6 @@ void WinManager::FloatPos(int grid) {
 
   auto winIt = windows.find(grid);
   if (winIt == windows.end()) {
-    LOG_ERR("WinManager::FloatPos: window {} not found", grid);
     return;
   }
   auto& win = winIt->second;
@@ -154,9 +160,9 @@ void WinManager::FloatPos(const event::WinFloatPos& e) {
 
   if (first) {
     InitRenderData(win);
-  }/*  else {
+  } else {
     UpdateRenderData(win);
-  } */
+  }
 }
 
 void WinManager::ExternalPos(const event::WinExternalPos& e) {
@@ -252,12 +258,12 @@ void WinManager::UpdateScrolling(float dt) {
   }
 }
 
-void WinManager::ViewportMargins(const event::WinViewportMargins& e) {
+bool WinManager::ViewportMargins(const event::WinViewportMargins& e) {
   std::lock_guard lock(windowsMutex);
   auto it = windows.find(e.grid);
   if (it == windows.end()) {
     // LOG_ERR("WinManager::ViewportMargins: window {} not found", e.grid);
-    return;
+    return false;
   }
   auto& win = it->second;
 
@@ -267,6 +273,8 @@ void WinManager::ViewportMargins(const event::WinViewportMargins& e) {
   win.margins.right = e.right;
 
   win.sRenderTexture.UpdateMargins(win.margins);
+
+  return true;
 }
 
 void WinManager::Extmark(const event::WinExtmark& e) {
@@ -307,7 +315,9 @@ MouseInfo WinManager::GetMouseInfo(glm::vec2 mousePos) const {
     }
   }
 
-  const auto& win = windows.at(grid);
+  auto it = windows.find(grid);
+  assert(it != windows.end() && "Windows changed mid function, data race occured");
+  const auto& win = it->second;
   int row = std::max(globalRow - win.startRow, 0);
   int col = std::max(globalCol - win.startCol, 0);
 
@@ -315,17 +325,23 @@ MouseInfo WinManager::GetMouseInfo(glm::vec2 mousePos) const {
 }
 
 MouseInfo WinManager::GetMouseInfo(int grid, glm::vec2 mousePos) const {
-  std::lock_guard lock(windowsMutex);
-  const auto& win = windows.at(grid);
+  {
+    std::lock_guard lock(windowsMutex);
+    auto it = windows.find(grid);
+    if (it != windows.end()) {
+      const auto& win = it->second;
 
-  mousePos -= sizes->offset;
-  int globalRow = mousePos.y / sizes->charSize.y;
-  int globalCol = mousePos.x / sizes->charSize.x;
+      mousePos -= sizes->offset;
+      int globalRow = mousePos.y / sizes->charSize.y;
+      int globalCol = mousePos.x / sizes->charSize.x;
 
-  int row = std::max(globalRow - win.startRow, 0);
-  int col = std::max(globalCol - win.startCol, 0);
+      int row = std::max(globalRow - win.startRow, 0);
+      int col = std::max(globalCol - win.startCol, 0);
 
-  return {grid, row, col};
+      return {grid, row, col};
+    }
+  }
+  return GetMouseInfo(mousePos);
 }
 
 const Win* WinManager::GetWin(int id) const {

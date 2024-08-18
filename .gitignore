@@ -6,6 +6,3 @@ xcode
 imgui.ini
 tint
 sessions.txt
-
-.venv
-test.py

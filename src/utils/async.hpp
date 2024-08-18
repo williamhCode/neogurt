@@ -85,7 +85,8 @@ inline auto operator co_await(std::future<T> future) noexcept
   return awaiter{std::move(future)};
 }
 
-[[nodiscard]] inline std::future<void> async_sleep_for(const std::chrono::nanoseconds& duration) {
+// technically could use as normal sleep if discarding return, but should prob just use std::this_thread::sleep_for(duration) for that
+[[nodiscard]] inline std::future<void> AsyncSleep(const std::chrono::nanoseconds& duration) {
   return std::async(std::launch::async, [duration]() {
     std::this_thread::sleep_for(duration);
   });
@@ -93,7 +94,7 @@ inline auto operator co_await(std::future<T> future) noexcept
 
 // wait for all futures to complete in parallel
 template <typename... Futures>
-auto when_all(Futures&&... futures) -> std::future<std::tuple<std::decay_t<Futures>...>> {
+auto WhenAll(Futures&&... futures) -> std::future<std::tuple<std::decay_t<Futures>...>> {
   return std::async(
     std::launch::async,
     [futures = std::make_tuple(std::forward<Futures>(futures)...)]() mutable {
@@ -103,7 +104,7 @@ auto when_all(Futures&&... futures) -> std::future<std::tuple<std::decay_t<Futur
   );
 }
 
-auto future_get(auto&& future) {
+auto FutureGet(auto&& future) {
   if constexpr (std::is_same_v<decltype(future.get()), void>) {
     return std::monostate{};
   } else {
@@ -114,13 +115,13 @@ auto future_get(auto&& future) {
 // returns all future results when all futures are ready in parallel
 // returns std::monoate if value type is void
 template <typename... Futures>
-auto get_all(Futures&&... futures) -> std::future<std::tuple<decltype(future_get(futures))...>> {
+auto GetAll(Futures&&... futures) -> std::future<std::tuple<decltype(FutureGet(futures))...>> {
   return std::async(
     std::launch::async,
     [futures = std::make_tuple(std::forward<Futures>(futures)...)]() mutable {
       return std::apply(
         [](auto&&... futures) {
-          return std::make_tuple(future_get(std::forward<Futures>(futures))...);
+          return std::make_tuple(FutureGet(std::forward<Futures>(futures))...);
         },
         futures
       );

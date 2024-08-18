@@ -3,6 +3,7 @@
 #include "utils/color.hpp"
 #include "utils/logger.hpp"
 #include <deque>
+#include <utility>
 #include <vector>
 #include "utils/variant.hpp"
 
@@ -16,14 +17,14 @@ static int VariantAsInt(const msgpack::type::variant& v) {
   return 0;
 }
 
-// static const auto gridTypes = vIndicesSet<
-//   UiEvent,
-//   GridResize,
-//   GridClear,
-//   GridCursorGoto,
-//   GridLine,
-//   GridScroll,
-//   GridDestroy>();
+static const auto gridTypes = vIndicesSet<
+  UiEvent,
+  GridResize,
+  GridClear,
+  GridCursorGoto,
+  GridLine,
+  GridScroll,
+  GridDestroy>();
 
 // doesn't include MsgSetPos, and WinViewportMargins, cuz they should run after
 // all the other win events
@@ -37,16 +38,20 @@ static const auto winTypes = vIndicesSet<
   WinViewport,
   WinExtmark>();
 
-#define INDEX_OF(type) vIndex<UiEvent, type>()
-
 // clang-format off
 // i hate clang format on std::visit(overloaded{})
 bool ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
   bool processedEvents = uiEvents.numFlushes > 0;
   for (int i = 0; i < uiEvents.numFlushes; i++) {
-    auto redrawEvents = std::move(uiEvents.queue.at(0));
+    if (uiEvents.queue.empty()) {
+      LOG_ERR("ParseEditorState - events queue empty");
+    }
+    auto redrawEvents = std::move(uiEvents.queue.front());
     uiEvents.queue.pop_front();
 
+    // don't need this, since win events are executed last,
+    // but just for organization/future refactoring
+    std::vector<UiEvent*> gridEvents;
     // occasionally win events are sent before grid events
     // so just handle manually
     std::vector<UiEvent*> winEvents;
@@ -181,39 +186,6 @@ bool ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
           // own elements with consistent highlighting
           // editorState.hlGroupTable.emplace(e.id, e.name);
         },
-        [&](GridResize& e) {
-          // LOG_INFO("GridResize: {}, {}, {}", e.grid, e.width, e.height);
-          editorState.gridManager.Resize(e);
-          // default window events not send by nvim
-          if (e.grid == 1) {
-            editorState.winManager.Pos({1, {}, 0, 0, e.width, e.height});
-          } else {
-            // weird workaround for nvim only sending GridResize
-            // but not WinFloatPos for when float resizes
-            editorState.winManager.FloatPos(e.grid);
-          }
-        },
-        [&](GridClear& e) {
-          editorState.gridManager.Clear(e);
-        },
-        [&](GridCursorGoto& e) {
-          editorState.cursor.Goto(e);
-        },
-        [&](GridLine& e) {
-          editorState.gridManager.Line(e);
-          if (e.grid == editorState.cursor.grid) {
-            editorState.cursor.dirty = true;
-          }
-        },
-        [&](GridScroll& e) {
-          editorState.gridManager.Scroll(e);
-        },
-        [&](GridDestroy& e) {
-          editorState.gridManager.Destroy(e);
-          // TODO: file bug report, win_close not called after tabclose
-          // temp fix for bug
-          editorState.winManager.Close({e.grid});
-        },
         [&](MsgSetPos& e) {
           LOG("MsgSetPos: {}", e.grid);
           msgSetPos.push_back(&e);
@@ -227,15 +199,62 @@ bool ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
             processedEvents = false;
           }
 
+          // execute grid events before win events
+          for (auto *event : gridEvents) {
+            std::visit(overloaded{
+              [&](GridResize& e) {
+                // LOG_INFO("GridResize: {}, {}, {}", e.grid, e.width, e.height);
+                editorState.gridManager.Resize(e);
+                // default window events not send by nvim
+                if (e.grid == 1) {
+                  editorState.winManager.Pos({1, {}, 0, 0, e.width, e.height});
+                } else {
+                  // TODO: find a more robust way to handle
+                  // grid and win events not syncing up
+                  // weird workaround for nvim only sending GridResize
+                  // but not WinFloatPos for when float resizes
+                  editorState.winManager.FloatPos(e.grid);
+                }
+              },
+              [&](GridClear& e) {
+                editorState.gridManager.Clear(e);
+              },
+              [&](GridCursorGoto& e) {
+                editorState.cursor.Goto(e);
+              },
+              [&](GridLine& e) {
+                editorState.gridManager.Line(e);
+                if (e.grid == editorState.cursor.grid) {
+                  editorState.cursor.dirty = true;
+                }
+              },
+              [&](GridScroll& e) {
+                editorState.gridManager.Scroll(e);
+              },
+              [&](GridDestroy& e) {
+                editorState.gridManager.Destroy(e);
+                // TODO: file bug report, win_close not called after tabclose
+                // temp fix for bug
+                editorState.winManager.Close({e.grid});
+              },
+              [&](auto&) {
+                std::unreachable();
+              }
+            }, *event);
+          }
+
           // DONT REMOVE, win events should always execute last!
           for (auto *event : winEvents) {
             std::visit(overloaded{
               [&](WinPos& e) {
+                // TODO: find a more robust way to handle
+                // grid and win events not syncing up
+
                 // LOG_INFO("WinPos {} {} {}", e.grid, e.width, e.height);
                 // if no corresponding GridResize was sent, defer event
                 auto it = editorState.gridManager.grids.find(e.grid);
                 if (it == editorState.gridManager.grids.end()) {
-                  uiEvents.Curr().emplace_back(e);
+                  uiEvents.queue[0].emplace_front(e);
                   return;
                 }
                 auto& grid = it->second;
@@ -244,8 +263,8 @@ bool ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
                   editorState.winManager.Pos(e);
                 } else {
                   // defer event to next flush
-                  LOG_INFO("deferred WinPos {} {} {} {} {}",
-                    e.grid, grid.width, grid.height, e.width, e.height);
+                  // LOG_INFO("deferred WinPos {} {} {} {} {}",
+                  //   e.grid, grid.width, grid.height, e.width, e.height);
                   uiEvents.queue[0].emplace_front(e);
                 }
               },
@@ -266,27 +285,36 @@ bool ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
               [&](WinExtmark&) {
               },
               [&](auto&) {
-                LOG_WARN("unknown event");
+                std::unreachable();
               }
             }, *event);
           }
+
           // apply margins and msg_set_pos after all events
           for (auto* e : margins) {
-            editorState.winManager.ViewportMargins(*e);
+            if (!editorState.winManager.ViewportMargins(*e)) {
+              // defer event if failed
+              // uiEvents.queue[0].emplace_front(*e);
+            }
           }
           for (auto* e : msgSetPos) {
             editorState.winManager.MsgSetPos(*e);
           }
-          LOG_INFO("flush");
         },
         [&](auto& _e) {
           auto* e = (UiEvent*)&_e;
+          if (gridTypes.contains(e->index())) {
+            gridEvents.push_back(e);
+            return;
+          }
+
           if (winTypes.contains(e->index())) {
             winEvents.push_back(e);
             return;
           }
 
-          LOG_WARN("unknown event");
+          // all variant types are handled
+          std::unreachable();
         }
       }, event);
     }

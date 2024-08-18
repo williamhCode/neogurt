@@ -35,7 +35,7 @@ std::future<bool> Nvim::ConnectTcp(std::string_view host, uint16_t port) {
   while (elapsed < timeout) {
     if (client->ConnectTcp(host, port)) break;
     // if (client->Connect("data.cs.purdue.edu", port)) break;
-    co_await async_sleep_for(delay);
+    co_await AsyncSleep(delay);
     elapsed += delay;
   }
 
@@ -57,7 +57,8 @@ std::future<void> Nvim::Setup() {
     buffer << stream.rdbuf();
   });
 
-  co_await when_all(
+  // get so exceptions get thrown
+  co_await GetAll(
     SetVar("neogui", true),
     Command("runtime! ginit.vim"),
     SetClientInfo(

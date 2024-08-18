@@ -63,7 +63,7 @@ set(APP_SRC
 add_executable(neogui ${APP_SRC})
 
 target_compile_definitions(neogui PRIVATE
-  ROOT_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+  ROOT_DIR="${PROJECT_SOURCE_DIR}"
 )
 
 target_include_directories(neogui PRIVATE 
@@ -84,6 +84,8 @@ else()
     -Wall -Wextra -Wshadow -pedantic 
     -Wno-missing-field-initializers
     -Wno-deprecated-declarations
+    # jthread clang 18
+    -fexperimental-library
   )
 
   # if debug mode
@@ -98,14 +100,15 @@ else()
 
   # assert in release
   # target_compile_options(neogui PRIVATE -UNDEBUG)
+  
+  # https://github.com/llvm/llvm-project/issues/77653
+  # stack unwinding breaks without this 
+  target_link_libraries(neogui PRIVATE 
+    "-L/opt/homebrew/opt/llvm/lib/c++ -Wl,-rpath,/opt/homebrew/opt/llvm/lib/c++ -L/opt/homebrew/opt/llvm/lib"
+  )
 endif()
 
 if (XCODE)
-  # https://github.com/llvm/llvm-project/issues/77653
-  target_link_libraries(neogui PRIVATE 
-    -L/opt/homebrew/opt/llvm/lib/c++
-  )
-
   target_compile_definitions(neogui PRIVATE
     XCODE=1
   )
