@@ -33,7 +33,7 @@ struct RenderTexture {
 
   // pos is the position (top left) of the texture in the screen
   // region is the subregion of the texture to draw
-  void UpdatePos(glm::vec2 pos, std::optional<Rect> region = std::nullopt);
+  void UpdatePos(glm::vec2 pos, std::optional<RRect> region = std::nullopt);
   void UpdateCameraPos(glm::vec2 pos);
 };
 
@@ -45,7 +45,7 @@ struct RenderInfo {
     int start;
     int end;
   } range;
-  std::optional<Rect> clearRegion;
+  std::optional<RRect> clearRegion;
 };
 
 struct MarginTextures {

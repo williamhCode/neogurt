@@ -220,6 +220,7 @@ void Renderer::RenderToWindow(
           thicknessScale = 1.5f;
         }
         float thickness = defaultFont.underlineThickness * thicknessScale;
+        // make sure underdouble is at least 3 physical pixels high
         if (underlineType == UnderlineType::Underdouble) {
           thickness = std::max(thickness, 3.0f / defaultFont.dpiScale);
         }

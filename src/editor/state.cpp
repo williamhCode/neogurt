@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 #include "utils/variant.hpp"
+#include <boost/core/demangle.hpp>
 
 // parse ------------------------------------------
 using namespace event;
@@ -177,7 +178,7 @@ bool ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
             } else if (key == "blend") {
               hl.bgAlpha = 1 - (VariantAsInt(value) / 100.0f);
             } else {
-              LOG_WARN("unknown hl attr key: {}, type: {}", key, value.type().name());
+              LOG_WARN("unknown hl attr key: {}, type: {}", key, boost::core::demangled_name(value.type()));
             }
           }
         },

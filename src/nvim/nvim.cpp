@@ -5,6 +5,7 @@
 #include <future>
 #include "utils/async.hpp"
 #include "utils/logger.hpp"
+#include "globals.hpp"
 
 using namespace std::chrono_literals;
 
@@ -52,7 +53,7 @@ std::future<bool> Nvim::ConnectTcp(std::string_view host, uint16_t port) {
 std::future<void> Nvim::Setup() {
   std::stringstream buffer;
   co_await std::async(std::launch::async, [&buffer] {
-    std::string luaInitPath = ROOT_DIR "/lua/init.lua";
+    std::string luaInitPath = resourcesDir + "/lua/init.lua";
     std::ifstream stream(luaInitPath);
     buffer << stream.rdbuf();
   });
@@ -70,7 +71,7 @@ std::future<void> Nvim::Setup() {
       },
       "ui", {}, {}
     ),
-    Command("set runtimepath+=" ROOT_DIR),
+    Command("set runtimepath+=" + resourcesDir),
     ExecLua(buffer.str(), {})
   );
 }

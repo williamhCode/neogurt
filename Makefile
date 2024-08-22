@@ -43,3 +43,8 @@ xcode-setup:
 run:
 	build/$(TYPE)/neogui
 
+gen-app:
+	mkdir -p gen/out
+	cp -r gen/template/Neogui.app gen/out
+	cp -r res/* gen/out/Neogui.app/Contents/Resources
+	cp build/release/neogui gen/out/Neogui.app/Contents/MacOS

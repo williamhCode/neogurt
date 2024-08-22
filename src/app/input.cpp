@@ -168,6 +168,10 @@ void InputHandler::HandleMouseButtonAndMotion(int state, glm::vec2 mousePos) {
   }
   if (!multigrid) info.grid = 0;
 
+  // LOG(
+  //   "buttonStr {}, actionStr {}, modStr {}, info.grid {}, info.row {}, info.col {}",
+  //   buttonStr, actionStr, modStr, info.grid, info.row, info.col
+  // );
   nvim->InputMouse(buttonStr, actionStr, modStr, info.grid, info.row, info.col);
 }
 

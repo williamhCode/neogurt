@@ -31,7 +31,6 @@ const pi = radians(180.0);
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4f {
   if (in.lineType == 0) { // underline
-    return in.color;
 
   } else if (in.lineType == 1) { // undercurl
     // x bounds = [0, 1]

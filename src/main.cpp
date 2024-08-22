@@ -36,7 +36,34 @@ using namespace std::chrono;
 
 const WGPUContext& ctx = sdl::Window::_ctx;
 
+#include <CoreFoundation/CoreFoundation.h>
+
+std::string resourcesDir;
+
+static std::string GetResourcesDir() {
+  // Get the main bundle for the application
+  CFBundleRef mainBundle = CFBundleGetMainBundle();
+
+  // Get the URL to the Resources directory
+  CFURLRef resourcesURL = CFBundleCopyResourcesDirectoryURL(mainBundle);
+
+  // Convert the URL to a file system path
+  char path[PATH_MAX];
+  if (CFURLGetFileSystemRepresentation(resourcesURL, TRUE, (UInt8*)path, PATH_MAX)) {
+    CFRelease(resourcesURL);
+    return {path};
+  }
+
+  CFRelease(resourcesURL);
+  return "";
+}
+
 int main() {
+  // when compile for .app
+  resourcesDir = GetResourcesDir();
+  // resourcesDir = ROOT_DIR "/res";
+
+  // print cwd
   if (SDL_Init(SDL_INIT_VIDEO)) {
     LOG_ERR("Unable to initialize SDL: {}", SDL_GetError());
     return 1;
@@ -281,7 +308,7 @@ int main() {
 
           renderer.RenderWindows(windows, floatWindows);
           // switch to current texture only after rendering to it
-          if (renderer.prevFinalRenderTexture.texture) {
+          if (renderer.prevFinalRenderTexture.texture && !(windows.empty() && floatWindows.empty())) {
             renderer.prevFinalRenderTexture = {};
           }
           // reset reattached flag after rendering
