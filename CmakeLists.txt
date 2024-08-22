@@ -28,6 +28,7 @@ set(APP_SRC
   src/app/size.cpp
   src/app/window_funcs.mm
   src/app/options.cpp
+  src/app/path.cpp
 
   src/editor/state.cpp
   src/editor/cursor.cpp

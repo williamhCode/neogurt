@@ -2,7 +2,7 @@
 #include "context.hpp"
 #include "utils/logger.hpp"
 #include "webgpu_tools/utils/webgpu.hpp"
-#include "globals.hpp"
+#include "app/path.hpp"
 
 using namespace wgpu;
 

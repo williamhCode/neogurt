@@ -5,7 +5,7 @@
 #include <future>
 #include "utils/async.hpp"
 #include "utils/logger.hpp"
-#include "globals.hpp"
+#include "app/path.hpp"
 
 using namespace std::chrono_literals;
 

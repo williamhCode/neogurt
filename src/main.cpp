@@ -1,5 +1,6 @@
 #include "SDL3/SDL_init.h"
 #include "SDL3/SDL_video.h"
+#include "app/path.hpp"
 #include "app/size.hpp"
 #include "app/input.hpp"
 #include "app/sdl_window.hpp"
@@ -36,32 +37,8 @@ using namespace std::chrono;
 
 const WGPUContext& ctx = sdl::Window::_ctx;
 
-#include <CoreFoundation/CoreFoundation.h>
-
-std::string resourcesDir;
-
-static std::string GetResourcesDir() {
-  // Get the main bundle for the application
-  CFBundleRef mainBundle = CFBundleGetMainBundle();
-
-  // Get the URL to the Resources directory
-  CFURLRef resourcesURL = CFBundleCopyResourcesDirectoryURL(mainBundle);
-
-  // Convert the URL to a file system path
-  char path[PATH_MAX];
-  if (CFURLGetFileSystemRepresentation(resourcesURL, TRUE, (UInt8*)path, PATH_MAX)) {
-    CFRelease(resourcesURL);
-    return {path};
-  }
-
-  CFRelease(resourcesURL);
-  return "";
-}
-
 int main() {
-  // when compile for .app
-  resourcesDir = GetResourcesDir();
-  // resourcesDir = ROOT_DIR "/res";
+  InitResourcesDir();
 
   // print cwd
   if (SDL_Init(SDL_INIT_VIDEO)) {
