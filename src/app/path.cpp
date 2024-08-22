@@ -6,23 +6,26 @@
 void InitResourcesDir() {
   CFBundleRef mainBundle = CFBundleGetMainBundle();
   CFURLRef bundleUrl = CFBundleCopyBundleURL(mainBundle);
-
-  CFStringRef uti;
-  if (
-    CFURLCopyResourcePropertyForKey(
-      bundleUrl, kCFURLTypeIdentifierKey, &uti, nullptr
-    ) &&
-    uti && UTTypeConformsTo(uti, kUTTypeApplicationBundle)
-  ) {
+  
+  CFStringRef uti = nullptr;
+  Boolean isAppBundle = false;
+  if (CFURLCopyResourcePropertyForKey(bundleUrl, kCFURLTypeIdentifierKey, &uti, nullptr) && uti) {
+    isAppBundle = UTTypeConformsTo(uti, kUTTypeApplicationBundle);
+    CFRelease(uti);
+  }
+  
+  if (isAppBundle) {
     CFURLRef resourcesURL = CFBundleCopyResourcesDirectoryURL(mainBundle);
-    // Convert the URL to a file system path
-    char path[PATH_MAX];
-    if (CFURLGetFileSystemRepresentation(resourcesURL, TRUE, (UInt8*)path, PATH_MAX)) {
+    if (resourcesURL) {
+      char path[PATH_MAX];
+      if (CFURLGetFileSystemRepresentation(resourcesURL, TRUE, (UInt8*)path, PATH_MAX)) {
+        resourcesDir = path;
+      }
       CFRelease(resourcesURL);
-      resourcesDir = path;
     }
-
   } else {
     resourcesDir = ROOT_DIR "/res";
   }
+  
+  CFRelease(bundleUrl);
 }
