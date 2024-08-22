@@ -9,7 +9,7 @@
 
 #include "msgpack/v3/object_decl.hpp"
 #include "nvim/msgpack_rpc/messages.hpp"
-#include "tsqueue.hpp"
+#include "utils/tsqueue.hpp"
 
 #include <atomic>
 #include <memory>

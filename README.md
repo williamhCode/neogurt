@@ -1,5 +1,5 @@
 # Neogui
-Blazingly fast neovim gui written in C++20 and WebGPU.  
+Blazingly fast neovim gui written in C++23 and WebGPU.  
 
 ### Key Features
 - Blazingly fast and energy efficient

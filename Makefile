@@ -1,7 +1,7 @@
 .PHONY: build
 
-TYPE = release
-# TYPE = debug
+# TYPE = release
+TYPE = debug
 
 build:
 	cmake --build build/$(TYPE) --target neogui
@@ -46,5 +46,6 @@ run:
 gen-app:
 	mkdir -p gen/out
 	cp -r gen/template/Neogui.app gen/out
-	cp -r res/* gen/out/Neogui.app/Contents/Resources
+	cp -r res/lua gen/out/Neogui.app/Contents/Resources
+	cp -r res/shaders gen/out/Neogui.app/Contents/Resources
 	cp build/release/neogui gen/out/Neogui.app/Contents/MacOS
