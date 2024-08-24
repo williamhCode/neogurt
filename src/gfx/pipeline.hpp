@@ -53,6 +53,7 @@ struct Pipeline {
   wgpu::RenderPipeline lineRPL;
 
   wgpu::BindGroupLayout textureBGL;
+  wgpu::BindGroupLayout defaultColorBGL;
   wgpu::RenderPipeline textureNoBlendRPL;
   wgpu::RenderPipeline textureRPL;
 

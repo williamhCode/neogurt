@@ -139,10 +139,14 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
     }
   );
 
+  defaultColorBGL = utils::MakeBindGroupLayout(
+    ctx.device, {{0, ShaderStage::Fragment, BufferBindingType::Uniform}}
+  );
+
   textureNoBlendRPL = utils::MakeRenderPipeline(ctx.device, {
     .vs = textureShader,
     .fs = textureShader,
-    .bgls = {viewProjBGL, textureBGL},
+    .bgls = {viewProjBGL, textureBGL, defaultColorBGL},
     .buffers = {textureQuadVBL},
     .targets = {
       {
@@ -163,7 +167,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
   textureRPL = utils::MakeRenderPipeline(ctx.device, {
     .vs = textureShader,
     .fs = textureShader,
-    .bgls = {viewProjBGL, textureBGL},
+    .bgls = {viewProjBGL, textureBGL, defaultColorBGL},
     .buffers = {textureQuadVBL},
     .targets = {
       {

@@ -76,6 +76,7 @@ vim.g.neogui_session = function(cmd, opts)
     return
   end
   -- merge + check required options and option types
+  opts = opts or {}
   local opts = utils.merge_opts(default_opts, opts)
   if opts == nil then return end
 
@@ -124,3 +125,4 @@ vim.g.neogui_session = function(cmd, opts)
   end
 end
 
+vim.g.neogui_startup = function() end

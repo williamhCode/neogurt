@@ -36,6 +36,7 @@ struct Renderer {
   wgpu::utils::RenderPassDescriptor textMaskRPD;
 
   // windows
+  wgpu::BindGroup defaultColorBG;
   wgpu::utils::RenderPassDescriptor windowsRPD;
 
   // final texture

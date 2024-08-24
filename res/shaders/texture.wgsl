@@ -23,12 +23,14 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 @group(1) @binding(0) var texture : texture_2d<f32>;
 @group(1) @binding(1) var textureSampler : sampler;
 
+@group(2) @binding(0) var<uniform> defaultColor: vec4f;
+
 @fragment
 fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
   var color = textureSample(texture, textureSampler, uv);
-  // if (color.a == 0.0f) {
-  //   discard;
-  // }
+  if (color.a == 0.0f) {
+    color = defaultColor;
+  }
   return AdjustAlpha(color);
 }
 

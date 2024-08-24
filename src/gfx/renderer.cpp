@@ -118,6 +118,15 @@ void Renderer::SetClearColor(glm::vec4 color) {
   premultClearColor = ToWGPUColor(PremultiplyAlpha(color));
   // premultClearColor = ToWGPUColor(PremultiplyAlpha(AdjustAlpha(color)));
   linearClearColor = ToWGPUColor(ToLinear(color));
+
+  auto linearColor = ToLinear(color);
+  auto buffer = utils::CreateUniformBuffer(ctx.device, sizeof(linearColor), &linearColor);
+  defaultColorBG = utils::MakeBindGroup(
+    ctx.device, ctx.pipeline.defaultColorBGL,
+    {
+      {0, buffer},
+    }
+  );
 }
 
 void Renderer::Begin() {
@@ -372,6 +381,7 @@ void Renderer::RenderWindows(
     passEncoder.SetPipeline(ctx.pipeline.textureNoBlendRPL);
     passEncoder.SetStencilReference(1);
     passEncoder.SetBindGroup(0, finalRenderTexture.camera.viewProjBG);
+    passEncoder.SetBindGroup(2, defaultColorBG);
     for (const Win* win : windows) {
       win->sRenderTexture.Render(passEncoder);
     }
@@ -383,6 +393,7 @@ void Renderer::RenderWindows(
     passEncoder.SetPipeline(ctx.pipeline.textureRPL);
     passEncoder.SetStencilReference(1);
     passEncoder.SetBindGroup(0, finalRenderTexture.camera.viewProjBG);
+    passEncoder.SetBindGroup(2, defaultColorBG);
     for (const Win* win : floatWindows) {
       win->sRenderTexture.Render(passEncoder);
     }

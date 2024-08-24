@@ -65,6 +65,8 @@ int main() {
     Nvim* nvim = &session->nvim;
     EditorState* editorState = &session->editorState;
 
+    nvim->ExecLua("vim.g.neogui_startup()", {});
+
     // main loop -----------------------------------
     std::atomic_bool exitWindow = false;
     TSQueue<SDL_Event> resizeEvents;
@@ -327,8 +329,8 @@ int main() {
         //     std::this_thread::sleep_for(1ms);
         //   }
         // } else {
-          ctx.surface.Present();
-          ctx.device.Tick();
+        ctx.surface.Present();
+        ctx.device.Tick();
         // }
 
         // Reset the promise and future for the next frame
