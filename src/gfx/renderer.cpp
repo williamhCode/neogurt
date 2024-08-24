@@ -318,8 +318,8 @@ void Renderer::RenderToWindow(
     }
   }
 
-  rectRPD.cColorAttachments[0].view = nullptr;
-  textLineRPD.cColorAttachments[0].view = nullptr;
+  rectRPD.cColorAttachments[0].view = {};
+  textLineRPD.cColorAttachments[0].view = {};
 }
 
 void Renderer::RenderCursorMask(
@@ -359,7 +359,7 @@ void Renderer::RenderCursorMask(
     passEncoder.End();
   }
 
-  textMaskRPD.cColorAttachments[0].view = nullptr;
+  textMaskRPD.cColorAttachments[0].view = {};
 }
 
 void Renderer::RenderWindows(
@@ -404,7 +404,7 @@ void Renderer::RenderFinalTexture() {
     finalRenderTexture.renderData.Render(passEncoder);
   }
   passEncoder.End();
-  finalRPD.cColorAttachments[0].view = nullptr;
+  finalRPD.cColorAttachments[0].view = {};
 }
 
 void Renderer::RenderCursor(const Cursor& cursor, HlTable& hlTable) {
@@ -432,12 +432,12 @@ void Renderer::RenderCursor(const Cursor& cursor, HlTable& hlTable) {
   passEncoder.SetBindGroup(3, cursor.maskRenderTexture.textureBG);
   cursorData.Render(passEncoder);
   passEncoder.End();
-  cursorRPD.cColorAttachments[0].view = nullptr;
+  cursorRPD.cColorAttachments[0].view = {};
 }
 
 void Renderer::End() {
   auto commandBuffer = commandEncoder.Finish();
   ctx.queue.Submit(1, &commandBuffer);
-  nextTexture = nullptr;
-  nextTextureView = nullptr;
+  nextTexture = {};
+  nextTextureView = {};
 }

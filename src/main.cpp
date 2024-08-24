@@ -70,7 +70,12 @@ int main() {
     TSQueue<SDL_Event> resizeEvents;
     TSQueue<SDL_Event> sdlEvents;
 
-    // int frameCount = 0;
+    // std::promise<void> resizePromise;
+    // std::future<void> resizeFuture;
+    // std::atomic_bool resizing = false;
+    // std::atomic_bool resized1 = true;
+
+    int frameCount = 0;
 
     std::jthread renderThread([&](std::stop_token stopToken) {
       bool windowFocused = true;
@@ -83,6 +88,7 @@ int main() {
       while (!exitWindow && !stopToken.stop_requested()) {
         float targetFps = options.window.vsync && !idle ? 0 : options.maxFps;
         float dt = clock.Tick(targetFps);
+        // LOG_INFO("dt: {}", dt);
 
         // frameCount++;
         // if (frameCount % 60 == 0) {
@@ -174,12 +180,16 @@ int main() {
 
                 if (uiFbSize == sizes.uiFbSize) {
                   renderer.camera.Resize(sizes.size);
-                  renderer.finalRenderTexture.UpdatePos(sizes.offset);
+                  // renderer.finalRenderTexture.UpdatePos(sizes.offset);
 
                 } else {
                   renderer.Resize(sizes);
                   nvim->UiTryResize(sizes.uiWidth, sizes.uiHeight);
                 }
+
+                // if (resizing) {
+                //   resized1 = true;
+                // }
                 break;
               }
             }
@@ -235,9 +245,11 @@ int main() {
 
         renderer.Begin();
 
+        bool mainWindowRendered = false;
         bool renderWindows = session->reattached;
         for (auto& [id, win] : editorState->winManager.windows) {
           if (win.grid.dirty) {
+            if (win.id == 1) mainWindowRendered = true;
             renderer.RenderToWindow(
               win, editorState->fontFamily, editorState->hlTable
             );
@@ -263,8 +275,7 @@ int main() {
           }
           std::vector<const Win*> floatWindows;
           for (auto& [id, win] : editorState->winManager.windows) {
-            if (id == 1 || id == editorState->winManager.msgWinId ||
-                win.hidden) {
+            if (id == 1 || id == editorState->winManager.msgWinId || win.hidden) {
               continue;
             }
             if (win.IsFloating()) {
@@ -284,12 +295,13 @@ int main() {
           });
 
           renderer.RenderWindows(windows, floatWindows);
-          // switch to current texture only after rendering to it
-          if (renderer.prevFinalRenderTexture.texture && !(windows.empty() && floatWindows.empty())) {
-            renderer.prevFinalRenderTexture = {};
-          }
           // reset reattached flag after rendering
           session->reattached = false;
+        }
+
+        // switch to current texture only after rendering to it
+        if (renderer.prevFinalRenderTexture.texture && mainWindowRendered) {
+          renderer.prevFinalRenderTexture = {};
         }
 
         renderer.RenderFinalTexture();
@@ -301,10 +313,25 @@ int main() {
         }
 
         renderer.End();
+        // if (resizing && resized1) {
+        //   ctx.queue.OnSubmittedWorkDone(
+        //     wgpu::CallbackMode::AllowProcessEvents,
+        //     [&](wgpu::QueueWorkDoneStatus) {
+        //       resizing = false;
+        //       ctx.surface.Present();
+        //       LOG_INFO("resizing done");
+        //     }
+        //   );
+        //   while (resizing) {
+        //     ctx.instance.ProcessEvents();
+        //     std::this_thread::sleep_for(1ms);
+        //   }
+        // } else {
+          ctx.surface.Present();
+          ctx.device.Tick();
+        // }
 
-        ctx.surface.Present();
-        ctx.device.Tick();
-
+        // Reset the promise and future for the next frame
         // timer.End();
         // auto avgDuration = duration_cast<microseconds>(timer.GetAverageDuration());
         // std::cout << '\r' << avgDuration << std::string(10, ' ') << std::flush;
@@ -318,12 +345,25 @@ int main() {
     sdl::AddEventWatch([&](SDL_Event& event) {
       switch (event.type) {
         case SDL_EVENT_WINDOW_RESIZED:
+          // LOG_INFO("resized, {} {}", event.window.data1, event.window.data2);
           resizeEvents.Push(event);
           break;
-        case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
+        case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: {
+          // LOG_INFO("pixel size changed, {} {}", event.window.data1, event.window.data2);
+          // resizePromise = std::promise<void>();
+          // resizeFuture = resizePromise.get_future();
+          // resizing = true;
+          // resized1 = false;
           resizeEvents.Push(event);
+
+          // while (resizing) {
+          // }
+
+          // LOG_INFO("resized!");
           break;
+        }
       }
+      return 0;
     });
 
     SDL_Event event;
@@ -335,15 +375,23 @@ int main() {
 
       switch (event.type) {
         case SDL_EVENT_QUIT:
-          LOG("exit window");
+          LOG_INFO("quitting...");
           exitWindow = true;
           break;
 
         // keyboard handling ----------------------
         case SDL_EVENT_KEY_DOWN:
-        case SDL_EVENT_KEY_UP:
+        // case SDL_EVENT_KEY_UP:
+          // if (event.key.key == SDLK_F10) {
+          //   auto size = window.size;
+          //   size.x -= 100;
+          //   SDL_SetWindowSize(window.Get(), size.x, size.y);
+          // } else if (event.key.key == SDLK_F11) {
+          //   auto size = window.size;
+          //   size.x += 100;
+          //   SDL_SetWindowSize(window.Get(), size.x, size.y);
+          // }
           input.HandleKeyboard(event.key);
-          // sdlEvents.Push(event);
           break;
 
         case SDL_EVENT_TEXT_EDITING:

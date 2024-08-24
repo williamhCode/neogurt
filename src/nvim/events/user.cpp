@@ -21,13 +21,17 @@ void ProcessUserEvents(rpc::Client& client, SessionManager& sessionManager) {
           });
           request.SetValue(id);
 
-        } else if (session.cmd == "prev") {
-          bool success = sessionManager.Prev();
+        } else if (session.cmd == "kill") {
+          bool success = sessionManager.Kill(session.opts.at("id").convert());
           request.SetValue(success);
 
         } else if (session.cmd == "switch") {
-          sessionManager.Switch(session.opts.at("id").convert());
-          request.SetValue(msgpack::type::nil_t());
+          bool success = sessionManager.Switch(session.opts.at("id").convert());
+          request.SetValue(success);
+
+        } else if (session.cmd == "prev") {
+          bool success = sessionManager.Prev();
+          request.SetValue(success);
 
         } else if (session.cmd == "list") {
           std::vector<SessionListEntry> list = sessionManager.List({

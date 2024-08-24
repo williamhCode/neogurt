@@ -8,8 +8,7 @@ void AddEventWatch(EventFilter&& callback) {
   auto& [filter, userData] = eventFilters.emplace_back(
     [](void* userdata, SDL_Event* event) {
       auto& callback = *static_cast<EventFilter*>(userdata);
-      callback(*event);
-      return 0;
+      return callback(*event);
     },
     std::move(callback)
   );

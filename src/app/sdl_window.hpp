@@ -21,7 +21,6 @@ struct Window {
   glm::uvec2 size;
   glm::uvec2 fbSize;
   float dpiScale;
-  float contentScale;
 
   Window() = default;
   Window(glm::uvec2 size, const std::string& title, Options::Window winOpts);

@@ -40,7 +40,7 @@ private:
   Renderer& renderer;
   InputHandler& inputHandler;
 
-  int currId = 0;
+  int currId = 1;
   std::map<int, SessionState> sessions;
 
   // front to back = recency
@@ -62,8 +62,9 @@ public:
   }
 
   int New(const SessionNewOpts& opts = {}); // return session id
-  bool Prev(); // return true if successful
-  void Switch(int id);
+  bool Kill(int id = 0);                    // return true if successful
+  bool Switch(int id);                      // return true if successful
+  bool Prev();                              // return true if successful
   std::vector<SessionListEntry> List(const SessionListOpts& opts = {});
 
   // returns true if all sessions are closed

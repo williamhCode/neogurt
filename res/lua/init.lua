@@ -9,10 +9,13 @@ local session_table = {
     dir = "~/",
     switch_to = true,
   },
-  prev = {},
+  kill = {
+    id = 0
+  },
   switch = {
     id = "number",
   },
+  prev = {},
   list = {
     -- id, name, time (recency)
     sort = "id",
@@ -43,6 +46,12 @@ vim.api.nvim_create_user_command("NeoguiSession", function(cmd_opts)
   -- handle command output
   local result = vim.g.neogui_session(cmd, opts)
   if cmd == "new" then
+  elseif cmd == "kill" then
+    if result == true then
+      print("Session killed")
+    else
+      print("Session not found")
+    end
   elseif cmd == "prev" then
     if result == false then
       print("No previous session")
@@ -80,12 +89,17 @@ vim.g.neogui_session = function(cmd, opts)
     local id = vim.rpcrequest(chan_id, "neogui_session", cmd, opts)
     return id
 
-  elseif cmd == "prev" then
-    local success = vim.rpcrequest(chan_id, "neogui_session", cmd)
+  elseif cmd == "kill" then
+    local success = vim.rpcrequest(chan_id, "neogui_session", cmd, opts)
     return success
 
   elseif cmd == "switch" then
-    return vim.rpcrequest(chan_id, "neogui_session", cmd, opts)
+    local success = vim.rpcrequest(chan_id, "neogui_session", cmd, opts)
+    return success
+
+  elseif cmd == "prev" then
+    local success = vim.rpcrequest(chan_id, "neogui_session", cmd)
+    return success
 
   elseif cmd == "list" then
     local list = vim.rpcrequest(chan_id, "neogui_session", cmd, opts)

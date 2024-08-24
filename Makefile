@@ -46,8 +46,7 @@ run:
 gen-app:
 	mkdir -p gen/out
 	cp -r gen/template/Neogui.app gen/out
-	mkdir gen/out/Neogui.app/Contents/Resources
-	mkdir gen/out/Neogui.app/Contents/MacOS
+	mkdir -p gen/out/Neogui.app/Contents/{Resources,MacOS}
 	cp -r res/lua gen/out/Neogui.app/Contents/Resources
 	cp -r res/shaders gen/out/Neogui.app/Contents/Resources
 	cp build/release/neogui gen/out/Neogui.app/Contents/MacOS

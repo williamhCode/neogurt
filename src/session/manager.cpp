@@ -103,22 +103,24 @@ int SessionManager::New(const SessionNewOpts& opts) {
   return id;
 }
 
-bool SessionManager::Prev() {
-  if (sessionsOrder.size() < 2) {
+bool SessionManager::Kill(int id) {
+  if (id == 0) id = CurrSession()->id;
+
+  auto it = sessions.find(id);
+  if (it == sessions.end()) {
     return false;
   }
-  Switch(sessionsOrder[1]->id);
+  auto& session = it->second;
+
+  session.nvim.client->Disconnect();
   return true;
 }
 
-void SessionManager::Switch(int id) {
+bool SessionManager::Switch(int id) {
   auto it = sessions.find(id);
   if (it == sessions.end()) {
-    throw std::runtime_error(
-      "Session with id " + std::to_string(id) + " does not exist"
-    );
+    return false;
   }
-
   auto& session = it->second;
 
   // options.Load(session.nvim);
@@ -144,6 +146,16 @@ void SessionManager::Switch(int id) {
     sessionsOrder.erase(currIt);
     sessionsOrder.push_front(&session);
   }
+
+  return true;
+}
+
+bool SessionManager::Prev() {
+  if (sessionsOrder.size() < 2) {
+    return false;
+  }
+  Switch(sessionsOrder[1]->id);
+  return true;
 }
 
 std::vector<SessionListEntry> SessionManager::List(const SessionListOpts& opts) {
