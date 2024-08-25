@@ -14,16 +14,20 @@ extern "C" {
     CGSConnectionID connection, NSInteger windowNumber, NSInteger radius
   );
 }
+
+static NSWindow* GetNSWindow(SDL_Window* window) {
+  return (__bridge NSWindow*)SDL_GetPointerProperty(
+    SDL_GetWindowProperties(window), SDL_PROP_WINDOW_COCOA_WINDOW_POINTER, NULL
+  );
+}
 #endif
 
-void SetSDLWindowBlur(SDL_Window* window, int blurRadius) {
+void SetSDLWindowBlur(SDL_Window* sdlWindow, int blurRadius) {
 #if defined(SDL_PLATFORM_MACOS)
-  NSWindow *nswindow = (__bridge NSWindow *)SDL_GetPointerProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_COCOA_WINDOW_POINTER, NULL);
-  if (nswindow) {
-    NSInteger windowNumber = [nswindow windowNumber];
-    CGSConnectionID conn = CGSMainConnectionID();
-    CGSSetWindowBackgroundBlurRadius(conn, windowNumber, (NSInteger)blurRadius);
-  }
+  auto *window = GetNSWindow(sdlWindow);
+  NSInteger windowNumber = [window windowNumber];
+  CGSConnectionID conn = CGSMainConnectionID();
+  CGSSetWindowBackgroundBlurRadius(conn, windowNumber, (NSInteger)blurRadius);
 
 #elif defined(SDL_PLATFORM_WIN32)
   HWND hwnd = (HWND)SDL_GetPointerProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
@@ -51,9 +55,23 @@ void SetSDLWindowBlur(SDL_Window* window, int blurRadius) {
 #endif
 }
 
-#import <Foundation/Foundation.h>
-
 void EnableScrollMomentum() {
   [[NSUserDefaults standardUserDefaults]
     setBool: YES forKey: @"AppleMomentumScrollSupported"];
+}
+
+void SetTransparentTitlebar(SDL_Window* sdlWindow) {
+  NSWindow* window = GetNSWindow(sdlWindow);
+
+  window.styleMask |= NSWindowStyleMaskFullSizeContentView;
+  window.titleVisibility = NSWindowTitleHidden;
+  window.titlebarAppearsTransparent = true;
+}
+
+float GetTitlebarHeight(SDL_Window* sdlWindow) {
+  NSWindow* window = GetNSWindow(sdlWindow);
+  NSRect fullFrame = [window frame];
+  NSRect contentRect = [window contentLayoutRect];
+  CGFloat titleBarHeight = NSHeight(fullFrame) - NSHeight(contentRect);
+  return titleBarHeight;
 }

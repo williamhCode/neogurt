@@ -2,6 +2,7 @@
 
 #include "SDL3/SDL_events.h"
 
+#include "app/options.hpp"
 #include "nvim/nvim.hpp"
 #include "editor/window.hpp"
 
@@ -12,9 +13,7 @@ struct InputHandler {
   const WinManager* winManager;
 
   // options
-  bool macOptIsMeta;
-  bool multigrid;
-  float scrollSpeed;
+  Options options;
 
   // mouse related
   std::optional<int> mouseButton;
@@ -27,9 +26,7 @@ struct InputHandler {
   InputHandler(
     Nvim* nvim,
     WinManager* winManager,
-    bool macOptAsAlt,
-    bool multigrid,
-    float scrollSpeed
+    const Options& options
   );
 
   void HandleKeyboard(const SDL_KeyboardEvent& event);

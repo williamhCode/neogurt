@@ -57,10 +57,13 @@ struct Pipeline {
   wgpu::RenderPipeline textureNoBlendRPL;
   wgpu::RenderPipeline textureRPL;
 
-  wgpu::RenderPipeline finalTextureRPL;
+  wgpu::RenderPipeline textureFinalRPL;
+  // wgpu::RenderPipeline textureFinalBorderlessRPL;
 
   wgpu::BindGroupLayout cursorMaskPosBGL;
   wgpu::RenderPipeline cursorRPL;
+
+  // wgpu::RenderPipeline postProcessRPL;
 
   Pipeline() = default;
   Pipeline(const WGPUContext& ctx);

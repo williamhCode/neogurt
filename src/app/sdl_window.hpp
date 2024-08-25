@@ -23,7 +23,7 @@ struct Window {
   float dpiScale;
 
   Window() = default;
-  Window(glm::uvec2 size, const std::string& title, Options::Window winOpts);
+  Window(glm::uvec2 size, const std::string& title, Options& opts);
 
   SDL_Window* Get();
 };

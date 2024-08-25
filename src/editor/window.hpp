@@ -10,7 +10,6 @@
 
 #include "glm/ext/vector_float2.hpp"
 #include <map>
-#include <memory>
 #include <optional>
 
 struct FloatData {
@@ -71,7 +70,6 @@ struct WinManager {
   mutable std::mutex windowsMutex;
 
 private:
-
   void InitRenderData(Win& win);
   void UpdateRenderData(Win& win);
 

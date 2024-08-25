@@ -11,7 +11,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
   viewProjBGL = utils::MakeBindGroupLayout(
     ctx.device,
     {
-      {0, ShaderStage::Vertex, BufferBindingType::Uniform},
+      {0, ShaderStage::Vertex | ShaderStage::Fragment, BufferBindingType::Uniform},
     }
   );
 
@@ -186,17 +186,30 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
     },
   });
 
-  ShaderModule texturePremultShader = utils::LoadShaderModule(
-    ctx.device, resourcesDir + "/shaders/texture_premult.wgsl"
+  // final texture pipeline -------------------------------------
+  ShaderModule textureFinalShader = utils::LoadShaderModule(
+    ctx.device, resourcesDir + "/shaders/texture_final.wgsl"
   );
 
-  finalTextureRPL = utils::MakeRenderPipeline(ctx.device, {
-    .vs = texturePremultShader,
-    .fs = texturePremultShader,
+  textureFinalRPL = utils::MakeRenderPipeline(ctx.device, {
+    .vs = textureFinalShader,
+    .fs = textureFinalShader,
     .bgls = {viewProjBGL, textureBGL},
     .buffers = {textureQuadVBL},
     .targets = {{.format = TextureFormat::BGRA8Unorm}},
   });
+
+  // ShaderModule textureFinalBorderlessShader = utils::LoadShaderModule(
+  //   ctx.device, resourcesDir + "/shaders/texture_final_borderless.wgsl"
+  // );
+
+  // textureFinalBorderlessRPL = utils::MakeRenderPipeline(ctx.device, {
+  //   .vs = textureFinalBorderlessShader,
+  //   .fs = textureFinalBorderlessShader,
+  //   .bgls = {viewProjBGL, textureBGL},
+  //   .buffers = {textureQuadVBL},
+  //   .targets = {{.format = TextureFormat::BGRA8Unorm}},
+  // });
 
   // cursor pipeline ------------------------------------------------
   ShaderModule cursorShader =
@@ -225,4 +238,16 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
     .buffers = {cursorQuadVBL},
     .targets = {{.format = TextureFormat::BGRA8Unorm}},
   });
+
+  // post process pipeline ------------------------------------------------
+  // ShaderModule postProcessShader =
+  //   utils::LoadShaderModule(ctx.device, resourcesDir + "/shaders/post_process.wgsl");
+
+  // postProcessRPL = utils::MakeRenderPipeline(ctx.device, {
+  //   .vs = postProcessShader,
+  //   .fs = postProcessShader,
+  //   .bgls = {viewProjBGL, textureBGL},
+  //   .buffers = {textureQuadVBL},
+  //   .targets = {{.format = TextureFormat::BGRA8Unorm}},
+  // });
 }

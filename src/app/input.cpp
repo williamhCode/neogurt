@@ -1,6 +1,5 @@
 #include "input.hpp"
 
-#include "SDL3/SDL_oldnames.h"
 #include "editor/window.hpp"
 #include "utils/logger.hpp"
 #include <algorithm>
@@ -9,12 +8,9 @@
 InputHandler::InputHandler(
   Nvim* nvim,
   WinManager* winManager,
-  bool macOptAsAlt,
-  bool multigrid,
-  float scrollSpeed
+  const Options& options
 )
-  : nvim(nvim), winManager(winManager), macOptIsMeta(macOptAsAlt),
-    multigrid(multigrid), scrollSpeed(scrollSpeed) {
+  : nvim(nvim), winManager(winManager), options(options) {
 }
 
 static const std::set<SDL_Keycode> specialKeys{
@@ -43,7 +39,7 @@ void InputHandler::HandleKeyboard(const SDL_KeyboardEvent& event) {
 
   if (event.state == SDL_PRESSED) {
     auto modstate = mod;
-    if (macOptIsMeta) {
+    if (options.macOptIsMeta) {
       // remove alt from modstate
       modstate &= ~SDL_KMOD_ALT;
     }
@@ -60,7 +56,7 @@ void InputHandler::HandleKeyboard(const SDL_KeyboardEvent& event) {
       inputStr += "C-";
       modApplied = true;
     }
-    if ((mod & SDL_KMOD_ALT) && macOptIsMeta) {
+    if ((mod & SDL_KMOD_ALT) && options.macOptIsMeta) {
       inputStr += "M-";
       modApplied = true;
     }
@@ -106,6 +102,7 @@ void InputHandler::HandleTextInput(const SDL_TextInputEvent& event) {
 
 void InputHandler::HandleMouseButton(const SDL_MouseButtonEvent& event) {
   if (event.state == SDL_PRESSED) {
+    if (event.y < options.titlebarHeight) return;
     mouseButton = event.button;
   } else {
     mouseButton.reset();
@@ -166,7 +163,7 @@ void InputHandler::HandleMouseButtonAndMotion(int state, glm::vec2 mousePos) {
   } else {
     info = winManager->GetMouseInfo(*currGrid, mousePos);
   }
-  if (!multigrid) info.grid = 0;
+  if (!options.multigrid) info.grid = 0;
 
   // LOG(
   //   "buttonStr {}, actionStr {}, modStr {}, info.grid {}, info.row {}, info.col {}",
@@ -190,9 +187,9 @@ void InputHandler::HandleMouseWheel(const SDL_MouseWheelEvent& event) {
   } else {
     info = winManager->GetMouseInfo(*currGrid, mousePos);
   }
-  if (!multigrid) info.grid = 0;
+  if (!options.multigrid) info.grid = 0;
 
-  double scrollUnit = 1 / scrollSpeed;
+  double scrollUnit = 1 / options.scrollSpeed;
 
   double yDelta = event.y;
   double xDelta = event.x;

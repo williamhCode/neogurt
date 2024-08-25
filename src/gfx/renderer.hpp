@@ -26,6 +26,7 @@ struct Renderer {
   RenderTexture finalRenderTexture;
   // double buffer, so resizing doesn't flicker
   RenderTexture prevFinalRenderTexture;
+  // RenderTexture postProcessTexture;
 
   // rect (background)
   wgpu::utils::RenderPassDescriptor rectRPD;

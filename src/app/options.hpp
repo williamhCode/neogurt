@@ -16,6 +16,7 @@ struct Options {
     int left = 0;
     int right = 0;
   } margins;
+  float titlebarHeight = 0;
 
   bool multigrid = true;
   bool macOptIsMeta = true;

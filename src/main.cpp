@@ -6,6 +6,7 @@
 #include "app/sdl_window.hpp"
 #include "app/sdl_event.hpp"
 #include "app/options.hpp"
+#include "app/window_funcs.h"
 #include "editor/grid.hpp"
 #include "editor/highlight.hpp"
 #include "editor/state.hpp"
@@ -203,22 +204,21 @@ int main() {
         editorState->winManager.UpdateScrolling(dt);
 
         auto& cursor = editorState->cursor;
-        const auto* activeWin = editorState->winManager.GetWin(cursor.grid);
-        if (activeWin) {
+        const auto* currWin = editorState->winManager.GetWin(cursor.grid);
+        if (currWin) {
           auto cursorPos = glm::vec2{cursor.col, cursor.row} * sizes.charSize;
 
-          const auto& winTex = activeWin->sRenderTexture;
+          const auto& winTex = currWin->sRenderTexture;
           auto scrollOffset =
             winTex.scrolling
             ? glm::vec2(0, (winTex.scrollDist - winTex.scrollCurr))
             : glm::vec2(0);
 
-          const auto& margins = activeWin->margins;
-          auto minPos = glm::vec2{0, margins.top} * sizes.charSize;
+          auto minPos = glm::vec2{0, currWin->margins.top} * sizes.charSize;
           auto maxPos =
             glm::vec2{
-              activeWin->grid.width,
-              activeWin->grid.height - margins.bottom - 1,
+              currWin->grid.width,
+              currWin->grid.height - currWin->margins.bottom - 1,
             } *
             sizes.charSize;
 
@@ -227,7 +227,7 @@ int main() {
           cursorPos = glm::min(cursorPos, maxPos);
 
           auto winOffset =
-            glm::vec2{activeWin->startCol, activeWin->startRow} * sizes.charSize;
+            glm::vec2{currWin->startCol, currWin->startRow} * sizes.charSize;
 
           cursorPos = cursorPos + winOffset + sizes.offset;
 
@@ -271,9 +271,9 @@ int main() {
           }
         }
 
-        if (editorState->cursor.dirty && activeWin != nullptr) {
+        if (editorState->cursor.dirty && currWin != nullptr) {
           renderer.RenderCursorMask(
-            *activeWin, editorState->cursor, editorState->fontFamily,
+            *currWin, editorState->cursor, editorState->fontFamily,
             editorState->hlTable
           );
           editorState->cursor.dirty = false;

@@ -1,4 +1,5 @@
 #include "manager.hpp"
+#include "app/window_funcs.h"
 #include "utils/color.hpp"
 #include "utils/logger.hpp"
 #include <algorithm>
@@ -51,7 +52,12 @@ int SessionManager::New(const SessionNewOpts& opts) {
   }
 
   if (first) {
-    window = sdl::Window({1200, 800}, "Neovim GUI", options.window);
+    window = sdl::Window({1200, 800}, "Neovim GUI", options);
+  }
+  if (options.window.borderless) {
+    float titlebarHeight = GetTitlebarHeight(window.Get());
+    options.titlebarHeight = titlebarHeight;
+    options.margins.top += titlebarHeight;
   }
 
   auto guifontFut = session.nvim.GetOptionValue("guifont", {});
@@ -87,10 +93,7 @@ int SessionManager::New(const SessionNewOpts& opts) {
     hl.background->a = options.opacity;
   }
 
-  inputHandler = InputHandler(
-    &session.nvim, &session.editorState.winManager, options.macOptIsMeta,
-    options.multigrid, options.scrollSpeed
-  );
+  inputHandler = InputHandler(&session.nvim, &session.editorState.winManager, options);
 
   session.nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight);
 
@@ -132,10 +135,7 @@ bool SessionManager::Switch(int id) {
 
   // renderer.Resize(sizes);
 
-  inputHandler = InputHandler(
-    &session.nvim, &session.editorState.winManager, options.macOptIsMeta,
-    options.multigrid, options.scrollSpeed
-  );
+  inputHandler = InputHandler(&session.nvim, &session.editorState.winManager, options);
 
   session.nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight);
   session.reattached = true;
@@ -207,10 +207,8 @@ bool SessionManager::ShouldQuit() {
 
     // renderer.Resize(sizes);
 
-    inputHandler = InputHandler(
-      &session.nvim, &session.editorState.winManager, options.macOptIsMeta,
-      options.multigrid, options.scrollSpeed
-    );
+    inputHandler =
+      InputHandler(&session.nvim, &session.editorState.winManager, options);
 
     session.nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight);
     session.reattached = true;

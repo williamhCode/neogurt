@@ -1,7 +1,6 @@
 #include "options.hpp"
 #include "utils/logger.hpp"
 #include <format>
-#include <chrono>
 #include <future>
 #include <boost/core/demangle.hpp>
 #include "utils/async.hpp"

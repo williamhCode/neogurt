@@ -22,8 +22,8 @@ Renderer::Renderer(const SizeHandler& sizes) {
   camera = Ortho2D(sizes.size);
 
   finalRenderTexture =
-    RenderTexture(sizes.uiSize, sizes.dpiScale, TextureFormat::RGBA8UnormSrgb);
-  finalRenderTexture.UpdatePos(sizes.offset);
+    RenderTexture(sizes.size, sizes.dpiScale, TextureFormat::RGBA8UnormSrgb);
+  finalRenderTexture.UpdatePos({0, 0});
 
   // rect
   rectRPD = utils::RenderPassDescriptor({
@@ -57,7 +57,7 @@ Renderer::Renderer(const SizeHandler& sizes) {
 
   // windows
   auto stencilTextureView =
-    utils::CreateRenderTexture(ctx.device, sizes.uiFbSize, TextureFormat::Stencil8)
+    utils::CreateRenderTexture(ctx.device, sizes.fbSize, TextureFormat::Stencil8)
     .CreateView();
 
   windowsRPD = utils::RenderPassDescriptor(
@@ -103,12 +103,12 @@ void Renderer::Resize(const SizeHandler& sizes) {
   }
 
   finalRenderTexture =
-    RenderTexture(sizes.uiSize, sizes.dpiScale, TextureFormat::RGBA8UnormSrgb);
-  finalRenderTexture.UpdatePos(sizes.offset);
+    RenderTexture(sizes.size, sizes.dpiScale, TextureFormat::RGBA8UnormSrgb);
+  finalRenderTexture.UpdatePos({0, 0});
   windowsRPD.cColorAttachments[0].view = finalRenderTexture.textureView;
 
   auto stencilTextureView =
-    utils::CreateRenderTexture(ctx.device, sizes.uiFbSize, TextureFormat::Stencil8)
+    utils::CreateRenderTexture(ctx.device, sizes.fbSize, TextureFormat::Stencil8)
     .CreateView();
   windowsRPD.cDepthStencilAttachmentInfo.view = stencilTextureView;
 }
@@ -404,9 +404,11 @@ void Renderer::RenderWindows(
 void Renderer::RenderFinalTexture() {
   finalRPD.cColorAttachments[0].view = nextTextureView;
   finalRPD.cColorAttachments[0].clearValue = premultClearColor;
+
   auto passEncoder = commandEncoder.BeginRenderPass(&finalRPD);
-  passEncoder.SetPipeline(ctx.pipeline.finalTextureRPL);
+  passEncoder.SetPipeline(ctx.pipeline.textureFinalRPL);
   passEncoder.SetBindGroup(0, camera.viewProjBG);
+
   if (prevFinalRenderTexture.texture) {
     passEncoder.SetBindGroup(1, prevFinalRenderTexture.textureBG);
     prevFinalRenderTexture.renderData.Render(passEncoder);
@@ -414,6 +416,7 @@ void Renderer::RenderFinalTexture() {
     passEncoder.SetBindGroup(1, finalRenderTexture.textureBG);
     finalRenderTexture.renderData.Render(passEncoder);
   }
+
   passEncoder.End();
   finalRPD.cColorAttachments[0].view = {};
 }
