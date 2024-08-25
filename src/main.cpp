@@ -205,13 +205,7 @@ int main() {
         auto& cursor = editorState->cursor;
         const auto* activeWin = editorState->winManager.GetWin(cursor.grid);
         if (activeWin) {
-          auto cursorPos =
-            glm::vec2{
-              activeWin->startCol + cursor.col,
-              activeWin->startRow + cursor.row,
-            } *
-            sizes.charSize +
-            sizes.offset;
+          auto cursorPos = glm::vec2{cursor.col, cursor.row} * sizes.charSize;
 
           const auto& winTex = activeWin->sRenderTexture;
           auto scrollOffset =
@@ -219,9 +213,26 @@ int main() {
             ? glm::vec2(0, (winTex.scrollDist - winTex.scrollCurr))
             : glm::vec2(0);
 
-          auto finalPos = cursorPos + scrollOffset;
-          if (cursor.SetDestPos(finalPos)) {
-            SDL_Rect rect(finalPos.x, finalPos.y, sizes.charSize.x, sizes.charSize.y);
+          const auto& margins = activeWin->margins;
+          auto minPos = glm::vec2{0, margins.top} * sizes.charSize;
+          auto maxPos =
+            glm::vec2{
+              activeWin->grid.width,
+              activeWin->grid.height - margins.bottom - 1,
+            } *
+            sizes.charSize;
+
+          cursorPos = cursorPos + scrollOffset;
+          cursorPos = glm::max(cursorPos, minPos);
+          cursorPos = glm::min(cursorPos, maxPos);
+
+          auto winOffset =
+            glm::vec2{activeWin->startCol, activeWin->startRow} * sizes.charSize;
+
+          cursorPos = cursorPos + winOffset + sizes.offset;
+
+          if (cursor.SetDestPos(cursorPos)) {
+            SDL_Rect rect(cursorPos.x, cursorPos.y, sizes.charSize.x, sizes.charSize.y);
             SDL_SetTextInputArea(window.Get(), &rect, 0);
           }
         }
