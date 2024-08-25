@@ -53,11 +53,12 @@ int SessionManager::New(const SessionNewOpts& opts) {
 
   if (first) {
     window = sdl::Window({1200, 800}, "Neovim GUI", options);
-  }
-  if (options.window.borderless) {
     float titlebarHeight = GetTitlebarHeight(window.Get());
     options.titlebarHeight = titlebarHeight;
-    options.margins.top += titlebarHeight;
+  }
+
+  if (options.window.borderless) {
+    options.margins.top += options.titlebarHeight;
   }
 
   auto guifontFut = session.nvim.GetOptionValue("guifont", {});

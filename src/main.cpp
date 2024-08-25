@@ -60,7 +60,9 @@ int main() {
     Renderer renderer;
     InputHandler input;
 
-    SessionManager sessionManager(SpawnMode::Child, options, window, sizes, renderer, input);
+    SessionManager sessionManager(
+      SpawnMode::Child, options, window, sizes, renderer, input
+    );
     sessionManager.New();
     SessionState* session = sessionManager.CurrSession();
     Nvim* nvim = &session->nvim;
