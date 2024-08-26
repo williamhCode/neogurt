@@ -82,6 +82,8 @@ FontFamily::FromGuifont(std::string_view guifont, float dpiScale) {
       std::ranges::to<std::vector>(),
 
       .textureAtlas{height, dpiScale},
+      .defaultHeight = height,
+      .defaultWidth = width,
     };
   } catch (const std::bad_expected_access<std::string>& e) {
     return std::unexpected(e.error());
@@ -113,10 +115,10 @@ void FontFamily::ChangeDpiScale(float dpiScale) {
 }
 
 void FontFamily::ChangeSize(float delta) {
-  LOG_INFO("Chaging font size by: {}", delta);
   std::vector<FontSet> newFonts;
   for (auto& fontSet : fonts) {
     FontSet& newFontSet = newFonts.emplace_back();
+
     auto makeFontHandle = [&](const FontHandle& fontHandle) -> FontHandle {
       // check if the normal font can be reused
       if (newFontSet.normal && fontHandle->path == newFontSet.normal->path) {
@@ -125,13 +127,36 @@ void FontFamily::ChangeSize(float delta) {
       float widthHeightRatio = fontHandle->width / fontHandle->height;
       float newHeight = fontHandle->height + delta;
       float newWidth = newHeight * widthHeightRatio;
-      LOG_INFO("New font size: {}x{}", newHeight, newWidth);
       if (newHeight < 1) {
         newHeight = 1;
         newWidth = widthHeightRatio;
       }
       return std::make_shared<Font>(
         fontHandle->path, newHeight, newWidth, fontHandle->dpiScale
+      );
+    };
+
+    newFontSet.normal = makeFontHandle(fontSet.normal);
+    newFontSet.bold = makeFontHandle(fontSet.bold);
+    newFontSet.italic = makeFontHandle(fontSet.italic);
+    newFontSet.boldItalic = makeFontHandle(fontSet.boldItalic);
+  }
+  fonts = std::move(newFonts);
+
+  textureAtlas = TextureAtlas(DefaultFont().height, textureAtlas.dpiScale);
+}
+
+void FontFamily::ResetSize() {
+  std::vector<FontSet> newFonts;
+  for (auto& fontSet : fonts) {
+    FontSet& newFontSet = newFonts.emplace_back();
+    auto makeFontHandle = [&](const FontHandle& fontHandle) -> FontHandle {
+      // check if the normal font can be reused
+      if (newFontSet.normal && fontHandle->path == newFontSet.normal->path) {
+        return newFontSet.normal;
+      }
+      return std::make_shared<Font>(
+        fontHandle->path, defaultHeight, defaultWidth, fontHandle->dpiScale
       );
     };
 

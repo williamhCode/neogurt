@@ -15,15 +15,15 @@
 
 using namespace wgpu;
 
-Renderer::Renderer(const SizeHandler& _sizes): sizes(_sizes) {
+Renderer::Renderer(const SizeHandler& sizes) {
   clearColor = {0.0, 0.0, 0.0, 1.0};
 
   // shared
   camera = Ortho2D(sizes.size);
 
   finalRenderTexture =
-    RenderTexture(sizes.size, sizes.dpiScale, TextureFormat::RGBA8UnormSrgb);
-  finalRenderTexture.UpdatePos({0, 0});
+    RenderTexture(sizes.uiSize, sizes.dpiScale, TextureFormat::RGBA8UnormSrgb);
+  finalRenderTexture.UpdatePos(sizes.offset);
 
   // rect
   rectRPD = utils::RenderPassDescriptor({
@@ -57,7 +57,7 @@ Renderer::Renderer(const SizeHandler& _sizes): sizes(_sizes) {
 
   // windows
   auto stencilTextureView =
-    utils::CreateRenderTexture(ctx.device, sizes.fbSize, TextureFormat::Stencil8)
+    utils::CreateRenderTexture(ctx.device, sizes.uiFbSize, TextureFormat::Stencil8)
     .CreateView();
 
   windowsRPD = utils::RenderPassDescriptor(
@@ -95,8 +95,7 @@ Renderer::Renderer(const SizeHandler& _sizes): sizes(_sizes) {
   });
 }
 
-void Renderer::Resize(const SizeHandler& _sizes) {
-  sizes = _sizes;
+void Renderer::Resize(const SizeHandler& sizes) {
   camera.Resize(sizes.size);
 
   if (!prevFinalRenderTexture.texture) {
@@ -104,12 +103,12 @@ void Renderer::Resize(const SizeHandler& _sizes) {
   }
 
   finalRenderTexture =
-    RenderTexture(sizes.size, sizes.dpiScale, TextureFormat::RGBA8UnormSrgb);
-  finalRenderTexture.UpdatePos({0, 0});
+    RenderTexture(sizes.uiSize, sizes.dpiScale, TextureFormat::RGBA8UnormSrgb);
+  finalRenderTexture.UpdatePos(sizes.offset);
   windowsRPD.cColorAttachments[0].view = finalRenderTexture.textureView;
 
   auto stencilTextureView =
-    utils::CreateRenderTexture(ctx.device, sizes.fbSize, TextureFormat::Stencil8)
+    utils::CreateRenderTexture(ctx.device, sizes.uiFbSize, TextureFormat::Stencil8)
     .CreateView();
   windowsRPD.cDepthStencilAttachmentInfo.view = stencilTextureView;
 }
@@ -379,10 +378,6 @@ void Renderer::RenderWindows(
   windowsRPD.cColorAttachments[0].loadOp = LoadOp::Clear;
   {
     auto passEncoder = commandEncoder.BeginRenderPass(&windowsRPD);
-    // make sure messages in margins are not drawn
-    passEncoder.SetScissorRect(
-      sizes.fbOffset.x, sizes.fbOffset.y, sizes.uiFbSize.x, sizes.uiFbSize.y
-    );
     passEncoder.SetPipeline(ctx.pipeline.textureNoBlendRPL);
     passEncoder.SetStencilReference(1);
     passEncoder.SetBindGroup(0, finalRenderTexture.camera.viewProjBG);

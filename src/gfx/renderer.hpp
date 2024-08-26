@@ -14,8 +14,6 @@
 #include <span>
 
 struct Renderer {
-  SizeHandler sizes;
-
   wgpu::Color clearColor{};
   wgpu::Color premultClearColor{};
   wgpu::Color linearClearColor{};

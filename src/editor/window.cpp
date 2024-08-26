@@ -17,7 +17,7 @@ void WinManager::InitRenderData(Win& win) {
   win.lineData.CreateBuffers(maxTextQuads);
 
   win.sRenderTexture = ScrollableRenderTexture(size, sizes->dpiScale, sizes->charSize);
-  win.sRenderTexture.UpdatePos(pos + sizes->offset);
+  win.sRenderTexture.UpdatePos(pos);
 
   win.grid.dirty = true;
 
@@ -43,7 +43,7 @@ void WinManager::UpdateRenderData(Win& win) {
 
     win.sRenderTexture = ScrollableRenderTexture(size, sizes->dpiScale, sizes->charSize);
   }
-  win.sRenderTexture.UpdatePos(pos + sizes->offset);
+  win.sRenderTexture.UpdatePos(pos);
 
   if (sizeChanged) {
     win.sRenderTexture.UpdateMargins(win.margins);

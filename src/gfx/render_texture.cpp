@@ -36,6 +36,7 @@ RenderTexture::RenderTexture(
   );
 
   renderData.CreateBuffers(1);
+  UpdatePos({0, 0});
 }
 
 void RenderTexture::UpdatePos(glm::vec2 pos, std::optional<Rect> region) {

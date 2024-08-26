@@ -21,6 +21,8 @@ struct FontSet {
 struct FontFamily {
   std::vector<FontSet> fonts;
   TextureAtlas textureAtlas;
+  float defaultHeight;
+  float defaultWidth;
 
   static std::expected<FontFamily, std::string>
   FromGuifont(std::string_view guifont, float dpiScale);
@@ -28,6 +30,7 @@ struct FontFamily {
 
   void ChangeDpiScale(float dpiScale);
   void ChangeSize(float delta);
+  void ResetSize();
 
   const Font& DefaultFont() const;
   const Font::GlyphInfo& GetGlyphInfo(char32_t charcode, bool bold, bool italic);
