@@ -1,7 +1,7 @@
 .PHONY: build
 
-# TYPE = release
-TYPE = debug
+TYPE = release
+# TYPE = debug
 
 build:
 	cmake --build build/$(TYPE) --target neogui
@@ -32,8 +32,8 @@ build-setup:
 		-DCMAKE_CXX_COMPILER=clang++ \
 		-DCMAKE_C_COMPILER_LAUNCHER=ccache \
 		-DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-		-DCMAKE_COLOR_DIAGNOSTICS=ON
-		-DSDL_STATIC
+		-DCMAKE_COLOR_DIAGNOSTICS=ON \
+		-DSDL_STATIC=ON
 
 # TODO: use ccache for xcode
 xcode-setup:
