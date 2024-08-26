@@ -3,37 +3,42 @@ vim.g.neogui = true
 local utils = require("utils")
 
 -- if value is a type name, the option is required
-local session_table = {
-  new = {
+local cmds_table = {
+  session_new = {
     name = "",
     dir = "~/",
     switch_to = true,
   },
-  kill = {
+  session_kill = {
     id = 0
   },
-  switch = {
+  session_switch = {
     id = "number",
   },
-  prev = {},
-  list = {
+  session_prev = {},
+  session_list = {
     -- id, name, time (recency)
     sort = "id",
     reverse = false,
   },
-  select = {
+  session_select = {
     -- forwarded to list opts
     sort = "id",
     reverse = false,
+  },
+
+  font_change_size = {
+    all = false,
+    [1] = "number",
   }
 }
 
-vim.api.nvim_create_user_command("NeoguiSession", function(cmd_opts)
+vim.api.nvim_create_user_command("Neogui", function(cmd_opts)
   local cmd, opts = utils.convert_command_args(cmd_opts)
   if cmd == nil then return end
 
   -- convert strings to correct types
-  local default_opts = session_table[cmd]
+  local default_opts = cmds_table[cmd]
   if default_opts == nil then
     vim.api.nvim_err_writeln("Invalid command: " .. cmd)
     return
@@ -44,33 +49,32 @@ vim.api.nvim_create_user_command("NeoguiSession", function(cmd_opts)
   end
 
   -- handle command output
-  local result = vim.g.neogui_session(cmd, opts)
-  if cmd == "new" then
-  elseif cmd == "kill" then
+  local result = vim.g.neogui_cmd(cmd, opts)
+  if cmd == "session_new" then
+  elseif cmd == "session_kill" then
     if result == true then
       print("Session killed")
     else
       print("Session not found")
     end
-  elseif cmd == "prev" then
+  elseif cmd == "session_prev" then
     if result == false then
       print("No previous session")
     end
-  elseif cmd == "list" then
+  elseif cmd == "session_list" then
     vim.print(result)
   end
-
 end, { nargs = "*" })
 
 --- Sends a session command to neogui
 --- @param cmd string: command to send.
 --- @param opts table: command options
 --- @return any: result of the command
-vim.g.neogui_session = function(cmd, opts)
+vim.g.neogui_cmd = function(cmd, opts)
   local chan_id = utils.get_neogui_channel()
   if chan_id == nil then return end
 
-  local default_opts = session_table[cmd]
+  local default_opts = cmds_table[cmd]
   if default_opts == nil then
     vim.api.nvim_err_writeln("Invalid command: " .. cmd)
     return
@@ -80,35 +84,39 @@ vim.g.neogui_session = function(cmd, opts)
   local opts = utils.merge_opts(default_opts, opts)
   if opts == nil then return end
 
-  if cmd == "new" then
+  -- convert positional keys to named keys (arg1, arg1...)
+  -- cuz rpc can't mix table and array
+  opts = utils.convert_positional_keys(opts)
+
+  if cmd == "session_new" then
     opts.dir = vim.fn.fnamemodify(opts.dir, ":p")
     if vim.fn.isdirectory(opts.dir) == 0 then
       vim.api.nvim_err_writeln("Directory does not exist: " .. opts.dir)
       return
     end
 
-    local id = vim.rpcrequest(chan_id, "neogui_session", cmd, opts)
+    local id = vim.rpcrequest(chan_id, "neogui_cmd", cmd, opts)
     return id
 
-  elseif cmd == "kill" then
-    local success = vim.rpcrequest(chan_id, "neogui_session", cmd, opts)
+  elseif cmd == "session_kill" then
+    local success = vim.rpcrequest(chan_id, "neogui_cmd", cmd, opts)
     return success
 
-  elseif cmd == "switch" then
-    local success = vim.rpcrequest(chan_id, "neogui_session", cmd, opts)
+  elseif cmd == "session_switch" then
+    local success = vim.rpcrequest(chan_id, "neogui_cmd", cmd, opts)
     return success
 
-  elseif cmd == "prev" then
-    local success = vim.rpcrequest(chan_id, "neogui_session", cmd)
+  elseif cmd == "session_prev" then
+    local success = vim.rpcrequest(chan_id, "neogui_cmd", cmd)
     return success
 
-  elseif cmd == "list" then
-    local list = vim.rpcrequest(chan_id, "neogui_session", cmd, opts)
+  elseif cmd == "session_list" then
+    local list = vim.rpcrequest(chan_id, "neogui_cmd", cmd, opts)
     return list
 
-  elseif cmd == "select" then
-    local curr_id = vim.g.neogui_session("list", { sort = "time" })[1].id
-    local list = vim.g.neogui_session("list", opts)
+  elseif cmd == "session_select" then
+    local curr_id = vim.g.neogui_cmd("session_list", { sort = "time" })[1].id
+    local list = vim.g.neogui_cmd("session_list", opts)
     vim.ui.select(list, {
       prompt = "Select a session",
       format_item = function(item)
@@ -120,8 +128,12 @@ vim.g.neogui_session = function(cmd, opts)
       end
     }, function(choice)
       if choice == nil then return end
-      vim.g.neogui_session("switch", { id = choice.id })
+      vim.g.neogui_cmd("switch", { id = choice.id })
     end)
+
+  elseif cmd == "font_change_size" then
+    -- vim.print(opts)
+    return vim.rpcrequest(chan_id, "neogui_cmd", cmd, opts)
   end
 end
 

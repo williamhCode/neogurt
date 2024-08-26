@@ -15,7 +15,7 @@
 
 using namespace wgpu;
 
-Renderer::Renderer(const SizeHandler& sizes) {
+Renderer::Renderer(const SizeHandler& _sizes): sizes(_sizes) {
   clearColor = {0.0, 0.0, 0.0, 1.0};
 
   // shared
@@ -95,7 +95,8 @@ Renderer::Renderer(const SizeHandler& sizes) {
   });
 }
 
-void Renderer::Resize(const SizeHandler& sizes) {
+void Renderer::Resize(const SizeHandler& _sizes) {
+  sizes = _sizes;
   camera.Resize(sizes.size);
 
   if (!prevFinalRenderTexture.texture) {
@@ -378,6 +379,10 @@ void Renderer::RenderWindows(
   windowsRPD.cColorAttachments[0].loadOp = LoadOp::Clear;
   {
     auto passEncoder = commandEncoder.BeginRenderPass(&windowsRPD);
+    // make sure messages in margins are not drawn
+    passEncoder.SetScissorRect(
+      sizes.fbOffset.x, sizes.fbOffset.y, sizes.uiFbSize.x, sizes.uiFbSize.y
+    );
     passEncoder.SetPipeline(ctx.pipeline.textureNoBlendRPL);
     passEncoder.SetStencilReference(1);
     passEncoder.SetBindGroup(0, finalRenderTexture.camera.viewProjBG);

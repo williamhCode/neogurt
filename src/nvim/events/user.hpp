@@ -4,7 +4,7 @@
 
 namespace event {
 
-struct Session {
+struct NeoguiCmd {
   std::string_view cmd;
   std::map<std::string_view, msgpack::object> opts;
   MSGPACK_DEFINE(cmd, opts);

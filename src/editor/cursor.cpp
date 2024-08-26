@@ -22,6 +22,8 @@ void Cursor::Init(glm::vec2 _size, float dpi) {
       {0, maskPosBuffer},
     }
   );
+
+  dirty = true;
 }
 
 void Cursor::Goto(const event::GridCursorGoto& e) {
@@ -52,7 +54,7 @@ void Cursor::SetMode(CursorMode* _modeInfo) {
   cursorMode = _modeInfo;
 
   float ratio = cursorMode->cellPercentage / 100.0;
-  currSize = this->size;
+  auto currSize = this->size;
   glm::vec2 offset(0, 0);
   switch (cursorMode->cursorShape) {
     case CursorShape::Block: break;

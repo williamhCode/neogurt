@@ -8,44 +8,50 @@ void ProcessUserEvents(rpc::Client& client, SessionManager& sessionManager) {
   while (client.HasRequest()) {
     auto request = client.PopRequest();
 
-    if (request.method == "neogui_session") {
-      LOG("neogui_session: {}", ToString(request.params));
+    if (request.method == "neogui_cmd") {
+      LOG("neogui_cmd: {}", ToString(request.params));
 
       try {
-        event::Session session = request.params.convert();
-        if (session.cmd == "new") {
+        event::NeoguiCmd userCmd = request.params.convert();
+        if (userCmd.cmd == "session_new") {
           int id = sessionManager.New({
-            .name = session.opts.at("name").convert(),
-            .dir = session.opts.at("dir").convert(),
-            .switchTo = session.opts.at("switch_to").convert(),
+            .name = userCmd.opts.at("name").convert(),
+            .dir = userCmd.opts.at("dir").convert(),
+            .switchTo = userCmd.opts.at("switch_to").convert(),
           });
           request.SetValue(id);
 
-        } else if (session.cmd == "kill") {
-          bool success = sessionManager.Kill(session.opts.at("id").convert());
+        } else if (userCmd.cmd == "session_kill") {
+          bool success = sessionManager.Kill(userCmd.opts.at("id").convert());
           request.SetValue(success);
 
-        } else if (session.cmd == "switch") {
-          bool success = sessionManager.Switch(session.opts.at("id").convert());
+        } else if (userCmd.cmd == "session_switch") {
+          bool success = sessionManager.Switch(userCmd.opts.at("id").convert());
           request.SetValue(success);
 
-        } else if (session.cmd == "prev") {
+        } else if (userCmd.cmd == "session_prev") {
           bool success = sessionManager.Prev();
           request.SetValue(success);
 
-        } else if (session.cmd == "list") {
+        } else if (userCmd.cmd == "session_list") {
           std::vector<SessionListEntry> list = sessionManager.List({
-            .sort = session.opts.at("sort").convert(),
-            .reverse = session.opts.at("reverse").convert(),
+            .sort = userCmd.opts.at("sort").convert(),
+            .reverse = userCmd.opts.at("reverse").convert(),
           });
           request.SetValue(list);
 
+        } else if (userCmd.cmd == "font_change_size") {
+          float delta = userCmd.opts.at("arg1").convert();
+          bool all = userCmd.opts.at("all").convert();
+          sessionManager.FontChangeSize(delta, all);
+          request.SetValue(msgpack::type::nil_t());
+
         } else {
-          request.SetError("Unknown command: " + std::string(session.cmd));
+          request.SetError("Unknown command: " + std::string(userCmd.cmd));
         }
 
       } catch (const std::exception& e) {
-        request.SetError(e.what());
+        request.SetError(std::string("Neogui client exception: ") + e.what());
       }
     }
   }

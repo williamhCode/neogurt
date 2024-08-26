@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <stdexcept>
 #include <ranges>
+#include "glm/gtx/string_cast.hpp"
 
 SessionManager::SessionManager(
   SpawnMode _mode,
@@ -95,9 +96,9 @@ int SessionManager::New(const SessionNewOpts& opts) {
     hl.background->a = options.opacity;
   }
 
-  inputHandler = InputHandler(&session.nvim, &session.editorState.winManager, options);
-
   session.nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight);
+
+  inputHandler = InputHandler(&session.nvim, &session.editorState.winManager, options);
 
   sessionsOrder.push_front(&session);
 
@@ -128,18 +129,15 @@ bool SessionManager::Switch(int id) {
   }
   auto& session = it->second;
 
-  // options.Load(session.nvim);
-
-  // sizes.UpdateSizes(
-  //   window.size, window.dpiScale,
-  //   session.editorState.fontFamily.DefaultFont().charSize, options.margins
-  // );
-
-  // renderer.Resize(sizes);
+  sizes.UpdateSizes(
+    window.size, window.dpiScale,
+    session.editorState.fontFamily.DefaultFont().charSize, options.margins
+  );
+  // session.editorState.cursor.Init(sizes.charSize, sizes.dpiScale);
+  session.nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight);
 
   inputHandler = InputHandler(&session.nvim, &session.editorState.winManager, options);
 
-  session.nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight);
   session.reattached = true;
 
   auto currIt = std::ranges::find(sessionsOrder, &session);
@@ -200,23 +198,49 @@ bool SessionManager::ShouldQuit() {
 
     auto& session = *curr;
 
-    // options.Load(session.nvim);
-
-    // sizes.UpdateSizes(
-    //   window.size, window.dpiScale,
-    //   session.editorState.fontFamily.DefaultFont().charSize, options.margins
-    // );
-
-    // renderer.Resize(sizes);
+    sizes.UpdateSizes(
+      window.size, window.dpiScale,
+      session.editorState.fontFamily.DefaultFont().charSize, options.margins
+    );
+    // session.editorState.cursor.Init(sizes.charSize, sizes.dpiScale);
+    session.nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight);
 
     inputHandler =
       InputHandler(&session.nvim, &session.editorState.winManager, options);
 
-    session.nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight);
     session.reattached = true;
   }
 
   return false;
+}
+
+void SessionManager::FontChangeSize(float delta, bool all) {
+  // if (all) {
+  //   auto* currSession = CurrSession();
+  //   for (auto& [_, session] : sessions) {
+  //     session.editorState.fontFamily.ChangeSize(delta);
+  //     if (&session == currSession) {
+  //       sizes.UpdateSizes(
+  //         window.size, window.dpiScale,
+  //         session.editorState.fontFamily.DefaultFont().charSize, options.margins
+  //       );
+  //       session.nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight);
+  //       session.editorState.cursor.Init(sizes.charSize, sizes.dpiScale);
+  //     }
+  //   }
+
+  // } else {
+    if (auto* session = CurrSession()) {
+      session->editorState.fontFamily.ChangeSize(delta);
+      sizes.UpdateSizes(
+        window.size, window.dpiScale,
+        session->editorState.fontFamily.DefaultFont().charSize, options.margins
+      );
+      session->nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight);
+      session->editorState.cursor.Init(sizes.charSize, sizes.dpiScale);
+      LOG_INFO("charSize: {}", glm::to_string(sizes.charSize));
+    }
+  // }
 }
 
 // void SessionManager::LoadSessions(std::string_view filename) {

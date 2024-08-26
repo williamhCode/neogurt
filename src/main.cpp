@@ -185,7 +185,6 @@ int main() {
 
                 if (uiFbSize == sizes.uiFbSize) {
                   renderer.camera.Resize(sizes.size);
-                  // renderer.finalRenderTexture.UpdatePos(sizes.offset);
 
                 } else {
                   renderer.Resize(sizes);

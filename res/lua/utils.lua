@@ -12,13 +12,18 @@ M.convert_command_args = function(opts)
 
   local cmd = table.remove(args, 1)
   local cmd_opts = {}
+  local positional_index = 1
+
   for _, arg in ipairs(args) do
     local key, value = arg:match("([^=]+)=(.*)")
-    if not key or not value then
-      vim.api.nvim_err_writeln("Invalid argument format: " .. arg .. ". Expected format is key=value.")
-      return nil, {}
+    if key and value then
+      -- Named argument (key=value)
+      cmd_opts[key] = value
+    else
+      -- Positional argument
+      cmd_opts[positional_index] = arg
+      positional_index = positional_index + 1
     end
-    cmd_opts[key] = value
   end
 
   return cmd, cmd_opts
@@ -92,11 +97,38 @@ end
 M.merge_opts = function(default_opts, opts)
   local new_opts = {}
 
+  -- Handle positional arguments first
+  local index = 1
+  while default_opts[index] do
+    local expected_type = default_opts[index]
+    local val = opts[index]
+
+    if val == nil then
+      local msg = string.format("Positional argument #%d with type '%s' is required.", index, expected_type)
+      vim.api.nvim_err_writeln(msg)
+      return nil
+    end
+
+    if type(val) ~= expected_type then
+      local msg = string.format("Invalid value for positional argument #%d. Expected type '%s'.", index, expected_type)
+      vim.api.nvim_err_writeln(msg)
+      return nil
+    end
+
+    new_opts[index] = val
+    index = index + 1
+  end
+
   for key, default_val in pairs(default_opts) do
+    -- Skip positional arguments
+    if type(key) == "number" then
+      goto continue
+    end
+
     local val = opts[key]
     local expected_type
 
-    -- if required option
+    -- if default_val is a type, argument is required
     if vim.tbl_contains(all_types, default_val) then
       if val == nil then
         local msg = string.format("Key '%s' with type '%s' is required", key, default_val)
@@ -118,6 +150,8 @@ M.merge_opts = function(default_opts, opts)
     else
       new_opts[key] = default_val
     end
+
+    ::continue::
   end
 
   if next(new_opts) == nil then
@@ -126,6 +160,24 @@ M.merge_opts = function(default_opts, opts)
   end
 
   return new_opts
+end
+
+--- Converts numeric keys (positional arguments) in a table to "arg1", "arg2", ...
+--- @param opts table
+--- @return table
+M.convert_positional_keys = function(opts)
+  local converted_opts = {}
+
+  for key, value in pairs(opts) do
+    if type(key) == "number" then
+      local new_key = "arg" .. tostring(key)
+      converted_opts[new_key] = value
+    else
+      converted_opts[key] = value
+    end
+  end
+
+  return converted_opts
 end
 
 return M
