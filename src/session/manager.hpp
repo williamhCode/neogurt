@@ -70,8 +70,11 @@ public:
   // returns true if all sessions are closed
   bool ShouldQuit();
 
-  void FontSizeChange(float delta, bool all=true);
-  void FontSizeReset();
+  void FontSizeChange(float delta, bool all = true);
+  void FontSizeReset(bool all = true);
+
+private:
+  void UpdateSessionSizes(SessionState& session);
 
   // void LoadSessions(std::string_view filename);
   // void SaveSessions(std::string_view filename);

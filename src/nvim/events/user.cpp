@@ -47,7 +47,8 @@ void ProcessUserEvents(rpc::Client& client, SessionManager& sessionManager) {
           request.SetValue(msgpack::type::nil_t());
 
         } else if (userCmd.cmd == "font_size_reset") {
-          sessionManager.FontSizeReset();
+          bool all = userCmd.opts.at("all").convert();
+          sessionManager.FontSizeReset(all);
           request.SetValue(msgpack::type::nil_t());
 
         } else {
@@ -55,7 +56,7 @@ void ProcessUserEvents(rpc::Client& client, SessionManager& sessionManager) {
         }
 
       } catch (const std::exception& e) {
-        request.SetError(e.what());
+        request.SetError(std::string("Neogui client error: ") + e.what());
       }
     }
   }

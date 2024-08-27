@@ -179,6 +179,7 @@ int main() {
                   editorState->cursor.Init(sizes.charSize, sizes.dpiScale);
                   // force nvim to resend all events to update dpiScale
                   nvim->UiTryResize(sizes.uiWidth + 1, sizes.uiHeight);
+                  editorState->winManager.sizes = sizes;
                 }
 
                 sdl::Window::_ctx.Resize(sizes.fbSize);

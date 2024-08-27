@@ -86,7 +86,7 @@ int SessionManager::New(const SessionNewOpts& opts) {
     renderer = Renderer(sizes);
   }
 
-  session.editorState.winManager.sizes = &sizes;
+  session.editorState.winManager.sizes = sizes;
   session.editorState.winManager.gridManager = &session.editorState.gridManager;
   session.editorState.cursor.Init(sizes.charSize, sizes.dpiScale);
 
@@ -129,14 +129,8 @@ bool SessionManager::Switch(int id) {
   }
   auto& session = it->second;
 
-  sizes.UpdateSizes(
-    window.size, window.dpiScale,
-    session.editorState.fontFamily.DefaultFont().charSize, options.margins
-  );
-  session.nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight);
-
+  UpdateSessionSizes(session);
   inputHandler = InputHandler(&session.nvim, &session.editorState.winManager, options);
-
   session.reattached = true;
 
   auto currIt = std::ranges::find(sessionsOrder, &session);
@@ -197,15 +191,9 @@ bool SessionManager::ShouldQuit() {
 
     auto& session = *curr;
 
-    sizes.UpdateSizes(
-      window.size, window.dpiScale,
-      session.editorState.fontFamily.DefaultFont().charSize, options.margins
-    );
-    session.nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight);
-
+    UpdateSessionSizes(session);
     inputHandler =
       InputHandler(&session.nvim, &session.editorState.winManager, options);
-
     session.reattached = true;
   }
 
@@ -214,28 +202,50 @@ bool SessionManager::ShouldQuit() {
 
 void SessionManager::FontSizeChange(float delta, bool all) {
   // TODO: implement font size change for all sessions
-  if (auto* session = CurrSession()) {
-    session->editorState.fontFamily.ChangeSize(delta);
-    sizes.UpdateSizes(
-      window.size, window.dpiScale,
-      session->editorState.fontFamily.DefaultFont().charSize, options.margins
-    );
-    session->nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight);
-    session->editorState.cursor.Init(sizes.charSize, sizes.dpiScale);
+  if (all) {
+    auto* curr = CurrSession();
+    for (auto& [_, session] : sessions) {
+      session.editorState.fontFamily.ChangeSize(delta);
+      if (curr == &session) {
+        UpdateSessionSizes(session);
+      }
+    }
+
+  } else {
+    if (auto* session = CurrSession()) {
+      session->editorState.fontFamily.ChangeSize(delta);
+      UpdateSessionSizes(*session);
+    }
   }
 }
 
-void SessionManager::FontSizeReset() {
-  // TODO: implement font size reset for all sessions
-  if (auto* session = CurrSession()) {
-    session->editorState.fontFamily.ResetSize();
-    sizes.UpdateSizes(
-      window.size, window.dpiScale,
-      session->editorState.fontFamily.DefaultFont().charSize, options.margins
-    );
-    session->nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight);
-    session->editorState.cursor.Init(sizes.charSize, sizes.dpiScale);
+void SessionManager::FontSizeReset(bool all) {
+  if (all) {
+    auto* curr = CurrSession();
+    for (auto& [_, session] : sessions) {
+      session.editorState.fontFamily.ResetSize();
+      if (curr == &session) {
+        UpdateSessionSizes(session);
+      }
+    }
+
+  } else {
+    if (auto* session = CurrSession()) {
+      session->editorState.fontFamily.ResetSize();
+      UpdateSessionSizes(*session);
+    }
   }
+}
+
+void SessionManager::UpdateSessionSizes(SessionState& session) {
+  sizes.UpdateSizes(
+    window.size, window.dpiScale,
+    session.editorState.fontFamily.DefaultFont().charSize, options.margins
+  );
+  renderer.Resize(sizes);
+  session.editorState.winManager.sizes = sizes;
+  session.nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight);
+  session.editorState.cursor.Init(sizes.charSize, sizes.dpiScale);
 }
 
 // void SessionManager::LoadSessions(std::string_view filename) {

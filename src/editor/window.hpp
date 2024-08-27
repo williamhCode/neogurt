@@ -57,7 +57,7 @@ struct MouseInfo {
 
 struct WinManager {
   GridManager* gridManager;
-  const SizeHandler* sizes;
+  SizeHandler sizes;
   bool dirty; // true if window pos updated from scrolling
 
   // not unordered because telescope float background overlaps text

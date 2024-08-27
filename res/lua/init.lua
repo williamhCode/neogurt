@@ -28,10 +28,12 @@ local cmds_table = {
   },
 
   font_size_change = {
-    all = false,
+    all = true,
     [1] = "number",
   },
-  font_size_reset = {},
+  font_size_reset = {
+    all = true,
+  },
 }
 
 vim.api.nvim_create_user_command("Neogui", function(cmd_opts)
@@ -136,7 +138,7 @@ vim.g.neogui_cmd = function(cmd, opts)
     return vim.rpcrequest(chan_id, "neogui_cmd", cmd, opts)
 
   elseif cmd == "font_size_reset" then
-    return vim.rpcrequest(chan_id, "neogui_cmd", cmd)
+    return vim.rpcrequest(chan_id, "neogui_cmd", cmd, opts)
   end
 end
 
