@@ -65,7 +65,7 @@ struct Cursor {
   wgpu::Buffer maskPosBuffer;
   wgpu::BindGroup maskPosBG;
 
-  void Init(glm::vec2 size, float dpi);
+  void Resize(glm::vec2 size, float dpi);
   void Goto(const event::GridCursorGoto& e);
   bool SetDestPos(glm::vec2 destPos);
   void SetMode(CursorMode* modeInfo);

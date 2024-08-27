@@ -61,12 +61,11 @@ public:
     return it == sessionsOrder.end() ? nullptr : *it;
   }
 
-  int New(const SessionNewOpts& opts = {}); // return session id
-  bool Kill(int id = 0);                    // return true if successful
-  bool Switch(int id);                      // return true if successful
-  bool Prev();                              // return true if successful
-  std::vector<SessionListEntry> List(const SessionListOpts& opts = {});
-
+  int SessionNew(const SessionNewOpts& opts = {}); // return session id
+  bool SessionKill(int id = 0);                    // return true if successful
+  bool SessionSwitch(int id);                      // return true if successful
+  bool SessionPrev();                              // return true if successful
+  std::vector<SessionListEntry> SessionList(const SessionListOpts& opts = {});
   // returns true if all sessions are closed
   bool ShouldQuit();
 

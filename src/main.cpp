@@ -63,7 +63,7 @@ int main() {
     SessionManager sessionManager(
       SpawnMode::Child, options, window, sizes, renderer, input
     );
-    sessionManager.New();
+    sessionManager.SessionNew();
     SessionState* session = sessionManager.CurrSession();
     Nvim* nvim = &session->nvim;
     EditorState* editorState = &session->editorState;
@@ -176,7 +176,7 @@ int main() {
                 );
 
                 if (dpiChanged) {
-                  editorState->cursor.Init(sizes.charSize, sizes.dpiScale);
+                  editorState->cursor.Resize(sizes.charSize, sizes.dpiScale);
                   // force nvim to resend all events to update dpiScale
                   nvim->UiTryResize(sizes.uiWidth + 1, sizes.uiHeight);
                   editorState->winManager.sizes = sizes;

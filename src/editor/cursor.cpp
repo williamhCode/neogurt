@@ -9,7 +9,7 @@
 
 using namespace wgpu;
 
-void Cursor::Init(glm::vec2 _size, float dpi) {
+void Cursor::Resize(glm::vec2 _size, float dpi) {
   size = _size;
 
   maskRenderTexture = RenderTexture(size, dpi, TextureFormat::R8Unorm);

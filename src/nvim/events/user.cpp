@@ -14,7 +14,7 @@ void ProcessUserEvents(rpc::Client& client, SessionManager& sessionManager) {
       try {
         event::NeoguiCmd userCmd = request.params.convert();
         if (userCmd.cmd == "session_new") {
-          int id = sessionManager.New({
+          int id = sessionManager.SessionNew({
             .name = userCmd.opts.at("name").convert(),
             .dir = userCmd.opts.at("dir").convert(),
             .switchTo = userCmd.opts.at("switch_to").convert(),
@@ -22,19 +22,19 @@ void ProcessUserEvents(rpc::Client& client, SessionManager& sessionManager) {
           request.SetValue(id);
 
         } else if (userCmd.cmd == "session_kill") {
-          bool success = sessionManager.Kill(userCmd.opts.at("id").convert());
+          bool success = sessionManager.SessionKill(userCmd.opts.at("id").convert());
           request.SetValue(success);
 
         } else if (userCmd.cmd == "session_switch") {
-          bool success = sessionManager.Switch(userCmd.opts.at("id").convert());
+          bool success = sessionManager.SessionSwitch(userCmd.opts.at("id").convert());
           request.SetValue(success);
 
         } else if (userCmd.cmd == "session_prev") {
-          bool success = sessionManager.Prev();
+          bool success = sessionManager.SessionPrev();
           request.SetValue(success);
 
         } else if (userCmd.cmd == "session_list") {
-          std::vector<SessionListEntry> list = sessionManager.List({
+          std::vector<SessionListEntry> list = sessionManager.SessionList({
             .sort = userCmd.opts.at("sort").convert(),
             .reverse = userCmd.opts.at("reverse").convert(),
           });

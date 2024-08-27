@@ -34,9 +34,16 @@ bool Client::ConnectStdio(const std::string& command, const std::string& dir) {
   readPipe = std::make_unique<bp::async_pipe>(context);
   writePipe = std::make_unique<bp::async_pipe>(context);
 
+  std::string shellPath = std::getenv("SHELL");
+  if (shellPath.empty()) {
+    LOG_ERR("SHELL environment variable not set");
+    exit = true;
+    return false;
+  }
+
   // LOG_INFO("Starting process: {}, {}", command, dir);
   process = bp::child(
-    command,
+    shellPath, "-ic", command,
     bp::start_dir = dir,
     bp::std_out > *readPipe,
     bp::std_in < *writePipe

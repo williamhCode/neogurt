@@ -19,7 +19,7 @@ SessionManager::SessionManager(
     renderer(_renderer), inputHandler(_inputHandler) {
 }
 
-int SessionManager::New(const SessionNewOpts& opts) {
+int SessionManager::SessionNew(const SessionNewOpts& opts) {
   using namespace std::chrono_literals;
   bool first = sessions.empty();
 
@@ -88,7 +88,7 @@ int SessionManager::New(const SessionNewOpts& opts) {
 
   session.editorState.winManager.sizes = sizes;
   session.editorState.winManager.gridManager = &session.editorState.gridManager;
-  session.editorState.cursor.Init(sizes.charSize, sizes.dpiScale);
+  session.editorState.cursor.Resize(sizes.charSize, sizes.dpiScale);
 
   if (options.opacity < 1) {
     auto& hl = session.editorState.hlTable[0];
@@ -103,13 +103,13 @@ int SessionManager::New(const SessionNewOpts& opts) {
   sessionsOrder.push_front(&session);
 
   if (!opts.switchTo) {
-    Prev();
+    SessionPrev();
   }
 
   return id;
 }
 
-bool SessionManager::Kill(int id) {
+bool SessionManager::SessionKill(int id) {
   if (id == 0) id = CurrSession()->id;
 
   auto it = sessions.find(id);
@@ -122,7 +122,7 @@ bool SessionManager::Kill(int id) {
   return true;
 }
 
-bool SessionManager::Switch(int id) {
+bool SessionManager::SessionSwitch(int id) {
   auto it = sessions.find(id);
   if (it == sessions.end()) {
     return false;
@@ -143,15 +143,15 @@ bool SessionManager::Switch(int id) {
   return true;
 }
 
-bool SessionManager::Prev() {
+bool SessionManager::SessionPrev() {
   if (sessionsOrder.size() < 2) {
     return false;
   }
-  Switch(sessionsOrder[1]->id);
+  SessionSwitch(sessionsOrder[1]->id);
   return true;
 }
 
-std::vector<SessionListEntry> SessionManager::List(const SessionListOpts& opts) {
+std::vector<SessionListEntry> SessionManager::SessionList(const SessionListOpts& opts) {
   auto entries =
     sessionsOrder | std::views::transform([](auto* session) {
       return SessionListEntry{session->id, session->name};
@@ -245,7 +245,7 @@ void SessionManager::UpdateSessionSizes(SessionState& session) {
   renderer.Resize(sizes);
   session.editorState.winManager.sizes = sizes;
   session.nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight);
-  session.editorState.cursor.Init(sizes.charSize, sizes.dpiScale);
+  session.editorState.cursor.Resize(sizes.charSize, sizes.dpiScale);
 }
 
 // void SessionManager::LoadSessions(std::string_view filename) {
