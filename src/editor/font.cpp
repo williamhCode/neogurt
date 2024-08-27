@@ -126,11 +126,8 @@ void FontFamily::ChangeSize(float delta) {
       }
       float widthHeightRatio = fontHandle->width / fontHandle->height;
       float newHeight = fontHandle->height + delta;
+      if (newHeight < 5) newHeight = 5;
       float newWidth = newHeight * widthHeightRatio;
-      if (newHeight < 1) {
-        newHeight = 1;
-        newWidth = widthHeightRatio;
-      }
       return std::make_shared<Font>(
         fontHandle->path, newHeight, newWidth, fontHandle->dpiScale
       );
