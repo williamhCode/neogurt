@@ -131,7 +131,7 @@ vim.g.neogui_cmd = function(cmd, opts)
       end
     }, function(choice)
       if choice == nil then return end
-      vim.g.neogui_cmd("switch", { id = choice.id })
+      vim.g.neogui_cmd("session_switch", { id = choice.id })
     end)
 
   elseif cmd == "font_size_change" then
