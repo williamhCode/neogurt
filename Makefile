@@ -24,7 +24,8 @@ build-setup:
 		-DCMAKE_CXX_COMPILER=clang++ \
 		-DCMAKE_C_COMPILER_LAUNCHER=ccache \
 		-DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-		-DCMAKE_COLOR_DIAGNOSTICS=ON
+		-DCMAKE_COLOR_DIAGNOSTICS=ON \
+		-DSDL_SHARED=ON
 	cmake . -B build/release \
 		-DCMAKE_BUILD_TYPE=RelWithDebInfo \
 		-GNinja \
@@ -33,6 +34,7 @@ build-setup:
 		-DCMAKE_C_COMPILER_LAUNCHER=ccache \
 		-DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
 		-DCMAKE_COLOR_DIAGNOSTICS=ON \
+		-DSDL_SHARED=OFF \
 		-DSDL_STATIC=ON
 
 # TODO: use ccache for xcode
