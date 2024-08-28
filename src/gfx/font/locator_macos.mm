@@ -42,15 +42,20 @@ std::string GetFontPathFromName(const FontDescriptorWithName& desc) {
   CFURLRef fontUrl =
     (CFURLRef)CTFontDescriptorCopyAttribute(ctDescriptor, kCTFontURLAttribute);
   if (fontUrl == nullptr) {
+    CFRelease(ctDescriptor);
     return "";
   }
-
-  CTFontDescriptorRef newDescriptor;
 
   // alter original font traits,
   // and create new font desc with original family but with new traits
   auto traits =
     (NSDictionary*)CTFontDescriptorCopyAttribute(ctDescriptor, kCTFontTraitsAttribute);
+  if (!traits) {
+    CFRelease(ctDescriptor);
+    CFRelease(fontUrl);
+    return "";
+  }
+
   NSMutableDictionary* newTraits = [NSMutableDictionary dictionary];
 
   auto currWeight = (NSNumber*)traits[(NSString*)kCTFontWeightTrait];
@@ -70,14 +75,19 @@ std::string GetFontPathFromName(const FontDescriptorWithName& desc) {
 
   auto family =
     (NSString*)CTFontDescriptorCopyAttribute(ctDescriptor, kCTFontFamilyNameAttribute);
+  if (!family) {
+    CFRelease(ctDescriptor);
+    CFRelease(fontUrl);
+    CFRelease(traits);
+    return "";
+  }
+
   NSDictionary* newAttributes = @{
     (NSString*)kCTFontFamilyNameAttribute : family,
     (NSString*)kCTFontTraitsAttribute : newTraits,
   };
-  newDescriptor = CTFontDescriptorCreateWithAttributes((CFDictionaryRef)newAttributes);
-
-  CFRelease(family);
-  CFRelease(traits);
+  CTFontDescriptorRef newDescriptor =
+    CTFontDescriptorCreateWithAttributes((CFDictionaryRef)newAttributes);
 
   std::string path;
   CFURLRef newFontUrl =
@@ -87,6 +97,10 @@ std::string GetFontPathFromName(const FontDescriptorWithName& desc) {
     CFRelease(newFontUrl);
   }
 
+  CFRelease(ctDescriptor);
+  CFRelease(fontUrl);
+  CFRelease(traits);
+  CFRelease(family);
   CFRelease(newDescriptor);
 
   return path;
