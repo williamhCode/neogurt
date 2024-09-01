@@ -25,6 +25,15 @@ Renderer::Renderer(const SizeHandler& sizes) {
     RenderTexture(sizes.uiSize, sizes.dpiScale, TextureFormat::RGBA8UnormSrgb);
   finalRenderTexture.UpdatePos(sizes.offset);
 
+  // shapes
+  shapesRPD = utils::RenderPassDescriptor({
+    RenderPassColorAttachment{
+      .loadOp = LoadOp::Clear,
+      .storeOp = StoreOp::Store,
+      .clearValue = {1, 1, 1, 0},
+    },
+  });
+
   // rect
   rectRPD = utils::RenderPassDescriptor({
     RenderPassColorAttachment{
@@ -57,7 +66,7 @@ Renderer::Renderer(const SizeHandler& sizes) {
 
   // windows
   auto stencilTextureView =
-    utils::CreateRenderTexture(ctx.device, sizes.uiFbSize, TextureFormat::Stencil8)
+    utils::CreateRenderTexture(ctx.device, {sizes.uiFbSize, TextureFormat::Stencil8})
     .CreateView();
 
   windowsRPD = utils::RenderPassDescriptor(
@@ -108,7 +117,7 @@ void Renderer::Resize(const SizeHandler& sizes) {
   windowsRPD.cColorAttachments[0].view = finalRenderTexture.textureView;
 
   auto stencilTextureView =
-    utils::CreateRenderTexture(ctx.device, sizes.uiFbSize, TextureFormat::Stencil8)
+    utils::CreateRenderTexture(ctx.device, {sizes.uiFbSize, TextureFormat::Stencil8})
     .CreateView();
   windowsRPD.cDepthStencilAttachmentInfo.view = stencilTextureView;
 }
@@ -137,6 +146,69 @@ void Renderer::Begin() {
   nextTextureView = nextTexture.CreateView();
 }
 
+void Renderer::RenderShapes(FontFamily& fontFamily) {
+  auto& shapes = fontFamily.shapesManager;
+
+  static QuadRenderData<ShapeQuadVertex> shapesData(shapes.infoArray.size());
+  shapesData.ResetCounts();
+
+  const auto& defaultFont = fontFamily.DefaultFont();
+
+  // first five are underlines
+  for (int i = 0; i < 5; i++) {
+    auto underlineType = static_cast<UnderlineType>(i);
+
+    // underline or underdashed
+    float thicknessScale = 1.0f;
+    if (underlineType == UnderlineType::Undercurl) {
+      thicknessScale = 3.5f;
+    } else if (underlineType == UnderlineType::Underdouble) {
+      thicknessScale = 2.0f;
+    } else if (underlineType == UnderlineType::Underdotted) {
+      thicknessScale = 1.5f;
+    }
+
+    float thickness = defaultFont.underlineThickness * thicknessScale;
+
+    // mininum pixel heights
+    if (underlineType == UnderlineType::Undercurl ||
+        underlineType == UnderlineType::Underdouble) {
+      thickness = std::max(thickness, 3.0f / defaultFont.dpiScale);
+    } else {
+      thickness = std::max(thickness, 1.0f / defaultFont.dpiScale);
+    }
+
+    glm::vec2 lineQuadPos{
+      i * defaultFont.charSize.x,
+      defaultFont.ascender - defaultFont.underlinePosition - thickness / 2,
+    };
+    glm::vec2 lineQuadSize{
+      defaultFont.charSize.x,
+      thickness,
+    };
+    auto lineQuadRegion = MakeRegion(lineQuadPos, lineQuadSize);
+
+    static auto underlineCoords = MakeRegion({0, 0}, {1, 1});
+
+    auto& quad = shapesData.NextQuad();
+    for (size_t j = 0; j < 4; j++) {
+      quad[j].position = lineQuadRegion[j];
+      quad[j].coord = underlineCoords[j];
+      quad[j].shapeType = i;
+    }
+  }
+
+  shapesData.WriteBuffers();
+
+  shapesRPD.cColorAttachments[0].view = shapes.renderTexture.textureView;
+  RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&shapesRPD);
+  passEncoder.SetPipeline(ctx.pipeline.shapesRPL);
+  passEncoder.SetBindGroup(0, shapes.renderTexture.camera.viewProjBG);
+  shapesData.Render(passEncoder);
+  passEncoder.End();
+  shapesRPD.cColorAttachments[0].view = {};
+}
+
 void Renderer::RenderToWindow(
   Win& win, FontFamily& fontFamily, HlTable& hlTable
 ) {
@@ -159,15 +231,15 @@ void Renderer::RenderToWindow(
   size_t cols = std::min(win.grid.width, win.width);
   std::vector<int> rectIntervals; rectIntervals.reserve(rows + 1);
   std::vector<int> textIntervals; textIntervals.reserve(rows + 1);
-  std::vector<int> lineIntervals; lineIntervals.reserve(rows + 1);
+  std::vector<int> shapeIntervals; shapeIntervals.reserve(rows + 1);
 
   auto& rectData = win.rectData;
   auto& textData = win.textData;
-  auto& lineData = win.lineData;
+  auto& shapeData = win.underlineData;
 
   rectData.ResetCounts();
   textData.ResetCounts();
-  lineData.ResetCounts();
+  shapeData.ResetCounts();
 
   glm::vec2 textOffset(0, 0);
   const auto& defaultFont = fontFamily.DefaultFont();
@@ -178,7 +250,7 @@ void Renderer::RenderToWindow(
 
     rectIntervals.push_back(rectData.quadCount);
     textIntervals.push_back(textData.quadCount);
-    lineIntervals.push_back(lineData.quadCount);
+    shapeIntervals.push_back(shapeData.quadCount);
 
     for (size_t col = 0; col < cols; col++) {
       auto& cell = line[col];
@@ -202,55 +274,36 @@ void Renderer::RenderToWindow(
         const auto& glyphInfo = fontFamily.GetGlyphInfo(charcode, hl.bold, hl.italic);
 
         glm::vec2 textQuadPos{
-          textOffset.x + glyphInfo.bearing.x,
-          textOffset.y - glyphInfo.bearing.y + defaultFont.ascender,
+          textOffset.x,
+          textOffset.y + defaultFont.ascender,
         };
 
         glm::vec4 foreground = GetForeground(hlTable, hl);
         auto& quad = textData.NextQuad();
         for (size_t i = 0; i < 4; i++) {
-          quad[i].position = textQuadPos + glyphInfo.sizePositions[i];
-          quad[i].regionCoord = glyphInfo.region[i];
+          quad[i].position = textQuadPos + glyphInfo.localPoss[i];
+          quad[i].regionCoord = glyphInfo.atlasRegion[i];
           quad[i].foreground = foreground;
         }
       }
 
       if (hl.underline.has_value()) {
-        static auto coords = MakeRegion({0, 0}, {1, 1});
-        auto underlineColor = GetSpecial(hlTable, hl);
         auto underlineType = *hl.underline;
+        const auto& shapeInfo =
+          fontFamily.shapesManager.GetUnderlineInfo(underlineType);
 
-        float thicknessScale = 1.0f;
-        if (underlineType == UnderlineType::Undercurl) {
-          thicknessScale = 3.5f;
-        } else if (underlineType == UnderlineType::Underdouble) {
-          thicknessScale = 2.0f;
-        } else if (underlineType == UnderlineType::Underdotted) {
-          thicknessScale = 1.5f;
-        }
-        float thickness = defaultFont.underlineThickness * thicknessScale;
-        // make sure underdouble is at least 3 physical pixels high
-        if (underlineType == UnderlineType::Underdouble) {
-          thickness = std::max(thickness, 3.0f / defaultFont.dpiScale);
-        }
-
-        glm::vec2 lineQuadPos{
+        glm::vec2 underlineQuadPos{
           textOffset.x,
-          textOffset.y + defaultFont.ascender - defaultFont.underlinePosition -
-            thickness / 2,
+          textOffset.y,
         };
-        glm::vec2 lineQuadSize{
-          defaultFont.charSize.x,
-          thickness,
-        };
-        auto lineQuadRegion = MakeRegion(lineQuadPos, lineQuadSize);
 
-        auto& quad = lineData.NextQuad();
+        auto underlineColor = GetSpecial(hlTable, hl);
+
+        auto& quad = shapeData.NextQuad();
         for (size_t i = 0; i < 4; i++) {
-          quad[i].position = lineQuadRegion[i];
-          quad[i].coord = coords[i];
-          quad[i].color = underlineColor;
-          quad[i].lineType = std::to_underlying(underlineType);
+          quad[i].position = underlineQuadPos + shapeInfo.localPoss[i];
+          quad[i].regionCoord = shapeInfo.atlasRegion[i];
+          quad[i].foreground = underlineColor;
         }
       }
 
@@ -262,11 +315,11 @@ void Renderer::RenderToWindow(
 
   rectIntervals.push_back(rectData.quadCount);
   textIntervals.push_back(textData.quadCount);
-  lineIntervals.push_back(lineData.quadCount);
+  shapeIntervals.push_back(shapeData.quadCount);
 
   rectData.WriteBuffers();
   textData.WriteBuffers();
-  lineData.WriteBuffers();
+  shapeData.WriteBuffers();
 
   // gpu texture is reallocated if resized
   // old gpu texture is not referenced by texture atlas anymore
@@ -310,19 +363,22 @@ void Renderer::RenderToWindow(
       RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textLineRPD);
       passEncoder.SetPipeline(ctx.pipeline.textRPL);
       passEncoder.SetBindGroup(0, renderTexture->camera.viewProjBG);
-      passEncoder.SetBindGroup(1, fontFamily.textureAtlas.fontTextureBG);
-      textData.Render(passEncoder, start, end - start);
+      passEncoder.SetBindGroup(1, fontFamily.textureAtlas.textureSizeBG);
+      passEncoder.SetBindGroup(2, fontFamily.textureAtlas.renderTexture.textureBG);
+      if (start != end) textData.Render(passEncoder, start, end - start);
       passEncoder.End();
     }
 
-    start = lineIntervals[range.start];
-    end = lineIntervals[range.end];
+    start = shapeIntervals[range.start];
+    end = shapeIntervals[range.end];
     if (start != end) {
       textLineRPD.cColorAttachments[0].view = renderTexture->textureView;
       RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textLineRPD);
-      passEncoder.SetPipeline(ctx.pipeline.lineRPL);
+      passEncoder.SetPipeline(ctx.pipeline.textRPL);
       passEncoder.SetBindGroup(0, renderTexture->camera.viewProjBG);
-      lineData.Render(passEncoder, start, end - start);
+      passEncoder.SetBindGroup(1, fontFamily.shapesManager.textureSizeBG);
+      passEncoder.SetBindGroup(2, fontFamily.shapesManager.renderTexture.textureBG);
+      if (start != end) shapeData.Render(passEncoder, start, end - start);
       passEncoder.End();
     }
   }
@@ -336,37 +392,40 @@ void Renderer::RenderCursorMask(
 ) {
   auto& cell = win.grid.lines[cursor.row][cursor.col];
 
-  if (!cell.text.empty() && cell.text != " ") {
-    char32_t charcode = UTF8ToUnicode(cell.text);
-    const auto& hl = hlTable[cell.hlId];
-    const auto& glyphInfo = fontFamily.GetGlyphInfo(charcode, hl.bold, hl.italic);
+  // if (!cell.text.empty() && cell.text != " ") {
+  char32_t charcode = UTF8ToUnicode(cell.text);
+  const auto& hl = hlTable[cell.hlId];
+  const auto& glyphInfo = fontFamily.GetGlyphInfo(charcode, hl.bold, hl.italic);
 
-    glm::vec2 textQuadPos{
-      glyphInfo.bearing.x,
-      -glyphInfo.bearing.y + fontFamily.DefaultFont().ascender,
-    };
+  glm::vec2 textQuadPos{
+    0, fontFamily.DefaultFont().ascender
+  };
 
-    textMaskRPD.cColorAttachments[0].view = cursor.maskRenderTexture.textureView;
-    RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textMaskRPD);
-    passEncoder.SetPipeline(ctx.pipeline.textMaskRPL);
-    passEncoder.SetBindGroup(0, cursor.maskRenderTexture.camera.viewProjBG);
-    passEncoder.SetBindGroup(1, fontFamily.textureAtlas.fontTextureBG);
-    QuadRenderData<TextMaskQuadVertex> textMaskData(1);
-    auto& quad = textMaskData.NextQuad();
-    for (size_t i = 0; i < 4; i++) {
-      quad[i].position = textQuadPos + glyphInfo.sizePositions[i];
-      quad[i].regionCoord = glyphInfo.region[i];
-    }
-    textMaskData.WriteBuffers();
-    textMaskData.Render(passEncoder);
-    passEncoder.End();
-
-  } else {
-    // just clear the texture if there's nothing
-    textMaskRPD.cColorAttachments[0].view = cursor.maskRenderTexture.textureView;
-    RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textMaskRPD);
-    passEncoder.End();
+  textMaskRPD.cColorAttachments[0].view = cursor.maskRenderTexture.textureView;
+  RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textMaskRPD);
+  passEncoder.SetPipeline(ctx.pipeline.textMaskRPL);
+  passEncoder.SetBindGroup(0, cursor.maskRenderTexture.camera.viewProjBG);
+  passEncoder.SetBindGroup(1, fontFamily.textureAtlas.textureSizeBG);
+  passEncoder.SetBindGroup(2, fontFamily.textureAtlas.renderTexture.textureBG);
+  QuadRenderData<TextMaskQuadVertex> textMaskData(1);
+  auto& quad = textMaskData.NextQuad();
+  for (size_t i = 0; i < 4; i++) {
+    quad[i].position = textQuadPos + glyphInfo.localPoss[i];
+    quad[i].regionCoord = glyphInfo.atlasRegion[i];
   }
+  textMaskData.WriteBuffers();
+  textMaskData.Render(passEncoder);
+  passEncoder.End();
+
+  // TODO: for some reason this only clears half of the mask for
+  // certain font sizes
+
+  // } else {
+  //   // just clear the texture if there's nothing
+  //   textMaskRPD.cColorAttachments[0].view = cursor.maskRenderTexture.textureView;
+  //   RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textMaskRPD);
+  //   passEncoder.End();
+  // }
 
   textMaskRPD.cColorAttachments[0].view = {};
 }

@@ -1,15 +1,13 @@
 struct VertexInput {
   @location(0) position: vec2f,
   @location(1) coords: vec2f,
-  @location(2) color: vec4f,
-  @location(3) lineType: u32,
+  @location(2) shapeType: u32,
 }
 
 struct VertexOutput {
   @builtin(position) position: vec4f,
   @location(0) coords: vec2f,
-  @location(1) color: vec4f,
-  @location(2) @interpolate(flat) lineType: u32,
+  @location(1) @interpolate(flat) shapeType: u32,
 }
 
 @group(0) @binding(0) var<uniform> viewProj: mat4x4f;
@@ -19,8 +17,7 @@ fn vs_main(in: VertexInput) -> VertexOutput {
   let out = VertexOutput(
     viewProj * vec4f(in.position, 0.0, 1.0),
     in.coords,
-    ToLinear(in.color),
-    in.lineType
+    in.shapeType
   );
 
   return out;
@@ -30,13 +27,13 @@ const pi = radians(180.0);
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4f {
-  if (in.lineType == 0) { // underline
+  if (in.shapeType == 0) { // underline
 
-  } else if (in.lineType == 1) { // undercurl
+  } else if (in.shapeType == 1) { // undercurl
     // x bounds = [0, 1]
     // y bounds = [1, 0]
 
-    let girth = 0.2; // [0, 0.5]
+    let girth = 0.20; // [0, 0.5]
     let fade = 0.5; // [0, 1]
     let dist = abs(
       in.coords.y -
@@ -44,34 +41,24 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4f {
     );
     let value = clamp(girth - dist, 0.0, girth);
     let alpha = smoothstep(0, girth * fade, value);
+    return vec4f(1, 1, 1, alpha);
 
-    return vec4f(in.color.rgb, alpha);
-
-  } else if (in.lineType == 2) { // underdouble
+  } else if (in.shapeType == 2) { // underdouble
     if (in.coords.y >= 1.0/3.0 && in.coords.y < 2.0/3.0) {
-      discard;
+      return vec4f(1, 1, 1, 0);
     }
 
-  } else if (in.lineType == 3) { // underdotted
+  } else if (in.shapeType == 3) { // underdotted
     let x = in.coords.x * 4.0;
     if (fract(x) >= 0.5) {
-      discard;
+      return vec4f(1, 1, 1, 0);
     }
 
-  } else if (in.lineType == 4) { // underdashed
+  } else if (in.shapeType == 4) { // underdashed
     if (in.coords.x >= 1.0/3.0 && in.coords.x < 2.0/3.0) {
-      discard;
+      return vec4f(1, 1, 1, 0);
     }
   }
 
-  return in.color;
-}
-
-fn ToLinear(color: vec4f) -> vec4f {
-  return vec4f(
-    pow(color.r, 1.8f),
-    pow(color.g, 1.8f),
-    pow(color.b, 1.8f),
-    color.a
-  );
+  return vec4f(1, 1, 1, 1);
 }

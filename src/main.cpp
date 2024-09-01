@@ -26,6 +26,7 @@
 
 #include <boost/core/demangle.hpp>
 #include <algorithm>
+#include <span>
 #include <vector>
 #include <atomic>
 #include <iostream>
@@ -131,7 +132,7 @@ int main() {
         }
         LOG_ENABLE();
 
-        // sdl events
+        // window focus events
         while (!sdlEvents.Empty()) {
           auto& event = sdlEvents.Front();
           switch (event.type) {
@@ -149,6 +150,7 @@ int main() {
           sdlEvents.Pop();
         }
 
+        // resize events
         while (!resizeEvents.Empty()) {
           // only process the last 2 resize events
           if (resizeEvents.Size() <= 2) {
@@ -240,13 +242,7 @@ int main() {
         }
         editorState->cursor.Update(dt);
 
-        // render ----------------------------------------------
-        if (auto hlIter = editorState->hlTable.find(0);
-            hlIter != editorState->hlTable.end()) {
-          auto color = hlIter->second.background.value();
-          renderer.SetClearColor(color);
-        }
-
+        // check idle -----------------------------------
         if (idle) continue;
         idleElasped += dt;
         if (idleElasped >= options.cursorIdleTime) {
@@ -258,7 +254,16 @@ int main() {
           editorState->cursor.blinkState = BlinkState::On;
         }
 
+        // render ----------------------------------------------
+        auto color = GetDefaultBackground(editorState->hlTable);
+        renderer.SetClearColor(color);
+
         renderer.Begin();
+
+        if (editorState->fontFamily.shapesManager.dirty) {
+          renderer.RenderShapes(editorState->fontFamily);
+          editorState->fontFamily.shapesManager.dirty = false;
+        }
 
         bool mainWindowRendered = false;
         bool renderWindows = session->reattached;

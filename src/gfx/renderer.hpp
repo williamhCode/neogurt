@@ -10,6 +10,7 @@
 #include "gfx/pipeline.hpp"
 #include "gfx/quad.hpp"
 #include "gfx/render_texture.hpp"
+#include "gfx/shapes.hpp"
 #include "webgpu_tools/utils/webgpu.hpp"
 #include <span>
 
@@ -26,7 +27,9 @@ struct Renderer {
   RenderTexture finalRenderTexture;
   // double buffer, so resizing doesn't flicker
   RenderTexture prevFinalRenderTexture;
-  // RenderTexture postProcessTexture;
+
+  // shapes
+  wgpu::utils::RenderPassDescriptor shapesRPD;
 
   // rect (background)
   wgpu::utils::RenderPassDescriptor rectRPD;
@@ -54,6 +57,7 @@ struct Renderer {
   void SetClearColor(glm::vec4 color);
 
   void Begin();
+  void RenderShapes(FontFamily& fontFamily);
   void RenderToWindow(Win& win, FontFamily& fontFamily, HlTable& hlTable);
   void RenderCursorMask(
     const Win& win, const Cursor& cursor, FontFamily& fontFamily, HlTable& hlTable

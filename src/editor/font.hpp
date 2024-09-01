@@ -1,8 +1,10 @@
 #pragma once
 
 #include "gfx/font.hpp"
+#include "gfx/shapes.hpp"
 #include "gfx/texture_atlas.hpp"
 
+#include <array>
 #include <string_view>
 #include <vector>
 #include <expected>
@@ -23,6 +25,7 @@ struct FontFamily {
   TextureAtlas textureAtlas;
   float defaultHeight;
   float defaultWidth;
+  ShapesManager shapesManager;
 
   static std::expected<FontFamily, std::string>
   FromGuifont(std::string_view guifont, float dpiScale);

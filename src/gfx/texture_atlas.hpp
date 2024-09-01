@@ -1,4 +1,5 @@
 #pragma once
+#include "gfx/render_texture.hpp"
 #include "glm/ext/vector_uint2.hpp"
 #include "utils/region.hpp"
 #include "utils/types.hpp"
@@ -32,9 +33,8 @@ struct TextureAtlas {
   uint currMaxHeight = 0;
 
   wgpu::Buffer textureSizeBuffer;
-  wgpu::Texture texture;
-  wgpu::Sampler textureSampler;
-  wgpu::BindGroup fontTextureBG;
+  wgpu::BindGroup textureSizeBG;
+  RenderTexture renderTexture;
   bool resized = false;
 
   TextureAtlas() = default;

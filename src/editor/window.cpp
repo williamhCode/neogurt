@@ -14,7 +14,7 @@ void WinManager::InitRenderData(Win& win) {
   const size_t maxTextQuads = win.width * win.height;
   win.rectData.CreateBuffers(maxTextQuads);
   win.textData.CreateBuffers(maxTextQuads);
-  win.lineData.CreateBuffers(maxTextQuads);
+  win.underlineData.CreateBuffers(maxTextQuads);
 
   win.sRenderTexture = ScrollableRenderTexture(size, sizes.dpiScale, sizes.charSize);
   win.sRenderTexture.UpdatePos(pos);
@@ -39,7 +39,7 @@ void WinManager::UpdateRenderData(Win& win) {
     const size_t maxTextQuads = win.width * win.height;
     win.rectData.CreateBuffers(maxTextQuads);
     win.textData.CreateBuffers(maxTextQuads);
-    win.lineData.CreateBuffers(maxTextQuads);
+    win.underlineData.CreateBuffers(maxTextQuads);
 
     win.sRenderTexture = ScrollableRenderTexture(size, sizes.dpiScale, sizes.charSize);
   }

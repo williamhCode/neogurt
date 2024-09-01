@@ -43,7 +43,7 @@ struct Win {
 
   QuadRenderData<RectQuadVertex> rectData;
   QuadRenderData<TextQuadVertex> textData;
-  QuadRenderData<LineQuadVertex> lineData;
+  QuadRenderData<TextQuadVertex> underlineData;
 
   ScrollableRenderTexture sRenderTexture;
 };

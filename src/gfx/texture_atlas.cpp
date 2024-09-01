@@ -20,25 +20,14 @@ TextureAtlas::TextureAtlas(float _glyphSize, float _dpiScale)
   textureSizeBuffer =
     utils::CreateUniformBuffer(ctx.device, sizeof(glm::vec2), &textureSize);
 
-  texture = utils::CreateBindingTexture(
-    ctx.device, bufferSize, wgpu::TextureFormat::RGBA8Unorm
-  );
-
-  textureSampler = ctx.device.CreateSampler(ToPtr(SamplerDescriptor{
-    .addressModeU = AddressMode::ClampToEdge,
-    .addressModeV = AddressMode::ClampToEdge,
-    .magFilter = FilterMode::Nearest,
-    .minFilter = FilterMode::Nearest,
-  }));
-
-  fontTextureBG = utils::MakeBindGroup(
-    ctx.device, ctx.pipeline.fontTextureBGL,
+  textureSizeBG = utils::MakeBindGroup(
+    ctx.device, ctx.pipeline.textureSizeBGL,
     {
       {0, textureSizeBuffer},
-      {1, texture.CreateView()},
-      {2, textureSampler},
     }
   );
+
+  renderTexture = RenderTexture(textureSize, dpiScale, TextureFormat::RGBA8Unorm);
 }
 
 Region TextureAtlas::AddGlyph(std::mdspan<uint8_t, std::dextents<uint, 2>> glyphData) {
@@ -95,24 +84,12 @@ void TextureAtlas::Update() {
     // replace buffer because we dont want to change previous buffer data
     // we wanna create copy of it so different instances of the buffer
     // can be used in the same command encoder
-    textureSizeBuffer =
-      utils::CreateUniformBuffer(ctx.device, sizeof(glm::vec2), &textureSize);
+    ctx.queue.WriteBuffer(textureSizeBuffer, 0, &textureSize, sizeof(glm::vec2));
 
-    texture = utils::CreateBindingTexture(
-      ctx.device, bufferSize, wgpu::TextureFormat::RGBA8UnormSrgb
-    );
-
-    fontTextureBG = utils::MakeBindGroup(
-      ctx.device, ctx.pipeline.fontTextureBGL,
-      {
-        {0, textureSizeBuffer},
-        {1, texture.CreateView()},
-        {2, textureSampler},
-      }
-    );
+    renderTexture = RenderTexture(textureSize, dpiScale, TextureFormat::RGBA8Unorm);
     resized = false;
   }
 
-  utils::WriteTexture(ctx.device, texture, bufferSize, dataRaw.data());
+  utils::WriteTexture(ctx.device, renderTexture.texture, bufferSize, dataRaw.data());
   dirty = false;
 }

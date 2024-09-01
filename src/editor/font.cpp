@@ -1,6 +1,6 @@
 #include "font.hpp"
-#include "utils/logger.hpp"
-#include "utils/unicode.hpp"
+#include "gfx/instance.hpp"
+#include "webgpu_tools/utils/webgpu.hpp"
 #include <ranges>
 #include <string>
 #include <boost/lexical_cast.hpp>
@@ -45,7 +45,7 @@ FontFamily::FromGuifont(std::string_view guifont, float dpiScale) {
   }
 
   try {
-    return FontFamily{
+    FontFamily fontFamily{
       .fonts = SplitStr(fontsStr, ',') | std::views::transform([&](auto&& fontName) {
         FontSet fontSet;
         auto makeFontHandle = [&](bool bold, bool italic) {
@@ -84,7 +84,10 @@ FontFamily::FromGuifont(std::string_view guifont, float dpiScale) {
       .textureAtlas{height, dpiScale},
       .defaultHeight = height,
       .defaultWidth = width,
+      .shapesManager{fontFamily.DefaultFont().charSize, dpiScale},
     };
+    return fontFamily;
+
   } catch (const std::bad_expected_access<std::string>& e) {
     return std::unexpected(e.error());
   }
@@ -112,6 +115,7 @@ void FontFamily::ChangeDpiScale(float dpiScale) {
   fonts = std::move(newFonts);
 
   textureAtlas = TextureAtlas(DefaultFont().height, dpiScale);
+  shapesManager = ShapesManager(DefaultFont().charSize, dpiScale);
 }
 
 void FontFamily::ChangeSize(float delta) {
@@ -141,6 +145,7 @@ void FontFamily::ChangeSize(float delta) {
   fonts = std::move(newFonts);
 
   textureAtlas = TextureAtlas(DefaultFont().height, textureAtlas.dpiScale);
+  shapesManager = ShapesManager(DefaultFont().charSize, textureAtlas.dpiScale);
 }
 
 void FontFamily::ResetSize() {
@@ -165,6 +170,7 @@ void FontFamily::ResetSize() {
   fonts = std::move(newFonts);
 
   textureAtlas = TextureAtlas(DefaultFont().height, textureAtlas.dpiScale);
+  shapesManager = ShapesManager(DefaultFont().charSize, textureAtlas.dpiScale);
 }
 
 const Font& FontFamily::DefaultFont() const {

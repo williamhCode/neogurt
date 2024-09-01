@@ -11,6 +11,7 @@
 #include <optional>
 #include <tuple>
 
+// convenience wrapper over wgpu::Texture
 struct RenderTexture {
   Ortho2D camera;
 

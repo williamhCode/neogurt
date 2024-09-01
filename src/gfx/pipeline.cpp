@@ -15,6 +15,35 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
     }
   );
 
+  textureBGL = utils::MakeBindGroupLayout(
+    ctx.device,
+    {
+      {0, ShaderStage::Fragment, TextureSampleType::UnfilterableFloat},
+      {1, ShaderStage::Fragment, SamplerBindingType::NonFiltering},
+    }
+  );
+
+  // shapes pipeline ---------------------------------------------
+  ShaderModule shapesShader =
+    utils::LoadShaderModule(ctx.device, resourcesDir + "/shaders/shapes.wgsl");
+
+  shapesRPL = utils::MakeRenderPipeline(ctx.device, {
+    .vs = shapesShader,
+    .fs = shapesShader,
+    .bgls = {viewProjBGL},
+    .buffers = {
+      {
+        sizeof(ShapeQuadVertex),
+        {
+          {VertexFormat::Float32x2, offsetof(ShapeQuadVertex, position)},
+          {VertexFormat::Float32x2, offsetof(ShapeQuadVertex, coord)},
+          {VertexFormat::Uint32, offsetof(ShapeQuadVertex, shapeType)},
+        }
+      }
+    },
+    .targets = {{.format = TextureFormat::RGBA8Unorm}},
+  });
+
   // rect pipeline -------------------------------------------
   ShaderModule rectShader =
     utils::LoadShaderModule(ctx.device, resourcesDir + "/shaders/rect.wgsl");
@@ -39,19 +68,17 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
   ShaderModule textShader =
     utils::LoadShaderModule(ctx.device, resourcesDir + "/shaders/text.wgsl");
 
-  fontTextureBGL = utils::MakeBindGroupLayout(
+  textureSizeBGL = utils::MakeBindGroupLayout(
     ctx.device,
     {
       {0, ShaderStage::Vertex, BufferBindingType::Uniform},
-      {1, ShaderStage::Fragment, TextureSampleType::UnfilterableFloat},
-      {2, ShaderStage::Fragment, SamplerBindingType::NonFiltering},
     }
   );
 
   textRPL = utils::MakeRenderPipeline(ctx.device, {
     .vs = textShader,
     .fs = textShader,
-    .bgls = {viewProjBGL, fontTextureBGL},
+    .bgls = {viewProjBGL, textureSizeBGL, textureBGL},
     .buffers = {
       {
         sizeof(TextQuadVertex),
@@ -70,33 +97,6 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
     },
   });
 
-  // line
-  ShaderModule lineShader =
-    utils::LoadShaderModule(ctx.device, resourcesDir + "/shaders/line.wgsl");
-
-  lineRPL = utils::MakeRenderPipeline(ctx.device, {
-    .vs = lineShader,
-    .fs = lineShader,
-    .bgls = {viewProjBGL},
-    .buffers = {
-      {
-        sizeof(LineQuadVertex),
-        {
-          {VertexFormat::Float32x2, offsetof(LineQuadVertex, position)},
-          {VertexFormat::Float32x2, offsetof(LineQuadVertex, coord)},
-          {VertexFormat::Float32x4, offsetof(LineQuadVertex, color)},
-          {VertexFormat::Uint32, offsetof(LineQuadVertex, lineType)},
-        }
-      }
-    },
-    .targets = {
-      {
-        .format = TextureFormat::RGBA8UnormSrgb,
-        .blend = &utils::BlendState::AlphaBlending,
-      },
-    },
-  });
-
   // mask
   ShaderModule textMaskShader =
     utils::LoadShaderModule(ctx.device, resourcesDir + "/shaders/text_mask.wgsl");
@@ -104,7 +104,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
   textMaskRPL = utils::MakeRenderPipeline(ctx.device, {
     .vs = textMaskShader,
     .fs = textMaskShader,
-    .bgls = {viewProjBGL, fontTextureBGL},
+    .bgls = {viewProjBGL, textureSizeBGL, textureBGL},
     .buffers = {
       {
         sizeof(TextMaskQuadVertex),
@@ -130,14 +130,6 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
       {VertexFormat::Float32x2, offsetof(TextureQuadVertex, uv)},
     }
   };
-
-  textureBGL = utils::MakeBindGroupLayout(
-    ctx.device,
-    {
-      {0, ShaderStage::Fragment, TextureSampleType::UnfilterableFloat},
-      {1, ShaderStage::Fragment, SamplerBindingType::NonFiltering},
-    }
-  );
 
   defaultColorBGL = utils::MakeBindGroupLayout(
     ctx.device, {{0, ShaderStage::Fragment, BufferBindingType::Uniform}}

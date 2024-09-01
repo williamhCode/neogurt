@@ -62,12 +62,13 @@ Font::Font(std::string _path, float _height, float _width, float _dpiScale)
   }
 
   // winding order is clockwise starting from top left
-  trueHeight = height * dpiScale;
+  int trueHeight = height * dpiScale;
   height = trueHeight / dpiScale; // round down to nearest trueSize
+
   int trueWidth = width * dpiScale;
   width = trueWidth / dpiScale; // round down to nearest trueWidth
-  FT_Set_Pixel_Sizes(face.get(), trueWidth, trueHeight);
 
+  FT_Set_Pixel_Sizes(face.get(), trueWidth, trueHeight);
   charSize.x = (face->size->metrics.max_advance >> 6) / dpiScale;
   charSize.y = (face->size->metrics.height >> 6) / dpiScale;
   ascender = (face->size->metrics.ascender >> 6) / dpiScale;
@@ -75,6 +76,7 @@ Font::Font(std::string _path, float _height, float _width, float _dpiScale)
   float y_scale = face->size->metrics.y_scale;
   underlinePosition = (FT_MulFix(face->underline_position, y_scale) >> 6) / dpiScale;
   underlineThickness = (FT_MulFix(face->underline_thickness, y_scale) >> 6) / dpiScale;
+  underlineThickness = std::max(underlineThickness, 1.0f / dpiScale);
 
   // LOG_INFO(
   //   "Font: {}, size: {}, dpiScale: {}, charSize: {}, ascender: {}, underlinePosition: "
@@ -118,20 +120,17 @@ Font::GetGlyphInfo(FT_ULong charcode, TextureAtlas& textureAtlas) {
   auto pair = glyphInfoMap.emplace(
     glyphIndex,
     GlyphInfo{
-      .sizePositions = MakeRegion(
-        {0, 0},
+      .localPoss = MakeRegion(
+        {
+          slot->bitmap_left / dpiScale,
+          -slot->bitmap_top / dpiScale,
+        },
         {
           bitmap.width / dpiScale,
           bitmap.rows / dpiScale,
         }
       ),
-      .bearing =
-        glm::vec2{
-          slot->bitmap_left / dpiScale,
-          slot->bitmap_top / dpiScale,
-        },
-      // .advance = (glyph.advance.x >> 6) / dpiScale,
-      .region = region,
+      .atlasRegion = region,
     }
   );
 

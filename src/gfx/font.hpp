@@ -23,7 +23,6 @@ struct Font {
 
   std::string path;
   float height;     // font size
-  int trueHeight; // font size * dpiScale
   float width;
   float dpiScale;
 
@@ -33,11 +32,8 @@ struct Font {
   float underlineThickness;
 
   struct GlyphInfo {
-    // floats because of high dpi
-    Region sizePositions;
-    glm::vec2 bearing;
-    // float advance;
-    Region region;
+    Region localPoss;
+    Region atlasRegion;
   };
   using GlyphInfoMap = std::unordered_map<uint32_t, GlyphInfo>;
   GlyphInfoMap glyphInfoMap;

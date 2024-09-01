@@ -17,15 +17,18 @@ RenderTexture::RenderTexture(
   camera = Ortho2D(size);
 
   auto fbSize = size * dpiScale;
-  texture = utils::CreateRenderTexture(ctx.device, fbSize, format, data);
+  texture = utils::CreateRenderTexture(ctx.device, {fbSize, format}, data);
+
   textureView = texture.CreateView();
 
-  auto textureSampler = ctx.device.CreateSampler(ToPtr(SamplerDescriptor{
-    .addressModeU = AddressMode::ClampToEdge,
-    .addressModeV = AddressMode::ClampToEdge,
-    .magFilter = FilterMode::Nearest,
-    .minFilter = FilterMode::Nearest,
-  }));
+  auto textureSampler = ctx.device.CreateSampler(
+    cPtr(SamplerDescriptor{
+      .addressModeU = AddressMode::ClampToEdge,
+      .addressModeV = AddressMode::ClampToEdge,
+      .magFilter = FilterMode::Nearest,
+      .minFilter = FilterMode::Nearest,
+    })
+  );
 
   textureBG = utils::MakeBindGroup(
     ctx.device, ctx.pipeline.textureBGL,
