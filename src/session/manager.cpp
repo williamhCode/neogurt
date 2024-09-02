@@ -201,7 +201,6 @@ bool SessionManager::ShouldQuit() {
 }
 
 void SessionManager::FontSizeChange(float delta, bool all) {
-  // TODO: implement font size change for all sessions
   if (all) {
     auto* curr = CurrSession();
     for (auto& [_, session] : sessions) {

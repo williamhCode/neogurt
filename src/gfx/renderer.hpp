@@ -28,15 +28,15 @@ struct Renderer {
   // double buffer, so resizing doesn't flicker
   RenderTexture prevFinalRenderTexture;
 
-  // shapes
-  wgpu::utils::RenderPassDescriptor shapesRPD;
-
   // rect (background)
   wgpu::utils::RenderPassDescriptor rectRPD;
   wgpu::utils::RenderPassDescriptor rectNoClearRPD;
 
-  // text and line
-  wgpu::utils::RenderPassDescriptor textLineRPD;
+  // text and shapes
+  wgpu::utils::RenderPassDescriptor textRPD;
+  wgpu::utils::RenderPassDescriptor shapesRPD;
+
+  // text mask
   wgpu::utils::RenderPassDescriptor textMaskRPD;
 
   // windows
@@ -57,7 +57,7 @@ struct Renderer {
   void SetClearColor(glm::vec4 color);
 
   void Begin();
-  void RenderShapes(FontFamily& fontFamily);
+  // void RenderShapes(FontFamily& fontFamily);
   void RenderToWindow(Win& win, FontFamily& fontFamily, HlTable& hlTable);
   void RenderCursorMask(
     const Win& win, const Cursor& cursor, FontFamily& fontFamily, HlTable& hlTable

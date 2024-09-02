@@ -37,11 +37,17 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
         {
           {VertexFormat::Float32x2, offsetof(ShapeQuadVertex, position)},
           {VertexFormat::Float32x2, offsetof(ShapeQuadVertex, coord)},
+          {VertexFormat::Float32x4, offsetof(ShapeQuadVertex, color)},
           {VertexFormat::Uint32, offsetof(ShapeQuadVertex, shapeType)},
         }
       }
     },
-    .targets = {{.format = TextureFormat::RGBA8Unorm}},
+    .targets = {
+      {
+        .format = TextureFormat::RGBA8UnormSrgb,
+        .blend = &utils::BlendState::AlphaBlending,
+      },
+    },
   });
 
   // rect pipeline -------------------------------------------

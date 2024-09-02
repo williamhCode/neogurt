@@ -24,6 +24,15 @@ fn vs_main(in: VertexInput) -> VertexOutput {
   return out;
 }
 
+fn ToLinear(color: vec4f) -> vec4f {
+  return vec4f(
+    pow(color.r, 1.8f),
+    pow(color.g, 1.8f),
+    pow(color.b, 1.8f),
+    color.a
+  );
+}
+
 struct FragmentInput {
   @location(0) uv: vec2f,
   @location(1) foreground: vec4f,
@@ -44,13 +53,4 @@ fn fs_main(in: FragmentInput) -> FragmentOutput {
   out.color = in.foreground * out.color;
 
   return out;
-}
-
-fn ToLinear(color: vec4f) -> vec4f {
-  return vec4f(
-    pow(color.r, 1.8f),
-    pow(color.g, 1.8f),
-    pow(color.b, 1.8f),
-    color.a
-  );
 }

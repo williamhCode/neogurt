@@ -21,6 +21,7 @@ struct TextQuadVertex {
 struct ShapeQuadVertex {
   glm::vec2 position;
   glm::vec2 coord;
+  glm::vec4 color;
   uint32_t shapeType;
 };
 

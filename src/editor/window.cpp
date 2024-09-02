@@ -11,10 +11,10 @@ void WinManager::InitRenderData(Win& win) {
   auto pos = glm::vec2(win.startCol, win.startRow) * sizes.charSize;
   auto size = glm::vec2(win.width, win.height) * sizes.charSize;
 
-  const size_t maxTextQuads = win.width * win.height;
-  win.rectData.CreateBuffers(maxTextQuads);
-  win.textData.CreateBuffers(maxTextQuads);
-  win.underlineData.CreateBuffers(maxTextQuads);
+  auto numQuads = win.height * std::min(win.width, 100);
+  win.rectData.CreateBuffers(numQuads);
+  win.textData.CreateBuffers(numQuads);
+  win.shapeData.CreateBuffers(numQuads);
 
   win.sRenderTexture = ScrollableRenderTexture(size, sizes.dpiScale, sizes.charSize);
   win.sRenderTexture.UpdatePos(pos);
@@ -36,10 +36,10 @@ void WinManager::UpdateRenderData(Win& win) {
   }
 
   if (sizeChanged) {
-    const size_t maxTextQuads = win.width * win.height;
-    win.rectData.CreateBuffers(maxTextQuads);
-    win.textData.CreateBuffers(maxTextQuads);
-    win.underlineData.CreateBuffers(maxTextQuads);
+    auto numQuads = win.height * std::min(win.width, 100);
+    win.rectData.CreateBuffers(numQuads);
+    win.textData.CreateBuffers(numQuads);
+    win.shapeData.CreateBuffers(numQuads);
 
     win.sRenderTexture = ScrollableRenderTexture(size, sizes.dpiScale, sizes.charSize);
   }

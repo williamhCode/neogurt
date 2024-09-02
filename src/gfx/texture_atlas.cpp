@@ -84,7 +84,15 @@ void TextureAtlas::Update() {
     // replace buffer because we dont want to change previous buffer data
     // we wanna create copy of it so different instances of the buffer
     // can be used in the same command encoder
-    ctx.queue.WriteBuffer(textureSizeBuffer, 0, &textureSize, sizeof(glm::vec2));
+    textureSizeBuffer =
+      utils::CreateUniformBuffer(ctx.device, sizeof(glm::vec2), &textureSize);
+
+    textureSizeBG = utils::MakeBindGroup(
+      ctx.device, ctx.pipeline.textureSizeBGL,
+      {
+        {0, textureSizeBuffer},
+      }
+    );
 
     renderTexture = RenderTexture(textureSize, dpiScale, TextureFormat::RGBA8Unorm);
     resized = false;

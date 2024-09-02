@@ -25,15 +25,6 @@ Renderer::Renderer(const SizeHandler& sizes) {
     RenderTexture(sizes.uiSize, sizes.dpiScale, TextureFormat::RGBA8UnormSrgb);
   finalRenderTexture.UpdatePos(sizes.offset);
 
-  // shapes
-  shapesRPD = utils::RenderPassDescriptor({
-    RenderPassColorAttachment{
-      .loadOp = LoadOp::Clear,
-      .storeOp = StoreOp::Store,
-      .clearValue = {1, 1, 1, 0},
-    },
-  });
-
   // rect
   rectRPD = utils::RenderPassDescriptor({
     RenderPassColorAttachment{
@@ -49,13 +40,22 @@ Renderer::Renderer(const SizeHandler& sizes) {
   });
 
   // text
-  textLineRPD = utils::RenderPassDescriptor({
+  textRPD = utils::RenderPassDescriptor({
     RenderPassColorAttachment{
       .loadOp = LoadOp::Load,
       .storeOp = StoreOp::Store,
     },
   });
 
+  // shapes
+  shapesRPD = utils::RenderPassDescriptor({
+    RenderPassColorAttachment{
+      .loadOp = LoadOp::Load,
+      .storeOp = StoreOp::Store,
+    },
+  });
+
+  // text mask
   textMaskRPD = utils::RenderPassDescriptor({
     RenderPassColorAttachment{
       .loadOp = LoadOp::Clear,
@@ -146,69 +146,6 @@ void Renderer::Begin() {
   nextTextureView = nextTexture.CreateView();
 }
 
-void Renderer::RenderShapes(FontFamily& fontFamily) {
-  auto& shapes = fontFamily.shapesManager;
-
-  static QuadRenderData<ShapeQuadVertex> shapesData(shapes.infoArray.size());
-  shapesData.ResetCounts();
-
-  const auto& defaultFont = fontFamily.DefaultFont();
-
-  // first five are underlines
-  for (int i = 0; i < 5; i++) {
-    auto underlineType = static_cast<UnderlineType>(i);
-
-    // underline or underdashed
-    float thicknessScale = 1.0f;
-    if (underlineType == UnderlineType::Undercurl) {
-      thicknessScale = 3.5f;
-    } else if (underlineType == UnderlineType::Underdouble) {
-      thicknessScale = 2.0f;
-    } else if (underlineType == UnderlineType::Underdotted) {
-      thicknessScale = 1.5f;
-    }
-
-    float thickness = defaultFont.underlineThickness * thicknessScale;
-
-    // mininum pixel heights
-    if (underlineType == UnderlineType::Undercurl ||
-        underlineType == UnderlineType::Underdouble) {
-      thickness = std::max(thickness, 3.0f / defaultFont.dpiScale);
-    } else {
-      thickness = std::max(thickness, 1.0f / defaultFont.dpiScale);
-    }
-
-    glm::vec2 lineQuadPos{
-      i * defaultFont.charSize.x,
-      defaultFont.ascender - defaultFont.underlinePosition - thickness / 2,
-    };
-    glm::vec2 lineQuadSize{
-      defaultFont.charSize.x,
-      thickness,
-    };
-    auto lineQuadRegion = MakeRegion(lineQuadPos, lineQuadSize);
-
-    static auto underlineCoords = MakeRegion({0, 0}, {1, 1});
-
-    auto& quad = shapesData.NextQuad();
-    for (size_t j = 0; j < 4; j++) {
-      quad[j].position = lineQuadRegion[j];
-      quad[j].coord = underlineCoords[j];
-      quad[j].shapeType = i;
-    }
-  }
-
-  shapesData.WriteBuffers();
-
-  shapesRPD.cColorAttachments[0].view = shapes.renderTexture.textureView;
-  RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&shapesRPD);
-  passEncoder.SetPipeline(ctx.pipeline.shapesRPL);
-  passEncoder.SetBindGroup(0, shapes.renderTexture.camera.viewProjBG);
-  shapesData.Render(passEncoder);
-  passEncoder.End();
-  shapesRPD.cColorAttachments[0].view = {};
-}
-
 void Renderer::RenderToWindow(
   Win& win, FontFamily& fontFamily, HlTable& hlTable
 ) {
@@ -235,7 +172,7 @@ void Renderer::RenderToWindow(
 
   auto& rectData = win.rectData;
   auto& textData = win.textData;
-  auto& shapeData = win.underlineData;
+  auto& shapeData = win.shapeData;
 
   rectData.ResetCounts();
   textData.ResetCounts();
@@ -288,22 +225,41 @@ void Renderer::RenderToWindow(
       }
 
       if (hl.underline.has_value()) {
-        auto underlineType = *hl.underline;
-        const auto& shapeInfo =
-          fontFamily.shapesManager.GetUnderlineInfo(underlineType);
-
-        glm::vec2 underlineQuadPos{
-          textOffset.x,
-          textOffset.y,
-        };
-
+        static auto coords = MakeRegion({0, 0}, {1, 1});
         auto underlineColor = GetSpecial(hlTable, hl);
+        auto underlineType = *hl.underline;
+
+        float thicknessScale = 1.0f;
+        if (underlineType == UnderlineType::Undercurl) {
+          thicknessScale = 3.5f;
+        } else if (underlineType == UnderlineType::Underdouble) {
+          thicknessScale = 3.0f;
+        } else if (underlineType == UnderlineType::Underdotted) {
+          thicknessScale = 1.5f;
+        }
+        float thickness = defaultFont.underlineThickness * thicknessScale;
+        // make sure underdouble is at least 4 physical pixels high
+        if (underlineType == UnderlineType::Underdouble) {
+          thickness = std::max(thickness, 4.0f / defaultFont.dpiScale);
+        }
+
+        glm::vec2 lineQuadPos{
+          textOffset.x,
+          textOffset.y + defaultFont.ascender - defaultFont.underlinePosition -
+            thickness / 2,
+        };
+        glm::vec2 lineQuadSize{
+          defaultFont.charSize.x,
+          thickness,
+        };
+        auto lineQuadRegion = MakeRegion(lineQuadPos, lineQuadSize);
 
         auto& quad = shapeData.NextQuad();
         for (size_t i = 0; i < 4; i++) {
-          quad[i].position = underlineQuadPos + shapeInfo.localPoss[i];
-          quad[i].regionCoord = shapeInfo.atlasRegion[i];
-          quad[i].foreground = underlineColor;
+          quad[i].position = lineQuadRegion[i];
+          quad[i].coord = coords[i];
+          quad[i].color = underlineColor;
+          quad[i].shapeType = std::to_underlying(underlineType);
         }
       }
 
@@ -359,8 +315,8 @@ void Renderer::RenderToWindow(
     start = textIntervals[range.start];
     end = textIntervals[range.end];
     if (start != end) {
-      textLineRPD.cColorAttachments[0].view = renderTexture->textureView;
-      RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textLineRPD);
+      textRPD.cColorAttachments[0].view = renderTexture->textureView;
+      RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textRPD);
       passEncoder.SetPipeline(ctx.pipeline.textRPL);
       passEncoder.SetBindGroup(0, renderTexture->camera.viewProjBG);
       passEncoder.SetBindGroup(1, fontFamily.textureAtlas.textureSizeBG);
@@ -372,19 +328,18 @@ void Renderer::RenderToWindow(
     start = shapeIntervals[range.start];
     end = shapeIntervals[range.end];
     if (start != end) {
-      textLineRPD.cColorAttachments[0].view = renderTexture->textureView;
-      RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textLineRPD);
-      passEncoder.SetPipeline(ctx.pipeline.textRPL);
+      shapesRPD.cColorAttachments[0].view = renderTexture->textureView;
+      RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&shapesRPD);
+      passEncoder.SetPipeline(ctx.pipeline.shapesRPL);
       passEncoder.SetBindGroup(0, renderTexture->camera.viewProjBG);
-      passEncoder.SetBindGroup(1, fontFamily.shapesManager.textureSizeBG);
-      passEncoder.SetBindGroup(2, fontFamily.shapesManager.renderTexture.textureBG);
       if (start != end) shapeData.Render(passEncoder, start, end - start);
       passEncoder.End();
     }
   }
 
   rectRPD.cColorAttachments[0].view = {};
-  textLineRPD.cColorAttachments[0].view = {};
+  textRPD.cColorAttachments[0].view = {};
+  shapesRPD.cColorAttachments[0].view = {};
 }
 
 void Renderer::RenderCursorMask(

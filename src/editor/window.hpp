@@ -41,9 +41,9 @@ struct Win {
   glm::vec2 pos;
   glm::vec2 size;
 
-  QuadRenderData<RectQuadVertex> rectData;
-  QuadRenderData<TextQuadVertex> textData;
-  QuadRenderData<TextQuadVertex> underlineData;
+  DynamicQuadRenderData<RectQuadVertex> rectData;
+  DynamicQuadRenderData<TextQuadVertex> textData;
+  DynamicQuadRenderData<ShapeQuadVertex> shapeData;
 
   ScrollableRenderTexture sRenderTexture;
 };

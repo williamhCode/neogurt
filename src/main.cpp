@@ -260,11 +260,6 @@ int main() {
 
         renderer.Begin();
 
-        if (editorState->fontFamily.shapesManager.dirty) {
-          renderer.RenderShapes(editorState->fontFamily);
-          editorState->fontFamily.shapesManager.dirty = false;
-        }
-
         bool mainWindowRendered = false;
         bool renderWindows = session->reattached;
         for (auto& [id, win] : editorState->winManager.windows) {
