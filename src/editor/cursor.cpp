@@ -14,7 +14,7 @@ void Cursor::Resize(glm::vec2 _size, float dpi) {
 
   maskRenderTexture = RenderTexture(size, dpi, TextureFormat::R8Unorm);
 
-  maskPosBuffer = utils::CreateUniformBuffer(ctx.device, sizeof(glm::vec2));
+  maskPosBuffer = utils::CreateUniformBuffer(ctx.device, sizeof(glm::vec2), &destPos);
 
   maskPosBG = utils::MakeBindGroup(
     ctx.device, ctx.pipeline.cursorMaskPosBGL,
