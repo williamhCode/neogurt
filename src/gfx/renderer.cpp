@@ -225,7 +225,6 @@ void Renderer::RenderToWindow(
       }
 
       if (hl.underline.has_value()) {
-        static auto coords = MakeRegion({0, 0}, {1, 1});
         auto underlineColor = GetSpecial(hlTable, hl);
         auto underlineType = *hl.underline;
 
@@ -243,20 +242,23 @@ void Renderer::RenderToWindow(
           thickness = std::max(thickness, 4.0f / defaultFont.dpiScale);
         }
 
-        glm::vec2 lineQuadPos{
+        glm::vec2 quadPos{
           textOffset.x,
           textOffset.y + defaultFont.ascender - defaultFont.underlinePosition -
             thickness / 2,
         };
-        glm::vec2 lineQuadSize{
+
+        glm::vec2 quadSize{
           defaultFont.charSize.x,
           thickness,
         };
-        auto lineQuadRegion = MakeRegion(lineQuadPos, lineQuadSize);
+        auto lineQuadRegion = MakeRegion(quadPos, quadSize);
+        auto coords = MakeRegion({0, 0}, quadSize);
 
         auto& quad = shapeData.NextQuad();
         for (size_t i = 0; i < 4; i++) {
           quad[i].position = lineQuadRegion[i];
+          quad[i].size = quadSize;
           quad[i].coord = coords[i];
           quad[i].color = underlineColor;
           quad[i].shapeType = std::to_underlying(underlineType);

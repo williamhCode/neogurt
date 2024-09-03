@@ -11,7 +11,7 @@ void WinManager::InitRenderData(Win& win) {
   auto pos = glm::vec2(win.startCol, win.startRow) * sizes.charSize;
   auto size = glm::vec2(win.width, win.height) * sizes.charSize;
 
-  auto numQuads = win.height * std::min(win.width, 100);
+  auto numQuads = win.height * std::min(win.width, 80);
   win.rectData.CreateBuffers(numQuads);
   win.textData.CreateBuffers(numQuads);
   win.shapeData.CreateBuffers(numQuads);
@@ -36,7 +36,7 @@ void WinManager::UpdateRenderData(Win& win) {
   }
 
   if (sizeChanged) {
-    auto numQuads = win.height * std::min(win.width, 100);
+    auto numQuads = win.height * std::min(win.width, 80);
     win.rectData.CreateBuffers(numQuads);
     win.textData.CreateBuffers(numQuads);
     win.shapeData.CreateBuffers(numQuads);

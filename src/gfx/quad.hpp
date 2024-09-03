@@ -169,7 +169,7 @@ struct DynamicQuadRenderData {
   void WriteBuffers() {
     size_t bufferQuadCount = vertexBuffer.GetSize() / (sizeof(VertexType) * 4);
     if (bufferQuadCount != quads.size()) {
-      LOG_INFO("Resizing vertex buffer from {} to {}", bufferQuadCount, quads.size());
+      // LOG_INFO("Resizing vertex buffer from {} to {}", bufferQuadCount, quads.size());
       vertexBuffer = wgpu::utils::CreateVertexBuffer(
         ctx.device, sizeof(VertexType) * 4 * quads.size()
       );

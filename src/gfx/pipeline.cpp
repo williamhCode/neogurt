@@ -36,6 +36,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
         sizeof(ShapeQuadVertex),
         {
           {VertexFormat::Float32x2, offsetof(ShapeQuadVertex, position)},
+          {VertexFormat::Float32x2, offsetof(ShapeQuadVertex, size)},
           {VertexFormat::Float32x2, offsetof(ShapeQuadVertex, coord)},
           {VertexFormat::Float32x4, offsetof(ShapeQuadVertex, color)},
           {VertexFormat::Uint32, offsetof(ShapeQuadVertex, shapeType)},
