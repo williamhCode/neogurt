@@ -65,14 +65,10 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4f {
         // make thickness more uniform
         - pow(sin(2 * pi * xn), 2) * h * 0.04;
 
-      if (dist > girth) {
-        alpha = 0;
-      } else {
-        alpha = 1 - smoothstep(girth - fade, girth, dist);
-      }
+      alpha = 1 - smoothstep(girth - fade, girth, dist);
     }
     case 2 { // underdouble
-      if (1./3 <= yn && yn < 2./3) {
+      if (1/3. <= yn && yn < 2/3.) {
         alpha = 0;
       }
     }
@@ -82,15 +78,16 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4f {
       }
     }
     case 4 { // underdashed
-      if (1./3 <= xn && xn < 2./3) {
+      if (1/3. <= xn && xn < 2/3.) {
         alpha = 0;
       }
     }
     case 5 { // braille circle
+      let radius = h * 0.5;
+      let fade = min(radius * 0.5, 0.5);
+
       let dist = distance(in.coords, in.size / 2.);
-      if (dist > w / 2.) {
-        alpha = 0;
-      }
+      alpha = 1 - smoothstep(radius - fade, radius, dist);
     }
   }
 

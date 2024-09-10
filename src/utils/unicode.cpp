@@ -2,7 +2,7 @@
 #include "utf8/checked.h"
 #include "utils/logger.hpp"
 
-std::string UnicodeToUTF8(char32_t unicode) {
+std::string Char32ToUTF8(char32_t unicode) {
   std::string utf8String;
   try {
     utf8::append(unicode, utf8String);
@@ -13,7 +13,7 @@ std::string UnicodeToUTF8(char32_t unicode) {
   return utf8String;
 }
 
-char32_t UTF8ToUnicode(const std::string& utf8String) {
+char32_t UTF8ToChar32(const std::string& utf8String) {
   auto it = utf8String.begin();
   try {
     return utf8::next(it, utf8String.end());

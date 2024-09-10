@@ -6,11 +6,13 @@
 #include "gfx/pipeline.hpp"
 #include "utils/logger.hpp"
 #include "utils/region.hpp"
+#include "utils/types.hpp"
 #include "utils/unicode.hpp"
 #include "utils/color.hpp"
 #include "webgpu_tools/utils/webgpu.hpp"
 #include <utility>
 #include <vector>
+#include <array>
 #include "glm/gtx/string_cast.hpp"
 
 using namespace wgpu;
@@ -207,20 +209,94 @@ void Renderer::RenderToWindow(
       }
 
       if (!cell.text.empty() && cell.text != " ") {
-        char32_t charcode = UTF8ToUnicode(cell.text);
-        const auto& glyphInfo = fontFamily.GetGlyphInfo(charcode, hl.bold, hl.italic);
-
-        glm::vec2 textQuadPos{
-          textOffset.x,
-          textOffset.y + defaultFont.ascender,
-        };
-
         glm::vec4 foreground = GetForeground(hlTable, hl);
-        auto& quad = textData.NextQuad();
-        for (size_t i = 0; i < 4; i++) {
-          quad[i].position = textQuadPos + glyphInfo.localPoss[i];
-          quad[i].regionCoord = glyphInfo.atlasRegion[i];
-          quad[i].foreground = foreground;
+        char32_t charcode = UTF8ToChar32(cell.text);
+
+        if (charcode >= 0x2800 && charcode <= 0x28FF) { // braille characters
+          // order, hex value
+          // 0 3    1 8
+          // 1 4    2 10
+          // 2 5    4 20
+          // 6 7    8 80
+
+          uint32_t hexVal = charcode - 0x2800; 
+
+          std::span<const glm::vec2> brailleOffsets;
+          int numDots = 0;
+
+          if (charcode < 0x2840) { // 6 dots
+            static const glm::vec2 sixDotBrailleOffsets[6] = {
+              {1/4., 1/6.},
+              {1/4., 3/6.},
+              {1/4., 5/6.},
+              {3/4., 1/6.},
+              {3/4., 3/6.},
+              {3/4., 5/6.},
+            };
+            brailleOffsets = sixDotBrailleOffsets;
+            numDots = 6;
+            
+          } else { // 8 dots
+            static const glm::vec2 eightDotBrailleOffsets[8] = {
+              {1/4., 1/8.},
+              {1/4., 3/8.},
+              {1/4., 5/8.},
+              {3/4., 1/8.},
+              {3/4., 3/8.},
+              {3/4., 5/8.},
+              {1/4., 7/8.},
+              {3/4., 7/8.},
+            };
+            brailleOffsets = eightDotBrailleOffsets;
+            numDots = 8;
+          }
+
+          for (int dotIndex = 0; dotIndex < numDots; dotIndex++) {
+            if (!(hexVal & (1 << dotIndex))) continue;
+
+            auto charSize = defaultFont.charSize;
+            auto centerPos = brailleOffsets[dotIndex] * charSize;
+
+            int xNumDots = 2;
+            int yNumDots = numDots / 2;
+            float radius =
+              std::min(charSize.x / xNumDots, charSize.y / yNumDots) / 2; // fullsize
+            radius *= 0.7;                                         // add some padding
+
+            // auto halfQuadSize = glm::vec2{charSize.x / 4, charSize.y / numDots};
+            auto halfQuadSize = glm::vec2(radius, radius);
+            auto cornerPos = centerPos - halfQuadSize;
+            auto quadSize = halfQuadSize * 2.0f;
+            auto quadPoss = MakeRegion(textOffset + cornerPos, quadSize);
+
+            auto coords = MakeRegion({0, 0}, quadSize);
+
+            static uint32_t brailleShapeId = 5;
+
+            auto& quad = shapeData.NextQuad();
+            for (size_t i = 0; i < 4; i++) {
+              quad[i].position = quadPoss[i];
+              quad[i].size = quadSize;
+              quad[i].coord = coords[i];
+              quad[i].color = foreground;
+              quad[i].shapeType = brailleShapeId;
+            }
+          }
+
+        } else {
+          const auto& glyphInfo = fontFamily.GetGlyphInfo(charcode, hl.bold, hl.italic);
+
+          glm::vec2 textQuadPos{
+            textOffset.x,
+            textOffset.y + defaultFont.ascender,
+          };
+
+          auto& quad = textData.NextQuad();
+          for (size_t i = 0; i < 4; i++) {
+            quad[i].position = textQuadPos + glyphInfo.localPoss[i];
+            quad[i].regionCoord = glyphInfo.atlasRegion[i];
+            quad[i].foreground = foreground;
+          }
         }
       }
 
@@ -261,6 +337,7 @@ void Renderer::RenderToWindow(
           quad[i].size = quadSize;
           quad[i].coord = coords[i];
           quad[i].color = underlineColor;
+          // 0 - 4
           quad[i].shapeType = std::to_underlying(underlineType);
         }
       }
@@ -350,7 +427,7 @@ void Renderer::RenderCursorMask(
   auto& cell = win.grid.lines[cursor.row][cursor.col];
 
   // if (!cell.text.empty() && cell.text != " ") {
-  char32_t charcode = UTF8ToUnicode(cell.text);
+  char32_t charcode = UTF8ToChar32(cell.text);
   const auto& hl = hlTable[cell.hlId];
   const auto& glyphInfo = fontFamily.GetGlyphInfo(charcode, hl.bold, hl.italic);
 

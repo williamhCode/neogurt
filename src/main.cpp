@@ -92,17 +92,20 @@ int main() {
       // Timer timer(10);
 
       while (!exitWindow && !stopToken.stop_requested()) {
-        float targetFps = options.window.vsync && !idle ? 0 : options.maxFps;
+        float targetFps =
+          options.window.vsync && !idle ? 0 : options.maxFps;
+        // float targetFps =
+        //   options.window.vsync && !idle && windowFocused ? 0 : options.maxFps;
+        // float targetFps = options.maxFps;
         float dt = clock.Tick(targetFps);
-        // LOG_INFO("dt: {}", dt);
 
-        // frameCount++;
-        // if (frameCount % 60 == 0) {
-        //   frameCount = 0;
-        //   auto fps = clock.GetFps();
-        //   auto fpsStr = std::format("fps: {:.2f}", fps);
-        //   std::cout << '\r' << fpsStr << std::string(10, ' ') << std::flush;
-        // }
+        frameCount++;
+        if (frameCount % 60 == 0) {
+          frameCount = 0;
+          auto fps = clock.GetFps();
+          auto fpsStr = std::format("fps: {:.2f}", fps);
+          std::cout << '\r' << fpsStr << std::string(10, ' ') << std::flush;
+        }
 
         // timer.Start();
 
@@ -261,7 +264,7 @@ int main() {
         renderer.Begin();
 
         bool mainWindowRendered = false;
-        bool renderWindows = session->reattached;
+        bool renderWindows = false;
         for (auto& [id, win] : editorState->winManager.windows) {
           if (win.grid.dirty) {
             if (win.id == 1) mainWindowRendered = true;
@@ -281,7 +284,7 @@ int main() {
           editorState->cursor.dirty = false;
         }
 
-        if (renderWindows || editorState->winManager.dirty) {
+        if (renderWindows || editorState->winManager.dirty || session->reattached) {
           editorState->winManager.dirty = false;
 
           std::vector<const Win*> windows;
@@ -432,6 +435,19 @@ int main() {
         case SDL_EVENT_WINDOW_FOCUS_LOST:
           sdlEvents.Push(event);
           break;
+
+        // case SDL_EVENT_WINDOW_SHOWN:
+        //   LOG_INFO("window shown");
+        //   break;
+        // case SDL_EVENT_WINDOW_HIDDEN:
+        //   LOG_INFO("window hidden");
+        //   break;
+        // case SDL_EVENT_WINDOW_EXPOSED:
+        //   LOG_INFO("window exposed");
+        //   break;
+        // case SDL_EVENT_WINDOW_OCCLUDED:
+        //   LOG_INFO("window occluded");
+        //   break;
       }
     }
 
