@@ -5,7 +5,7 @@
 
 namespace sdl {
 
-using EventFilter = std::function<int(SDL_Event&)>;
+using EventFilter = std::function<bool(SDL_Event&)>;
 void AddEventWatch(EventFilter&& callback);
 
 } // namespace sdl

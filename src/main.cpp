@@ -42,8 +42,7 @@ const WGPUContext& ctx = sdl::Window::_ctx;
 int main() {
   InitResourcesDir();
 
-  // print cwd
-  if (SDL_Init(SDL_INIT_VIDEO)) {
+  if (!SDL_Init(SDL_INIT_VIDEO)) {
     LOG_ERR("Unable to initialize SDL: {}", SDL_GetError());
     return 1;
   }
@@ -436,18 +435,12 @@ int main() {
           sdlEvents.Push(event);
           break;
 
-        // case SDL_EVENT_WINDOW_SHOWN:
-        //   LOG_INFO("window shown");
-        //   break;
-        // case SDL_EVENT_WINDOW_HIDDEN:
-        //   LOG_INFO("window hidden");
-        //   break;
-        // case SDL_EVENT_WINDOW_EXPOSED:
-        //   LOG_INFO("window exposed");
-        //   break;
-        // case SDL_EVENT_WINDOW_OCCLUDED:
-        //   LOG_INFO("window occluded");
-        //   break;
+        case SDL_EVENT_WINDOW_EXPOSED:
+          LOG_INFO("window exposed");
+          break;
+        case SDL_EVENT_WINDOW_OCCLUDED:
+          LOG_INFO("window occluded");
+          break;
       }
     }
 

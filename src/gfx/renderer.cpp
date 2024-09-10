@@ -260,10 +260,11 @@ void Renderer::RenderToWindow(
             int xNumDots = 2;
             int yNumDots = numDots / 2;
             float radius =
-              std::min(charSize.x / xNumDots, charSize.y / yNumDots) / 2; // fullsize
-            radius *= 0.7;                                         // add some padding
+              std::min(charSize.x / xNumDots, charSize.y / yNumDots) / 2;
 
-            // auto halfQuadSize = glm::vec2{charSize.x / 4, charSize.y / numDots};
+            radius *= 0.7;                   // add some padding
+            // radius = std::max(0.5f, radius); // make sure it's at least 1 pixel
+
             auto halfQuadSize = glm::vec2(radius, radius);
             auto cornerPos = centerPos - halfQuadSize;
             auto quadSize = halfQuadSize * 2.0f;

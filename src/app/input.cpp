@@ -37,13 +37,13 @@ void InputHandler::HandleKeyboard(const SDL_KeyboardEvent& event) {
   SDL_Scancode scancode = event.scancode;
   SDL_Keymod mod = event.mod;
 
-  if (event.state == SDL_PRESSED) {
+  if (event.down) {
     auto modstate = mod;
     if (options.macOptIsMeta) {
       // remove alt from modstate
       modstate &= ~SDL_KMOD_ALT;
     }
-    auto keycode = SDL_GetKeyFromScancode(scancode, modstate);
+    auto keycode = SDL_GetKeyFromScancode(scancode, modstate, false);
     if (!IsProcessableKey(keycode)) return;
 
     std::string keyName = SDL_GetKeyName(keycode);
@@ -101,14 +101,14 @@ void InputHandler::HandleTextInput(const SDL_TextInputEvent& event) {
 }
 
 void InputHandler::HandleMouseButton(const SDL_MouseButtonEvent& event) {
-  if (event.state == SDL_PRESSED) {
-    if (event.y < options.titlebarHeight) return;
+  if (event.down) {
+    if (event.y < Options::titlebarHeight) return;
     mouseButton = event.button;
   } else {
     mouseButton.reset();
     currGrid.reset();
   }
-  HandleMouseButtonAndMotion(event.state, {event.x, event.y});
+  HandleMouseButtonAndMotion(event.down, {event.x, event.y});
 }
 
 void InputHandler::HandleMouseMotion(const SDL_MouseMotionEvent& event) {
@@ -136,10 +136,10 @@ void InputHandler::HandleMouseButtonAndMotion(int state, glm::vec2 mousePos) {
 
   std::string actionStr;
   switch (state) {
-    case SDL_PRESSED:
+    case 1:
       actionStr = "press";
       break;
-    case SDL_RELEASED:
+    case 0:
       actionStr = "release";
       break;
     case -1:
