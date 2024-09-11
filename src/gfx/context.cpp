@@ -2,6 +2,7 @@
 #include "utils/logger.hpp"
 #include "webgpu_tools/utils/webgpu.hpp"
 #include "webgpu_tools/utils/sdl3webgpu.h"
+#include <iostream>
 
 #define MAGIC_ENUM_RANGE_MAX 1300
 #include "magic_enum.hpp"
@@ -65,13 +66,20 @@ void WGPUContext::Init() {
   //   FeatureName::SurfaceCapabilities,
   // };
 
-  DeviceDescriptor deviceDesc{
+  // DeviceDescriptor deviceDesc({
     // .requiredFeatureCount = requiredFeatures.size(),
     // .requiredFeatures = requiredFeatures.data(),
     // .requiredLimits = &requiredLimits,
-  };
+  // });
+
+  DeviceDescriptor deviceDesc;
+  deviceDesc.SetUncapturedErrorCallback(
+    [](const Device& device, ErrorType type, const char* message) {
+      LOG_ERR("Device error: {} ({})", magic_enum::enum_name(type), message);
+    }
+  );
+
   device = utils::RequestDevice(adapter, &deviceDesc);
-  utils::SetUncapturedErrorCallback(device);
 
   queue = device.GetQueue();
 
