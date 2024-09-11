@@ -54,7 +54,7 @@ struct Renderer {
   Renderer(const SizeHandler& sizes);
 
   void Resize(const SizeHandler& sizes);
-  void SetClearColor(glm::vec4 color);
+  void SetClearColor(const glm::vec4& color);
 
   void Begin();
   // void RenderShapes(FontFamily& fontFamily);

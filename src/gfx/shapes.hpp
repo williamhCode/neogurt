@@ -1,28 +1,26 @@
 #pragma once
 
-#include "editor/highlight.hpp"
-#include "gfx/render_texture.hpp"
+#include "gfx/pipeline.hpp"
+#include "gfx/quad.hpp"
+#include "utils/region.hpp"
 
-struct ShapesManager {
-  // stores textures of prerendered shapes (underline, braille, box drawing)
-  wgpu::Buffer textureSizeBuffer;
-  wgpu::BindGroup textureSizeBG;
+// little helper to add a quad to the shapes render data
+inline void AddShapeQuad(
+  DynamicQuadRenderData<ShapeQuadVertex>& data,
+  const Rect& rect,
+  const glm::vec4& color,
+  uint32_t shapeType
+) {
+  auto quadPoss = rect.Region();
+  auto quadSize = rect.size;
+  auto coords = MakeRegion({0, 0}, quadSize);
 
-  // atlas
-  RenderTexture renderTexture;
-
-  struct ShapeInfo {
-    Region localPoss;
-    Region atlasRegion;
-  };
-  std::array<ShapeInfo, 5> infoArray;
-
-  bool dirty = true;
-
-  ShapesManager() = default;
-  ShapesManager(glm::vec2 charSize, float dpiScale);
-
-  inline const ShapeInfo& GetUnderlineInfo(UnderlineType underlineType) {
-    return infoArray[static_cast<int>(underlineType)];
+  auto& quad = data.NextQuad();
+  for (size_t i = 0; i < 4; i++) {
+    quad[i].position = quadPoss[i];
+    quad[i].size = quadSize;
+    quad[i].coord = coords[i];
+    quad[i].color = color;
+    quad[i].shapeType = shapeType;
   }
-};
+}

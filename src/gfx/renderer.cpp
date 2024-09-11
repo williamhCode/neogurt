@@ -4,6 +4,7 @@
 #include "editor/window.hpp"
 #include "gfx/instance.hpp"
 #include "gfx/pipeline.hpp"
+#include "gfx/shapes.hpp"
 #include "utils/logger.hpp"
 #include "utils/region.hpp"
 #include "utils/types.hpp"
@@ -124,7 +125,7 @@ void Renderer::Resize(const SizeHandler& sizes) {
   windowsRPD.cDepthStencilAttachmentInfo.view = stencilTextureView;
 }
 
-void Renderer::SetClearColor(glm::vec4 color) {
+void Renderer::SetClearColor(const glm::vec4& color) {
   clearColor = ToWGPUColor(color);
   premultClearColor = ToWGPUColor(PremultiplyAlpha(color));
   // premultClearColor = ToWGPUColor(PremultiplyAlpha(AdjustAlpha(color)));
@@ -263,25 +264,14 @@ void Renderer::RenderToWindow(
               std::min(charSize.x / xNumDots, charSize.y / yNumDots) / 2;
 
             radius *= 0.7;                   // add some padding
-            // radius = std::max(0.5f, radius); // make sure it's at least 1 pixel
+            radius = std::max(0.5f, radius); // make sure it's at least 1 pixel
 
-            auto halfQuadSize = glm::vec2(radius, radius);
-            auto cornerPos = centerPos - halfQuadSize;
-            auto quadSize = halfQuadSize * 2.0f;
-            auto quadPoss = MakeRegion(textOffset + cornerPos, quadSize);
-
-            auto coords = MakeRegion({0, 0}, quadSize);
-
+            Rect quadRect{
+              .pos = textOffset + (centerPos - glm::vec2(radius, radius)),
+              .size = glm::vec2(radius * 2, radius * 2),
+            };
             static uint32_t brailleShapeId = 5;
-
-            auto& quad = shapeData.NextQuad();
-            for (size_t i = 0; i < 4; i++) {
-              quad[i].position = quadPoss[i];
-              quad[i].size = quadSize;
-              quad[i].coord = coords[i];
-              quad[i].color = foreground;
-              quad[i].shapeType = brailleShapeId;
-            }
+            AddShapeQuad(shapeData, quadRect, foreground, brailleShapeId);
           }
 
         } else {
@@ -302,7 +292,6 @@ void Renderer::RenderToWindow(
       }
 
       if (hl.underline.has_value()) {
-        auto underlineColor = GetSpecial(hlTable, hl);
         auto underlineType = *hl.underline;
 
         float thicknessScale = 1.0f;
@@ -319,28 +308,22 @@ void Renderer::RenderToWindow(
           thickness = std::max(thickness, 4.0f / defaultFont.dpiScale);
         }
 
-        glm::vec2 quadPos{
-          textOffset.x,
-          textOffset.y + defaultFont.ascender - defaultFont.underlinePosition -
-            thickness / 2,
+        Rect quadRect{
+          .pos = {
+            textOffset.x,
+            textOffset.y + defaultFont.ascender - defaultFont.underlinePosition -
+              thickness / 2,
+          },
+          .size = {
+            defaultFont.charSize.x,
+            thickness,
+          },
         };
-
-        glm::vec2 quadSize{
-          defaultFont.charSize.x,
-          thickness,
-        };
-        auto lineQuadRegion = MakeRegion(quadPos, quadSize);
-        auto coords = MakeRegion({0, 0}, quadSize);
-
-        auto& quad = shapeData.NextQuad();
-        for (size_t i = 0; i < 4; i++) {
-          quad[i].position = lineQuadRegion[i];
-          quad[i].size = quadSize;
-          quad[i].coord = coords[i];
-          quad[i].color = underlineColor;
-          // 0 - 4
-          quad[i].shapeType = std::to_underlying(underlineType);
-        }
+        auto underlineColor = GetSpecial(hlTable, hl);
+        AddShapeQuad(
+          shapeData, quadRect, underlineColor,
+          std::to_underlying(underlineType)
+        );
       }
 
       textOffset.x += defaultFont.charSize.x;
