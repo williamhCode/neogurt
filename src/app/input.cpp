@@ -4,6 +4,7 @@
 #include "utils/logger.hpp"
 #include <algorithm>
 #include <set>
+#include <utility>
 
 InputHandler::InputHandler(
   Nvim* nvim,
@@ -136,17 +137,17 @@ void InputHandler::HandleMouseButtonAndMotion(int state, glm::vec2 mousePos) {
 
   std::string actionStr;
   switch (state) {
-    case 1:
-      actionStr = "press";
-      break;
     case 0:
       actionStr = "release";
+      break;
+    case 1:
+      actionStr = "press";
       break;
     case -1:
       actionStr = "drag";
       break;
     default:
-      return;
+      std::unreachable();
   }
 
   SDL_Keymod mod = SDL_GetModState();
