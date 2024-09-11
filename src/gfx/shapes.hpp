@@ -5,8 +5,9 @@
 #include "utils/region.hpp"
 
 // little helper to add a quad to the shapes render data
+template <bool Dynamic>
 inline void AddShapeQuad(
-  DynamicQuadRenderData<ShapeQuadVertex>& data,
+  QuadRenderData<ShapeQuadVertex, Dynamic>& data,
   const Rect& rect,
   const glm::vec4& color,
   uint32_t shapeType
