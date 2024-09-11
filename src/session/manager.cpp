@@ -243,8 +243,8 @@ void SessionManager::UpdateSessionSizes(SessionState& session) {
   );
   renderer.Resize(sizes);
   session.editorState.winManager.sizes = sizes;
-  session.nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight);
   session.editorState.cursor.Resize(sizes.charSize, sizes.dpiScale);
+  session.nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight);
 }
 
 // void SessionManager::LoadSessions(std::string_view filename) {

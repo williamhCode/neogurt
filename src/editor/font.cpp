@@ -45,7 +45,7 @@ FontFamily::FromGuifont(std::string_view guifont, float dpiScale) {
   }
 
   try {
-    FontFamily fontFamily{
+    return FontFamily{
       .fonts = SplitStr(fontsStr, ',') | std::views::transform([&](auto&& fontName) {
         FontSet fontSet;
         auto makeFontHandle = [&](bool bold, bool italic) {
@@ -85,7 +85,6 @@ FontFamily::FromGuifont(std::string_view guifont, float dpiScale) {
       .defaultHeight = height,
       .defaultWidth = width,
     };
-    return fontFamily;
 
   } catch (const std::bad_expected_access<std::string>& e) {
     return std::unexpected(e.error());
@@ -126,10 +125,13 @@ void FontFamily::ChangeSize(float delta) {
       if (newFontSet.normal && fontHandle->path == newFontSet.normal->path) {
         return newFontSet.normal;
       }
-      float widthHeightRatio = fontHandle->width / fontHandle->height;
+
       float newHeight = fontHandle->height + delta;
-      if (newHeight < 4) newHeight = 4;
+      newHeight = std::max(4.0f, newHeight);
+
+      float widthHeightRatio = defaultWidth / defaultHeight;
       float newWidth = newHeight * widthHeightRatio;
+
       return std::make_shared<Font>(
         fontHandle->path, newHeight, newWidth, fontHandle->dpiScale
       );

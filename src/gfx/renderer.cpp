@@ -262,9 +262,7 @@ void Renderer::RenderToWindow(
             int yNumDots = numDots / 2;
             float radius =
               std::min(charSize.x / xNumDots, charSize.y / yNumDots) / 2;
-
-            radius *= 0.6;                   // add some padding
-            // radius = std::max(0.5f, radius); // make sure it's at least 1 pixel
+            radius *= 0.6; // add some padding
 
             Rect quadRect{
               .pos = textOffset + (centerPos - glm::vec2(radius, radius)),
