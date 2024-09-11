@@ -30,7 +30,7 @@ void WinManager::UpdateRenderData(Win& win) {
   auto size = glm::vec2(win.width, win.height) * sizes.charSize;
 
   bool posChanged = pos != win.pos;
-  bool sizeChanged = size != win.size;
+  bool sizeChanged = size != win.size || sizes.charSize != win.sRenderTexture.charSize;
   if (!posChanged && !sizeChanged) {
     return;
   }

@@ -83,8 +83,7 @@ ScrollableRenderTexture::ScrollableRenderTexture(
   int numTexPerPage = glm::ceil(size.y / textureHeight);
   auto texSize = glm::vec2(size.x, textureHeight);
   for (int i = 0; i < numTexPerPage; i++) {
-    renderTextures.push_back(std::make_unique<RenderTexture>(texSize, dpiScale, format)
-    );
+    renderTextures.push_back(std::make_unique<RenderTexture>(texSize, dpiScale, format));
   }
 }
 
