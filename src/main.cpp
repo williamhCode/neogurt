@@ -84,6 +84,7 @@ int main() {
 
     std::jthread renderThread([&](std::stop_token stopToken) {
       bool windowFocused = true;
+      bool windowOccluded = false;
       bool idle = false;
       float idleElasped = 0;
 
@@ -91,20 +92,28 @@ int main() {
       // Timer timer(10);
 
       while (!exitWindow && !stopToken.stop_requested()) {
-        float targetFps =
-          options.window.vsync && !idle ? 0 : options.maxFps;
+        // if in vsync, disable clock infinite fps (120 for now cuz occlusion events are
+        // not sent immediately when switchint desktop)
+        // TODO: change when bug is fixed
+
+        // however set to maxFps option if any of these happen
+        // 1. idle is true (which bypasses surface.Present() calls)
+        // 2. occluded is true (in which macOS stops presenting at all)
+        // these all prevent vsync from working
+
         // float targetFps =
-        //   options.window.vsync && !idle && windowFocused ? 0 : options.maxFps;
-        // float targetFps = options.maxFps;
+        //   options.window.vsync && !idle && !windowOccluded ? 0 : options.maxFps;
+        float targetFps =
+          options.window.vsync && !idle && !windowOccluded ? 120 : options.maxFps;
         float dt = clock.Tick(targetFps);
 
-        frameCount++;
-        if (frameCount % 60 == 0) {
-          frameCount = 0;
-          auto fps = clock.GetFps();
-          auto fpsStr = std::format("fps: {:.2f}", fps);
-          std::cout << '\r' << fpsStr << std::string(10, ' ') << std::flush;
-        }
+        // frameCount++;
+        // if (frameCount % 60 == 0) {
+        //   frameCount = 0;
+        //   auto fps = clock.GetFps();
+        //   auto fpsStr = std::format("fps: {:.2f}", fps);
+        //   std::cout << '\r' << fpsStr << std::string(10, ' ') << std::flush;
+        // }
 
         // timer.Start();
 
@@ -147,6 +156,15 @@ int main() {
               break;
             case SDL_EVENT_WINDOW_FOCUS_LOST:
               windowFocused = false;
+              break;
+
+            case SDL_EVENT_WINDOW_EXPOSED:
+              LOG_INFO("window exposed");
+              windowOccluded = false;
+              break;
+            case SDL_EVENT_WINDOW_OCCLUDED:
+              LOG_INFO("window occluded");
+              windowOccluded = true;
               break;
           }
           sdlEvents.Pop();
@@ -432,14 +450,9 @@ int main() {
         // window handling -----------------------
         case SDL_EVENT_WINDOW_FOCUS_GAINED:
         case SDL_EVENT_WINDOW_FOCUS_LOST:
-          sdlEvents.Push(event);
-          break;
-
         case SDL_EVENT_WINDOW_EXPOSED:
-          LOG_INFO("window exposed");
-          break;
         case SDL_EVENT_WINDOW_OCCLUDED:
-          LOG_INFO("window occluded");
+          sdlEvents.Push(event);
           break;
       }
     }
