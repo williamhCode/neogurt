@@ -101,11 +101,14 @@ else()
 
   # assert in release
   # target_compile_options(neogui PRIVATE -UNDEBUG)
+
+  execute_process(COMMAND brew --prefix OUTPUT_VARIABLE BREW_PREFIX OUTPUT_STRIP_TRAILING_WHITESPACE)
+  message(STATUS "BREW_PREFIX: ${BREW_PREFIX}")
   
   # https://github.com/llvm/llvm-project/issues/77653
   # stack unwinding breaks without this 
   target_link_libraries(neogui PRIVATE 
-    "-L/opt/homebrew/opt/llvm/lib/c++ -Wl,-rpath,/opt/homebrew/opt/llvm/lib/c++ -L/opt/homebrew/opt/llvm/lib"
+    "-L${BREW_PREFIX}/opt/llvm/lib/c++ -Wl,-rpath,${BREW_PREFIX}/opt/llvm/lib/c++ -L${BREW_PREFIX}/opt/llvm/lib"
   )
 endif()
 

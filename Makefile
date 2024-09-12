@@ -7,6 +7,9 @@ build:
 	cmake --build build/$(TYPE) --target neogui
 	cp build/$(TYPE)/compile_commands.json .
 
+build-release:
+	cmake --build build/release --target neogui
+
 build-dawn:
 	cmake --build build/$(TYPE) --target dawn-single-lib
 
@@ -14,9 +17,9 @@ build-tint:
 	# cmake --build build/release --target tint
 	# cp build/release/_deps/dawn-build/tint .
 
-# https://cmake.org/cmake/help/latest/variable/CMAKE_LINKER_TYPE.html
-# mold linker not working
-build-setup:
+build-setup: build-setup-debug build-setup-release
+
+build-setup-debug:
 	cmake . -B build/debug \
 		-DCMAKE_BUILD_TYPE=Debug \
 		-GNinja \
@@ -26,6 +29,8 @@ build-setup:
 		-DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
 		-DCMAKE_COLOR_DIAGNOSTICS=ON \
 		-DSDL_SHARED=ON
+
+build-setup-release:
 	cmake . -B build/release \
 		-DCMAKE_BUILD_TYPE=RelWithDebInfo \
 		-GNinja \
@@ -37,11 +42,8 @@ build-setup:
 		-DSDL_SHARED=OFF \
 		-DSDL_STATIC=ON
 
-# TODO: use ccache for xcode
 xcode-setup:
-	cmake . -B xcode -GXcode \
-		-DCMAKE_C_COMPILER_LAUNCHER=ccache \
-		-DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+	cmake . -B xcode -GXcode
 
 run:
 	build/$(TYPE)/neogui

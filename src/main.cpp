@@ -159,11 +159,11 @@ int main() {
               break;
 
             case SDL_EVENT_WINDOW_EXPOSED:
-              LOG_INFO("window exposed");
+              // LOG_INFO("window exposed");
               windowOccluded = false;
               break;
             case SDL_EVENT_WINDOW_OCCLUDED:
-              LOG_INFO("window occluded");
+              // LOG_INFO("window occluded");
               windowOccluded = true;
               break;
           }
