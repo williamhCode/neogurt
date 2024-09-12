@@ -7,9 +7,6 @@ build:
 	cmake --build build/$(TYPE) --target neogui
 	cp build/$(TYPE)/compile_commands.json .
 
-build-release:
-	cmake --build build/release --target neogui
-
 build-dawn:
 	cmake --build build/$(TYPE) --target dawn-single-lib
 

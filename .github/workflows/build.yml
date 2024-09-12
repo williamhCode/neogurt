@@ -1,0 +1,87 @@
+name: Build
+
+on:
+  workflow_dispatch:
+  # push:
+  #   branches: [ "main" ]
+  # pull_request:
+  #   branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-14]
+        build_type: [RelWithDebInfo]
+        compiler: [llvm_clang]
+        include:
+          # macOS (LLVM Clang - arm64)
+          - os: macos-14
+            compiler: llvm_clang
+            c_compiler: clang
+            cpp_compiler: clang++
+            arch: arm64
+
+          # macOS (LLVM Clang - x86_64)
+          # - os: macos-14
+          #   compiler: llvm_clang
+          #   c_compiler: clang
+          #   cpp_compiler: clang++
+          #   arch: x86_64
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    # Install LLVM via Homebrew on macOS
+    # - name: Install LLVM on macOS
+    #   if: matrix.os == 'macos-14'
+    #   run: brew install llvm
+
+    - name: Install LLVM and Clang
+      uses: KyleMayes/install-llvm-action@v2
+      with:
+        version: "18.1"
+
+    - name: Install dependencies on macOS
+      if: matrix.os == 'macos-14'
+      run: |
+        brew install boost
+        brew install ninja
+
+    - name: Set reusable strings
+      id: strings
+      shell: bash
+      run: |
+        echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+
+    - name: Configure CMake
+      shell: bash
+      run: >
+        cmake -B ${{ steps.strings.outputs.build-output-dir }}
+        -GNinja
+        -DSDL_SHARED=OFF
+        -DSDL_STATIC=ON
+        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+        -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
+        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -S ${{ github.workspace }}
+        
+    - name: Build dawn
+      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }} --target dawn-single-lib
+
+    - name: Build neogui
+      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }} --target neogui
+
+    - name: Generate app
+      run: make gen-app
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: gen-output
+        path: gen/

@@ -102,13 +102,17 @@ else()
   # assert in release
   # target_compile_options(neogui PRIVATE -UNDEBUG)
 
-  execute_process(COMMAND brew --prefix OUTPUT_VARIABLE BREW_PREFIX OUTPUT_STRIP_TRAILING_WHITESPACE)
-  message(STATUS "BREW_PREFIX: ${BREW_PREFIX}")
+  # if no LLVM_PATH env var, then set LLVM_PATH to $(brew --prefix llvm)
+
+  if (NOT DEFINED ENV{LLVM_PATH})
+    execute_process(COMMAND brew --prefix llvm OUTPUT_VARIABLE LLVM_PATH OUTPUT_STRIP_TRAILING_WHITESPACE)
+    set(ENV{LLVM_PATH} ${LLVM_PATH})
+  endif()
   
   # https://github.com/llvm/llvm-project/issues/77653
-  # stack unwinding breaks without this 
+  # stack unwinding breaking and linking breaks without this
   target_link_libraries(neogui PRIVATE 
-    "-L${BREW_PREFIX}/opt/llvm/lib/c++ -Wl,-rpath,${BREW_PREFIX}/opt/llvm/lib/c++ -L${BREW_PREFIX}/opt/llvm/lib"
+    "-L$ENV{LLVM_PATH}/lib/c++ -L$ENV{LLVM_PATH}/lib -lunwind"
   )
 endif()
 
