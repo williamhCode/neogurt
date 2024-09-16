@@ -9,6 +9,7 @@ struct SessionState {
 
   // session data ----------------------
   Nvim nvim;
+  Options options;
   EditorState editorState;
   bool reattached = false;
 };

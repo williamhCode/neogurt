@@ -54,17 +54,17 @@ int main() {
 
   try {
     // init variables ---------------------
-    Options options{};
     sdl::Window window;
     SizeHandler sizes{};
     Renderer renderer;
     InputHandler input;
 
     SessionManager sessionManager(
-      SpawnMode::Child, options, window, sizes, renderer, input
+      SpawnMode::Child, window, sizes, renderer, input
     );
     sessionManager.SessionNew();
     SessionState* session = sessionManager.CurrSession();
+    Options* options = &session->options;
     Nvim* nvim = &session->nvim;
     EditorState* editorState = &session->editorState;
 
@@ -104,7 +104,7 @@ int main() {
         // float targetFps =
         //   options.window.vsync && !idle && !windowOccluded ? 0 : options.maxFps;
         float targetFps =
-          options.window.vsync && !idle && !windowOccluded ? 120 : options.maxFps;
+          window.vsync && !idle && !windowOccluded ? 120 : options->maxFps;
         float dt = clock.Tick(targetFps);
 
         // frameCount++;
@@ -125,6 +125,7 @@ int main() {
           break;
         };
         session = sessionManager.CurrSession();
+        options = &session->options;
         nvim = &session->nvim;
         editorState = &session->editorState;
 
@@ -195,7 +196,7 @@ int main() {
                 sizes.UpdateSizes(
                   window.size, window.dpiScale,
                   editorState->fontFamily.DefaultFont().charSize,
-                  options.margins
+                  options->margins
                 );
 
                 if (dpiChanged) {
@@ -266,7 +267,7 @@ int main() {
         // check idle -----------------------------------
         if (idle) continue;
         idleElasped += dt;
-        if (idleElasped >= options.cursorIdleTime) {
+        if (idleElasped >= options->cursorIdleTime) {
           idle = true;
           editorState->cursor.blinkState = BlinkState::On;
         }

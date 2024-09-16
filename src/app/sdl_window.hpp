@@ -18,6 +18,7 @@ struct Window {
   static inline WGPUContext _ctx;
   SDL_WindowPtr window;
 
+  bool vsync;
   glm::uvec2 size;
   glm::uvec2 fbSize;
   float dpiScale;

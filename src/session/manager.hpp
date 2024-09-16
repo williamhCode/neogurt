@@ -34,7 +34,6 @@ struct SessionManager {
 private:
   SpawnMode mode;
 
-  Options& options;
   sdl::Window& window;
   SizeHandler& sizes;
   Renderer& renderer;
@@ -49,7 +48,6 @@ private:
 public:
   SessionManager(
     SpawnMode mode,
-    Options& options,
     sdl::Window& window,
     SizeHandler& sizes,
     Renderer& renderer,

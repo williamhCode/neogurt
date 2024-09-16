@@ -3,6 +3,8 @@
 #include <cstdint>
 
 struct Options {
+  // window opts are used once at start
+  // so dont use them except in window creation (sdl_window constructor)
   struct Window {
     bool vsync = true;
     bool highDpi = true;

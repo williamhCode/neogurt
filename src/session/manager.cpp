@@ -9,13 +9,12 @@
 
 SessionManager::SessionManager(
   SpawnMode _mode,
-  Options& _options,
   sdl::Window& _window,
   SizeHandler& _sizes,
   Renderer& _renderer,
   InputHandler& _inputHandler
 )
-  : mode(_mode), options(_options), window(_window), sizes(_sizes),
+  : mode(_mode), window(_window), sizes(_sizes),
     renderer(_renderer), inputHandler(_inputHandler) {
 }
 
@@ -32,11 +31,15 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
   }
 
   auto& session = it->second;
-  if (!session.nvim.ConnectStdio(opts.dir).get()) {
+  auto& options = session.options;
+  auto& nvim = session.nvim;
+  auto& editorState = session.editorState;
+
+  if (!nvim.ConnectStdio(opts.dir).get()) {
     throw std::runtime_error("Failed to connect to nvim");
   }
 
-  session.nvim.UiAttach(
+  nvim.UiAttach(
     100, 50,
     {
       {"rgb", true},
@@ -45,7 +48,7 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
     }
   ).get();
 
-  auto optionsFut = LoadOptions(session.nvim);
+  auto optionsFut = LoadOptions(nvim);
   if (optionsFut.wait_for(1s) == std::future_status::ready) {
     options = optionsFut.get();
   } else {
@@ -55,15 +58,14 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
   if (first) {
     window = sdl::Window({1200, 800}, "Neogui", options);
     // needs to be in main thread
-    float titlebarHeight = GetTitlebarHeight(window.Get());
-    Options::titlebarHeight = titlebarHeight;
+    Options::titlebarHeight = GetTitlebarHeight(window.Get());
   }
 
   if (options.window.borderless) {
     options.margins.top += Options::titlebarHeight;
   }
 
-  auto guifontFut = session.nvim.GetOptionValue("guifont", {});
+  auto guifontFut = nvim.GetOptionValue("guifont", {});
   std::string guifont;
   if (guifontFut.wait_for(1s) == std::future_status::ready) {
     guifont = guifontFut.get()->as<std::string>();
@@ -75,30 +77,32 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
   if (!fontFamilyResult) {
     throw std::runtime_error("Invalid guifont: " + fontFamilyResult.error());
   }
-  session.editorState.fontFamily = std::move(*fontFamilyResult);
+  editorState.fontFamily = std::move(*fontFamilyResult);
 
   sizes.UpdateSizes(
-    window.size, window.dpiScale,
-    session.editorState.fontFamily.DefaultFont().charSize, options.margins
+    window.size, window.dpiScale, editorState.fontFamily.DefaultFont().charSize,
+    options.margins
   );
 
   if (first) {
     renderer = Renderer(sizes);
+  } else {
+    renderer.Resize(sizes);
   }
 
-  session.editorState.winManager.sizes = sizes;
-  session.editorState.winManager.gridManager = &session.editorState.gridManager;
-  session.editorState.cursor.Resize(sizes.charSize, sizes.dpiScale);
+  editorState.winManager.sizes = sizes;
+  editorState.winManager.gridManager = &editorState.gridManager;
+  editorState.cursor.Resize(sizes.charSize, sizes.dpiScale);
 
   if (options.opacity < 1) {
-    auto& hl = session.editorState.hlTable[0];
+    auto& hl = editorState.hlTable[0];
     hl.background = IntToColor(options.bgColor);
     hl.background->a = options.opacity;
   }
 
-  session.nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight);
+  nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight);
 
-  inputHandler = InputHandler(&session.nvim, &session.editorState.winManager, options);
+  inputHandler = InputHandler(&nvim, &editorState.winManager, options);
 
   sessionsOrder.push_front(&session);
 
@@ -130,7 +134,8 @@ bool SessionManager::SessionSwitch(int id) {
   auto& session = it->second;
 
   UpdateSessionSizes(session);
-  inputHandler = InputHandler(&session.nvim, &session.editorState.winManager, options);
+  inputHandler =
+    InputHandler(&session.nvim, &session.editorState.winManager, session.options);
   session.reattached = true;
 
   auto currIt = std::ranges::find(sessionsOrder, &session);
@@ -193,7 +198,7 @@ bool SessionManager::ShouldQuit() {
 
     UpdateSessionSizes(session);
     inputHandler =
-      InputHandler(&session.nvim, &session.editorState.winManager, options);
+      InputHandler(&session.nvim, &session.editorState.winManager, session.options);
     session.reattached = true;
   }
 
@@ -238,8 +243,8 @@ void SessionManager::FontSizeReset(bool all) {
 
 void SessionManager::UpdateSessionSizes(SessionState& session) {
   sizes.UpdateSizes(
-    window.size, window.dpiScale,
-    session.editorState.fontFamily.DefaultFont().charSize, options.margins
+    window.size, window.dpiScale, session.editorState.fontFamily.DefaultFont().charSize,
+    session.options.margins
   );
   renderer.Resize(sizes);
   session.editorState.winManager.sizes = sizes;

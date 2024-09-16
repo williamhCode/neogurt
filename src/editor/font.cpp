@@ -197,9 +197,10 @@ FontFamily::GetGlyphInfo(char32_t charcode, bool bold, bool italic) {
   }
 
   // LOG_INFO("Failed to get glyph info for codepoint: {}, {}", (uint32_t)charcode, UnicodeToUTF8(charcode));
-  const auto* glyphInfo = fonts.front().normal->GetGlyphInfo(' ', textureAtlas);
-  if (glyphInfo == nullptr) {
-    throw std::runtime_error("Failed to get glyph for space character");
+  for (const auto& fontSet : fonts) {
+    if (const auto* glyphInfo = fontSet.normal->GetGlyphInfo(' ', textureAtlas)) {
+      return *glyphInfo;
+    }
   }
-  return *glyphInfo;
+  throw std::runtime_error("Failed to get glyph for space character");
 }

@@ -51,7 +51,8 @@ Window::Window(glm::uvec2 _size, const std::string& title, Options& opts)
   // LOG_INFO("contentScale: {}", contentScale);
 
   // webgpu ------------------------------------
-  auto presentMode = opts.window.vsync ? PresentMode::Mailbox : PresentMode::Immediate;
+  vsync = opts.window.vsync;
+  auto presentMode = vsync ? PresentMode::Mailbox : PresentMode::Immediate;
   _ctx = WGPUContext(Get(), fbSize, presentMode);
   // LOG_INFO("WGPUContext created with size: {}, {}", fbSize.x, fbSize.y);
 }
