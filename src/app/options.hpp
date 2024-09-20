@@ -25,9 +25,10 @@ struct Options {
   float cursorIdleTime = 10;
   float scrollSpeed = 1;
 
-  // rgb
   uint32_t bgColor = 0x000000;
   float opacity = 1;
+
+  float gamma = 1.7;
 
   float maxFps = 60;
 };

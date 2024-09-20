@@ -105,6 +105,9 @@ Renderer::Renderer(const SizeHandler& sizes) {
       .storeOp = StoreOp::Store,
     },
   });
+
+  // color state
+  colorState.Init();
 }
 
 void Renderer::Resize(const SizeHandler& sizes) {
@@ -125,13 +128,14 @@ void Renderer::Resize(const SizeHandler& sizes) {
   windowsRPD.cDepthStencilAttachmentInfo.view = stencilTextureView;
 }
 
-void Renderer::SetClearColor(const glm::vec4& color) {
+void Renderer::SetColors(const glm::vec4& color, float gamma) {
   clearColor = ToWGPUColor(color);
-  premultClearColor = ToWGPUColor(PremultiplyAlpha(color));
-  // premultClearColor = ToWGPUColor(PremultiplyAlpha(AdjustAlpha(color)));
-  linearClearColor = ToWGPUColor(ToLinear(color));
+  linearClearColor = ToWGPUColor(ToLinear(color, gamma));
+  premultClearColor = ToWGPUColor(
+    ToSrgb(PremultiplyAlpha(ToLinear(color, gamma)), gamma)
+  );
 
-  auto linearColor = ToLinear(color);
+  auto linearColor = ToLinear(color, gamma);
   auto buffer = utils::CreateUniformBuffer(ctx.device, sizeof(linearColor), &linearColor);
   defaultColorBG = utils::MakeBindGroup(
     ctx.device, ctx.pipeline.defaultColorBGL,
@@ -139,6 +143,8 @@ void Renderer::SetClearColor(const glm::vec4& color) {
       {0, buffer},
     }
   );
+
+  colorState.SetGamma(gamma);
 }
 
 void Renderer::Begin() {
@@ -357,6 +363,7 @@ void Renderer::RenderToWindow(
       RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&currRPD);
       passEncoder.SetPipeline(ctx.pipeline.rectRPL);
       passEncoder.SetBindGroup(0, renderTexture->camera.viewProjBG);
+      passEncoder.SetBindGroup(1, colorState.gammaBG);
 
       if (clearRegion.has_value()) {
         QuadRenderData<RectQuadVertex> clearData(1);
@@ -380,8 +387,9 @@ void Renderer::RenderToWindow(
       RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textRPD);
       passEncoder.SetPipeline(ctx.pipeline.textRPL);
       passEncoder.SetBindGroup(0, renderTexture->camera.viewProjBG);
-      passEncoder.SetBindGroup(1, fontFamily.textureAtlas.textureSizeBG);
-      passEncoder.SetBindGroup(2, fontFamily.textureAtlas.renderTexture.textureBG);
+      passEncoder.SetBindGroup(1, colorState.gammaBG);
+      passEncoder.SetBindGroup(2, fontFamily.textureAtlas.textureSizeBG);
+      passEncoder.SetBindGroup(3, fontFamily.textureAtlas.renderTexture.textureBG);
       if (start != end) textData.Render(passEncoder, start, end - start);
       passEncoder.End();
     }
@@ -393,6 +401,7 @@ void Renderer::RenderToWindow(
       RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&shapesRPD);
       passEncoder.SetPipeline(ctx.pipeline.shapesRPL);
       passEncoder.SetBindGroup(0, renderTexture->camera.viewProjBG);
+      passEncoder.SetBindGroup(1, colorState.gammaBG);
       if (start != end) shapeData.Render(passEncoder, start, end - start);
       passEncoder.End();
     }
@@ -456,9 +465,10 @@ void Renderer::RenderWindows(
     passEncoder.SetPipeline(ctx.pipeline.textureNoBlendRPL);
     passEncoder.SetStencilReference(1);
     passEncoder.SetBindGroup(0, finalRenderTexture.camera.viewProjBG);
+    passEncoder.SetBindGroup(1, colorState.gammaBG);
     passEncoder.SetBindGroup(2, defaultColorBG);
     for (const Win* win : windows) {
-      win->sRenderTexture.Render(passEncoder);
+      win->sRenderTexture.Render(passEncoder, 3);
     }
     passEncoder.End();
   }
@@ -468,9 +478,10 @@ void Renderer::RenderWindows(
     passEncoder.SetPipeline(ctx.pipeline.textureRPL);
     passEncoder.SetStencilReference(1);
     passEncoder.SetBindGroup(0, finalRenderTexture.camera.viewProjBG);
+    passEncoder.SetBindGroup(1, colorState.gammaBG);
     passEncoder.SetBindGroup(2, defaultColorBG);
     for (const Win* win : floatWindows) {
-      win->sRenderTexture.Render(passEncoder);
+      win->sRenderTexture.Render(passEncoder, 3);
     }
     passEncoder.End();
   }
@@ -483,12 +494,13 @@ void Renderer::RenderFinalTexture() {
   auto passEncoder = commandEncoder.BeginRenderPass(&finalRPD);
   passEncoder.SetPipeline(ctx.pipeline.textureFinalRPL);
   passEncoder.SetBindGroup(0, camera.viewProjBG);
+  passEncoder.SetBindGroup(1, colorState.gammaBG);
 
   if (prevFinalRenderTexture.texture) {
-    passEncoder.SetBindGroup(1, prevFinalRenderTexture.textureBG);
+    passEncoder.SetBindGroup(2, prevFinalRenderTexture.textureBG);
     prevFinalRenderTexture.renderData.Render(passEncoder);
   } else {
-    passEncoder.SetBindGroup(1, finalRenderTexture.textureBG);
+    passEncoder.SetBindGroup(2, finalRenderTexture.textureBG);
     finalRenderTexture.renderData.Render(passEncoder);
   }
 

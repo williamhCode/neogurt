@@ -23,6 +23,13 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
     }
   );
 
+  gammaBGL = utils::MakeBindGroupLayout(
+    ctx.device,
+    {
+      {0, ShaderStage::Vertex | ShaderStage::Fragment, BufferBindingType::Uniform},
+    }
+  );
+
   // shapes pipeline ---------------------------------------------
   ShaderModule shapesShader =
     utils::LoadShaderModule(ctx.device, resourcesDir + "/shaders/shapes.wgsl");
@@ -30,7 +37,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
   shapesRPL = utils::MakeRenderPipeline(ctx.device, {
     .vs = shapesShader,
     .fs = shapesShader,
-    .bgls = {viewProjBGL},
+    .bgls = {viewProjBGL, gammaBGL},
     .buffers = {
       {
         sizeof(ShapeQuadVertex),
@@ -58,7 +65,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
   rectRPL = utils::MakeRenderPipeline(ctx.device, {
     .vs = rectShader,
     .fs = rectShader,
-    .bgls = {viewProjBGL},
+    .bgls = {viewProjBGL, gammaBGL},
     .buffers = {
       {
         .arrayStride = sizeof(RectQuadVertex),
@@ -85,7 +92,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
   textRPL = utils::MakeRenderPipeline(ctx.device, {
     .vs = textShader,
     .fs = textShader,
-    .bgls = {viewProjBGL, textureSizeBGL, textureBGL},
+    .bgls = {viewProjBGL, gammaBGL, textureSizeBGL, textureBGL},
     .buffers = {
       {
         sizeof(TextQuadVertex),
@@ -145,7 +152,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
   textureNoBlendRPL = utils::MakeRenderPipeline(ctx.device, {
     .vs = textureShader,
     .fs = textureShader,
-    .bgls = {viewProjBGL, textureBGL, defaultColorBGL},
+    .bgls = {viewProjBGL, gammaBGL, defaultColorBGL, textureBGL},
     .buffers = {textureQuadVBL},
     .targets = {
       {
@@ -166,7 +173,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
   textureRPL = utils::MakeRenderPipeline(ctx.device, {
     .vs = textureShader,
     .fs = textureShader,
-    .bgls = {viewProjBGL, textureBGL, defaultColorBGL},
+    .bgls = {viewProjBGL, gammaBGL, defaultColorBGL, textureBGL},
     .buffers = {textureQuadVBL},
     .targets = {
       {
@@ -193,7 +200,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
   textureFinalRPL = utils::MakeRenderPipeline(ctx.device, {
     .vs = textureFinalShader,
     .fs = textureFinalShader,
-    .bgls = {viewProjBGL, textureBGL},
+    .bgls = {viewProjBGL, gammaBGL, textureBGL},
     .buffers = {textureQuadVBL},
     .targets = {{.format = TextureFormat::BGRA8Unorm}},
   });

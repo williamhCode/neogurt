@@ -103,5 +103,5 @@ struct ScrollableRenderTexture {
   std::vector<RenderInfo> GetRenderInfos(int maxRows) const;
 
   // render entire scrollable render texture
-  void Render(const wgpu::RenderPassEncoder& passEncoder) const;
+  void Render(const wgpu::RenderPassEncoder& passEncoder, uint32_t groupIndex) const;
 };

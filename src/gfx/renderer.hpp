@@ -7,20 +7,22 @@
 #include "editor/grid.hpp"
 #include "editor/window.hpp"
 #include "gfx/camera.hpp"
+#include "gfx/color.hpp"
 #include "gfx/pipeline.hpp"
 #include "gfx/quad.hpp"
 #include "gfx/render_texture.hpp"
-#include "gfx/shapes.hpp"
 #include "webgpu_tools/utils/webgpu.hpp"
 #include <span>
 
 struct Renderer {
   wgpu::Color clearColor{};
-  wgpu::Color premultClearColor{};
   wgpu::Color linearClearColor{};
+  wgpu::Color premultClearColor{};
   wgpu::CommandEncoder commandEncoder;
   wgpu::Texture nextTexture;
   wgpu::TextureView nextTextureView;
+
+  ColorState colorState;
 
   // shared
   Ortho2D camera;
@@ -54,7 +56,7 @@ struct Renderer {
   Renderer(const SizeHandler& sizes);
 
   void Resize(const SizeHandler& sizes);
-  void SetClearColor(const glm::vec4& color);
+  void SetColors(const glm::vec4& color, float gamma);
 
   void Begin();
   // void RenderShapes(FontFamily& fontFamily);

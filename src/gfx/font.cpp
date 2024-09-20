@@ -29,11 +29,14 @@ int FtInit() {
   FT_Property_Set(library, "type1", "no-stem-darkening", &no_stem_darkening);
   FT_Property_Set(library, "t1cid", "no-stem-darkening", &no_stem_darkening);
 
-  // FT_Int darken_params[8] = {500,  550, // x1, y1
-  //                            1000, 150, // x2, y2
-  //                            1500, 0, // x3, y3
-  //                            2000, 0};  // x4, y4
-  // FT_Property_Set(library, "cff", "darkening-parameters", darken_params);
+  FT_Int darken_params[8] = {500,  400,  // x1, y1
+                             1000, 300,  // x2, y2
+                             1667, 275,  // x3, y3
+                             2333, 225}; // x4, y4
+  FT_Property_Set(library, "autofitter", "darkening-parameters", darken_params);
+  FT_Property_Set(library, "cff", "darkening-parameters", darken_params);
+  FT_Property_Set(library, "type1", "darkening-parameters", darken_params);
+  FT_Property_Set(library, "t1cid", "darkening-parameters", darken_params);
 
   return error;
 }

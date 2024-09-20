@@ -45,6 +45,7 @@ struct CursorQuadVertex {
 struct Pipeline {
   wgpu::BindGroupLayout viewProjBGL;
   wgpu::BindGroupLayout textureBGL;
+  wgpu::BindGroupLayout gammaBGL;
 
   wgpu::RenderPipeline shapesRPL;
 

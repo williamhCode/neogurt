@@ -20,6 +20,7 @@
 #include "nvim/events/user.hpp"
 #include "session/manager.hpp"
 #include "utils/clock.hpp"
+#include "utils/color.hpp"
 #include "utils/logger.hpp"
 #include "utils/timer.hpp"
 #include "session/state.hpp"
@@ -278,7 +279,7 @@ int main() {
 
         // render ----------------------------------------------
         auto color = GetDefaultBackground(editorState->hlTable);
-        renderer.SetClearColor(color);
+        renderer.SetColors(color, options->gamma);
 
         renderer.Begin();
 

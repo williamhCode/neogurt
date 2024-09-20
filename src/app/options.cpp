@@ -60,6 +60,8 @@ std::future<Options> LoadOptions(Nvim& nvim) {
     LOAD(bgColor),
     LOAD(opacity),
 
+    LOAD(gamma),
+
     LOAD(maxFps)
   );
 

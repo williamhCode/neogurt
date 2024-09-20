@@ -363,18 +363,18 @@ std::vector<RenderInfo> ScrollableRenderTexture::GetRenderInfos(int maxRows) con
   return renderInfos;
 }
 
-void ScrollableRenderTexture::Render(const wgpu::RenderPassEncoder& passEncoder) const {
+void ScrollableRenderTexture::Render(const wgpu::RenderPassEncoder& passEncoder, uint32_t groupIndex) const {
   if (marginTextures.top != nullptr) {
-    passEncoder.SetBindGroup(1, marginTextures.top->textureBG);
+    passEncoder.SetBindGroup(groupIndex, marginTextures.top->textureBG);
     marginTextures.top->renderData.Render(passEncoder);
   }
   if (marginTextures.bottom != nullptr) {
-    passEncoder.SetBindGroup(1, marginTextures.bottom->textureBG);
+    passEncoder.SetBindGroup(groupIndex, marginTextures.bottom->textureBG);
     marginTextures.bottom->renderData.Render(passEncoder);
   }
   for (const auto& renderTexture : renderTextures) {
     if (renderTexture->disabled) continue;
-    passEncoder.SetBindGroup(1, renderTexture->textureBG);
+    passEncoder.SetBindGroup(groupIndex, renderTexture->textureBG);
     renderTexture->renderData.Render(passEncoder);
   }
 }

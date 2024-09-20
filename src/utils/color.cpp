@@ -1,12 +1,12 @@
 #include "color.hpp"
 #include <cmath>
 
-glm::vec4 AdjustAlpha(const glm::vec4& color) {
+glm::vec4 AdjustAlpha(const glm::vec4& color, float gamma) {
   return {
     color.r,
     color.g,
     color.b,
-    std::pow(color.a, 1.0f / 1.8f),
+    std::pow(color.a, 1.0f / gamma),
   };
 }
 
@@ -56,20 +56,20 @@ glm::vec4 IntToColor(uint32_t color) {
 // }
 
 
-glm::vec4 ToLinear(const glm::vec4& color) {
+glm::vec4 ToLinear(const glm::vec4& color, float gamma) {
   return {
-    std::pow(color.r, 1.8f),
-    std::pow(color.g, 1.8f),
-    std::pow(color.b, 1.8f),
+    std::pow(color.r, gamma),
+    std::pow(color.g, gamma),
+    std::pow(color.b, gamma),
     color.a,
   };
 }
 
-glm::vec4 ToSrgb(const glm::vec4& color) {
+glm::vec4 ToSrgb(const glm::vec4& color, float gamma) {
   return {
-    std::pow(color.r, 1.0f / 1.8f),
-    std::pow(color.g, 1.0f / 1.8f),
-    std::pow(color.b, 1.0f / 1.8f),
+    std::pow(color.r, 1.0f / gamma),
+    std::pow(color.g, 1.0f / gamma),
+    std::pow(color.b, 1.0f / gamma),
     color.a,
   };
 }

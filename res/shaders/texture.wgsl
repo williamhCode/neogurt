@@ -20,10 +20,12 @@ fn vs_main(in: VertexInput) -> VertexOutput {
   return out;
 }
 
-@group(1) @binding(0) var texture : texture_2d<f32>;
-@group(1) @binding(1) var textureSampler : sampler;
-
+@group(1) @binding(0) var<uniform> gamma: f32;
 @group(2) @binding(0) var<uniform> defaultColor: vec4f;
+
+@group(3) @binding(0) var texture : texture_2d<f32>;
+@group(3) @binding(1) var textureSampler : sampler;
+
 
 @fragment
 fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
@@ -36,6 +38,6 @@ fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
 
 // adjust alpha due to srgb blending
 fn AdjustAlpha(color: vec4f) -> vec4f {
-  // return vec4f(color.rgb, pow(color.a, 1.0f / 1.8f));
+  // return vec4f(color.rgb, pow(color.a, 1.0f / gamma));
   return color;
 }
