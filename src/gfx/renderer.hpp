@@ -7,7 +7,6 @@
 #include "editor/grid.hpp"
 #include "editor/window.hpp"
 #include "gfx/camera.hpp"
-#include "gfx/color.hpp"
 #include "gfx/pipeline.hpp"
 #include "gfx/quad.hpp"
 #include "gfx/render_texture.hpp"
@@ -15,20 +14,28 @@
 #include <span>
 
 struct Renderer {
-  wgpu::Color clearColor{};
-  wgpu::Color linearClearColor{};
-  wgpu::Color premultClearColor{};
+  // shared
   wgpu::CommandEncoder commandEncoder;
   wgpu::Texture nextTexture;
   wgpu::TextureView nextTextureView;
 
-  ColorState colorState;
-
-  // shared
   Ortho2D camera;
   RenderTexture finalRenderTexture;
   // double buffer, so resizing doesn't flicker
   RenderTexture prevFinalRenderTexture;
+
+  // color stuff
+  wgpu::Color clearColor{};
+  wgpu::Color linearClearColor{};
+  wgpu::Color premultClearColor{};
+
+  float gamma{};
+  wgpu::Buffer gammaBuffer;
+  wgpu::BindGroup gammaBG;
+
+  glm::vec4 linearColor{};
+  wgpu::Buffer linearColorBuffer;
+  wgpu::BindGroup defaultColorBG;
 
   // rect (background)
   wgpu::utils::RenderPassDescriptor rectRPD;
@@ -42,7 +49,6 @@ struct Renderer {
   wgpu::utils::RenderPassDescriptor textMaskRPD;
 
   // windows
-  wgpu::BindGroup defaultColorBG;
   wgpu::utils::RenderPassDescriptor windowsRPD;
 
   // final texture

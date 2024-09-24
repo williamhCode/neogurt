@@ -145,7 +145,7 @@ int main() {
         }
         LOG_ENABLE();
 
-        // window focus events
+        // sdl events
         while (!sdlEvents.Empty()) {
           auto& event = sdlEvents.Front();
           switch (event.type) {
@@ -419,7 +419,7 @@ int main() {
 
         // keyboard handling ----------------------
         case SDL_EVENT_KEY_DOWN:
-        // case SDL_EVENT_KEY_UP:
+        case SDL_EVENT_KEY_UP:
           // if (event.key.key == SDLK_F10) {
           //   auto size = window.size;
           //   size.x -= 100;

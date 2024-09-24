@@ -106,8 +106,22 @@ Renderer::Renderer(const SizeHandler& sizes) {
     },
   });
 
-  // color state
-  colorState.Init();
+  // color stuff
+  gammaBuffer = utils::CreateUniformBuffer(ctx.device, sizeof(float));
+  gammaBG = utils::MakeBindGroup(
+    ctx.device, ctx.pipeline.gammaBGL,
+    {
+      {0, gammaBuffer},
+    }
+  );
+
+  linearColorBuffer = utils::CreateUniformBuffer(ctx.device, sizeof(glm::vec4));
+  defaultColorBG = utils::MakeBindGroup(
+    ctx.device, ctx.pipeline.defaultColorBGL,
+    {
+      {0, linearColorBuffer},
+    }
+  );
 }
 
 void Renderer::Resize(const SizeHandler& sizes) {
@@ -135,16 +149,16 @@ void Renderer::SetColors(const glm::vec4& color, float gamma) {
     ToSrgb(PremultiplyAlpha(ToLinear(color, gamma)), gamma)
   );
 
-  auto linearColor = ToLinear(color, gamma);
-  auto buffer = utils::CreateUniformBuffer(ctx.device, sizeof(linearColor), &linearColor);
-  defaultColorBG = utils::MakeBindGroup(
-    ctx.device, ctx.pipeline.defaultColorBGL,
-    {
-      {0, buffer},
-    }
-  );
+  if (this->gamma != gamma) {
+    ctx.queue.WriteBuffer(gammaBuffer, 0, &gamma, sizeof(gamma));
+    this->gamma = gamma;
+  }
 
-  colorState.SetGamma(gamma);
+  auto linearColor = ToLinear(color, gamma);
+  if (this->linearColor != linearColor) {
+    ctx.queue.WriteBuffer(linearColorBuffer, 0, &linearColor, sizeof(linearColor));
+    this->linearColor = linearColor;
+  }
 }
 
 void Renderer::Begin() {
@@ -363,7 +377,7 @@ void Renderer::RenderToWindow(
       RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&currRPD);
       passEncoder.SetPipeline(ctx.pipeline.rectRPL);
       passEncoder.SetBindGroup(0, renderTexture->camera.viewProjBG);
-      passEncoder.SetBindGroup(1, colorState.gammaBG);
+      passEncoder.SetBindGroup(1, gammaBG);
 
       if (clearRegion.has_value()) {
         QuadRenderData<RectQuadVertex> clearData(1);
@@ -387,7 +401,7 @@ void Renderer::RenderToWindow(
       RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textRPD);
       passEncoder.SetPipeline(ctx.pipeline.textRPL);
       passEncoder.SetBindGroup(0, renderTexture->camera.viewProjBG);
-      passEncoder.SetBindGroup(1, colorState.gammaBG);
+      passEncoder.SetBindGroup(1, gammaBG);
       passEncoder.SetBindGroup(2, fontFamily.textureAtlas.textureSizeBG);
       passEncoder.SetBindGroup(3, fontFamily.textureAtlas.renderTexture.textureBG);
       if (start != end) textData.Render(passEncoder, start, end - start);
@@ -401,7 +415,7 @@ void Renderer::RenderToWindow(
       RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&shapesRPD);
       passEncoder.SetPipeline(ctx.pipeline.shapesRPL);
       passEncoder.SetBindGroup(0, renderTexture->camera.viewProjBG);
-      passEncoder.SetBindGroup(1, colorState.gammaBG);
+      passEncoder.SetBindGroup(1, gammaBG);
       if (start != end) shapeData.Render(passEncoder, start, end - start);
       passEncoder.End();
     }
@@ -465,7 +479,7 @@ void Renderer::RenderWindows(
     passEncoder.SetPipeline(ctx.pipeline.textureNoBlendRPL);
     passEncoder.SetStencilReference(1);
     passEncoder.SetBindGroup(0, finalRenderTexture.camera.viewProjBG);
-    passEncoder.SetBindGroup(1, colorState.gammaBG);
+    passEncoder.SetBindGroup(1, gammaBG);
     passEncoder.SetBindGroup(2, defaultColorBG);
     for (const Win* win : windows) {
       win->sRenderTexture.Render(passEncoder, 3);
@@ -478,7 +492,7 @@ void Renderer::RenderWindows(
     passEncoder.SetPipeline(ctx.pipeline.textureRPL);
     passEncoder.SetStencilReference(1);
     passEncoder.SetBindGroup(0, finalRenderTexture.camera.viewProjBG);
-    passEncoder.SetBindGroup(1, colorState.gammaBG);
+    passEncoder.SetBindGroup(1, gammaBG);
     passEncoder.SetBindGroup(2, defaultColorBG);
     for (const Win* win : floatWindows) {
       win->sRenderTexture.Render(passEncoder, 3);
@@ -494,7 +508,7 @@ void Renderer::RenderFinalTexture() {
   auto passEncoder = commandEncoder.BeginRenderPass(&finalRPD);
   passEncoder.SetPipeline(ctx.pipeline.textureFinalRPL);
   passEncoder.SetBindGroup(0, camera.viewProjBG);
-  passEncoder.SetBindGroup(1, colorState.gammaBG);
+  passEncoder.SetBindGroup(1, gammaBG);
 
   if (prevFinalRenderTexture.texture) {
     passEncoder.SetBindGroup(2, prevFinalRenderTexture.textureBG);
