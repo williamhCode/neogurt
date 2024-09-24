@@ -14,16 +14,6 @@
 #include <span>
 
 struct Renderer {
-  // shared
-  wgpu::CommandEncoder commandEncoder;
-  wgpu::Texture nextTexture;
-  wgpu::TextureView nextTextureView;
-
-  Ortho2D camera;
-  RenderTexture finalRenderTexture;
-  // double buffer, so resizing doesn't flicker
-  RenderTexture prevFinalRenderTexture;
-
   // color stuff
   wgpu::Color clearColor{};
   wgpu::Color linearClearColor{};
@@ -36,6 +26,16 @@ struct Renderer {
   glm::vec4 linearColor{};
   wgpu::Buffer linearColorBuffer;
   wgpu::BindGroup defaultColorBG;
+
+  // shared
+  wgpu::CommandEncoder commandEncoder;
+  wgpu::Texture nextTexture;
+  wgpu::TextureView nextTextureView;
+
+  Ortho2D camera;
+  RenderTexture finalRenderTexture;
+  // double buffer, so resizing doesn't flicker
+  RenderTexture prevFinalRenderTexture;
 
   // rect (background)
   wgpu::utils::RenderPassDescriptor rectRPD;

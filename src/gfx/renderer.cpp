@@ -19,7 +19,22 @@
 using namespace wgpu;
 
 Renderer::Renderer(const SizeHandler& sizes) {
-  clearColor = {0.0, 0.0, 0.0, 1.0};
+  // color stuff
+  gammaBuffer = utils::CreateUniformBuffer(ctx.device, sizeof(float));
+  gammaBG = utils::MakeBindGroup(
+    ctx.device, ctx.pipeline.gammaBGL,
+    {
+      {0, gammaBuffer},
+    }
+  );
+
+  linearColorBuffer = utils::CreateUniformBuffer(ctx.device, sizeof(glm::vec4));
+  defaultColorBG = utils::MakeBindGroup(
+    ctx.device, ctx.pipeline.defaultColorBGL,
+    {
+      {0, linearColorBuffer},
+    }
+  );
 
   // shared
   camera = Ortho2D(sizes.size);
@@ -105,23 +120,6 @@ Renderer::Renderer(const SizeHandler& sizes) {
       .storeOp = StoreOp::Store,
     },
   });
-
-  // color stuff
-  gammaBuffer = utils::CreateUniformBuffer(ctx.device, sizeof(float));
-  gammaBG = utils::MakeBindGroup(
-    ctx.device, ctx.pipeline.gammaBGL,
-    {
-      {0, gammaBuffer},
-    }
-  );
-
-  linearColorBuffer = utils::CreateUniformBuffer(ctx.device, sizeof(glm::vec4));
-  defaultColorBG = utils::MakeBindGroup(
-    ctx.device, ctx.pipeline.defaultColorBGL,
-    {
-      {0, linearColorBuffer},
-    }
-  );
 }
 
 void Renderer::Resize(const SizeHandler& sizes) {

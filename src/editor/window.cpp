@@ -151,6 +151,8 @@ void WinManager::FloatPos(const event::WinFloatPos& e) {
   } else {
     LOG_WARN("WinManager::FloatPos: unknown anchor {}", e.anchor);
   }
+  // sometimes the float window is outside the screen
+  win.startCol = std::max(win.startCol, 0);
 
   win.floatData = FloatData{
     .focusable = e.focusable,
