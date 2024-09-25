@@ -11,10 +11,12 @@ static auto SplitStr(std::string_view str, char delim) {
 }
 
 std::expected<FontFamily, std::string>
-FontFamily::FromGuifont(std::string_view guifont, float dpiScale) {
+FontFamily::FromGuifont(std::string guifont, float dpiScale) {
   if (guifont.empty()) {
     return std::unexpected("Empty guifont");
   }
+
+  std::ranges::replace(guifont, '_', ' ');
 
   // split string by colon, first string is required, options args can be any length
   std::string_view fontsStr;

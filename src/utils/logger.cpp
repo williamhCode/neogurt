@@ -1,7 +1,15 @@
 #include "logger.hpp"
 #include <iostream>
-#include <sstream>
-#include "msgpack/object.hpp"
+
+void Logger::RedirToPath(const fs::path& path) {
+  logFile.open(path, std::ios::out | std::ios::app);
+  if (logFile.is_open()) {
+    std::cout.rdbuf(logFile.rdbuf()); 
+    std::cerr.rdbuf(logFile.rdbuf());
+  } else {
+    LOG_ERR("Failed to open log file: {}", path.string());
+  }
+}
 
 void Logger::Log(const std::string& message) {
   std::unique_lock lock(mutex);
@@ -23,6 +31,9 @@ void Logger::LogErr(const std::string& message) {
   std::unique_lock lock(mutex);
   std::cerr << "ERROR: " << message << '\n';
 }
+
+#include "msgpack/object.hpp"
+#include <sstream>
 
 std::string ToString(const msgpack::object& obj) {
   return (std::ostringstream() << obj).str();

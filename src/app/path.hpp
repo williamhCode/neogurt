@@ -2,4 +2,4 @@
 #include <string>
 
 inline std::string resourcesDir;
-void InitResourcesDir();
+void SetupPaths();

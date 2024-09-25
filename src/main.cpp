@@ -38,7 +38,7 @@ using namespace std::chrono;
 const WGPUContext& ctx = sdl::Window::_ctx;
 
 int main() {
-  InitResourcesDir();
+  SetupPaths();
 
   if (!SDL_Init(SDL_INIT_VIDEO)) {
     LOG_ERR("Unable to initialize SDL: {}", SDL_GetError());

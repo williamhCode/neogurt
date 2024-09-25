@@ -25,13 +25,13 @@ static std::future<void> LoadOption(Nvim& nvim, std::string_view name, auto& val
     result->convert_if_not_nil(value);
 
   } catch (const msgpack::type_error& e) {
-    LOG_ERR(
+    LOG_WARN(
       "Failed to load option '{}': expected type '{}'",
       name, boost::core::demangled_name(typeid(value))
     );
 
   } catch (const std::exception& e) {
-    LOG_ERR("Failed to load option '{}': {}", name, e.what());
+    LOG_WARN("Failed to load option '{}': {}", name, e.what());
   }
 };
 
