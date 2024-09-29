@@ -43,7 +43,7 @@ bool Client::ConnectStdio(const std::string& command, const std::string& dir) {
 
   // LOG_INFO("Starting process: {}, {}", command, dir);
   process = bp::child(
-    shellPath, "-ic", command,
+    shellPath, "-ilc", command,
     bp::start_dir = dir,
     bp::std_out > *readPipe,
     bp::std_in < *writePipe
