@@ -67,8 +67,8 @@ public:
   // returns true if all sessions are closed
   bool ShouldQuit();
 
-  void FontSizeChange(float delta, bool all = true);
-  void FontSizeReset(bool all = true);
+  void FontSizeChange(float delta, bool all = false);
+  void FontSizeReset(bool all = false);
 
 private:
   void UpdateSessionSizes(SessionState& session);

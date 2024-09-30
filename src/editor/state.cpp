@@ -177,6 +177,8 @@ bool ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
               hl.underline = UnderlineType::Underdashed;
             } else if (key == "blend") {
               hl.bgAlpha = 1 - (VariantAsInt(value) / 100.0f);
+            } else if (key == "nocombine") {
+              // TODO
             } else {
               LOG_WARN("unknown hl attr key: {}, type: {}", key, boost::core::demangled_name(value.type()));
             }

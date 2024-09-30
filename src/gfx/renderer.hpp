@@ -46,6 +46,7 @@ struct Renderer {
   wgpu::utils::RenderPassDescriptor shapesRPD;
 
   // text mask
+  QuadRenderData<TextMaskQuadVertex> textMaskData;
   wgpu::utils::RenderPassDescriptor textMaskRPD;
 
   // windows

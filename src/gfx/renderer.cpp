@@ -74,6 +74,7 @@ Renderer::Renderer(const SizeHandler& sizes) {
   });
 
   // text mask
+  textMaskData.CreateBuffers(1);
   textMaskRPD = utils::RenderPassDescriptor({
     RenderPassColorAttachment{
       .loadOp = LoadOp::Clear,
@@ -113,7 +114,6 @@ Renderer::Renderer(const SizeHandler& sizes) {
 
   // cursor
   cursorData.CreateBuffers(1);
-
   cursorRPD = utils::RenderPassDescriptor({
     RenderPassColorAttachment{
       .loadOp = LoadOp::Load,
@@ -438,19 +438,20 @@ void Renderer::RenderCursorMask(
     0, fontFamily.DefaultFont().ascender
   };
 
-  textMaskRPD.cColorAttachments[0].view = cursor.maskRenderTexture.textureView;
-  RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textMaskRPD);
-  passEncoder.SetPipeline(ctx.pipeline.textMaskRPL);
-  passEncoder.SetBindGroup(0, cursor.maskRenderTexture.camera.viewProjBG);
-  passEncoder.SetBindGroup(1, fontFamily.textureAtlas.textureSizeBG);
-  passEncoder.SetBindGroup(2, fontFamily.textureAtlas.renderTexture.textureBG);
-  QuadRenderData<TextMaskQuadVertex> textMaskData(1);
+  textMaskData.ResetCounts();
   auto& quad = textMaskData.NextQuad();
   for (size_t i = 0; i < 4; i++) {
     quad[i].position = textQuadPos + glyphInfo.localPoss[i];
     quad[i].regionCoord = glyphInfo.atlasRegion[i];
   }
   textMaskData.WriteBuffers();
+
+  textMaskRPD.cColorAttachments[0].view = cursor.maskRenderTexture.textureView;
+  RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textMaskRPD);
+  passEncoder.SetPipeline(ctx.pipeline.textMaskRPL);
+  passEncoder.SetBindGroup(0, cursor.maskRenderTexture.camera.viewProjBG);
+  passEncoder.SetBindGroup(1, fontFamily.textureAtlas.textureSizeBG);
+  passEncoder.SetBindGroup(2, fontFamily.textureAtlas.renderTexture.textureBG);
   textMaskData.Render(passEncoder);
   passEncoder.End();
 

@@ -10,7 +10,7 @@ void SetupPaths() {
   CFURLRef bundleUrl = CFBundleCopyBundleURL(mainBundle);
   
   CFStringRef uti = nullptr;
-  Boolean isAppBundle = false;
+  isAppBundle = false;
   if (CFURLCopyResourcePropertyForKey(bundleUrl, kCFURLTypeIdentifierKey, &uti, nullptr) && uti) {
     isAppBundle = UTTypeConformsTo(uti, kUTTypeApplicationBundle);
     CFRelease(uti);

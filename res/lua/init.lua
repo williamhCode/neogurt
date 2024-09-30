@@ -28,11 +28,11 @@ local cmds_table = {
   },
 
   font_size_change = {
-    all = true,
+    all = false,
     [1] = "number",
   },
   font_size_reset = {
-    all = true,
+    all = false,
   },
 }
 

@@ -1,5 +1,6 @@
 #include "client.hpp"
 
+#include "app/path.hpp"
 #include "boost/process/io.hpp"
 #include "boost/process/start_dir.hpp"
 #include "boost/asio/connect.hpp"
@@ -42,8 +43,10 @@ bool Client::ConnectStdio(const std::string& command, const std::string& dir) {
   }
 
   // LOG_INFO("Starting process: {}, {}", command, dir);
+  // interactive shell if is app
+  std::string flags = isAppBundle ? "-ilc" : "-ic";
   process = bp::child(
-    shellPath, "-ilc", command,
+    shellPath, flags, command,
     bp::start_dir = dir,
     bp::std_out > *readPipe,
     bp::std_in < *writePipe
