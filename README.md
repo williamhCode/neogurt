@@ -1,10 +1,10 @@
 # Neogurt
-Blazingly fast neovim gui written in C++23 and WebGPU.  
+Blazingly fast Neovim GUI written in C++23 and WebGPU.
 
 ### Key Features
 - Blazingly fast and energy efficient
 - Smooth scrolling and cursor out of the box
-- Detachable sessions (similiar to tmux)
+- Session support, similar to tmux (not detachable yet, wip)
 
 ### Build Instructions
 - Make sure Boost is installed and its headers are locatable
