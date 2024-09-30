@@ -81,16 +81,16 @@ M.convert_opts = function(default_opts, opts)
   return true
 end
 
-M.get_neogui_channel = function()
+M.get_neogurt_channel = function()
   local uis = vim.api.nvim_list_uis()
   for _, ui in ipairs(uis) do
     local client = vim.api.nvim_get_chan_info(ui.chan).client
-    if client and client.name == "neogui" and client.type == "ui" then
+    if client and client.name == "neogurt" and client.type == "ui" then
       return ui.chan
     end
   end
 
-  vim.api.nvim_err_writeln("Cannot find neogui client")
+  vim.api.nvim_err_writeln("Cannot find neogurt client")
   return nil
 end
 

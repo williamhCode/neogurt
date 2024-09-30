@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5...3.28)
 
 project(
-  Neogui
+  Neogurt
   VERSION 0.1.0
   LANGUAGES C CXX
 )
@@ -61,27 +61,27 @@ set(APP_SRC
   src/utils/color.cpp
 )
 
-add_executable(neogui ${APP_SRC})
+add_executable(neogurt ${APP_SRC})
 
-target_compile_definitions(neogui PRIVATE
+target_compile_definitions(neogurt PRIVATE
   ROOT_DIR="${PROJECT_SOURCE_DIR}"
 )
 
-target_include_directories(neogui PRIVATE 
+target_include_directories(neogurt PRIVATE 
   ${PROJECT_SOURCE_DIR}/src
   ${UTFCPP_INCLUDE_DIR}
 )
 
-target_link_libraries(neogui PRIVATE 
+target_link_libraries(neogurt PRIVATE 
   webgpu_tools
   msgpack-cxx
   freetype
 )
 
 if (MSVC)
-  target_compile_options(neogui PRIVATE /W4)
+  target_compile_options(neogurt PRIVATE /W4)
 else()
-  target_compile_options(neogui PRIVATE
+  target_compile_options(neogurt PRIVATE
     -Wall -Wextra -Wshadow -pedantic 
     -Wno-missing-field-initializers
     -Wno-deprecated-declarations
@@ -91,16 +91,16 @@ else()
 
   # if debug mode
   # if (CMAKE_BUILD_TYPE MATCHES Debug)
-  #   target_compile_options(neogui PRIVATE
+  #   target_compile_options(neogurt PRIVATE
   #     -fsanitize=address
   #   )
-  #   target_link_options(neogui PRIVATE
+  #   target_link_options(neogurt PRIVATE
   #     -fsanitize=address
   #   )
   # endif()
 
   # assert in release
-  # target_compile_options(neogui PRIVATE -UNDEBUG)
+  # target_compile_options(neogurt PRIVATE -UNDEBUG)
 
   # if no LLVM_PATH env var, then set LLVM_PATH to $(brew --prefix llvm)
 
@@ -111,16 +111,16 @@ else()
   
   # https://github.com/llvm/llvm-project/issues/77653
   # stack unwinding breaking and linking breaks without this
-  target_link_libraries(neogui PRIVATE 
+  target_link_libraries(neogurt PRIVATE 
     "-L$ENV{LLVM_PATH}/lib/c++ -L$ENV{LLVM_PATH}/lib -lunwind"
   )
 endif()
 
 if (XCODE)
-  target_compile_definitions(neogui PRIVATE
+  target_compile_definitions(neogurt PRIVATE
     XCODE=1
   )
-  set_target_properties(neogui PROPERTIES
+  set_target_properties(neogurt PROPERTIES
     XCODE_GENERATE_SCHEME ON
     XCODE_SCHEME_ENABLE_GPU_FRAME_CAPTURE_MODE "Metal"
     XCODE_SCHEME_ENVIRONMENT

@@ -66,7 +66,7 @@ int main() {
     Nvim* nvim = &session->nvim;
     EditorState* editorState = &session->editorState;
 
-    nvim->ExecLua("vim.g.neogui_startup()", {});
+    nvim->ExecLua("vim.g.neogurt_startup()", {});
 
     // main loop -----------------------------------
     std::atomic_bool exitWindow = false;

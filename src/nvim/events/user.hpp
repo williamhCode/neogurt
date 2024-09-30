@@ -4,7 +4,7 @@
 
 namespace event {
 
-struct NeoguiCmd {
+struct NeogurtCmd {
   std::string_view cmd;
   std::map<std::string_view, msgpack::object> opts;
   MSGPACK_DEFINE(cmd, opts);

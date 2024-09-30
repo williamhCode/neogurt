@@ -74,8 +74,8 @@ jobs:
     - name: Build dawn
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }} --target dawn-single-lib
 
-    - name: Build neogui
-      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }} --target neogui
+    - name: Build neogurt
+      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }} --target neogurt
 
     - name: Generate app
       run: make gen-app

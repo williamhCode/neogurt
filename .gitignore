@@ -1,4 +1,4 @@
-/build
+build/
 .cache
 compile_commands.json
 .ignore
@@ -6,4 +6,4 @@ xcode
 imgui.ini
 tint
 sessions.txt
-gen/out
+gen/

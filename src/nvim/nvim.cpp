@@ -60,10 +60,10 @@ std::future<void> Nvim::Setup() {
 
   // get so exceptions get thrown
   co_await GetAll(
-    SetVar("neogui", true),
+    SetVar("neogurt", true),
     Command("runtime! ginit.vim"),
     SetClientInfo(
-      "neogui",
+      "neogurt",
       {
         {"major", 0},
         {"minor", 0},

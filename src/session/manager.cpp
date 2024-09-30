@@ -56,7 +56,7 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
   }
 
   if (first) {
-    window = sdl::Window({1200, 800}, "Neogui", options);
+    window = sdl::Window({1200, 800}, "Neogurt", options);
     // needs to be in main thread
     Options::titlebarHeight = GetTitlebarHeight(window.Get());
   }

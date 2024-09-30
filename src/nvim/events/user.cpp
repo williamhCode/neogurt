@@ -8,11 +8,11 @@ void ProcessUserEvents(rpc::Client& client, SessionManager& sessionManager) {
   while (client.HasRequest()) {
     auto request = client.PopRequest();
 
-    if (request.method == "neogui_cmd") {
-      LOG("neogui_cmd: {}", ToString(request.params));
+    if (request.method == "neogurt_cmd") {
+      LOG("neogurt_cmd: {}", ToString(request.params));
 
       try {
-        event::NeoguiCmd userCmd = request.params.convert();
+        event::NeogurtCmd userCmd = request.params.convert();
         if (userCmd.cmd == "session_new") {
           int id = sessionManager.SessionNew({
             .name = userCmd.opts.at("name").convert(),
@@ -56,7 +56,7 @@ void ProcessUserEvents(rpc::Client& client, SessionManager& sessionManager) {
         }
 
       } catch (const std::exception& e) {
-        request.SetError(std::string("Neogui client error: ") + e.what());
+        request.SetError(std::string("Neogurt client error: ") + e.what());
       }
     }
   }

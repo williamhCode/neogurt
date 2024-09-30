@@ -20,7 +20,7 @@ static std::string CamelToSnakeCase(std::string_view s) {
 
 static std::future<void> LoadOption(Nvim& nvim, std::string_view name, auto& value) {
   try {
-    auto luaCode = std::format("return vim.g.neogui_opts.{}", name);
+    auto luaCode = std::format("return vim.g.neogurt_opts.{}", name);
     auto result = co_await nvim.ExecLua(luaCode, {});
     result->convert_if_not_nil(value);
 

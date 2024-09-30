@@ -1,4 +1,4 @@
-vim.g.neogui = true
+vim.g.neogurt = true
 
 local utils = require("utils")
 
@@ -36,7 +36,7 @@ local cmds_table = {
   },
 }
 
-vim.api.nvim_create_user_command("Neogui", function(cmd_opts)
+vim.api.nvim_create_user_command("Neogurt", function(cmd_opts)
   local cmd, opts = utils.convert_command_args(cmd_opts)
   if cmd == nil then return end
 
@@ -52,7 +52,7 @@ vim.api.nvim_create_user_command("Neogui", function(cmd_opts)
   end
 
   -- handle command output
-  local result = vim.g.neogui_cmd(cmd, opts)
+  local result = vim.g.neogurt_cmd(cmd, opts)
   if cmd == "session_new" then
   elseif cmd == "session_kill" then
     if result == true then
@@ -69,12 +69,12 @@ vim.api.nvim_create_user_command("Neogui", function(cmd_opts)
   end
 end, { nargs = "*" })
 
---- Sends a session command to neogui
+--- Sends a session command to neogurt
 --- @param cmd string: command to send.
 --- @param opts table: command options
 --- @return any: result of the command
-vim.g.neogui_cmd = function(cmd, opts)
-  local chan_id = utils.get_neogui_channel()
+vim.g.neogurt_cmd = function(cmd, opts)
+  local chan_id = utils.get_neogurt_channel()
   if chan_id == nil then return end
 
   local default_opts = cmds_table[cmd]
@@ -98,28 +98,28 @@ vim.g.neogui_cmd = function(cmd, opts)
       return
     end
 
-    local id = vim.rpcrequest(chan_id, "neogui_cmd", cmd, opts)
+    local id = vim.rpcrequest(chan_id, "neogurt_cmd", cmd, opts)
     return id
 
   elseif cmd == "session_kill" then
-    local success = vim.rpcrequest(chan_id, "neogui_cmd", cmd, opts)
+    local success = vim.rpcrequest(chan_id, "neogurt_cmd", cmd, opts)
     return success
 
   elseif cmd == "session_switch" then
-    local success = vim.rpcrequest(chan_id, "neogui_cmd", cmd, opts)
+    local success = vim.rpcrequest(chan_id, "neogurt_cmd", cmd, opts)
     return success
 
   elseif cmd == "session_prev" then
-    local success = vim.rpcrequest(chan_id, "neogui_cmd", cmd)
+    local success = vim.rpcrequest(chan_id, "neogurt_cmd", cmd)
     return success
 
   elseif cmd == "session_list" then
-    local list = vim.rpcrequest(chan_id, "neogui_cmd", cmd, opts)
+    local list = vim.rpcrequest(chan_id, "neogurt_cmd", cmd, opts)
     return list
 
   elseif cmd == "session_select" then
-    local curr_id = vim.g.neogui_cmd("session_list", { sort = "time" })[1].id
-    local list = vim.g.neogui_cmd("session_list", opts)
+    local curr_id = vim.g.neogurt_cmd("session_list", { sort = "time" })[1].id
+    local list = vim.g.neogurt_cmd("session_list", opts)
     vim.ui.select(list, {
       prompt = "Select a session",
       format_item = function(item)
@@ -131,15 +131,15 @@ vim.g.neogui_cmd = function(cmd, opts)
       end
     }, function(choice)
       if choice == nil then return end
-      vim.g.neogui_cmd("session_switch", { id = choice.id })
+      vim.g.neogurt_cmd("session_switch", { id = choice.id })
     end)
 
   elseif cmd == "font_size_change" then
-    return vim.rpcrequest(chan_id, "neogui_cmd", cmd, opts)
+    return vim.rpcrequest(chan_id, "neogurt_cmd", cmd, opts)
 
   elseif cmd == "font_size_reset" then
-    return vim.rpcrequest(chan_id, "neogui_cmd", cmd, opts)
+    return vim.rpcrequest(chan_id, "neogurt_cmd", cmd, opts)
   end
 end
 
-vim.g.neogui_startup = function() end
+vim.g.neogurt_startup = function() end

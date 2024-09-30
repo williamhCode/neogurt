@@ -4,7 +4,7 @@ TYPE = release
 # TYPE = debug
 
 build:
-	cmake --build build/$(TYPE) --target neogui
+	cmake --build build/$(TYPE) --target neogurt
 	cp build/$(TYPE)/compile_commands.json .
 
 build-dawn:
@@ -43,12 +43,11 @@ xcode-setup:
 	cmake . -B xcode -GXcode
 
 run:
-	build/$(TYPE)/neogui
+	build/$(TYPE)/neogurt
 
 gen-app:
-	mkdir -p gen/out
-	cp -r gen/template/Neogui.app gen/out
-	mkdir -p gen/out/Neogui.app/Contents/{Resources,MacOS}
-	cp -r res/lua gen/out/Neogui.app/Contents/Resources
-	cp -r res/shaders gen/out/Neogui.app/Contents/Resources
-	cp build/release/neogui gen/out/Neogui.app/Contents/MacOS
+	mkdir -p gen/out/Neogurt.app
+	mkdir -p gen/out/Neogurt.app/Contents/{Resources,MacOS}
+	cp -r res/lua gen/out/Neogurt.app/Contents/Resources
+	cp -r res/shaders gen/out/Neogurt.app/Contents/Resources
+	cp build/release/neogurt gen/out/Neogurt.app/Contents/MacOS
