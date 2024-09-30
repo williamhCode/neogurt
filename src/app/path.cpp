@@ -8,13 +8,14 @@
 void SetupPaths() {
   CFBundleRef mainBundle = CFBundleGetMainBundle();
   CFURLRef bundleUrl = CFBundleCopyBundleURL(mainBundle);
-  
+
   CFStringRef uti = nullptr;
   isAppBundle = false;
   if (CFURLCopyResourcePropertyForKey(bundleUrl, kCFURLTypeIdentifierKey, &uti, nullptr) && uti) {
     isAppBundle = UTTypeConformsTo(uti, kUTTypeApplicationBundle);
     CFRelease(uti);
   }
+  CFRelease(bundleUrl);
   
   // resources dir
   if (isAppBundle) {
@@ -52,6 +53,4 @@ void SetupPaths() {
       logger.RedirToPath(logDir);
     }
   }
-
-  CFRelease(bundleUrl);
 }

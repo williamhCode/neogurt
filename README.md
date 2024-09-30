@@ -1,4 +1,4 @@
-# Neogui
+# Neogurt
 Blazingly fast neovim gui written in C++23 and WebGPU.  
 
 ### Key Features
