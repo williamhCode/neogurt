@@ -58,6 +58,10 @@ void ProcessUserEvents(rpc::Client& client, SessionManager& sessionManager) {
       } catch (const std::exception& e) {
         request.SetError(std::string("Neogurt client error: ") + e.what());
       }
+
+    } else {
+      LOG_ERR("Unknown method: {}", request.method);
+      request.SetValue(msgpack::type::nil_t());
     }
   }
 }

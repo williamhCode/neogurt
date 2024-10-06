@@ -48,11 +48,21 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
     }
   ).get();
 
+  bool timeout = false;
   auto optionsFut = LoadOptions(nvim);
   if (optionsFut.wait_for(1s) == std::future_status::ready) {
     options = optionsFut.get();
   } else {
     LOG_WARN("Failed to load options (timeout)");
+    timeout = true;
+  }
+
+  std::string guifont;
+  if (!timeout) {
+    guifont = nvim.GetOptionValue("guifont", {}).get()->as<std::string>();
+  } else {
+    LOG_WARN("Failed to load guifont option (timeout), using default");
+    guifont = "SF Mono";
   }
 
   if (first) {
@@ -65,14 +75,6 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
     options.margins.top += Options::titlebarHeight;
   }
 
-  auto guifontFut = nvim.GetOptionValue("guifont", {});
-  std::string guifont;
-  if (guifontFut.wait_for(1s) == std::future_status::ready) {
-    guifont = guifontFut.get()->as<std::string>();
-  } else {
-    LOG_WARN("Failed to load guifont option (timeout), using default");
-    guifont = "SF Mono";
-  }
   auto fontFamilyResult = FontFamily::FromGuifont(guifont, window.dpiScale);
   if (!fontFamilyResult) {
     throw std::runtime_error("Invalid guifont: " + fontFamilyResult.error());

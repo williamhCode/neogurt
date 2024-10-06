@@ -21,5 +21,4 @@ struct EditorState {
   // std::map<int, std::string> hlGroupTable;
 };
 
-// returns true if there were events processed
-bool ParseEditorState(UiEvents& uiEvents, EditorState& editorState);
+void ParseEditorState(UiEvents& uiEvents, EditorState& editorState);

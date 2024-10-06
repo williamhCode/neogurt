@@ -1,7 +1,7 @@
 .PHONY: build
 
-TYPE = release
-# TYPE = debug
+# TYPE = release
+TYPE = debug
 
 build:
 	cmake --build build/$(TYPE) --target neogurt
@@ -48,6 +48,7 @@ run:
 gen-app:
 	mkdir -p gen/out/Neogurt.app
 	mkdir -p gen/out/Neogurt.app/Contents/{Resources,MacOS}
+	cp res/Info.plist gen/out/Neogurt.app/Contents
 	cp -r res/lua gen/out/Neogurt.app/Contents/Resources
 	cp -r res/shaders gen/out/Neogurt.app/Contents/Resources
 	cp build/release/neogurt gen/out/Neogurt.app/Contents/MacOS

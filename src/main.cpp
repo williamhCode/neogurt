@@ -132,14 +132,14 @@ int main() {
         LOG_ENABLE();
 
         LOG_DISABLE();
-        ParseUiEvents(*nvim->client, nvim->uiEvents);
-        LOG_ENABLE();
-
-        LOG_DISABLE();
-        if (ParseEditorState(nvim->uiEvents, session->editorState)) {
+        if (ParseUiEvents(*nvim->client, nvim->uiEvents)) {
           idle = false;
           idleElasped = 0;
         }
+        LOG_ENABLE();
+
+        LOG_DISABLE();
+        ParseEditorState(nvim->uiEvents, session->editorState);
         LOG_ENABLE();
 
         // sdl events

@@ -1,4 +1,5 @@
-vim.g.neogurt = true
+-- vim.api.nvim_command("autocmd VimEnter * call rpcrequest(1, 'vimenter')")
+-- vim.api.nvim_command("autocmd UIEnter * call rpcrequest(1, 'uienter')")
 
 local utils = require("utils")
 

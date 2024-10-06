@@ -41,8 +41,7 @@ static const auto winTypes = vIndicesSet<
 
 // clang-format off
 // i hate clang format on std::visit(overloaded{})
-bool ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
-  bool processedEvents = uiEvents.numFlushes > 0;
+void ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
   for (int i = 0; i < uiEvents.numFlushes; i++) {
     if (uiEvents.queue.empty()) {
       LOG_ERR("ParseEditorState - events queue empty");
@@ -198,10 +197,6 @@ bool ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
           margins.push_back(&e);
         },
         [&](Flush&) {
-          if (redrawEvents.size() <= 1 && uiEvents.numFlushes == 1) {
-            processedEvents = false;
-          }
-
           // execute grid events before win events
           for (auto *event : gridEvents) {
             std::visit(overloaded{
@@ -322,7 +317,5 @@ bool ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
       }, event);
     }
   }
-
-  return processedEvents;
 }
 // clang-format on
