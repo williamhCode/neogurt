@@ -61,8 +61,16 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
   if (!timeout) {
     guifont = nvim.GetOptionValue("guifont", {}).get()->as<std::string>();
   } else {
-    LOG_WARN("Failed to load guifont option (timeout), using default");
+    LOG_WARN("Failed to load guifont option (timeout)");
     guifont = "SF Mono";
+  }
+
+  int linespace;
+  if (!timeout) {
+    linespace = nvim.GetOptionValue("linespace", {}).get()->convert();
+  } else {
+    LOG_WARN("Failed to load linespace option (timeout)");
+    linespace = 0;
   }
 
   if (first) {
@@ -75,7 +83,7 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
     options.margins.top += Options::titlebarHeight;
   }
 
-  auto fontFamilyResult = FontFamily::FromGuifont(guifont, window.dpiScale);
+  auto fontFamilyResult = FontFamily::FromGuifont(guifont, linespace, window.dpiScale);
   if (!fontFamilyResult) {
     throw std::runtime_error("Invalid guifont: " + fontFamilyResult.error());
   }

@@ -27,7 +27,7 @@ struct FontFamily {
   // ShapesManager shapesManager;
 
   static std::expected<FontFamily, std::string>
-  FromGuifont(std::string guifont, float dpiScale);
+  FromGuifont(std::string guifont, float linespace, float dpiScale);
   // static FontFamily Default(float dpiScale);
 
   void ChangeDpiScale(float dpiScale);

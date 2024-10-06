@@ -11,7 +11,7 @@ static auto SplitStr(std::string_view str, char delim) {
 }
 
 std::expected<FontFamily, std::string>
-FontFamily::FromGuifont(std::string guifont, float dpiScale) {
+FontFamily::FromGuifont(std::string guifont, float linespace, float dpiScale) {
   if (guifont.empty()) {
     return std::unexpected("Empty guifont");
   }
@@ -59,6 +59,7 @@ FontFamily::FromGuifont(std::string guifont, float dpiScale) {
               .bold = bold,
               .italic = italic,
             },
+            linespace,
             dpiScale
           )
           .value(); // allow exception to propagate
@@ -103,7 +104,8 @@ void FontFamily::ChangeDpiScale(float dpiScale) {
         return newFontSet.normal;
       }
       return std::make_shared<Font>(
-        fontHandle->path, fontHandle->height, fontHandle->width, dpiScale
+        fontHandle->path, fontHandle->height, fontHandle->width, fontHandle->linespace,
+        dpiScale
       );
     };
 
@@ -135,7 +137,8 @@ void FontFamily::ChangeSize(float delta) {
       float newWidth = newHeight * widthHeightRatio;
 
       return std::make_shared<Font>(
-        fontHandle->path, newHeight, newWidth, fontHandle->dpiScale
+        fontHandle->path, newHeight, newWidth, fontHandle->linespace,
+        fontHandle->dpiScale
       );
     };
 
@@ -159,7 +162,8 @@ void FontFamily::ResetSize() {
         return newFontSet.normal;
       }
       return std::make_shared<Font>(
-        fontHandle->path, defaultHeight, defaultWidth, fontHandle->dpiScale
+        fontHandle->path, defaultHeight, defaultWidth, fontHandle->linespace,
+        fontHandle->dpiScale
       );
     };
 

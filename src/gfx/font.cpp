@@ -46,20 +46,23 @@ void FtDone() {
 }
 
 std::expected<Font, std::string>
-Font::FromName(const FontDescriptorWithName& desc, float dpiScale) {
+Font::FromName(const FontDescriptorWithName& desc, float linespace, float dpiScale) {
   auto fontPath = GetFontPathFromName(desc);
   if (fontPath.empty()) {
     return std::unexpected("Failed to find font for: " + desc.name);
   }
   try {
-    return Font(fontPath, desc.height, desc.width, dpiScale);
+    return Font(fontPath, desc.height, desc.width, linespace, dpiScale);
   } catch (const std::runtime_error& e) {
     return std::unexpected(e.what());
   }
 }
 
-Font::Font(std::string _path, float _height, float _width, float _dpiScale)
-    : path(std::move(_path)), height(_height), width(_width), dpiScale(_dpiScale) {
+Font::Font(
+  std::string _path, float _height, float _width, float _linespace, float _dpiScale
+)
+    : path(std::move(_path)), height(_height), width(_width), linespace(_linespace),
+      dpiScale(_dpiScale) {
   if (face = CreateFace(library, path.c_str(), 0); face == nullptr) {
     throw std::runtime_error("Failed to create FT_Face for: " + path);
   }
@@ -71,10 +74,26 @@ Font::Font(std::string _path, float _height, float _width, float _dpiScale)
   int trueWidth = width * dpiScale;
   width = trueWidth / dpiScale; // round down to nearest trueWidth
 
+  // round to nearest pixel
+  auto roundPixel = [this](float val) -> float {
+    return int(val * dpiScale) / dpiScale;
+  };
+
+  linespace = roundPixel(linespace);
+  float topLinespace = roundPixel(linespace / 2);
+  float bottomLinespace = linespace - topLinespace;
+  LOG_INFO(
+    "linespace: {}, topLinespace: {}, bottomLinespace: {}", linespace, topLinespace,
+    bottomLinespace
+  );
+
   FT_Set_Pixel_Sizes(face.get(), trueWidth, trueHeight);
   charSize.x = (face->size->metrics.max_advance >> 6) / dpiScale;
   charSize.y = (face->size->metrics.height >> 6) / dpiScale;
   ascender = (face->size->metrics.ascender >> 6) / dpiScale;
+
+  charSize.y += linespace;
+  ascender += topLinespace;
 
   float y_scale = face->size->metrics.y_scale;
   underlinePosition = (FT_MulFix(face->underline_position, y_scale) >> 6) / dpiScale;
