@@ -6,7 +6,6 @@
 #include "app/window_funcs.h"
 #include "utils/color.hpp"
 #include "utils/logger.hpp"
-#include "utils/types.hpp"
 #include <stdexcept>
 #include <format>
 

@@ -1,7 +1,7 @@
 .PHONY: build
 
-TYPE = release
-# TYPE = debug
+# TYPE = release
+TYPE = debug
 
 build:
 	cmake --build build/$(TYPE) --target neogurt

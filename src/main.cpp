@@ -39,6 +39,7 @@ const WGPUContext& ctx = sdl::Window::_ctx;
 
 int main() {
   SetupPaths();
+  PopulateBoxChars();
 
   if (!SDL_Init(SDL_INIT_VIDEO)) {
     LOG_ERR("Unable to initialize SDL: {}", SDL_GetError());

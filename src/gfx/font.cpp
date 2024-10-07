@@ -74,18 +74,11 @@ Font::Font(
   int trueWidth = width * dpiScale;
   width = trueWidth / dpiScale; // round down to nearest trueWidth
 
-  // round to nearest pixel
   auto roundPixel = [this](float val) -> float {
     return int(val * dpiScale) / dpiScale;
   };
-
   linespace = roundPixel(linespace);
   float topLinespace = roundPixel(linespace / 2);
-  float bottomLinespace = linespace - topLinespace;
-  LOG_INFO(
-    "linespace: {}, topLinespace: {}, bottomLinespace: {}", linespace, topLinespace,
-    bottomLinespace
-  );
 
   FT_Set_Pixel_Sizes(face.get(), trueWidth, trueHeight);
   charSize.x = (face->size->metrics.max_advance >> 6) / dpiScale;
@@ -108,8 +101,8 @@ Font::Font(
   // );
 }
 
-const Font::GlyphInfo*
-Font::GetGlyphInfo(FT_ULong charcode, TextureAtlas& textureAtlas) {
+const GlyphInfo*
+Font::GetGlyphInfo(char32_t charcode, TextureAtlas& textureAtlas) {
   auto glyphIndex = FT_Get_Char_Index(face.get(), charcode);
 
   if (glyphIndex == 0) {
@@ -121,12 +114,6 @@ Font::GetGlyphInfo(FT_ULong charcode, TextureAtlas& textureAtlas) {
     return &(it->second);
   }
 
-  // TODO: implement custom box drawing characters
-  // if (charcode >= 0x2500 && charcode <= 0x25FF) {
-  //   vertOffset = charSize.y * 0.2;
-  //   vertOffset = floor(vertOffset * dpiScale) / dpiScale;
-  // }
-
   FT_Int32 loadFlags = FT_LOAD_DEFAULT;
   FT_Load_Glyph(face.get(), glyphIndex, loadFlags);
   FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL);
@@ -136,7 +123,7 @@ Font::GetGlyphInfo(FT_ULong charcode, TextureAtlas& textureAtlas) {
 
   auto region = textureAtlas.AddGlyph({
     bitmap.buffer,
-    std::dextents<uint, 2>{bitmap.rows, bitmap.width},
+    std::dextents<size_t, 2>{bitmap.rows, bitmap.width},
   });
 
   auto pair = glyphInfoMap.emplace(

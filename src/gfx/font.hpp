@@ -2,7 +2,7 @@
 
 #include "gfx/font/descriptor.hpp"
 #include "gfx/texture_atlas.hpp"
-#include "utils/region.hpp"
+#include "gfx/glyph_info.hpp"
 #include <expected>
 
 #include <ft2build.h>
@@ -32,11 +32,8 @@ struct Font {
   float underlinePosition;
   float underlineThickness;
 
-  struct GlyphInfo {
-    Region localPoss;
-    Region atlasRegion;
-  };
-  using GlyphInfoMap = std::unordered_map<uint32_t, GlyphInfo>;
+  // index is FT glyph index, not charcode
+  using GlyphInfoMap = std::unordered_map<FT_UInt, GlyphInfo>;
   GlyphInfoMap glyphInfoMap;
 
   static std::expected<Font, std::string>
@@ -47,5 +44,5 @@ struct Font {
 
   // returns nullptr when charcode is not found.
   // updates glyphInfoMap when charcode not in map.
-  const GlyphInfo* GetGlyphInfo(FT_ULong charcode, TextureAtlas& textureAtlas);
+  const GlyphInfo* GetGlyphInfo(char32_t charcode, TextureAtlas& textureAtlas);
 };

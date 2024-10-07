@@ -7,7 +7,6 @@
 #include "gfx/shapes.hpp"
 #include "utils/logger.hpp"
 #include "utils/region.hpp"
-#include "utils/types.hpp"
 #include "utils/unicode.hpp"
 #include "utils/color.hpp"
 #include "webgpu_tools/utils/webgpu.hpp"
@@ -295,7 +294,7 @@ void Renderer::RenderToWindow(
 
           glm::vec2 textQuadPos{
             textOffset.x,
-            textOffset.y + defaultFont.ascender,
+            textOffset.y + (glyphInfo.boxDrawing ? 0 : defaultFont.ascender)
           };
 
           auto& quad = textData.NextQuad();
@@ -435,7 +434,7 @@ void Renderer::RenderCursorMask(
   const auto& glyphInfo = fontFamily.GetGlyphInfo(charcode, hl.bold, hl.italic);
 
   glm::vec2 textQuadPos{
-    0, fontFamily.DefaultFont().ascender
+    0, glyphInfo.boxDrawing ? 0 : fontFamily.DefaultFont().ascender
   };
 
   textMaskData.ResetCounts();

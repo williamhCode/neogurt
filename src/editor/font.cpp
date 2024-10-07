@@ -47,7 +47,7 @@ FontFamily::FromGuifont(std::string guifont, float linespace, float dpiScale) {
   }
 
   try {
-    return FontFamily{
+    FontFamily fontFamily{
       .fonts = SplitStr(fontsStr, ',') | std::views::transform([&](auto&& fontName) {
         FontSet fontSet;
         auto makeFontHandle = [&](bool bold, bool italic) {
@@ -83,11 +83,12 @@ FontFamily::FromGuifont(std::string guifont, float linespace, float dpiScale) {
         return fontSet;
       }) |
       std::ranges::to<std::vector>(),
-
+      .boxDrawing{fontFamily.DefaultFont().charSize, dpiScale},
       .textureAtlas{height, dpiScale},
       .defaultHeight = height,
       .defaultWidth = width,
     };
+    return fontFamily;
 
   } catch (const std::bad_expected_access<std::string>& e) {
     return std::unexpected(e.error());
@@ -115,7 +116,7 @@ void FontFamily::ChangeDpiScale(float dpiScale) {
     newFontSet.boldItalic = makeFontHandle(fontSet.boldItalic);
   }
   fonts = std::move(newFonts);
-
+  boxDrawing = BoxDrawing(DefaultFont().charSize, dpiScale);
   textureAtlas = TextureAtlas(DefaultFont().height, dpiScale);
 }
 
@@ -148,7 +149,7 @@ void FontFamily::ChangeSize(float delta) {
     newFontSet.boldItalic = makeFontHandle(fontSet.boldItalic);
   }
   fonts = std::move(newFonts);
-
+  boxDrawing = BoxDrawing(DefaultFont().charSize, boxDrawing.dpiScale);
   textureAtlas = TextureAtlas(DefaultFont().height, textureAtlas.dpiScale);
 }
 
@@ -173,7 +174,7 @@ void FontFamily::ResetSize() {
     newFontSet.boldItalic = makeFontHandle(fontSet.boldItalic);
   }
   fonts = std::move(newFonts);
-
+  boxDrawing = BoxDrawing(DefaultFont().charSize, boxDrawing.dpiScale);
   textureAtlas = TextureAtlas(DefaultFont().height, textureAtlas.dpiScale);
 }
 
@@ -181,8 +182,15 @@ const Font& FontFamily::DefaultFont() const {
   return *fonts.front().normal;
 }
 
-const Font::GlyphInfo&
+const GlyphInfo&
 FontFamily::GetGlyphInfo(char32_t charcode, bool bold, bool italic) {
+  if (charcode >= 0x2500 && charcode <= 0x259F) {
+    if (const auto *glyphInfo = boxDrawing.GetGlyphInfo(charcode, textureAtlas)) {
+      return *glyphInfo;
+    }
+    goto return_empty;
+  }
+
   for (const auto& fontSet : fonts) {
     const auto& font = [&] {
       if (bold && italic) {
@@ -203,6 +211,7 @@ FontFamily::GetGlyphInfo(char32_t charcode, bool bold, bool italic) {
   }
 
   // LOG_INFO("Failed to get glyph info for codepoint: {}, {}", (uint32_t)charcode, UnicodeToUTF8(charcode));
+return_empty:
   for (const auto& fontSet : fonts) {
     if (const auto* glyphInfo = fontSet.normal->GetGlyphInfo(' ', textureAtlas)) {
       return *glyphInfo;

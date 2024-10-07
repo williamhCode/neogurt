@@ -1,6 +1,7 @@
 #pragma once
 
 #include "gfx/font.hpp"
+#include "gfx/box_drawing.hpp"
 #include "gfx/texture_atlas.hpp"
 
 #include <array>
@@ -21,10 +22,10 @@ struct FontSet {
 // list of fonts: primary font and fallback fonts
 struct FontFamily {
   std::vector<FontSet> fonts;
+  BoxDrawing boxDrawing;
   TextureAtlas textureAtlas;
   float defaultHeight;
   float defaultWidth;
-  // ShapesManager shapesManager;
 
   static std::expected<FontFamily, std::string>
   FromGuifont(std::string guifont, float linespace, float dpiScale);
@@ -35,5 +36,5 @@ struct FontFamily {
   void ResetSize();
 
   const Font& DefaultFont() const;
-  const Font::GlyphInfo& GetGlyphInfo(char32_t charcode, bool bold, bool italic);
+  const GlyphInfo& GetGlyphInfo(char32_t charcode, bool bold, bool italic);
 };
