@@ -54,13 +54,17 @@ void Pen::DrawRect(float left, float top, float width, float height) {
     for (int x = left; x < right; x++) {
       float alpha = 1;
 
-      if (x < left) {
+      if (x < left && x > right - 1) {
+        alpha *= right - left;
+      } else if (x < left) {
         alpha *= rfpart(left);
       } else if (x > right - 1) {
         alpha *= fpart(right);
       }
 
-      if (y < top) {
+      if (y < top && y > bottom - 1) {
+        alpha *= bottom - top;
+      } else if (y < top) {
         alpha *= rfpart(top);
       } else if (y > bottom - 1) {
         alpha *= fpart(bottom);

@@ -232,12 +232,12 @@ BoxDrawing::GetGlyphInfo(char32_t charcode, TextureAtlas& textureAtlas) {
   auto pair = glyphInfoMap.emplace(
     charcode,
     GlyphInfo{
-      .boxDrawing = true,
       .localPoss = MakeRegion(
         glm::vec2(xmin, ymin) / dpiScale,
         glm::vec2(width, height) / dpiScale
       ),
       .atlasRegion = region,
+      .boxDrawing = true,
     }
   );
 
