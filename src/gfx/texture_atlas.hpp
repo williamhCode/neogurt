@@ -41,9 +41,48 @@ struct TextureAtlas {
 
   // Adds data to texture atlas, and returns the region where the data was added.
   // Region coordinates is relative to textureSize.
-  Region AddGlyph(std::mdspan<uint8_t, std::dextents<size_t, 2>> glyphData);
+  template <class LayoutPolicy>
+  Region AddGlyph(std::mdspan<uint8_t, std::dextents<size_t, 2>, LayoutPolicy> glyphData);
   // Resize cpu side data and sizes
   void Resize();
   // Resize gpu side data and update bind group
   void Update();
 };
+
+template <class LayoutPolicy>
+Region TextureAtlas::AddGlyph(
+  std::mdspan<uint8_t, std::dextents<size_t, 2>, LayoutPolicy> glyphData
+) {
+  // check if current row is full
+  // if so, move to next row
+  if (currentPos.x + glyphData.extent(1) > bufferSize.x) {
+    currentPos.x = 0;
+    currentPos.y += currMaxHeight;
+    currMaxHeight = 0;
+  }
+  if (currentPos.y + glyphData.extent(0) > bufferSize.y) {
+    Resize();
+  }
+
+  // fill data
+  for (size_t row = 0; row < glyphData.extent(0); row++) {
+    for (size_t col = 0; col < glyphData.extent(1); col++) {
+      Color& dest = data[currentPos.y + row, currentPos.x + col];
+      dest.r = 255;
+      dest.g = 255;
+      dest.b = 255;
+      dest.a = glyphData[row, col];
+    }
+  }
+  dirty = true;
+
+  // calculate region
+  auto regionPos = glm::vec2(currentPos) / dpiScale;
+  auto regionSize = glm::vec2(glyphData.extent(1), glyphData.extent(0)) / dpiScale;
+
+  // advance current position
+  currentPos.x += glyphData.extent(1);
+  currMaxHeight = std::max((size_t)currMaxHeight, glyphData.extent(0));
+
+  return MakeRegion(regionPos, regionSize);
+}

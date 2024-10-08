@@ -112,10 +112,6 @@ private:
   void DoWrite();
 };
 
-} // namespace rpc
-
-namespace rpc {
-
 msgpack::object_handle Client::Call(std::string_view method, auto... args) {
   auto future = AsyncCall(method, args...);
   return future.get();

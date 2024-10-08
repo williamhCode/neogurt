@@ -1,17 +1,20 @@
 #include "box_drawing.hpp"
+#include "utils/mdspan.hpp"
 
 using namespace box;
 
-template <class... Args>
-using t = std::tuple<Args...>;
-
 static auto boxChars = [] {
   std::unordered_map<char32_t, DrawDesc> c{};
+
+  using std::tuple;
 
   auto _ = None;
   auto L = Light;
   auto H = Heavy;
   auto D = Double;
+
+  auto t = true;
+  auto f = false;
 
   // solid lines (0x2500 - 0x2503)
   c[0x2500] = HLine{};
@@ -31,7 +34,7 @@ static auto boxChars = [] {
 
   // line box components (0x250C - 0x254B)
   auto Corner = [&](char32_t start, Side vert, Side hori) {
-    for (auto [vWeight, hWeight] : {t{L, L}, {L, H}, {H, L}, {H, H}}) {
+    for (auto [vWeight, hWeight] : {tuple{L, L}, {L, H}, {H, L}, {H, H}}) {
       Cross cross{};
       cross[vert] = vWeight;
       cross[hori] = hWeight;
@@ -45,7 +48,7 @@ static auto boxChars = [] {
 
   auto VertT = [&](char32_t start, Side side) {
     for (auto [tWeight, bWeight, sWeight] :
-         {t{L, L, L}, {L, L, H}, {H, L, L}, {L, H, L}, {H, H, L}, {H, L, H}, {L, H, H}, {H, H, H}}) {
+         {tuple{L, L, L}, {L, L, H}, {H, L, L}, {L, H, L}, {H, H, L}, {H, L, H}, {L, H, H}, {H, H, H}}) {
       Cross cross{};
       cross[Top] = tWeight;
       cross[Bottom] = bWeight;
@@ -58,7 +61,7 @@ static auto boxChars = [] {
 
   auto HoriT = [&](char32_t start, Side side) {
     for (auto [lWeight, rWeight, sWeight] :
-         {t{L, L, L}, {H, L, L}, {L, H, L}, {H, H, L}, {L, L, H}, {H, L, H}, {L, H, H}, {H, H, H}}) {
+         {tuple{L, L, L}, {H, L, L}, {L, H, L}, {H, H, L}, {L, L, H}, {H, L, H}, {L, H, H}, {H, H, H}}) {
       Cross cross{};
       cross[Left] = lWeight;
       cross[Right] = rWeight;
@@ -71,10 +74,10 @@ static auto boxChars = [] {
 
   char32_t start = 0x253C;
   for (auto [tWeight, bWeight, lWeight, rWeight] :
-       {t{L, L, L, L}, {L, L, H, L}, {L, L, L, H}, {L, L, H, H},
-        {H, L, L, L}, {L, H, L, L}, {H, H, L, L}, {H, L, H, L},
-        {H, L, L, H}, {L, H, H, L}, {L, H, L, H}, {H, L, H, H},
-        {L, H, H, H}, {H, H, H, L}, {H, H, L, H}, {H, H, H, H}}) {
+       {tuple{L, L, L, L}, {L, L, H, L}, {L, L, L, H}, {L, L, H, H},
+             {H, L, L, L}, {L, H, L, L}, {H, H, L, L}, {H, L, H, L},
+             {H, L, L, H}, {L, H, H, L}, {L, H, L, H}, {H, L, H, H},
+             {L, H, H, H}, {H, H, H, L}, {H, H, L, H}, {H, H, H, H}}) {
     Cross cross{tWeight, bWeight, lWeight, rWeight};
     c[start++] = cross;
   }
@@ -91,7 +94,7 @@ static auto boxChars = [] {
 
   // double line box components (0x2552 - 0x256c)
   auto DoubleCorner = [&](char32_t start, Side vert, Side hori) {
-    for (auto [vWeight, hWeight] : {t{L, D}, {D, L}, {D, D}}) {
+    for (auto [vWeight, hWeight] : {tuple{L, D}, {D, L}, {D, D}}) {
       DoubleCross cross{};
       cross[vert] = vWeight;
       cross[hori] = hWeight;
@@ -137,6 +140,41 @@ static auto boxChars = [] {
   c[0x257e] = HalfLine{.left = Heavy, .right = Light};
   c[0x257f] = HalfLine{.top = Heavy, .bottom = Light};
 
+  // block elements (0x2580 - 0x2590)
+  c[0x2580] = UpperBlock{1/2.};
+  c[0x2581] = LowerBlock{1/8.};
+  c[0x2582] = LowerBlock{1/4.};
+  c[0x2583] = LowerBlock{3/8.};
+  c[0x2584] = LowerBlock{1/2.};
+  c[0x2585] = LowerBlock{5/8.};
+  c[0x2586] = LowerBlock{3/4.};
+  c[0x2587] = LowerBlock{7/8.};
+  c[0x2588] = LowerBlock{1};
+  c[0x2589] = LeftBlock{7/8.};
+  c[0x258a] = LeftBlock{3/4.};
+  c[0x258b] = LeftBlock{5/8.};
+  c[0x258c] = LeftBlock{1/2.};
+  c[0x258d] = LeftBlock{3/8.};
+  c[0x258e] = LeftBlock{1/4.};
+  c[0x258f] = LeftBlock{1/8.};
+  c[0x2590] = RightBlock{1/2.};
+
+  // block elements (0x2594 - 0x2595)
+  c[0x2594] = UpperBlock{1/8.};
+  c[0x2595] = RightBlock{1/8.};
+
+  // terminal graphic characters (0x2596 - 0x259f)
+  c[0x2596] = Quadrant{f, f, t, f};
+  c[0x2597] = Quadrant{f, f, f, t};
+  c[0x2598] = Quadrant{t, f, f, f};
+  c[0x2599] = Quadrant{t, f, t, t};
+  c[0x259a] = Quadrant{t, f, f, t};
+  c[0x259b] = Quadrant{t, t, t, f};
+  c[0x259c] = Quadrant{t, t, f, t};
+  c[0x259d] = Quadrant{f, t, f, f};
+  c[0x259e] = Quadrant{f, t, t, f};
+  c[0x259f] = Quadrant{f, t, t, t};
+
   return c;
 }();
 
@@ -145,10 +183,8 @@ BoxDrawing::BoxDrawing(glm::vec2 _size, float _dpiScale)
   int width = size.x * dpiScale;
   int height = size.y * dpiScale;
 
-  dataRaw.resize(width * height);
-  data = std::mdspan(dataRaw.data(), std::dextents<size_t, 2>{height, width});
-
-  pen.SetData(data, dpiScale);
+  canvasRaw.resize(width * height);
+  canvas = std::mdspan(canvasRaw.data(), height, width);
 }
 
 const GlyphInfo*
@@ -163,16 +199,44 @@ BoxDrawing::GetGlyphInfo(char32_t charcode, TextureAtlas& textureAtlas) {
     return nullptr;
   }
 
-  std::ranges::fill(dataRaw, 0);
+  std::ranges::fill(canvasRaw, 0);
+  pen.SetCanvas(canvas, dpiScale);
   pen.Draw(boxCharIt->second);
 
-  auto region = textureAtlas.AddGlyph(data);
+  // memory optimization
+  // find the bounds of data and create span within the bounds
+  size_t xmin = canvas.extent(1);
+  size_t ymin = canvas.extent(0);
+  size_t xmax = 0;
+  size_t ymax = 0;
+
+  for (size_t y = 0; y < canvas.extent(0); y++) {
+    for (size_t x = 0; x < canvas.extent(1); x++) {
+      if (canvas[y, x] != 0) {
+        xmin = std::min(xmin, x);
+        ymin = std::min(ymin, y);
+        xmax = std::max(xmax, x);
+        ymax = std::max(ymax, y);
+      }
+    }
+  }
+
+  size_t width = xmax - xmin + 1;
+  size_t height = ymax - ymin + 1;
+
+  // NOTE: use submdspan for c++26
+  auto subCanvas = SubMdspan2d(canvas, {ymin, xmin}, {height, width});
+
+  auto region = textureAtlas.AddGlyph(subCanvas);
 
   auto pair = glyphInfoMap.emplace(
     charcode,
     GlyphInfo{
       .boxDrawing = true,
-      .localPoss = MakeRegion({0, 0}, size),
+      .localPoss = MakeRegion(
+        glm::vec2(xmin, ymin) / dpiScale,
+        glm::vec2(width, height) / dpiScale
+      ),
       .atlasRegion = region,
     }
   );

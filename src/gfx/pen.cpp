@@ -15,15 +15,17 @@ static float rfpart(float x) {
   return 1.0f - fpart(x);
 }
 
-void Pen::SetData(BufType& _data, float dpiScale) {
-  data = _data;
-  xsize = data.extent(1);
-  ysize = data.extent(0);
+void Pen::SetCanvas(BufType& _canvas, float dpiScale) {
+  canvas = _canvas;
+
+  xsize = canvas.extent(1);
+  ysize = canvas.extent(0);
+
   xcenter = xsize / 2;
   ycenter = ysize / 2;
 
-  lightWidth = std::fmax(xsize * 0.11, 1);
-  heavyWidth = std::fmax(xsize * 0.22, 1);
+  lightWidth = xsize * 0.11;
+  heavyWidth = xsize * 0.22;
 }
 
 float Pen::ToWidth(Weight weight) {
@@ -37,7 +39,7 @@ float Pen::ToWidth(Weight weight) {
 
 void Pen::Fill(int x, int y, uint8_t alpha) {
   // use integer promotion
-  data[y, x] = std::min(data[y, x] + alpha, 255);
+  canvas[y, x] = std::min(canvas[y, x] + alpha, 255);
 }
 
 void Pen::DrawRect(float left, float top, float width, float height) {
@@ -51,16 +53,19 @@ void Pen::DrawRect(float left, float top, float width, float height) {
   for (int y = top; y < bottom; y++) {
     for (int x = left; x < right; x++) {
       float alpha = 1;
+
       if (x < left) {
         alpha *= rfpart(left);
       } else if (x > right - 1) {
         alpha *= fpart(right);
       }
+
       if (y < top) {
         alpha *= rfpart(top);
       } else if (y > bottom - 1) {
         alpha *= fpart(bottom);
       }
+
       Fill(x, y, alpha * 255);
     }
   }
@@ -169,24 +174,24 @@ void Pen::DrawDoubleCross(const DoubleCross& desc) {
   }
   
   /*
-  Do some weird cross section shenanigans.
-  I spent way too much time coming up with this,
-  but hey it works kinda neat.
+    Do some weird cross section shenanigans.
+    I spent way too much time coming up with this,
+    but hey it works kinda neat.
 
-  Light
-  Top      Bottom   Left     Right
-  0 1 0    0 1 0    0 0 0    0 0 0
-  0 2 0    0 2 0    1 2 1    1 2 1
-  0 1 0    0 1 0    0 0 0    0 0 0
+    Light
+    Top      Bottom   Left     Right
+    0 1 0    0 1 0    0 0 0    0 0 0
+    0 2 0    0 2 0    1 2 1    1 2 1
+    0 1 0    0 1 0    0 0 0    0 0 0
 
-  Double
-  Top      Bottom   Left     Right
-  1 0 1    1 1 1    1 1 1    1 1 1
-  1 0 1    1 0 1    0 0 1    1 0 0
-  1 1 1    1 0 1    1 1 1    1 1 1
+    Double
+    Top      Bottom   Left     Right
+    1 0 1    1 1 1    1 1 1    1 1 1
+    1 0 1    1 0 1    0 0 1    1 0 0
+    1 1 1    1 0 1    1 1 1    1 1 1
 
-  If a grid adds up to greater or equal to the number of sides,
-  draw a square there.
+    If a grid cell adds up to greater or equal to the number of sides,
+    draw a square there.
   */
 
   int grid[3][3] = {};
@@ -267,6 +272,21 @@ void Pen::DrawHalfLine(const HalfLine& desc) {
   }
 }
 
+void Pen::DrawQuadrant(const Quadrant& desc) {
+  if (desc.topLeft) {
+    DrawRect(0, 0, xcenter, ycenter);
+  }
+  if (desc.topRight) {
+    DrawRect(xcenter, 0, xcenter, ycenter);
+  }
+  if (desc.bottomLeft) {
+    DrawRect(0, ycenter, xcenter, ycenter);
+  }
+  if (desc.bottomRight) {
+    DrawRect(xcenter, ycenter, xcenter, ycenter);
+  }
+}
+
 void Pen::Draw(const DrawDesc& desc) {
   std::visit(overloaded{
     [this](const HLine& desc) { DrawHLine(0, xsize, desc.weight); },
@@ -276,6 +296,11 @@ void Pen::Draw(const DrawDesc& desc) {
     [this](const VDash& desc) { DrawVDash(desc); },
     [this](const DoubleCross& desc) { DrawDoubleCross(desc); },
     [this](const HalfLine& desc) { DrawHalfLine(desc); },
+    [this](const UpperBlock& desc) { DrawRect(0, 0, xsize, desc.size * ysize); },
+    [this](const LowerBlock& desc) { DrawRect(0, ysize - (desc.size * ysize), xsize, desc.size * ysize); },
+    [this](const LeftBlock& desc) { DrawRect(0, 0, desc.size * xsize, ysize); },
+    [this](const RightBlock& desc) { DrawRect(xsize - (desc.size * xsize), 0, desc.size * xsize, ysize); },
+    [this](const Quadrant& desc) { DrawQuadrant(desc); }
   }, desc);
 }
 

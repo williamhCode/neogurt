@@ -38,10 +38,45 @@ struct HalfLine {
   Weight right = None;
 };
 
-using DrawDesc = std::variant<HLine, VLine, Cross, HDash, VDash, DoubleCross, HalfLine>;
+struct UpperBlock {
+  float size;
+};
+
+struct LowerBlock {
+  float size;
+};
+
+struct LeftBlock {
+  float size;
+};
+
+struct RightBlock {
+  float size;
+};
+
+struct Quadrant {
+  bool topLeft = false;
+  bool topRight = false;
+  bool bottomLeft = false;
+  bool bottomRight = false;
+};
+
+using DrawDesc = std::variant<
+  HLine,
+  VLine,
+  Cross,
+  HDash,
+  VDash,
+  DoubleCross,
+  HalfLine,
+  UpperBlock,
+  LowerBlock,
+  LeftBlock,
+  RightBlock,
+  Quadrant>;
 
 struct Pen {
-  BufType data;
+  BufType canvas;
   float xsize;
   float ysize;
   float xcenter;
@@ -49,7 +84,7 @@ struct Pen {
 
   float lightWidth;
   float heavyWidth;
-  void SetData(BufType& data, float dpiScale);
+  void SetCanvas(BufType& canvas, float dpiScale);
   float ToWidth(Weight weight);
 
   void Fill(int x, int y, uint8_t alpha);
@@ -59,15 +94,12 @@ struct Pen {
 
   void DrawHLine(float start, float end, Weight weight);
   void DrawVLine(float start, float end, Weight weight);
-
   void DrawCross(const Cross& desc);
-
   void DrawHDash(const HDash& desc);
   void DrawVDash(const VDash& desc);
-
   void DrawDoubleCross(const DoubleCross& desc);
-
   void DrawHalfLine(const HalfLine& desc);
+  void DrawQuadrant(const Quadrant& desc);
 
   void Draw(const DrawDesc& desc);
 };

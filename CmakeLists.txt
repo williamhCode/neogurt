@@ -90,6 +90,7 @@ else()
     -Wno-deprecated-declarations
     # jthread clang 18
     -fexperimental-library
+    -Wno-error=narrowing
   )
 
   # if debug mode
@@ -104,20 +105,20 @@ else()
 
   # assert in release
   # target_compile_options(neogurt PRIVATE -UNDEBUG)
-
-  # if no LLVM_PATH env var, then set LLVM_PATH to $(brew --prefix llvm)
-
-  if (NOT DEFINED ENV{LLVM_PATH})
-    execute_process(COMMAND brew --prefix llvm OUTPUT_VARIABLE LLVM_PATH OUTPUT_STRIP_TRAILING_WHITESPACE)
-    set(ENV{LLVM_PATH} ${LLVM_PATH})
-  endif()
-  
-  # https://github.com/llvm/llvm-project/issues/77653
-  # stack unwinding breaking and linking breaks without this
-  target_link_libraries(neogurt PRIVATE 
-    "-L$ENV{LLVM_PATH}/lib/c++ -L$ENV{LLVM_PATH}/lib/unwind -lunwind"
-  )
 endif()
+
+# if no LLVM_PATH env var, then set LLVM_PATH to $(brew --prefix llvm)
+
+if (NOT DEFINED ENV{LLVM_PATH})
+  execute_process(COMMAND brew --prefix llvm OUTPUT_VARIABLE LLVM_PATH OUTPUT_STRIP_TRAILING_WHITESPACE)
+  set(ENV{LLVM_PATH} ${LLVM_PATH})
+endif()
+
+# https://github.com/llvm/llvm-project/issues/77653
+# stack unwinding breaking and linking breaks without this
+target_link_libraries(neogurt PRIVATE 
+  "-L$ENV{LLVM_PATH}/lib/c++ -L$ENV{LLVM_PATH}/lib/unwind -lunwind"
+)
 
 if (XCODE)
   target_compile_definitions(neogurt PRIVATE
@@ -132,6 +133,5 @@ if (XCODE)
     XCODE_SCHEME_UNDEFINED_BEHAVIOUR_SANITIZER ON
   )
   set(CMAKE_XCODE_ATTRIBUTE_OTHER_CODE_SIGN_FLAGS "-o linker-signed")
-
 endif()
 

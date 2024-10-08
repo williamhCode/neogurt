@@ -121,10 +121,8 @@ Font::GetGlyphInfo(char32_t charcode, TextureAtlas& textureAtlas) {
   FT_GlyphSlot slot = face->glyph;
   FT_Bitmap& bitmap = slot->bitmap;
 
-  auto region = textureAtlas.AddGlyph({
-    bitmap.buffer,
-    std::dextents<size_t, 2>{bitmap.rows, bitmap.width},
-  });
+  auto view = std::mdspan(bitmap.buffer, bitmap.rows, bitmap.width);
+  auto region = textureAtlas.AddGlyph(view);
 
   auto pair = glyphInfoMap.emplace(
     glyphIndex,

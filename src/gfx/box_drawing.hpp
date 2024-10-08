@@ -17,8 +17,8 @@ struct BoxDrawing {
   GlyphInfoMap glyphInfoMap;
 
   // temporary storage for drawing
-  std::vector<uint8_t> dataRaw;
-  std::mdspan<uint8_t, std::dextents<size_t, 2>> data;
+  std::vector<uint8_t> canvasRaw;
+  std::mdspan<uint8_t, std::dextents<size_t, 2>> canvas;
 
   box::Pen pen;
 
