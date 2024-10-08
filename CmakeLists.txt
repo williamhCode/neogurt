@@ -15,6 +15,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)  # clangd
 
 add_subdirectory(deps/webgpu_tools)
+set(MSGPACK_USE_STATIC_BOOST ON)
 add_subdirectory(deps/msgpack)
 add_subdirectory(deps/freetype)
 set(UTFCPP_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/deps/utfcpp/source)
@@ -114,7 +115,7 @@ else()
   # https://github.com/llvm/llvm-project/issues/77653
   # stack unwinding breaking and linking breaks without this
   target_link_libraries(neogurt PRIVATE 
-    "-L$ENV{LLVM_PATH}/lib/c++ -L$ENV{LLVM_PATH}/lib -lunwind"
+    "-L$ENV{LLVM_PATH}/lib/c++ -L$ENV{LLVM_PATH}/lib/unwind -lunwind"
   )
 endif()
 

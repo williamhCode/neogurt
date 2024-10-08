@@ -1,6 +1,5 @@
 #pragma once
 
-#include "glm/ext/vector_uint2.hpp"
 #include "utils/margins.hpp"
 #include "utils/region.hpp"
 #include "webgpu/webgpu_cpp.h"
@@ -9,7 +8,7 @@
 #include "glm/ext/vector_float2.hpp"
 #include <memory>
 #include <optional>
-#include <tuple>
+#include <deque>
 
 // convenience wrapper over wgpu::Texture
 struct RenderTexture {
