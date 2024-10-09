@@ -83,6 +83,8 @@ struct ScrollableRenderTexture {
   float scrollElapsed = 0;
   float scrollTime = 0.25; // transition time
 
+  QuadRenderData<RectQuadVertex> clearData;
+
   ScrollableRenderTexture() = default;
   ScrollableRenderTexture(glm::vec2 size, float dpiScale, glm::vec2 charSize);
 

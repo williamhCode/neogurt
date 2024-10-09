@@ -200,6 +200,7 @@ void Renderer::RenderToWindow(
 
   glm::vec2 textOffset(0, 0);
   const auto& defaultFont = fontFamily.DefaultFont();
+  auto defaultBG = GetDefaultBackground(hlTable);
 
   for (size_t row = 0; row < rows; row++) {
     auto& line = win.grid.lines[row];
@@ -213,8 +214,7 @@ void Renderer::RenderToWindow(
       auto& cell = line[col];
       const Highlight& hl = hlTable[cell.hlId];
       // don't render background if default
-      if (cell.hlId != 0 && hl.background.has_value() &&
-          hl.background != hlTable[0].background) {
+      if (cell.hlId != 0 && hl.background.has_value() && hl.background != defaultBG) {
         auto rectPositions = MakeRegion({0, 0}, defaultFont.charSize);
 
         auto background = *hl.background;
@@ -327,7 +327,7 @@ void Renderer::RenderToWindow(
           .pos = {
             textOffset.x,
             textOffset.y + defaultFont.ascender - defaultFont.underlinePosition -
-              thickness / 2,
+              (thickness / 2),
           },
           .size = {
             defaultFont.charSize.x,
@@ -361,10 +361,9 @@ void Renderer::RenderToWindow(
   fontFamily.textureAtlas.Update();
 
   auto renderInfos = win.sRenderTexture.GetRenderInfos(rows);
-  // static int i = 0;
-  // LOG("{} -------------------", i++);
 
-  for (auto [renderTexture, range, clearRegion] : renderInfos) {
+  for (auto& [renderTexture, range, clearRegion] : renderInfos) {
+    // clear window, and render backgrounds
     int start = rectIntervals[range.start];
     int end = rectIntervals[range.end];
     {
@@ -376,8 +375,11 @@ void Renderer::RenderToWindow(
       passEncoder.SetBindGroup(0, renderTexture->camera.viewProjBG);
       passEncoder.SetBindGroup(1, gammaBG);
 
+      // this will only be ran at most once inside this loop,
+      // so it's safe reset and write buffers directly inside
       if (clearRegion.has_value()) {
-        QuadRenderData<RectQuadVertex> clearData(1);
+        auto& clearData = win.sRenderTexture.clearData;
+        clearData.ResetCounts();
         auto region = clearRegion->Region();
         auto& quad = clearData.NextQuad();
         for (size_t i = 0; i < 4; i++) {
@@ -387,10 +389,12 @@ void Renderer::RenderToWindow(
         clearData.WriteBuffers();
         clearData.Render(passEncoder);
       }
+
       if (start != end) rectData.Render(passEncoder, start, end - start);
       passEncoder.End();
     }
 
+    // render text
     start = textIntervals[range.start];
     end = textIntervals[range.end];
     if (start != end) {
@@ -405,6 +409,7 @@ void Renderer::RenderToWindow(
       passEncoder.End();
     }
 
+    // render braille
     start = shapeIntervals[range.start];
     end = shapeIntervals[range.end];
     if (start != end) {

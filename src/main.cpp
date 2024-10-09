@@ -180,7 +180,7 @@ int main() {
                 break;
               case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: {
                 window.fbSize = {event.window.data1, event.window.data2};
-                LOG_INFO("pixel size changed, {} {}", window.fbSize.x, window.fbSize.y);
+                // LOG_INFO("pixel size changed, {} {}", window.fbSize.x, window.fbSize.y);
 
                 float prevDpiScale = window.dpiScale;
                 window.dpiScale = window.fbSize.x / window.size.x;

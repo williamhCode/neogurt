@@ -1,5 +1,6 @@
 #include "window.hpp"
 #include "glm/ext/vector_float2.hpp"
+#include "glm/gtx/string_cast.hpp"
 #include "utils/logger.hpp"
 #include <algorithm>
 #include <cstdlib>
@@ -30,6 +31,8 @@ void WinManager::UpdateRenderData(Win& win) {
   auto size = glm::vec2(win.width, win.height) * sizes.charSize;
 
   bool posChanged = pos != win.pos;
+  // sometimes size can be equal, but charSize different
+  // for hidden window, win.sRenderTexture.charSize will always be vec2(0, 0)
   bool sizeChanged = size != win.size || sizes.charSize != win.sRenderTexture.charSize;
   if (!posChanged && !sizeChanged) {
     return;
@@ -179,12 +182,8 @@ void WinManager::Hide(const event::WinHide& e) {
   auto& win = it->second;
   win.hidden = true;
 
-  // save memory when tabs get hidden
-  // NOTE: as of now ViewportMargins event is not always sent when switching tabs (so removing makes it margins weird)
-  // auto removed = windows.erase(e.grid);
-  // if (removed == 0) {
-  //   LOG_ERR("WinManager::Hide: window {} not found", e.grid);
-  // }
+  // save memory when window gets hidden (e.g. switching tabs)
+  win.sRenderTexture = {};
 }
 
 void WinManager::Close(const event::WinClose& e) {

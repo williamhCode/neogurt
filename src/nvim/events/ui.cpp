@@ -173,7 +173,7 @@ static const std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
   }},
 
   {"win_viewport_margins", [](const msgpack::object& args, UiEvents& uiEvents) {
-    LOG("win_viewport_margins: {}", ToString(args));
+    // LOG("win_viewport_margins: {}", ToString(args));
     // LOG_INFO("win_viewport_margins: {}", ToString(args));
     uiEvents.Curr().emplace_back(args.as<WinViewportMargins>());
   }},

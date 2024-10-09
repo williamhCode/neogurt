@@ -189,11 +189,13 @@ BoxDrawing::BoxDrawing(glm::vec2 _size, float _dpiScale)
 
 const GlyphInfo*
 BoxDrawing::GetGlyphInfo(char32_t charcode, TextureAtlas& textureAtlas) {
+  // return cached
   auto glyphIt = glyphInfoMap.find(charcode);
   if (glyphIt != glyphInfoMap.end()) {
     return &(glyphIt->second);
   }
 
+  // if not implemented, return nullptr
   auto boxCharIt = boxChars.find(charcode);
   if (boxCharIt == boxChars.end()) {
     return nullptr;
@@ -205,6 +207,7 @@ BoxDrawing::GetGlyphInfo(char32_t charcode, TextureAtlas& textureAtlas) {
 
   // memory optimization
   // find the bounds of data and create span within the bounds
+  // basically discards empty cells
   size_t xmin = canvas.extent(1);
   size_t ymin = canvas.extent(0);
   size_t xmax = 0;

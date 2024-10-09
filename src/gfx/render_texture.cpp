@@ -85,6 +85,8 @@ ScrollableRenderTexture::ScrollableRenderTexture(
   for (int i = 0; i < numTexPerPage; i++) {
     renderTextures.push_back(std::make_unique<RenderTexture>(texSize, dpiScale, format));
   }
+
+  clearData.CreateBuffers(1);
 }
 
 // round to prevent floating point errors (very sus but it works)
@@ -325,7 +327,7 @@ std::vector<RenderInfo> ScrollableRenderTexture::GetRenderInfos(int maxRows) con
     end = glm::min(end, maxRows);
     renderInfo.range = {start, end};
 
-    if (top < innerTopOffset) {
+    if (top < innerTopOffset && scrollDist > 0) {
       renderInfo.clearRegion = Rect{
         .pos = {0, start * charSize.y},
         .size =
@@ -334,7 +336,7 @@ std::vector<RenderInfo> ScrollableRenderTexture::GetRenderInfos(int maxRows) con
             (rowsPerTexture - (innerTopOffset - top)) * charSize.y,
           },
       };
-    } else if (bottom > innerBottomOffset) {
+    } else if (bottom > innerBottomOffset && scrollDist < 0) {
       renderInfo.clearRegion = Rect{
         .pos = {0, start * charSize.y},
         .size =

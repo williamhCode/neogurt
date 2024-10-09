@@ -188,7 +188,6 @@ FontFamily::GetGlyphInfo(char32_t charcode, bool bold, bool italic) {
     if (const auto *glyphInfo = boxDrawing.GetGlyphInfo(charcode, textureAtlas)) {
       return *glyphInfo;
     }
-    goto return_empty;
   }
 
   for (const auto& fontSet : fonts) {
@@ -210,8 +209,6 @@ FontFamily::GetGlyphInfo(char32_t charcode, bool bold, bool italic) {
     }
   }
 
-  // LOG_INFO("Failed to get glyph info for codepoint: {}, {}", (uint32_t)charcode, UnicodeToUTF8(charcode));
-return_empty:
   for (const auto& fontSet : fonts) {
     if (const auto* glyphInfo = fontSet.normal->GetGlyphInfo(' ', textureAtlas)) {
       return *glyphInfo;

@@ -4,6 +4,7 @@
 template <typename T>
 using vec2 = std::array<typename T::index_type, 2>;
 
+// poor man's submdspan impl
 template <typename View>
   requires(View::extents_type::rank() == 2)
 auto SubMdspan2d(View span, vec2<View> offset, vec2<View> extents) {
