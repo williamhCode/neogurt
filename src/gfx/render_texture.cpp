@@ -73,7 +73,8 @@ void RenderTexture::UpdateCameraPos(glm::vec2 pos) {
 ScrollableRenderTexture::ScrollableRenderTexture(
   glm::vec2 _size, float _dpiScale, glm::vec2 _charSize, int _maxTexPerPage
 )
-    : posOffset(0), size(_size), dpiScale(_dpiScale), charSize(_charSize), maxTexPerPage(_maxTexPerPage) {
+    : posOffset(0), size(_size), dpiScale(_dpiScale), charSize(_charSize),
+      maxTexPerPage(_maxTexPerPage) {
 
   textureHeight = size.y / maxTexPerPage;
   rowsPerTexture = glm::ceil(textureHeight / charSize.y);

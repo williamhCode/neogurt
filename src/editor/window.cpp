@@ -17,6 +17,7 @@ void WinManager::InitRenderData(Win& win) {
   win.textData.CreateBuffers(numQuads);
   win.shapeData.CreateBuffers(numQuads);
 
+  // default grid doesn't scroll so only need 1 texture
   int maxTexPerPage = win.id == defaultGridId ? 1 : 2;
   win.sRenderTexture =
     ScrollableRenderTexture(size, sizes.dpiScale, sizes.charSize, maxTexPerPage);
@@ -159,6 +160,7 @@ void WinManager::FloatPos(const event::WinFloatPos& e) {
     LOG_WARN("WinManager::FloatPos: unknown anchor {}", e.anchor);
   }
   // sometimes the float window is outside the screen
+  win.startCol = std::min(win.startCol, sizes.uiWidth - win.width);
   win.startCol = std::max(win.startCol, 0);
 
   win.floatData = FloatData{
