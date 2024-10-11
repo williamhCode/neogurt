@@ -1,18 +1,11 @@
 .PHONY: build
 
-TYPE = release
-# TYPE = debug
+# TYPE = release
+TYPE = debug
 
 build:
 	cmake --build build/$(TYPE) --target neogurt
 	cp build/$(TYPE)/compile_commands.json .
-
-build-dawn:
-	cmake --build build/$(TYPE) --target dawn-single-lib
-
-build-tint:
-	# cmake --build build/release --target tint
-	# cp build/release/_deps/dawn-build/tint .
 
 build-setup: build-setup-debug build-setup-release
 

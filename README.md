@@ -17,7 +17,6 @@ git submodule update  # if submodules become out of sync
 - Edit Makefile to switch between debug and release mode
 ```sh
 make build-setup
-make build-dawn  # only needs to be run once
 make build
 make run
 ```
