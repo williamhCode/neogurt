@@ -63,7 +63,7 @@ struct ScrollableRenderTexture {
 
   glm::vec2 charSize;
 
-  int maxNumTexPerPage = 4;
+  int maxTexPerPage;
   float textureHeight; // height of single RenderTexture segment
   int rowsPerTexture; // number of text rows per RenderTexture segment
 
@@ -86,7 +86,7 @@ struct ScrollableRenderTexture {
   QuadRenderData<RectQuadVertex> clearData;
 
   ScrollableRenderTexture() = default;
-  ScrollableRenderTexture(glm::vec2 size, float dpiScale, glm::vec2 charSize);
+  ScrollableRenderTexture(glm::vec2 size, float dpiScale, glm::vec2 charSize, int maxTexPerPage = 2);
 
   float RoundOffset(float offset) const;
 

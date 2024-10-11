@@ -56,6 +56,8 @@ struct MouseInfo {
 };
 
 struct WinManager {
+  static const int defaultGridId = 1;
+
   GridManager* gridManager;
   SizeHandler sizes;
   bool dirty; // true if window pos updated from scrolling

@@ -17,7 +17,9 @@ void WinManager::InitRenderData(Win& win) {
   win.textData.CreateBuffers(numQuads);
   win.shapeData.CreateBuffers(numQuads);
 
-  win.sRenderTexture = ScrollableRenderTexture(size, sizes.dpiScale, sizes.charSize);
+  int maxTexPerPage = win.id == defaultGridId ? 1 : 2;
+  win.sRenderTexture =
+    ScrollableRenderTexture(size, sizes.dpiScale, sizes.charSize, maxTexPerPage);
   win.sRenderTexture.UpdatePos(pos);
 
   win.grid.dirty = true;
@@ -44,7 +46,9 @@ void WinManager::UpdateRenderData(Win& win) {
     win.textData.CreateBuffers(numQuads);
     win.shapeData.CreateBuffers(numQuads);
 
-    win.sRenderTexture = ScrollableRenderTexture(size, sizes.dpiScale, sizes.charSize);
+    int maxTexPerPage = win.id == defaultGridId ? 1 : 2;
+    win.sRenderTexture =
+      ScrollableRenderTexture(size, sizes.dpiScale, sizes.charSize, maxTexPerPage);
   }
   win.sRenderTexture.UpdatePos(pos);
 

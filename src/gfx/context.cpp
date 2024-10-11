@@ -12,7 +12,9 @@ using namespace wgpu;
 WGPUContext::WGPUContext(SDL_Window* window, glm::uvec2 _size, PresentMode _presentMode)
     : size(_size), presentMode(_presentMode) {
 
-  std::vector<std::string> enabledToggles = {"enable_immediate_error_handling"};
+  std::vector<std::string> enabledToggles = {
+    "enable_immediate_error_handling", "allow_unsafe_apis"
+  };
 
   std::vector<const char*> enabledToggleNames;
   for (const std::string& toggle : enabledToggles) {
@@ -62,17 +64,16 @@ void WGPUContext::Init() {
   // surface.GetCapabilities(adapter, &surfaceCaps);
   // utils::PrintSurfaceCapabilities(surfaceCaps);
 
-  // std::vector<FeatureName> requiredFeatures{
-  //   FeatureName::SurfaceCapabilities,
-  // };
+  std::vector<FeatureName> requiredFeatures{
+    FeatureName::TimestampQuery,
+  };
 
-  // DeviceDescriptor deviceDesc({
-    // .requiredFeatureCount = requiredFeatures.size(),
-    // .requiredFeatures = requiredFeatures.data(),
+  DeviceDescriptor deviceDesc({
+    .requiredFeatureCount = requiredFeatures.size(),
+    .requiredFeatures = requiredFeatures.data(),
     // .requiredLimits = &requiredLimits,
-  // });
+  });
 
-  DeviceDescriptor deviceDesc;
   deviceDesc.SetUncapturedErrorCallback(
     [](const Device& device, ErrorType type, const char* message) {
       LOG_ERR("Device error: {} ({})", magic_enum::enum_name(type), message);

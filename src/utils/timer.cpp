@@ -15,6 +15,11 @@ void Timer::End() {
   if (durations.size() > bufferSize) durations.pop_front();
 }
 
+void Timer::RegisterTime(uint64_t time) {
+  durations.push_back(std::chrono::nanoseconds(time));
+  if (durations.size() > bufferSize) durations.pop_front();
+}
+
 std::chrono::nanoseconds Timer::GetAverageDuration() {
   return std::accumulate(
            durations.begin(), durations.end(), std::chrono::nanoseconds(0)

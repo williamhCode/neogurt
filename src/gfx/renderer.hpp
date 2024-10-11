@@ -10,10 +10,13 @@
 #include "gfx/pipeline.hpp"
 #include "gfx/quad.hpp"
 #include "gfx/render_texture.hpp"
+#include "gfx/timestamp.hpp"
 #include "webgpu_tools/utils/webgpu.hpp"
 #include <span>
 
 struct Renderer {
+  TimestampHelper timestamp;
+
   // color stuff
   wgpu::Color clearColor{};
   wgpu::Color linearClearColor{};

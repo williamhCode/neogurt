@@ -32,8 +32,8 @@
 #include <chrono>
 
 using namespace wgpu;
-using namespace std::chrono_literals;
 using namespace std::chrono;
+// using namespace std::chrono_literals;
 
 const WGPUContext& ctx = sdl::Window::_ctx;
 
@@ -57,9 +57,7 @@ int main() {
     Renderer renderer;
     InputHandler input;
 
-    SessionManager sessionManager(
-      SpawnMode::Child, window, sizes, renderer, input
-    );
+    SessionManager sessionManager(SpawnMode::Child, window, sizes, renderer, input);
     sessionManager.SessionNew();
     SessionState* session = sessionManager.CurrSession();
     Options* options = &session->options;
@@ -180,7 +178,8 @@ int main() {
                 break;
               case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: {
                 window.fbSize = {event.window.data1, event.window.data2};
-                // LOG_INFO("pixel size changed, {} {}", window.fbSize.x, window.fbSize.y);
+                // LOG_INFO("pixel size changed, {} {}", window.fbSize.x,
+                // window.fbSize.y);
 
                 float prevDpiScale = window.dpiScale;
                 window.dpiScale = window.fbSize.x / window.size.x;
@@ -193,8 +192,7 @@ int main() {
                 auto uiFbSize = sizes.uiFbSize;
                 sizes.UpdateSizes(
                   window.size, window.dpiScale,
-                  editorState->fontFamily.DefaultFont().charSize,
-                  options->margins
+                  editorState->fontFamily.DefaultFont().charSize, options->margins
                 );
 
                 if (dpiChanged) {
@@ -233,10 +231,9 @@ int main() {
           auto cursorPos = glm::vec2{cursor.col, cursor.row} * sizes.charSize;
 
           const auto& winTex = currWin->sRenderTexture;
-          auto scrollOffset =
-            winTex.scrolling
-            ? glm::vec2(0, (winTex.scrollDist - winTex.scrollCurr))
-            : glm::vec2(0);
+          auto scrollOffset = winTex.scrolling
+                                ? glm::vec2(0, (winTex.scrollDist - winTex.scrollCurr))
+                                : glm::vec2(0);
 
           auto minPos = glm::vec2{0, currWin->margins.top} * sizes.charSize;
           auto maxPos =
@@ -280,26 +277,35 @@ int main() {
 
         renderer.Begin();
 
+        // ------------------------
+        renderer.timestamp.Write();
+        // ------------------------
+
         bool mainWindowRendered = false;
         bool renderWindows = false;
         for (auto& [id, win] : editorState->winManager.windows) {
           if (win.grid.dirty) {
             if (win.id == 1) mainWindowRendered = true;
-            renderer.RenderToWindow(
-              win, editorState->fontFamily, editorState->hlTable
-            );
+            renderer.RenderToWindow(win, editorState->fontFamily, editorState->hlTable);
             win.grid.dirty = false;
             renderWindows = true;
           }
         }
 
+        // ------------------------
+        renderer.timestamp.Write();
+        // ------------------------
+
         if (editorState->cursor.dirty && currWin != nullptr) {
           renderer.RenderCursorMask(
-            *currWin, editorState->cursor, editorState->fontFamily,
-            editorState->hlTable
+            *currWin, editorState->cursor, editorState->fontFamily, editorState->hlTable
           );
           editorState->cursor.dirty = false;
         }
+
+        // ------------------------
+        renderer.timestamp.Write();
+        // ------------------------
 
         if (renderWindows || editorState->winManager.dirty || session->reattached) {
           editorState->winManager.dirty = false;
@@ -334,6 +340,10 @@ int main() {
           session->reattached = false;
         }
 
+        // ------------------------
+        renderer.timestamp.Write();
+        // ------------------------
+
         // switch to current texture only after rendering to it
         if (renderer.prevFinalRenderTexture.texture && mainWindowRendered) {
           renderer.prevFinalRenderTexture = {};
@@ -341,11 +351,17 @@ int main() {
 
         renderer.RenderFinalTexture();
 
+        // ------------------------
+        renderer.timestamp.Write();
+        // ------------------------
+
         if (editorState->cursor.ShouldRender()) {
-          renderer.RenderCursor(
-            editorState->cursor, editorState->hlTable
-          );
+          renderer.RenderCursor(editorState->cursor, editorState->hlTable);
         }
+
+        // ------------------------
+        renderer.timestamp.Write();
+        // ------------------------
 
         renderer.End();
         // if (resizing && resized1) {
@@ -384,11 +400,9 @@ int main() {
           resizeEvents.Push(event);
           break;
         case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: {
-          // LOG_INFO("pixel size changed, {} {}", event.window.data1, event.window.data2);
-          // resizePromise = std::promise<void>();
-          // resizeFuture = resizePromise.get_future();
-          // resizing = true;
-          // resized1 = false;
+          // LOG_INFO("pixel size changed, {} {}", event.window.data1,
+          // event.window.data2); resizePromise = std::promise<void>(); resizeFuture =
+          // resizePromise.get_future(); resizing = true; resized1 = false;
           resizeEvents.Push(event);
 
           // while (resizing) {
