@@ -99,7 +99,7 @@ Renderer::Renderer(const SizeHandler& sizes) {
     },
     RenderPassDepthStencilAttachment{
       .view = stencilTextureView,
-      .stencilLoadOp = LoadOp::Clear,
+      .stencilLoadOp = LoadOp::Undefined,
       .stencilStoreOp = StoreOp::Store,
       .stencilClearValue = 0,
     }
@@ -477,27 +477,41 @@ void Renderer::RenderCursorMask(
 }
 
 void Renderer::RenderWindows(
-  std::span<const Win*> windows, std::span<const Win*> floatWindows
+  const Win* msgWin, std::span<const Win*> windows, std::span<const Win*> floatWindows
 ) {
   windowsRPD.cColorAttachments[0].clearValue = linearClearColor;
   windowsRPD.cColorAttachments[0].loadOp = LoadOp::Clear;
+  windowsRPD.cDepthStencilAttachmentInfo.stencilLoadOp = LoadOp::Clear;
   {
     auto passEncoder = commandEncoder.BeginRenderPass(&windowsRPD);
     passEncoder.SetPipeline(ctx.pipeline.textureNoBlendRPL);
-    passEncoder.SetStencilReference(1);
     passEncoder.SetBindGroup(0, finalRenderTexture.camera.viewProjBG);
     passEncoder.SetBindGroup(1, gammaBG);
     passEncoder.SetBindGroup(2, defaultColorBG);
+
+    if (msgWin) {
+      // msgWin covers all windows, including floating windows
+      // set to 3, so read by both masks for normal and floating windows
+      passEncoder.SetStencilReference(3);
+      msgWin->sRenderTexture.Render(passEncoder, 3);
+    }
+
+    // mask 0x01 for normal windows
+    passEncoder.SetStencilReference(1);
     for (const Win* win : windows) {
       win->sRenderTexture.Render(passEncoder, 3);
     }
+
     passEncoder.End();
   }
+
   windowsRPD.cColorAttachments[0].loadOp = LoadOp::Load;
+  windowsRPD.cDepthStencilAttachmentInfo.stencilLoadOp = LoadOp::Load;
   {
     auto passEncoder = commandEncoder.BeginRenderPass(&windowsRPD);
     passEncoder.SetPipeline(ctx.pipeline.textureRPL);
-    passEncoder.SetStencilReference(1);
+    // mask 0x02 for floating windows
+    passEncoder.SetStencilReference(2);
     passEncoder.SetBindGroup(0, finalRenderTexture.camera.viewProjBG);
     passEncoder.SetBindGroup(1, gammaBG);
     passEncoder.SetBindGroup(2, defaultColorBG);

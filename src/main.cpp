@@ -311,9 +311,6 @@ int main() {
           editorState->winManager.dirty = false;
 
           std::vector<const Win*> windows;
-          if (const auto* msgWin = editorState->winManager.GetMsgWin()) {
-            windows.push_back(msgWin);
-          }
           std::vector<const Win*> floatWindows;
           for (auto& [id, win] : editorState->winManager.windows) {
             if (id == 1 || id == editorState->winManager.msgWinId || win.hidden) {
@@ -335,7 +332,9 @@ int main() {
             return win->floatData->zindex > other->floatData->zindex;
           });
 
-          renderer.RenderWindows(windows, floatWindows);
+          renderer.RenderWindows(
+            editorState->winManager.GetMsgWin(), windows, floatWindows
+          );
           // reset reattached flag after rendering
           session->reattached = false;
         }

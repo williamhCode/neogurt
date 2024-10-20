@@ -165,8 +165,9 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
       .stencilBack{
         .compare = CompareFunction::NotEqual,
         .failOp = StencilOperation::Keep,
-        .passOp = StencilOperation::IncrementClamp,
+        .passOp = StencilOperation::Replace,
       },
+      .stencilReadMask = 0x01,
     },
   });
 
@@ -187,8 +188,9 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
       .stencilBack{
         .compare = CompareFunction::NotEqual,
         .failOp = StencilOperation::Keep,
-        .passOp = StencilOperation::IncrementClamp,
+        .passOp = StencilOperation::Replace,
       },
+      .stencilReadMask = 0x02,
     },
   });
 
