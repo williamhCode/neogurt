@@ -1,6 +1,8 @@
 # Neogurt
 Blazingly fast Neovim GUI written in C++23 and WebGPU.
 
+<img width="840" alt="Neogurt screenshot" src="https://github.com/user-attachments/assets/6affed8f-88fe-4e4c-8698-9a543c0f9f57">
+
 ## Features
 - Blazingly fast and energy efficient
 - Smooth scrolling and cursor out of the box
