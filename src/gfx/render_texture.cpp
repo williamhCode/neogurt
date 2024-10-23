@@ -22,7 +22,7 @@ RenderTexture::RenderTexture(
   textureView = texture.CreateView();
 
   auto textureSampler = ctx.device.CreateSampler(
-    cPtr(SamplerDescriptor{
+    ToPtr(SamplerDescriptor{
       .addressModeU = AddressMode::ClampToEdge,
       .addressModeV = AddressMode::ClampToEdge,
       .magFilter = FilterMode::Nearest,
@@ -158,7 +158,7 @@ void ScrollableRenderTexture::UpdateScrolling(float dt) {
 void ScrollableRenderTexture::UpdateMargins(const Margins& newMargins) {
   fmargins = newMargins.ToFloat(charSize);
 
-  if (newMargins.top != 0) {
+  if (fmargins.top != 0) {
     if (marginTextures.top == nullptr || margins.top != newMargins.top) {
       glm::vec2 topMarginSize = {size.x, fmargins.top};
       marginTextures.top = std::make_unique<RenderTexture>(topMarginSize, dpiScale, format);
@@ -169,7 +169,7 @@ void ScrollableRenderTexture::UpdateMargins(const Margins& newMargins) {
     marginTextures.top = nullptr;
   }
 
-  if (newMargins.bottom != 0) {
+  if (fmargins.bottom != 0) {
     if (marginTextures.bottom == nullptr || margins.bottom != newMargins.bottom) {
       glm::vec2 topMarginSize = {size.x, fmargins.bottom};
       marginTextures.bottom = std::make_unique<RenderTexture>(topMarginSize, dpiScale, format);

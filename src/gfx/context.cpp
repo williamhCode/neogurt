@@ -4,7 +4,7 @@
 #include "webgpu_tools/utils/sdl3webgpu.h"
 #include <iostream>
 
-#define MAGIC_ENUM_RANGE_MAX 1300
+#define MAGIC_ENUM_RANGE_MAX 1000
 #include "magic_enum.hpp"
 
 using namespace wgpu;
@@ -28,10 +28,11 @@ WGPUContext::WGPUContext(SDL_Window* window, glm::uvec2 _size, PresentMode _pres
 
   InstanceDescriptor desc{
     .nextInChain = &toggles,
+    .features = {.timedWaitAnyEnable = true},
   };
   instance = CreateInstance(&desc);
   if (!instance) {
-    LOG_ERR("Could not initialize WebGPU!");
+    LOG_ERR("Could not create WebGPU instance!");
     std::exit(1);
   }
 
@@ -40,14 +41,16 @@ WGPUContext::WGPUContext(SDL_Window* window, glm::uvec2 _size, PresentMode _pres
 }
 
 void WGPUContext::Init() {
-  RequestAdapterOptions adapterOpts{
-    .compatibleSurface = surface,
-    .powerPreference = PowerPreference::Undefined,
-  };
-  adapter = utils::RequestAdapter(instance, &adapterOpts);
+  adapter = utils::RequestAdapter(
+    instance,
+    {
+      .compatibleSurface = surface,
+      .powerPreference = PowerPreference::Undefined,
+    }
+  );
 
-  SupportedLimits supportedLimits;
-  adapter.GetLimits(&supportedLimits);
+  // SupportedLimits supportedLimits;
+  // adapter.GetLimits(&supportedLimits);
   // utils::PrintLimits(supportedLimits.limits);
 
   // FeatureName features[256];

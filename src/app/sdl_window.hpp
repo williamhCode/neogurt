@@ -15,7 +15,6 @@ namespace sdl {
 using SDL_WindowPtr = std::unique_ptr<SDL_Window, SDL_WindowDeleter>;
 
 struct Window {
-  static inline WGPUContext _ctx;
   SDL_WindowPtr window;
 
   bool vsync;

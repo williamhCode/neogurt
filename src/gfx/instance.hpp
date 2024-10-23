@@ -2,4 +2,4 @@
 
 #include "gfx/context.hpp"
 
-extern const WGPUContext &ctx;
+extern WGPUContext ctx;

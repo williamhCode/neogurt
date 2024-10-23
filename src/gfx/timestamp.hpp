@@ -19,8 +19,8 @@ struct TimestampHelper {
 
   TimestampHelper() = default;
 
-  TimestampHelper(uint32_t capacity, bool disable = false)
-      : disable(disable), capacity(capacity), timer(5) {
+  TimestampHelper(uint32_t capacity, bool enable = false)
+      : disable(!enable), capacity(capacity), timer(60) {
     if (disable) return;
     using namespace wgpu;
     QuerySetDescriptor desc{
@@ -65,42 +65,25 @@ struct TimestampHelper {
       queryBuffer, 0, outputBuffer, 0, 8 * capacity
     );
 
-    bool ready = false;
-    auto future = outputBuffer.MapAsync(
-      MapMode::Read, 0, 8 * capacity, CallbackMode::AllowProcessEvents,
-      [](MapAsyncStatus status, const char* message, bool* ready) {
-        // bool* ready = static_cast<bool*>(userData);
-        *ready = true;
-      },
-      &ready
+    ctx.instance.WaitAny(
+      outputBuffer.MapAsync(
+        MapMode::Read, 0, 8 * capacity, CallbackMode::WaitAnyOnly,
+        [](MapAsyncStatus status, const char*) {
+          if (status != MapAsyncStatus::Success) {
+            LOG_ERR("Failed to map buffer");
+          }
+        }
+      ), UINT64_MAX
     );
-    while (!ready) {
-      ctx.instance.ProcessEvents();
-    }
-    uint64_t* out = (uint64_t*)outputBuffer.GetConstMappedRange();
 
+    auto* out = (uint64_t*)outputBuffer.GetConstMappedRange();
     using namespace std::chrono;
-    auto diff = out[currentIndex - 1] - out[0];
-    auto diffns = nanoseconds(diff);
+    auto diff = nanoseconds(out[currentIndex - 1] - out[0]);
+    outputBuffer.Unmap();
 
     timer.RegisterTime(diff);
     auto avgTime = timer.GetAverageDuration();
-
-    if (diffns > 5ms) {
-      for (uint32_t i = 0; i < currentIndex - 1; i++) {
-        auto outtime =
-          duration<double, std::ratio<1, 1000>>(nanoseconds(out[i + 1] - out[i]))
-            .count();
-        std::cout << outtime << " ";
-      }
-      std::cout << "\n";
-    }
-
-    // auto miliTime = duration<double,std::ratio<1,1000>>(diffns).count();
-    // std::cout << "\r\r" << miliTime << "ms" << std::flush;
-    // std::cout << miliTime << "ms\n";
-    // std::cout << diffns << "ns\n";
-
-    outputBuffer.Unmap();
+    auto avgTimeMilli = duration<double, std::milli>(avgTime);
+    LOG_INFO("Timestamp: {} ms", avgTimeMilli.count());
   }
 };

@@ -33,9 +33,8 @@
 
 using namespace wgpu;
 using namespace std::chrono;
-// using namespace std::chrono_literals;
 
-const WGPUContext& ctx = sdl::Window::_ctx;
+WGPUContext ctx;
 
 int main() {
   SetupPaths();
@@ -71,11 +70,6 @@ int main() {
     TSQueue<SDL_Event> resizeEvents;
     TSQueue<SDL_Event> sdlEvents;
 
-    // std::promise<void> resizePromise;
-    // std::future<void> resizeFuture;
-    // std::atomic_bool resizing = false;
-    // std::atomic_bool resized1 = true;
-
     int frameCount = 0;
 
     std::jthread renderThread([&](std::stop_token stopToken) {
@@ -97,8 +91,6 @@ int main() {
         // 2. occluded is true (in which macOS stops presenting at all)
         // these all prevent vsync from working
 
-        // float targetFps =
-        //   options.window.vsync && !idle && !windowOccluded ? 0 : options.maxFps;
         float targetFps =
           window.vsync && !idle && !windowOccluded ? 120 : options->maxFps;
         float dt = clock.Tick(targetFps);
@@ -202,7 +194,7 @@ int main() {
                   nvim->UiTryResize(sizes.uiWidth + 1, sizes.uiHeight);
                 }
 
-                sdl::Window::_ctx.Resize(sizes.fbSize);
+                ctx.Resize(sizes.fbSize);
 
                 if (uiFbSize == sizes.uiFbSize) {
                   renderer.camera.Resize(sizes.size);
@@ -212,9 +204,6 @@ int main() {
                   nvim->UiTryResize(sizes.uiWidth, sizes.uiHeight);
                 }
 
-                // if (resizing) {
-                //   resized1 = true;
-                // }
                 break;
               }
             }
@@ -277,10 +266,6 @@ int main() {
 
         renderer.Begin();
 
-        // ------------------------
-        renderer.timestamp.Write();
-        // ------------------------
-
         bool mainWindowRendered = false;
         bool renderWindows = false;
         for (auto& [id, win] : editorState->winManager.windows) {
@@ -292,20 +277,12 @@ int main() {
           }
         }
 
-        // ------------------------
-        renderer.timestamp.Write();
-        // ------------------------
-
         if (editorState->cursor.dirty && currWin != nullptr) {
           renderer.RenderCursorMask(
             *currWin, editorState->cursor, editorState->fontFamily, editorState->hlTable
           );
           editorState->cursor.dirty = false;
         }
-
-        // ------------------------
-        renderer.timestamp.Write();
-        // ------------------------
 
         if (renderWindows || editorState->winManager.dirty || session->reattached) {
           editorState->winManager.dirty = false;
@@ -339,10 +316,6 @@ int main() {
           session->reattached = false;
         }
 
-        // ------------------------
-        renderer.timestamp.Write();
-        // ------------------------
-
         // switch to current texture only after rendering to it
         if (renderer.prevFinalRenderTexture.texture && mainWindowRendered) {
           renderer.prevFinalRenderTexture = {};
@@ -350,36 +323,13 @@ int main() {
 
         renderer.RenderFinalTexture();
 
-        // ------------------------
-        renderer.timestamp.Write();
-        // ------------------------
-
         if (editorState->cursor.ShouldRender()) {
           renderer.RenderCursor(editorState->cursor, editorState->hlTable);
         }
 
-        // ------------------------
-        renderer.timestamp.Write();
-        // ------------------------
-
         renderer.End();
-        // if (resizing && resized1) {
-        //   ctx.queue.OnSubmittedWorkDone(
-        //     wgpu::CallbackMode::AllowProcessEvents,
-        //     [&](wgpu::QueueWorkDoneStatus) {
-        //       resizing = false;
-        //       ctx.surface.Present();
-        //       LOG_INFO("resizing done");
-        //     }
-        //   );
-        //   while (resizing) {
-        //     ctx.instance.ProcessEvents();
-        //     std::this_thread::sleep_for(1ms);
-        //   }
-        // } else {
         ctx.surface.Present();
         ctx.device.Tick();
-        // }
 
         // Reset the promise and future for the next frame
         // timer.End();
@@ -395,19 +345,10 @@ int main() {
     sdl::AddEventWatch([&](SDL_Event& event) {
       switch (event.type) {
         case SDL_EVENT_WINDOW_RESIZED:
-          // LOG_INFO("resized, {} {}", event.window.data1, event.window.data2);
           resizeEvents.Push(event);
           break;
         case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: {
-          // LOG_INFO("pixel size changed, {} {}", event.window.data1,
-          // event.window.data2); resizePromise = std::promise<void>(); resizeFuture =
-          // resizePromise.get_future(); resizing = true; resized1 = false;
           resizeEvents.Push(event);
-
-          // while (resizing) {
-          // }
-
-          // LOG_INFO("resized!");
           break;
         }
       }
@@ -430,15 +371,6 @@ int main() {
         // keyboard handling ----------------------
         case SDL_EVENT_KEY_DOWN:
         case SDL_EVENT_KEY_UP:
-          // if (event.key.key == SDLK_F10) {
-          //   auto size = window.size;
-          //   size.x -= 100;
-          //   SDL_SetWindowSize(window.Get(), size.x, size.y);
-          // } else if (event.key.key == SDLK_F11) {
-          //   auto size = window.size;
-          //   size.x += 100;
-          //   SDL_SetWindowSize(window.Get(), size.x, size.y);
-          // }
           input.HandleKeyboard(event.key);
           break;
 

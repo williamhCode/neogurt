@@ -12,7 +12,7 @@ struct Timer {
 
   void Start();
   void End();
-  void RegisterTime(uint64_t time);
+  void RegisterTime(std::chrono::nanoseconds time);
   std::chrono::nanoseconds GetAverageDuration();
 };
 

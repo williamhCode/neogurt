@@ -4,7 +4,7 @@
 #include "SDL3/SDL_hints.h"
 #include "app/options.hpp"
 #include "app/window_funcs.h"
-#include "utils/color.hpp"
+#include "gfx/instance.hpp"
 #include "utils/logger.hpp"
 #include <stdexcept>
 #include <format>
@@ -52,7 +52,7 @@ Window::Window(glm::uvec2 _size, const std::string& title, Options& opts)
   // webgpu ------------------------------------
   vsync = opts.window.vsync;
   auto presentMode = vsync ? PresentMode::Mailbox : PresentMode::Immediate;
-  _ctx = WGPUContext(Get(), fbSize, presentMode);
+  ctx = WGPUContext(Get(), fbSize, presentMode);
   // LOG_INFO("WGPUContext created with size: {}, {}", fbSize.x, fbSize.y);
 }
 

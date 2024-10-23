@@ -15,8 +15,8 @@ void Timer::End() {
   if (durations.size() > bufferSize) durations.pop_front();
 }
 
-void Timer::RegisterTime(uint64_t time) {
-  durations.push_back(std::chrono::nanoseconds(time));
+void Timer::RegisterTime(std::chrono::nanoseconds time) {
+  durations.push_back(time);
   if (durations.size() > bufferSize) durations.pop_front();
 }
 

@@ -18,7 +18,7 @@
 using namespace wgpu;
 
 Renderer::Renderer(const SizeHandler& sizes) {
-  timestamp = TimestampHelper(10, true);
+  timestamp = TimestampHelper(2, false);
 
   // color stuff
   gammaBuffer = utils::CreateUniformBuffer(ctx.device, sizeof(float));
@@ -168,6 +168,7 @@ void Renderer::Begin() {
   nextTextureView = nextTexture.CreateView();
 
   timestamp.Begin(commandEncoder);
+  timestamp.Write();
 }
 
 void Renderer::RenderToWindow(
@@ -572,6 +573,7 @@ void Renderer::RenderCursor(const Cursor& cursor, HlTable& hlTable) {
 }
 
 void Renderer::End() {
+  timestamp.Write();
   timestamp.Resolve();
   timestamp.ReadBuffer();
 
