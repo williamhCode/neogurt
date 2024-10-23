@@ -14,6 +14,7 @@ git clone https://github.com/williamhCode/neogurt.git --recurse-submodules
 git submodule update  # if submodules become out of sync
 ```
 
+- Install the latest version of LLVM Clang
 - Make sure Boost is installed and its headers are locatable
 - All other depedencies are bundled
 - Edit Makefile to switch between debug and release mode
