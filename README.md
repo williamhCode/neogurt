@@ -7,6 +7,7 @@ Blazingly fast Neovim GUI written in C++23 and WebGPU.
 - Blazingly fast and energy efficient
 - Smooth scrolling and cursor out of the box
 - Session support, similar to tmux (not detachable yet, wip)
+- Supported on macOS, Windows and Linux WIP
 
 ## Build Instructions
 ```

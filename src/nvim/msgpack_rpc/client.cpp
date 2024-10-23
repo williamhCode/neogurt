@@ -226,8 +226,6 @@ void Client::GetData() {
 
     } else {
       if (IsConnected()) {
-        // std::cout << "Error code: " << ec << std::endl;
-        // std::cout << "Error message: " << ec.message() << std::endl;
         LOG_ERR("Client::GetData: {}", ec.message());
       }
     }
