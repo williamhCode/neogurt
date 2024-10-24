@@ -63,6 +63,7 @@ public:
   bool SessionKill(int id = 0);                    // return true if successful
   bool SessionSwitch(int id);                      // return true if successful
   bool SessionPrev();                              // return true if successful
+  SessionListEntry SessionInfo(int id = 0);        // return true if successful
   std::vector<SessionListEntry> SessionList(const SessionListOpts& opts = {});
   // returns true if all sessions are closed
   bool ShouldQuit();

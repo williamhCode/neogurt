@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <stdexcept>
 #include <ranges>
+#include <vector>
 #include "glm/gtx/string_cast.hpp"
 
 SessionManager::SessionManager(
@@ -166,6 +167,18 @@ bool SessionManager::SessionPrev() {
   return true;
 }
 
+SessionListEntry SessionManager::SessionInfo(int id) {
+  if (id == 0) id = CurrSession()->id;
+
+  auto it = sessions.find(id);
+  if (it == sessions.end()) {
+    return {0, ""};
+  }
+  auto& session = it->second;
+
+  return {session.id, session.name};
+}
+
 std::vector<SessionListEntry> SessionManager::SessionList(const SessionListOpts& opts) {
   auto entries =
     sessionsOrder | std::views::transform([](auto* session) {
@@ -194,16 +207,25 @@ std::vector<SessionListEntry> SessionManager::SessionList(const SessionListOpts&
 }
 
 bool SessionManager::ShouldQuit() {
-  auto* curr = CurrSession();
-  if (!curr->nvim.IsConnected()) {
-    sessions.erase(curr->id);
-    sessionsOrder.pop_front();
+  int prevId = CurrSession()->id;
 
-    curr = CurrSession();
-    if (curr == nullptr) {
-      return true;
+  // remove disconnected sessions
+  std::erase_if(sessionsOrder, [this](auto* session) {
+    bool toErase = !session->nvim.client->IsConnected();
+    if (toErase) {
+      sessions.erase(session->id);
     }
+    return toErase;
+  });
 
+  // no sessions left
+  auto* curr = CurrSession();
+  if (curr == nullptr) {
+    return true;
+  }
+
+  // switch to most recent session if current session was removed
+  if (prevId != curr->id) {
     auto& session = *curr;
 
     UpdateSessionSizes(session);

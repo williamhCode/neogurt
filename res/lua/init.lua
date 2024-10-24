@@ -17,6 +17,9 @@ local cmds_table = {
     id = "number",
   },
   session_prev = {},
+  session_info = {
+    id = 0
+  },
   session_list = {
     -- id, name, time (recency)
     sort = "id",
@@ -55,16 +58,22 @@ vim.api.nvim_create_user_command("Neogurt", function(cmd_opts)
   -- handle command output
   local result = vim.g.neogurt_cmd(cmd, opts)
   if cmd == "session_new" then
+
   elseif cmd == "session_kill" then
     if result == true then
       print("Session killed")
     else
       print("Session not found")
     end
+
   elseif cmd == "session_prev" then
     if result == false then
       print("No previous session")
     end
+
+  elseif cmd == "session_info" then
+    vim.print(result)
+
   elseif cmd == "session_list" then
     vim.print(result)
   end
@@ -99,25 +108,6 @@ vim.g.neogurt_cmd = function(cmd, opts)
       return
     end
 
-    local id = vim.rpcrequest(chan_id, "neogurt_cmd", cmd, opts)
-    return id
-
-  elseif cmd == "session_kill" then
-    local success = vim.rpcrequest(chan_id, "neogurt_cmd", cmd, opts)
-    return success
-
-  elseif cmd == "session_switch" then
-    local success = vim.rpcrequest(chan_id, "neogurt_cmd", cmd, opts)
-    return success
-
-  elseif cmd == "session_prev" then
-    local success = vim.rpcrequest(chan_id, "neogurt_cmd", cmd)
-    return success
-
-  elseif cmd == "session_list" then
-    local list = vim.rpcrequest(chan_id, "neogurt_cmd", cmd, opts)
-    return list
-
   elseif cmd == "session_select" then
     local curr_id = vim.g.neogurt_cmd("session_list", { sort = "time" })[1].id
     local list = vim.g.neogurt_cmd("session_list", opts)
@@ -134,11 +124,12 @@ vim.g.neogurt_cmd = function(cmd, opts)
       if choice == nil then return end
       vim.g.neogurt_cmd("session_switch", { id = choice.id })
     end)
+    return
+  end
 
-  elseif cmd == "font_size_change" then
-    return vim.rpcrequest(chan_id, "neogurt_cmd", cmd, opts)
-
-  elseif cmd == "font_size_reset" then
+  if next(opts) == nil then
+    return vim.rpcrequest(chan_id, "neogurt_cmd", cmd)
+  else
     return vim.rpcrequest(chan_id, "neogurt_cmd", cmd, opts)
   end
 end

@@ -72,13 +72,14 @@ private:
   // tcp
   std::unique_ptr<asio::ip::tcp::socket> socket;
 
-  std::thread contextThr;
+  std::jthread contextThr;
   std::atomic_bool exit;
 
   std::unordered_map<u_int32_t, std::promise<msgpack::object_handle>> responses;
   std::mutex responsesMutex;
 
-  TSQueue<Request> requests;
+  // shared requests between all neovim clients
+  static inline TSQueue<Request> requests;
   TSQueue<Notification> notifications;
 
 public:

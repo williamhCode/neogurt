@@ -5,6 +5,8 @@
 #include <string_view>
 
 void ProcessUserEvents(rpc::Client& client, SessionManager& sessionManager) {
+  using msgpack::type::nil_t;
+
   while (client.HasRequest()) {
     auto request = client.PopRequest();
 
@@ -33,6 +35,14 @@ void ProcessUserEvents(rpc::Client& client, SessionManager& sessionManager) {
           bool success = sessionManager.SessionPrev();
           request.SetValue(success);
 
+        } else if (userCmd.cmd == "session_info") {
+          auto info = sessionManager.SessionInfo(userCmd.opts.at("id").convert());
+          if (info.id == 0) {
+            request.SetValue(nil_t());
+          } else {
+            request.SetValue(info);
+          }
+
         } else if (userCmd.cmd == "session_list") {
           std::vector<SessionListEntry> list = sessionManager.SessionList({
             .sort = userCmd.opts.at("sort").convert(),
@@ -44,12 +54,12 @@ void ProcessUserEvents(rpc::Client& client, SessionManager& sessionManager) {
           float delta = userCmd.opts.at("arg1").convert();
           bool all = userCmd.opts.at("all").convert();
           sessionManager.FontSizeChange(delta, all);
-          request.SetValue(msgpack::type::nil_t());
+          request.SetValue(nil_t());
 
         } else if (userCmd.cmd == "font_size_reset") {
           bool all = userCmd.opts.at("all").convert();
           sessionManager.FontSizeReset(all);
-          request.SetValue(msgpack::type::nil_t());
+          request.SetValue(nil_t());
 
         } else {
           request.SetError("Unknown command: " + std::string(userCmd.cmd));
@@ -61,7 +71,7 @@ void ProcessUserEvents(rpc::Client& client, SessionManager& sessionManager) {
 
     } else {
       LOG_ERR("Unknown method: {}", request.method);
-      request.SetValue(msgpack::type::nil_t());
+      request.SetValue(nil_t());
     }
   }
 }

@@ -154,11 +154,6 @@ M.merge_opts = function(default_opts, opts)
     ::continue::
   end
 
-  if next(new_opts) == nil then
-    -- _ is a placeholder so rpc request sends empty table not array
-    new_opts = { _ = nil }
-  end
-
   return new_opts
 end
 

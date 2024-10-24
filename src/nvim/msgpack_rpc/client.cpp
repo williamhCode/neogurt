@@ -19,16 +19,11 @@ Client::~Client() {
   Disconnect();
 
   if (clientType == ClientType::Stdio) {
-    if (readPipe->is_open()) readPipe->close();
-    if (writePipe->is_open()) writePipe->close();
     if (process.running()) process.terminate();
 
   } else if (clientType == ClientType::Tcp) {
     if (socket->is_open()) socket->close();
   }
-
-  if (contextThr.joinable()) contextThr.join();
-  context.stop();
 }
 
 bool Client::ConnectStdio(const std::string& command, const std::string& dir) {
@@ -60,11 +55,9 @@ bool Client::ConnectStdio(const std::string& command, const std::string& dir) {
   }
   exit = false;
 
-  co_spawn(context, [this]() -> asio::awaitable<void> {
-    co_await GetData();
-  }, asio::detached);
+  co_spawn(context, GetData(), asio::detached);
 
-  contextThr = std::thread([this]() { context.run(); });
+  contextThr = std::jthread([this]() { context.run(); });
 
   return true;
 }
@@ -85,11 +78,9 @@ bool Client::ConnectTcp(std::string_view host, uint16_t port) {
   }
   exit = false;
 
-  co_spawn(context, [this]() -> asio::awaitable<void> {
-    co_await GetData();
-  }, asio::detached);
+  co_spawn(context, GetData(), asio::detached);
 
-  contextThr = std::thread([this]() { context.run(); });
+  contextThr = std::jthread([this]() { context.run(); });
 
   return true;
 }
@@ -181,23 +172,21 @@ asio::awaitable<void> Client::GetData() {
           .promise = std::move(promise),
         });
 
-        post(context,
-          [this, msgid = request.msgid, future = std::move(future)]() mutable {
-            ResponseOut msg;
+        std::thread([this, msgid = request.msgid, future = std::move(future)]() mutable {
+          ResponseOut msg;
 
-            if (auto result = future.get(); result.has_value()) {
-              msg.msgid = msgid;
-              msg.result = (*result).get();
-            } else {
-              msg.msgid = msgid;
-              msg.error = result.error().get();
-            }
-
-            msgpack::sbuffer buffer;
-            msgpack::pack(buffer, msg);
-            Write(std::move(buffer));
+          if (auto result = future.get(); result.has_value()) {
+            msg.msgid = msgid;
+            msg.result = (*result).get();
+          } else {
+            msg.msgid = msgid;
+            msg.error = result.error().get();
           }
-        );
+
+          msgpack::sbuffer buffer;
+          msgpack::pack(buffer, msg);
+          Write(std::move(buffer));
+        }).detach();
 
       } else if (type == MessageType::Response) {
         ResponseIn response(obj.convert());
@@ -240,15 +229,15 @@ asio::awaitable<void> Client::GetData() {
       unpacker.reserve_buffer(readSize);
     }
   }
+
+  co_return;
 }
 
 void Client::Write(msgpack::sbuffer&& buffer) {
   msgsOut.Push(std::move(buffer));
 
   if (msgsOut.Size() == 1) {
-    co_spawn(context, [this]() -> asio::awaitable<void> {
-      co_await DoWrite();
-    }, asio::detached);
+    co_spawn(context, DoWrite(), asio::detached);
   }
 }
 
@@ -275,6 +264,8 @@ asio::awaitable<void> Client::DoWrite() {
 
     msgsOut.Pop();
   }
+
+  co_return;
 }
 
 } // namespace rpc
