@@ -1,13 +1,14 @@
 #pragma once
 #include <mdspan>
 #include <variant>
+#include "blend2d.h"
 
 namespace box {
 
 using BufType = std::mdspan<uint8_t, std::dextents<size_t, 2>>;
 
 enum Weight : uint8_t { None, Light, Heavy, Double };
-enum Side : uint8_t { Top, Bottom, Left, Right };
+enum Side : uint8_t { Up, Down, Left, Right };
 
 struct HLine {
   Weight weight = Light;
@@ -31,34 +32,39 @@ struct VDash {
 
 struct DoubleCross : std::array<Weight, 4> {};
 
+enum ArcDir : uint8_t { UpLeft, UpRight, DownLeft, DownRight };
+struct Arc {
+  ArcDir dir;
+};
+
 struct HalfLine {
-  Weight top = None;
-  Weight bottom = None;
+  Weight up = None;
+  Weight down = None;
   Weight left = None;
   Weight right = None;
 };
 
 struct UpperBlock {
-  float size;
+  double size;
 };
 
 struct LowerBlock {
-  float size;
+  double size;
 };
 
 struct LeftBlock {
-  float size;
+  double size;
 };
 
 struct RightBlock {
-  float size;
+  double size;
 };
 
 struct Quadrant {
-  bool topLeft = false;
-  bool topRight = false;
-  bool bottomLeft = false;
-  bool bottomRight = false;
+  bool upperLeft = false;
+  bool upperRight = false;
+  bool lowerLeft = false;
+  bool lowerRight = false;
 };
 
 using DrawDesc = std::variant<
@@ -68,6 +74,7 @@ using DrawDesc = std::variant<
   HDash,
   VDash,
   DoubleCross,
+  Arc,
   HalfLine,
   UpperBlock,
   LowerBlock,
@@ -76,28 +83,33 @@ using DrawDesc = std::variant<
   Quadrant>;
 
 struct Pen {
-  BufType canvas;
-  float xsize;
-  float ysize;
-  float xcenter;
-  float ycenter;
+  BLImage img;
+  BLContext ctx;
 
-  float lightWidth;
-  float heavyWidth;
-  void SetCanvas(BufType& canvas, float dpiScale);
-  float ToWidth(Weight weight);
+  // BufType canvas;
+  double xsize;
+  double ysize;
+  double xcenter;
+  double ycenter;
 
-  void Fill(int x, int y, uint8_t alpha);
-  void DrawRect(float left, float top, float width, float height);
-  void DrawHLine(float ypos, float start, float end, float lineWidth);
-  void DrawVLine(float xpos, float start, float end, float lineWidth);
+  double lightWidth;
+  double heavyWidth;
 
-  void DrawHLine(float start, float end, Weight weight);
-  void DrawVLine(float start, float end, Weight weight);
+  void Begin(double width, double height);
+  BLImageData End();
+  double ToWidth(Weight weight);
+
+  void DrawRect(double left, double top, double width, double height);
+  void DrawHLine(double ypos, double start, double end, double lineWidth);
+  void DrawVLine(double xpos, double start, double end, double lineWidth);
+
+  void DrawHLine(double start, double end, Weight weight);
+  void DrawVLine(double start, double end, Weight weight);
   void DrawCross(const Cross& desc);
   void DrawHDash(const HDash& desc);
   void DrawVDash(const VDash& desc);
   void DrawDoubleCross(const DoubleCross& desc);
+  void DrawArc(const Arc& desc);
   void DrawHalfLine(const HalfLine& desc);
   void DrawQuadrant(const Quadrant& desc);
 

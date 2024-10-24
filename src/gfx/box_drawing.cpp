@@ -41,17 +41,17 @@ static auto boxChars = [] {
       c[start++] = cross;
     }
   };
-  Corner(0x250C, Bottom, Right);
-  Corner(0x2510, Bottom, Left);
-  Corner(0x2514, Top, Right);
-  Corner(0x2518, Top, Left);
+  Corner(0x250C, Down, Right);
+  Corner(0x2510, Down, Left);
+  Corner(0x2514, Up, Right);
+  Corner(0x2518, Up, Left);
 
   auto VertT = [&](char32_t start, Side side) {
     for (auto [tWeight, bWeight, sWeight] :
          {tuple{L, L, L}, {L, L, H}, {H, L, L}, {L, H, L}, {H, H, L}, {H, L, H}, {L, H, H}, {H, H, H}}) {
       Cross cross{};
-      cross[Top] = tWeight;
-      cross[Bottom] = bWeight;
+      cross[Up] = tWeight;
+      cross[Down] = bWeight;
       cross[side] = sWeight;
       c[start++] = cross;
     }
@@ -69,8 +69,8 @@ static auto boxChars = [] {
       c[start++] = cross;
     }
   };
-  HoriT(0x252C, Bottom);
-  HoriT(0x2534, Top);
+  HoriT(0x252C, Down);
+  HoriT(0x2534, Up);
 
   char32_t start = 0x253C;
   for (auto [tWeight, bWeight, lWeight, rWeight] :
@@ -101,10 +101,10 @@ static auto boxChars = [] {
       c[start++] = cross;
     }
   };
-  DoubleCorner(0x2552, Bottom, Right);
-  DoubleCorner(0x2555, Bottom, Left);
-  DoubleCorner(0x2558, Top, Right);
-  DoubleCorner(0x255b, Top, Left);
+  DoubleCorner(0x2552, Down, Right);
+  DoubleCorner(0x2555, Down, Left);
+  DoubleCorner(0x2558, Up, Right);
+  DoubleCorner(0x255b, Up, Left);
 
   c[0x255e] = DoubleCross{L, L, _, D};
   c[0x255f] = DoubleCross{D, D, _, L};
@@ -124,21 +124,27 @@ static auto boxChars = [] {
   c[0x256b] = DoubleCross{D, D, L, L};
   c[0x256c] = DoubleCross{D, D, D, D};
 
+  // character cell arcs (0x256d - 0x2570)
+  // c[0x256d] = Arc{DownRight};
+  // c[0x256e] = Arc{DownLeft};
+  // c[0x256f] = Arc{UpLeft};
+  // c[0x2570] = Arc{UpRight};
+
   // half lines (0x2574 - 0x257b)
   c[0x2574] = HalfLine{.left = Light};
-  c[0x2575] = HalfLine{.top = Light};
+  c[0x2575] = HalfLine{.up = Light};
   c[0x2576] = HalfLine{.right = Light};
-  c[0x2577] = HalfLine{.bottom = Light};
+  c[0x2577] = HalfLine{.down = Light};
   c[0x2578] = HalfLine{.left = Heavy};
-  c[0x2579] = HalfLine{.top = Heavy};
+  c[0x2579] = HalfLine{.up = Heavy};
   c[0x257a] = HalfLine{.right = Heavy};
-  c[0x257b] = HalfLine{.bottom = Heavy};
+  c[0x257b] = HalfLine{.down = Heavy};
 
   // mixed lines (0x257c - 0x257f)
   c[0x257c] = HalfLine{.left = Light, .right = Heavy};
-  c[0x257d] = HalfLine{.top = Light, .bottom = Heavy};
+  c[0x257d] = HalfLine{.up = Light, .down = Heavy};
   c[0x257e] = HalfLine{.left = Heavy, .right = Light};
-  c[0x257f] = HalfLine{.top = Heavy, .bottom = Light};
+  c[0x257f] = HalfLine{.up = Heavy, .down = Light};
 
   // block elements (0x2580 - 0x2590)
   c[0x2580] = UpperBlock{1/2.};
@@ -180,11 +186,8 @@ static auto boxChars = [] {
 
 BoxDrawing::BoxDrawing(glm::vec2 _size, float _dpiScale)
     : size(_size), dpiScale(_dpiScale) {
-  int width = size.x * dpiScale;
-  int height = size.y * dpiScale;
-
-  canvasRaw.resize(width * height);
-  canvas = std::mdspan(canvasRaw.data(), height, width);
+  width = size.x * dpiScale;
+  height = size.y * dpiScale;
 }
 
 const GlyphInfo*
@@ -201,9 +204,10 @@ BoxDrawing::GetGlyphInfo(char32_t charcode, TextureAtlas& textureAtlas) {
     return nullptr;
   }
 
-  std::ranges::fill(canvasRaw, 0);
-  pen.SetCanvas(canvas, dpiScale);
+  pen.Begin(width, height);
   pen.Draw(boxCharIt->second);
+  BLImageData data = pen.End();
+  auto canvas = std::mdspan((uint32_t*)data.pixelData, height, width);
 
   // memory optimization
   // find the bounds of data and create span within the bounds
@@ -224,12 +228,16 @@ BoxDrawing::GetGlyphInfo(char32_t charcode, TextureAtlas& textureAtlas) {
     }
   }
 
-  size_t width = xmax - xmin + 1;
-  size_t height = ymax - ymin + 1;
+  if (xmin > xmax || ymin > ymax) {
+    LOG_ERR("Empty glyph: 0x{:x}", (uint32_t)charcode);
+    return nullptr;
+  }
+
+  size_t subWidth = xmax - xmin + 1;
+  size_t subHeight = ymax - ymin + 1;
 
   // NOTE: use submdspan for c++26
-  auto subCanvas = SubMdspan2d(canvas, {ymin, xmin}, {height, width});
-
+  auto subCanvas = SubMdspan2d(canvas, {ymin, xmin}, {subHeight, subWidth});
   auto region = textureAtlas.AddGlyph(subCanvas);
 
   auto pair = glyphInfoMap.emplace(
@@ -237,7 +245,7 @@ BoxDrawing::GetGlyphInfo(char32_t charcode, TextureAtlas& textureAtlas) {
     GlyphInfo{
       .localPoss = MakeRegion(
         glm::vec2(xmin, ymin) / dpiScale,
-        glm::vec2(width, height) / dpiScale
+        glm::vec2(subWidth, subHeight) / dpiScale
       ),
       .atlasRegion = region,
       .boxDrawing = true,

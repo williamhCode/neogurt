@@ -16,9 +16,8 @@ struct BoxDrawing {
   using GlyphInfoMap = std::unordered_map<char32_t, GlyphInfo>;
   GlyphInfoMap glyphInfoMap;
 
-  // temporary storage for drawing
-  std::vector<uint8_t> canvasRaw;
-  std::mdspan<uint8_t, std::dextents<size_t, 2>> canvas;
+  int width;
+  int height;
 
   box::Pen pen;
 

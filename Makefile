@@ -1,7 +1,7 @@
 .PHONY: build
 
-TYPE = release
 # TYPE = debug
+TYPE = release
 
 build:
 	cmake --build build/$(TYPE) --target neogurt
@@ -11,26 +11,27 @@ build-setup: build-setup-debug build-setup-release
 
 build-setup-debug:
 	cmake . -B build/debug \
-		-DCMAKE_BUILD_TYPE=Debug \
+		-D CMAKE_BUILD_TYPE=Debug \
 		-GNinja \
-		-DCMAKE_C_COMPILER=clang \
-		-DCMAKE_CXX_COMPILER=clang++ \
-		-DCMAKE_C_COMPILER_LAUNCHER=ccache \
-		-DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-		-DCMAKE_COLOR_DIAGNOSTICS=ON \
-		-DSDL_SHARED=ON
+		-D CMAKE_C_COMPILER=clang \
+		-D CMAKE_CXX_COMPILER=clang++ \
+		-D CMAKE_C_COMPILER_LAUNCHER=ccache \
+		-D CMAKE_CXX_COMPILER_LAUNCHER=ccache \
+		-D CMAKE_COLOR_DIAGNOSTICS=ON \
+		-D SDL_SHARED=ON
 
 build-setup-release:
 	cmake . -B build/release \
-		-DCMAKE_BUILD_TYPE=RelWithDebInfo \
+		-D CMAKE_BUILD_TYPE=RelWithDebInfo \
 		-GNinja \
-		-DCMAKE_C_COMPILER=clang \
-		-DCMAKE_CXX_COMPILER=clang++ \
-		-DCMAKE_C_COMPILER_LAUNCHER=ccache \
-		-DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-		-DCMAKE_COLOR_DIAGNOSTICS=ON \
-		-DSDL_SHARED=OFF \
-		-DSDL_STATIC=ON
+		-D CMAKE_C_COMPILER=clang \
+		-D CMAKE_CXX_COMPILER=clang++ \
+		-D CMAKE_C_COMPILER_LAUNCHER=ccache \
+		-D CMAKE_CXX_COMPILER_LAUNCHER=ccache \
+		-D CMAKE_COLOR_DIAGNOSTICS=ON \
+		-D SDL_SHARED=OFF \
+		-D SDL_STATIC=ON \
+		-D BLEND2D_STATIC=ON
 
 xcode-setup:
 	cmake . -B xcode -GXcode

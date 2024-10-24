@@ -41,17 +41,18 @@ struct TextureAtlas {
 
   // Adds data to texture atlas, and returns the region where the data was added.
   // Region coordinates is relative to textureSize.
-  template <class LayoutPolicy>
-  Region AddGlyph(std::mdspan<uint8_t, std::dextents<size_t, 2>, LayoutPolicy> glyphData);
+  template <class T, class LayoutPolicy>
+  Region AddGlyph(std::mdspan<T, std::dextents<size_t, 2>, LayoutPolicy> glyphData);
+
   // Resize cpu side data and sizes
   void Resize();
   // Resize gpu side data and update bind group
   void Update();
 };
 
-template <class LayoutPolicy>
+template <class T, class LayoutPolicy>
 Region TextureAtlas::AddGlyph(
-  std::mdspan<uint8_t, std::dextents<size_t, 2>, LayoutPolicy> glyphData
+  std::mdspan<T, std::dextents<size_t, 2>, LayoutPolicy> glyphData
 ) {
   // check if current row is full
   // if so, move to next row
@@ -71,7 +72,13 @@ Region TextureAtlas::AddGlyph(
       dest.r = 255;
       dest.g = 255;
       dest.b = 255;
-      dest.a = glyphData[row, col];
+      if constexpr (std::is_same_v<T, uint32_t>) {
+        dest.a = glyphData[row, col] >> 24;
+      } else if constexpr (std::is_same_v<T, uint8_t>) {
+        dest.a = glyphData[row, col];
+      } else {
+        static_assert(false, "Unsupported type");
+      }
     }
   }
   dirty = true;

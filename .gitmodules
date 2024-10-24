@@ -10,3 +10,9 @@
 [submodule "deps/freetype"]
 	path = deps/freetype
 	url = https://github.com/freetype/freetype.git
+[submodule "deps/blend2d"]
+	path = deps/blend2d
+	url = https://github.com/blend2d/blend2d
+[submodule "deps/asmjit"]
+	path = deps/asmjit
+	url = https://github.com/asmjit/asmjit

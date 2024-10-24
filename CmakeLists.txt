@@ -14,12 +14,21 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)  # clangd
 
+# deps ---------------------------
 add_subdirectory(deps/webgpu_tools)
+
 set(MSGPACK_USE_STATIC_BOOST ON)
 add_subdirectory(deps/msgpack)
+
 add_subdirectory(deps/freetype)
+
 set(UTFCPP_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/deps/utfcpp/source)
 
+# temp fix for https://github.com/blend2d/blend2d/issues/216
+set(BLEND2D_NO_JIT OFF)
+add_subdirectory(deps/blend2d)
+
+# neogurt target -------------------------
 set(APP_SRC
 	src/main.cpp
 
@@ -79,6 +88,7 @@ target_link_libraries(neogurt PRIVATE
   webgpu_tools
   msgpack-cxx
   freetype
+  blend2d::blend2d
 )
 
 if (MSVC)

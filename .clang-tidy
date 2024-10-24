@@ -23,6 +23,7 @@ Checks: '
   -modernize-use-trailing-return-type,
   -modernize-use-using,
   -modernize-use-designated-initializers,
+  -modernize-avoid-c-arrays,
 
   readability-*,
   -readability-magic-numbers,
@@ -34,6 +35,7 @@ Checks: '
   -readability-implicit-bool-conversion,
   -readability-uppercase-literal-suffix,
   -readability-isolate-declaration,
+  -readability-math-missing-parentheses
 '
 
 CheckOptions:
