@@ -125,10 +125,10 @@ static auto boxChars = [] {
   c[0x256c] = DoubleCross{D, D, D, D};
 
   // character cell arcs (0x256d - 0x2570)
-  // c[0x256d] = Arc{DownRight};
-  // c[0x256e] = Arc{DownLeft};
-  // c[0x256f] = Arc{UpLeft};
-  // c[0x2570] = Arc{UpRight};
+  c[0x256d] = Arc{DownRight};
+  c[0x256e] = Arc{DownLeft};
+  c[0x256f] = Arc{UpLeft};
+  c[0x2570] = Arc{UpRight};
 
   // half lines (0x2574 - 0x257b)
   c[0x2574] = HalfLine{.left = Light};

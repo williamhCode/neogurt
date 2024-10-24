@@ -89,8 +89,8 @@ struct Pen {
   // BufType canvas;
   double xsize;
   double ysize;
-  double xcenter;
-  double ycenter;
+  double xhalf;
+  double yhalf;
 
   double lightWidth;
   double heavyWidth;
@@ -100,8 +100,6 @@ struct Pen {
   double ToWidth(Weight weight);
 
   void DrawRect(double left, double top, double width, double height);
-  void DrawHLine(double ypos, double start, double end, double lineWidth);
-  void DrawVLine(double xpos, double start, double end, double lineWidth);
 
   void DrawHLine(double start, double end, Weight weight);
   void DrawVLine(double start, double end, Weight weight);

@@ -3,6 +3,7 @@
 #include "utils/variant.hpp"
 #include <algorithm>
 #include <cassert>
+#include <cmath>
 
 namespace box {
 
@@ -10,8 +11,8 @@ void Pen::Begin(double width, double height) {
   xsize = width;
   ysize = height;
 
-  xcenter = xsize / 2;
-  ycenter = ysize / 2;
+  xhalf = xsize / 2;
+  yhalf = ysize / 2;
 
   lightWidth = xsize * 0.11;
   heavyWidth = xsize * 0.22;
@@ -43,43 +44,27 @@ void Pen::DrawRect(double left, double top, double width, double height) {
   ctx.fillRect(left, top, width, height);
 }
 
-void Pen::DrawHLine(double ypos, double start, double end, double lineWidth) {
-  assert(start <= end);
-  assert(lineWidth > 0);
-  double halfWidth = lineWidth / 2;
-  double left = start;
-  double top = ypos - halfWidth;
-  DrawRect(left, top, end - start, lineWidth);
-}
-
-void Pen::DrawVLine(double xpos, double start, double end, double lineWidth) {
-  assert(start <= end);
-  assert(lineWidth > 0);
-  double halfWidth = lineWidth / 2;
-  double left = xpos - halfWidth;
-  double top = start;
-  DrawRect(left, top, lineWidth, end - start);
-}
-
 void Pen::DrawHLine(double start, double end, Weight weight) {
   assert(weight != None);
   if (weight == Double) {
-    double lineWidth = lightWidth;
-    DrawHLine(ycenter - lineWidth, start, end, lineWidth);
-    DrawHLine(ycenter + lineWidth, start, end, lineWidth);
+    ctx.setStrokeWidth(lightWidth);
+    ctx.strokeLine(start, yhalf - lightWidth, end, yhalf - lightWidth);
+    ctx.strokeLine(start, yhalf + lightWidth, end, yhalf + lightWidth);
   } else {
-    DrawHLine(ycenter, start, end, ToWidth(weight));
+    ctx.setStrokeWidth(ToWidth(weight));
+    ctx.strokeLine(start, yhalf, end, yhalf);
   }
 }
 
 void Pen::DrawVLine(double start, double end, Weight weight) {
   assert(weight != None);
   if (weight == Double) {
-    double lineWidth = lightWidth;
-    DrawVLine(xcenter - lineWidth, start, end, lineWidth);
-    DrawVLine(xcenter + lineWidth, start, end, lineWidth);
+    ctx.setStrokeWidth(lightWidth);
+    ctx.strokeLine(xhalf - lightWidth, start, xhalf - lightWidth, end);
+    ctx.strokeLine(xhalf + lightWidth, start, xhalf + lightWidth, end);
   } else {
-    DrawVLine(xcenter, start, end, ToWidth(weight));
+    ctx.setStrokeWidth(ToWidth(weight));
+    ctx.strokeLine(xhalf, start, xhalf, end);
   }
 }
 
@@ -91,19 +76,19 @@ void Pen::DrawCross(const Cross& desc) {
   double halfHeight = height / 2;
 
   if (desc[Up] != None) {
-    DrawVLine(0, ycenter - halfHeight, desc[Up]);
+    DrawVLine(0, yhalf - halfHeight, desc[Up]);
   }
   if (desc[Down] != None) {
-    DrawVLine(ycenter + halfHeight, ysize, desc[Down]);
+    DrawVLine(yhalf + halfHeight, ysize, desc[Down]);
   }
   if (desc[Left] != None) {
-    DrawHLine(0, xcenter - halfWidth, desc[Left]);
+    DrawHLine(0, xhalf - halfWidth, desc[Left]);
   }
   if (desc[Right] != None) {
-    DrawHLine(xcenter + halfWidth, xsize, desc[Right]);
+    DrawHLine(xhalf + halfWidth, xsize, desc[Right]);
   }
 
-  DrawRect(xcenter - halfWidth, ycenter - halfHeight, width, height);
+  DrawRect(xhalf - halfWidth, yhalf - halfHeight, width, height);
 }
 
 void Pen::DrawHDash(const HDash& desc) {
@@ -133,16 +118,16 @@ void Pen::DrawDoubleCross(const DoubleCross& desc) {
 
   // draw lines until center
   if (desc[Up] != None) {
-    DrawVLine(0, ycenter - halfHeight, desc[Up]);
+    DrawVLine(0, yhalf - halfHeight, desc[Up]);
   }
   if (desc[Down] != None) {
-    DrawVLine(ycenter + halfHeight, ysize, desc[Down]);
+    DrawVLine(yhalf + halfHeight, ysize, desc[Down]);
   }
   if (desc[Left] != None) {
-    DrawHLine(0, xcenter - halfWidth, desc[Left]);
+    DrawHLine(0, xhalf - halfWidth, desc[Left]);
   }
   if (desc[Right] != None) {
-    DrawHLine(xcenter + halfWidth, xsize, desc[Right]);
+    DrawHLine(xhalf + halfWidth, xsize, desc[Right]);
   }
   
   /*
@@ -216,8 +201,8 @@ void Pen::DrawDoubleCross(const DoubleCross& desc) {
   }
 
   // fill up the cross sections
-  double gridLeft = xcenter - (1.5 * lightWidth);
-  double gridTop = ycenter - (1.5 * lightWidth);
+  double gridLeft = xhalf - (1.5 * lightWidth);
+  double gridTop = yhalf - (1.5 * lightWidth);
   for (int row = 0; row < 3; row++) {
     for (int col = 0; col < 3; col++) {
       if (grid[row][col] >= numSides) {
@@ -230,35 +215,71 @@ void Pen::DrawDoubleCross(const DoubleCross& desc) {
 }
 
 void Pen::DrawArc(const Arc& desc) {
+  auto transform = BLMatrix2D::makeIdentity();
+  switch (desc.dir) {
+    case UpLeft:
+      break;
+    case UpRight:
+      // flip horizontally
+      transform.translate(xhalf, 0);
+      transform.scale(-1, 1);
+      transform.translate(-xhalf, 0);
+      break;
+    case DownLeft:
+      // flip vertically
+      transform.translate(0, yhalf);
+      transform.scale(1, -1);
+      transform.translate(0, -yhalf);
+      break;
+    case DownRight:
+      // flip horizontally and vertically
+      transform.rotate(M_PI, xhalf, yhalf);
+      break;
+  }
+  ctx.setTransform(transform);
+
+  ctx.setStrokeWidth(lightWidth);
+  if (xsize < ysize) {
+    double radius = xhalf;
+    double offset = yhalf - radius;
+    ctx.strokeLine(xhalf, 0, xhalf, offset);
+    ctx.strokeArc(0, offset, radius, radius, 0, M_PI_2);
+  } else {
+    double radius = yhalf;
+    double offset = xhalf - radius;
+    ctx.strokeLine(0, yhalf, offset, yhalf);
+    ctx.strokeArc(offset, 0, radius, radius, 0, M_PI_2);
+  }
+
 }
 
 void Pen::DrawHalfLine(const HalfLine& desc) {
   if (desc.up != None) {
-    DrawVLine(0, ycenter, desc.up);
+    DrawVLine(0, yhalf, desc.up);
   }
   if (desc.down != None) {
-    DrawVLine(ycenter, ysize, desc.down);
+    DrawVLine(yhalf, ysize, desc.down);
   }
   if (desc.left != None) {
-    DrawHLine(0, xcenter, desc.left);
+    DrawHLine(0, xhalf, desc.left);
   }
   if (desc.right != None) {
-    DrawHLine(xcenter, xsize, desc.right);
+    DrawHLine(xhalf, xsize, desc.right);
   }
 }
 
 void Pen::DrawQuadrant(const Quadrant& desc) {
   if (desc.upperLeft) {
-    DrawRect(0, 0, xcenter, ycenter);
+    DrawRect(0, 0, xhalf, yhalf);
   }
   if (desc.upperRight) {
-    DrawRect(xcenter, 0, xcenter, ycenter);
+    DrawRect(xhalf, 0, xhalf, yhalf);
   }
   if (desc.lowerLeft) {
-    DrawRect(0, ycenter, xcenter, ycenter);
+    DrawRect(0, yhalf, xhalf, yhalf);
   }
   if (desc.lowerRight) {
-    DrawRect(xcenter, ycenter, xcenter, ycenter);
+    DrawRect(xhalf, yhalf, xhalf, yhalf);
   }
 }
 
