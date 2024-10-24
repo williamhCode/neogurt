@@ -4,6 +4,7 @@
 
 #include "boost/asio/io_context.hpp"
 #include "boost/asio/ip/tcp.hpp"
+#include "boost/asio/awaitable.hpp"
 #include "boost/process/async_pipe.hpp"
 #include "boost/process/child.hpp"
 
@@ -20,6 +21,9 @@
 #include <expected>
 
 namespace rpc {
+
+namespace bp = boost::process;
+namespace asio = boost::asio;
 
 struct Notification {
   std::string_view method;
@@ -56,17 +60,17 @@ enum class ClientType {
 
 struct Client {
 private:
-  boost::asio::io_context context;
+  asio::io_context context;
 
   ClientType clientType = ClientType::Unknown;
 
   // stdio
-  std::unique_ptr<boost::process::async_pipe> readPipe;
-  std::unique_ptr<boost::process::async_pipe> writePipe;
-  boost::process::child process;
+  std::unique_ptr<bp::async_pipe> readPipe;
+  std::unique_ptr<bp::async_pipe> writePipe;
+  bp::child process;
 
   // tcp
-  std::unique_ptr<boost::asio::ip::tcp::socket> socket;
+  std::unique_ptr<asio::ip::tcp::socket> socket;
 
   std::thread contextThr;
   std::atomic_bool exit;
@@ -107,9 +111,9 @@ private:
   std::atomic_uint32_t currId = 0;
 
   uint32_t Msgid();
-  void GetData();
+  asio::awaitable<void> GetData();
   void Write(msgpack::sbuffer&& buffer);
-  void DoWrite();
+  asio::awaitable<void> DoWrite();
 };
 
 msgpack::object_handle Client::Call(std::string_view method, auto... args) {

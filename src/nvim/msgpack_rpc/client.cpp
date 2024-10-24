@@ -1,16 +1,17 @@
 #include "client.hpp"
 
 #include "app/path.hpp"
+
+#include "boost/asio/use_awaitable.hpp"
+#include "boost/asio/redirect_error.hpp"
+#include "boost/asio/co_spawn.hpp"
+#include "boost/asio/detached.hpp"
+#include "boost/asio/connect.hpp"
 #include "boost/process/io.hpp"
 #include "boost/process/start_dir.hpp"
-#include "boost/asio/connect.hpp"
 #include "messages.hpp"
-#include "msgpack/v3/adaptor/nil_decl.hpp"
 #include "msgpack/v3/object_fwd_decl.hpp"
 #include "utils/logger.hpp"
-
-namespace bp = boost::process;
-namespace asio = boost::asio;
 
 namespace rpc {
 
@@ -59,8 +60,10 @@ bool Client::ConnectStdio(const std::string& command, const std::string& dir) {
   }
   exit = false;
 
-  unpacker.reserve_buffer(readSize);
-  GetData();
+  co_spawn(context, [this]() -> asio::awaitable<void> {
+    co_await GetData();
+  }, asio::detached);
+
   contextThr = std::thread([this]() { context.run(); });
 
   return true;
@@ -82,8 +85,10 @@ bool Client::ConnectTcp(std::string_view host, uint16_t port) {
   }
   exit = false;
 
-  unpacker.reserve_buffer(readSize);
-  GetData();
+  co_spawn(context, [this]() -> asio::awaitable<void> {
+    co_await GetData();
+  }, asio::detached);
+
   contextThr = std::thread([this]() { context.run(); });
 
   return true;
@@ -121,40 +126,66 @@ uint32_t Client::Msgid() {
   return currId++;
 }
 
-void Client::GetData() {
-  if (!IsConnected()) return;
+asio::awaitable<void> Client::GetData() {
+  unpacker.reserve_buffer(readSize);
 
-  auto buffer = asio::buffer(unpacker.buffer(), readSize);
-  auto handler = [this](boost::system::error_code ec, std::size_t length) {
-    if (!ec) {
-      unpacker.buffer_consumed(length);
+  while (IsConnected()) {
+    auto buffer = asio::buffer(unpacker.buffer(), readSize);
 
-      msgpack::object_handle handle;
-      while (unpacker.next(handle)) {
-        const auto& obj = handle.get();
-        if (obj.type != msgpack::type::ARRAY) {
-          LOG_ERR("Client::GetData: Not an array");
-          continue;
-        }
+    boost::system::error_code ec;
+    std::size_t length;
 
-        int type = obj.via.array.ptr[0].convert();
-        if (type == MessageType::Request) {
-          RequestIn request(obj.convert());
+    if (clientType == ClientType::Stdio) {
+      length = co_await readPipe->async_read_some(
+        buffer, asio::redirect_error(asio::use_awaitable, ec)
+      );
+    } else if (clientType == ClientType::Tcp) {
+      length = co_await socket->async_read_some(
+        buffer, asio::redirect_error(asio::use_awaitable, ec)
+      );
+    }
 
-          std::promise<RequestValue> promise;
-          auto future = promise.get_future();
+    if (ec) {
+      if (ec == asio::error::eof) {
+        LOG_INFO("Client::GetData: The server closed the connection");
+        Disconnect();
+        co_return;
 
-          requests.Push(Request{
-            .method = request.method,
-            .params = request.params,
-            ._zone = std::move(handle.zone()),
-            .promise = std::move(promise),
-          });
+      } else {
+        LOG_ERR("Client::GetData: Error - {}", ec.message());
+        continue;
+      }
+    }
 
-          std::thread([this, msgid = request.msgid, future = std::move(future)] mutable {
+    unpacker.buffer_consumed(length);
+
+    msgpack::object_handle handle;
+    while (unpacker.next(handle)) {
+      const auto& obj = handle.get();
+      if (obj.type != msgpack::type::ARRAY) {
+        LOG_ERR("Client::GetData: Not an array");
+        continue;
+      }
+
+      int type = obj.via.array.ptr[0].convert();
+      if (type == MessageType::Request) {
+        RequestIn request(obj.convert());
+
+        std::promise<RequestValue> promise;
+        auto future = promise.get_future();
+
+        requests.Push(Request{
+          .method = request.method,
+          .params = request.params,
+          ._zone = std::move(handle.zone()),
+          .promise = std::move(promise),
+        });
+
+        post(context,
+          [this, msgid = request.msgid, future = std::move(future)]() mutable {
             ResponseOut msg;
 
-            if (auto result = future.get()) {
+            if (auto result = future.get(); result.has_value()) {
               msg.msgid = msgid;
               msg.result = (*result).get();
             } else {
@@ -165,111 +196,84 @@ void Client::GetData() {
             msgpack::sbuffer buffer;
             msgpack::pack(buffer, msg);
             Write(std::move(buffer));
-          })
-          .detach();
-
-        } else if (type == MessageType::Response) {
-          ResponseIn response(obj.convert());
-
-          decltype(responses)::iterator it;
-          bool found;
-          {
-            std::scoped_lock lock(responsesMutex);
-            it = responses.find(response.msgid);
-            found = it != responses.end();
           }
-          if (found) {
+        );
+
+      } else if (type == MessageType::Response) {
+        ResponseIn response(obj.convert());
+        {
+          std::scoped_lock lock(responsesMutex);
+
+          if (auto it = responses.find(response.msgid); it != responses.end()) {
             auto& promise = it->second;
             if (response.error.is_nil()) {
               promise.set_value(
                 msgpack::object_handle(response.result, std::move(handle.zone()))
               );
-
             } else {
               promise.set_exception(std::make_exception_ptr(std::runtime_error(
                 "rpc::Client response error: " +
                 response.error.via.array.ptr[1].as<std::string>()
               )));
             }
-
-            {
-              std::scoped_lock lock(responsesMutex);
-              responses.erase(it);
-            }
+            responses.erase(it);
 
           } else {
             LOG_ERR("Client::GetData: Response not found for msgid: {}", response.msgid);
           }
-
-        } else if (type == MessageType::Notification) {
-          NotificationIn notification(obj.convert());
-          notifications.Push(Notification{
-            .method = notification.method,
-            .params = notification.params,
-            ._zone = std::move(handle.zone()),
-          });
-
-        } else {
-          LOG_WARN("Client::GetData: Unknown type: {}", type);
         }
-      }
 
-      if (unpacker.buffer_capacity() < readSize) {
-        // LOG("Reserving extra buffer: {}", readSize);
-        unpacker.reserve_buffer(readSize);
-      }
-      GetData();
+      } else if (type == MessageType::Notification) {
+        NotificationIn notification(obj.convert());
+        notifications.Push(Notification{
+          .method = notification.method,
+          .params = notification.params,
+          ._zone = std::move(handle.zone()),
+        });
 
-    } else if (ec == asio::error::eof) {
-      LOG_INFO("Client::GetData: The server closed the connection");
-      Disconnect();
-
-    } else {
-      if (IsConnected()) {
-        LOG_ERR("Client::GetData: {}", ec.message());
+      } else {
+        LOG_WARN("Client::GetData: Unknown type: {}", type);
       }
     }
-  };
 
-  if (clientType == ClientType::Stdio) {
-    readPipe->async_read_some(buffer, handler);
-  } else if (clientType == ClientType::Tcp) {
-    socket->async_read_some(buffer, handler);
+    if (unpacker.buffer_capacity() < readSize) {
+      unpacker.reserve_buffer(readSize);
+    }
   }
 }
 
 void Client::Write(msgpack::sbuffer&& buffer) {
   msgsOut.Push(std::move(buffer));
-  // ongoing write
-  if (msgsOut.Size() > 1) return;
-  DoWrite();
+
+  if (msgsOut.Size() == 1) {
+    co_spawn(context, [this]() -> asio::awaitable<void> {
+      co_await DoWrite();
+    }, asio::detached);
+  }
 }
 
-void Client::DoWrite() {
-  // send all messages before exiting
-  if (msgsOut.Empty()) return;
+asio::awaitable<void> Client::DoWrite() {
+  while (!msgsOut.Empty()) {
+    auto& msgBuffer = msgsOut.Front();
+    auto buffer = asio::buffer(msgBuffer.data(), msgBuffer.size());
 
-  auto& msgBuffer = msgsOut.Front();
+    boost::system::error_code ec;
 
-  auto buffer = asio::buffer(msgBuffer.data(), msgBuffer.size());
-  auto handler = [this](boost::system::error_code ec, size_t /* length */) {
-    if (!ec) {
-      if (msgsOut.Empty()) {
-        LOG_WARN("Client::DoWrite: msgsOut is empty");
-        return;
-      }
-      msgsOut.Pop();
-      DoWrite();
+    if (clientType == ClientType::Stdio) {
+      co_await writePipe->async_write_some(
+        buffer, asio::redirect_error(asio::use_awaitable, ec)
+      );
+    } else if (clientType == ClientType::Tcp) {
+      co_await socket->async_write_some(
+        buffer, asio::redirect_error(asio::use_awaitable, ec)
+      );
+    }
 
-    } else {
+    if (ec) {
       LOG_ERR("Client::DoWrite: {}", ec.message());
     }
-  };
 
-  if (clientType == ClientType::Stdio) {
-    writePipe->async_write_some(buffer, handler);
-  } else if (clientType == ClientType::Tcp) {
-    socket->async_write_some(buffer, handler);
+    msgsOut.Pop();
   }
 }
 
