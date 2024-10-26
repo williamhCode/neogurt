@@ -1,5 +1,6 @@
 #include "pen.hpp"
 #include "utils/logger.hpp"
+#include "utils/mdspan.hpp"
 #include "utils/variant.hpp"
 #include <algorithm>
 #include <cassert>
@@ -7,31 +8,16 @@
 
 namespace box {
 
-void Pen::Begin(double width, double height) {
-  xsize = width;
-  ysize = height;
-
+Pen::Pen(int width, int height, float dpiScale)
+    : xsize(width), ysize(height), dpiScale(dpiScale) {
   xhalf = xsize / 2;
   yhalf = ysize / 2;
 
   lightWidth = xsize * 0.11;
   heavyWidth = xsize * 0.22;
-
-  img.create(width, height, BL_FORMAT_PRGB32);
-  ctx.begin(img);
-  ctx.setFillStyle(BLRgba(1, 1, 1, 1));
-  ctx.setCompOp(BL_COMP_OP_PLUS);
-  ctx.clearAll();
 }
 
-BLImageData Pen::End() {
-  ctx.end();
-  BLImageData data;
-  img.getData(&data);
-  return data;
-}
-
-double Pen::ToWidth(Weight weight) {
+float Pen::ToWidth(Weight weight) {
   switch (weight) {
     case Light: return lightWidth;
     case Heavy: return heavyWidth;
@@ -40,11 +26,11 @@ double Pen::ToWidth(Weight weight) {
   }
 }
 
-void Pen::DrawRect(double left, double top, double width, double height) {
+void Pen::DrawRect(float left, float top, float width, float height) {
   ctx.fillRect(left, top, width, height);
 }
 
-void Pen::DrawHLine(double start, double end, Weight weight) {
+void Pen::DrawHLine(float start, float end, Weight weight) {
   assert(weight != None);
   if (weight == Double) {
     ctx.setStrokeWidth(lightWidth);
@@ -56,7 +42,7 @@ void Pen::DrawHLine(double start, double end, Weight weight) {
   }
 }
 
-void Pen::DrawVLine(double start, double end, Weight weight) {
+void Pen::DrawVLine(float start, float end, Weight weight) {
   assert(weight != None);
   if (weight == Double) {
     ctx.setStrokeWidth(lightWidth);
@@ -70,10 +56,10 @@ void Pen::DrawVLine(double start, double end, Weight weight) {
 
 void Pen::DrawCross(const Cross& desc) {
   // dimensions of center, draw this separate
-  double width = ToWidth(std::max(desc[Up], desc[Down]));
-  double height = ToWidth(std::max(desc[Left], desc[Right]));
-  double halfWidth = width / 2;
-  double halfHeight = height / 2;
+  float width = ToWidth(std::max(desc[Up], desc[Down]));
+  float height = ToWidth(std::max(desc[Left], desc[Right]));
+  float halfWidth = width / 2;
+  float halfHeight = height / 2;
 
   if (desc[Up] != None) {
     DrawVLine(0, yhalf - halfHeight, desc[Up]);
@@ -92,29 +78,29 @@ void Pen::DrawCross(const Cross& desc) {
 }
 
 void Pen::DrawHDash(const HDash& desc) {
-  double numDashes = desc.num;
+  float numDashes = desc.num;
   for (int x = 0; x < desc.num; x++) {
-    double start = (x + 0.15) / numDashes * xsize;
-    double end = (x + 0.85) / numDashes * xsize;
+    float start = (x + 0.15) / numDashes * xsize;
+    float end = (x + 0.85) / numDashes * xsize;
     DrawHLine(start, end, desc.weight);
   }
 }
 
 void Pen::DrawVDash(const VDash& desc) {
-  double numDashes = desc.num;
+  float numDashes = desc.num;
   for (int y = 0; y < desc.num; y++) {
-    double start = (y + 0.15) / numDashes * ysize;
-    double end = (y + 0.85) / numDashes * ysize;
+    float start = (y + 0.15) / numDashes * ysize;
+    float end = (y + 0.85) / numDashes * ysize;
     DrawVLine(start, end, desc.weight);
   }
 }
 
 void Pen::DrawDoubleCross(const DoubleCross& desc) {
   // dimensions of center cross section
-  double width = ToWidth(std::max(desc[Up], desc[Down]));
-  double height = ToWidth(std::max(desc[Left], desc[Right]));
-  double halfWidth = width / 2;
-  double halfHeight = height / 2;
+  float width = ToWidth(std::max(desc[Up], desc[Down]));
+  float height = ToWidth(std::max(desc[Left], desc[Right]));
+  float halfWidth = width / 2;
+  float halfHeight = height / 2;
 
   // draw lines until center
   if (desc[Up] != None) {
@@ -201,13 +187,13 @@ void Pen::DrawDoubleCross(const DoubleCross& desc) {
   }
 
   // fill up the cross sections
-  double gridLeft = xhalf - (1.5 * lightWidth);
-  double gridTop = yhalf - (1.5 * lightWidth);
+  float gridLeft = xhalf - (1.5 * lightWidth);
+  float gridTop = yhalf - (1.5 * lightWidth);
   for (int row = 0; row < 3; row++) {
     for (int col = 0; col < 3; col++) {
       if (grid[row][col] >= numSides) {
-        double left = gridLeft + (col * lightWidth);
-        double top = gridTop + (row * lightWidth);
+        float left = gridLeft + (col * lightWidth);
+        float top = gridTop + (row * lightWidth);
         DrawRect(left, top, lightWidth, lightWidth);
       }
     }
@@ -236,21 +222,45 @@ void Pen::DrawArc(const Arc& desc) {
       transform.rotate(M_PI, xhalf, yhalf);
       break;
   }
-  ctx.setTransform(transform);
+  ctx.applyTransform(transform);
 
   ctx.setStrokeWidth(lightWidth);
   if (xsize < ysize) {
-    double radius = xhalf;
-    double offset = yhalf - radius;
+    float radius = xhalf;
+    float offset = yhalf - radius;
     ctx.strokeLine(xhalf, 0, xhalf, offset);
     ctx.strokeArc(0, offset, radius, radius, 0, M_PI_2);
   } else {
-    double radius = yhalf;
-    double offset = xhalf - radius;
+    float radius = yhalf;
+    float offset = xhalf - radius;
     ctx.strokeLine(0, yhalf, offset, yhalf);
     ctx.strokeArc(offset, 0, radius, radius, 0, M_PI_2);
   }
+}
 
+void Pen::DrawDiagonal(const Diagonal& desc) {
+  float ratio = xsize / ysize;
+  float a = lightWidth;
+  float b = lightWidth * ratio;
+  float horiSize = std::sqrt(a * a + b * b) / 2;
+  if (desc.back) {
+    BLPoint poly[4] = {
+      {horiSize, 0},
+      {xsize + horiSize, ysize},
+      {xsize - horiSize, ysize},
+      {-horiSize, 0},
+    };
+    ctx.fillPolygon(poly, 4);
+  }
+  if (desc.forward) {
+    BLPoint poly[4] = {
+      {xsize + horiSize, 0},
+      {horiSize, ysize},
+      {-horiSize, ysize},
+      {xsize - horiSize, 0},
+    };
+    ctx.fillPolygon(poly, 4);
+  }
 }
 
 void Pen::DrawHalfLine(const HalfLine& desc) {
@@ -269,21 +279,45 @@ void Pen::DrawHalfLine(const HalfLine& desc) {
 }
 
 void Pen::DrawQuadrant(const Quadrant& desc) {
-  if (desc.upperLeft) {
+  if (desc.contains(UpLeft)) {
     DrawRect(0, 0, xhalf, yhalf);
   }
-  if (desc.upperRight) {
+  if (desc.contains(UpRight)) {
     DrawRect(xhalf, 0, xhalf, yhalf);
   }
-  if (desc.lowerLeft) {
+  if (desc.contains(DownLeft)) {
     DrawRect(0, yhalf, xhalf, yhalf);
   }
-  if (desc.lowerRight) {
+  if (desc.contains(DownRight)) {
     DrawRect(xhalf, yhalf, xhalf, yhalf);
   }
 }
 
-void Pen::Draw(const DrawDesc& desc) {
+Pen::ImageData Pen::Draw(const DrawDesc& desc) {
+  // init ---------------------------
+  int xoffset = 0;
+  int yoffset = 0;
+
+  // actual size of data
+  int dataWidth = xsize;
+  int dataHeight = ysize;
+
+  // diagonal needs extra space
+  if (std::holds_alternative<Diagonal>(desc)) {
+    xoffset += xhalf / 2;
+    dataWidth += xoffset * 2;
+  }
+
+  // begin -----------------------------
+  img.create(dataWidth, dataHeight, BL_FORMAT_PRGB32);
+  ctx.begin(img);
+  ctx.clearAll();
+
+  ctx.setFillStyle(BLRgba(1, 1, 1, 1));
+  ctx.setCompOp(BL_COMP_OP_PLUS);
+  ctx.translate(xoffset, yoffset);
+
+  // draw ------------------------------
   std::visit(overloaded{
     [this](const HLine& desc) { DrawHLine(0, xsize, desc.weight); },
     [this](const VLine& desc) { DrawVLine(0, ysize, desc.weight); },
@@ -292,6 +326,7 @@ void Pen::Draw(const DrawDesc& desc) {
     [this](const VDash& desc) { DrawVDash(desc); },
     [this](const DoubleCross& desc) { DrawDoubleCross(desc); },
     [this](const Arc& desc) { DrawArc(desc); },
+    [this](const Diagonal& desc) { DrawDiagonal(desc); },
     [this](const HalfLine& desc) { DrawHalfLine(desc); },
     [this](const UpperBlock& desc) { DrawRect(0, 0, xsize, desc.size * ysize); },
     [this](const LowerBlock& desc) { DrawRect(0, ysize - (desc.size * ysize), xsize, desc.size * ysize); },
@@ -299,6 +334,55 @@ void Pen::Draw(const DrawDesc& desc) {
     [this](const RightBlock& desc) { DrawRect(xsize - (desc.size * xsize), 0, desc.size * xsize, ysize); },
     [this](const Quadrant& desc) { DrawQuadrant(desc); }
   }, desc);
+
+  // end -------------------------------
+  ctx.end();
+  img.getData(&blData);
+
+  // create data ----------------------------
+  std::extents shape{dataHeight, dataWidth};
+  std::array strides{size_t(blData.stride / sizeof(uint32_t)), 1uz};
+  auto data = std::mdspan(
+    (uint32_t*)blData.pixelData, std::layout_stride::mapping{shape, strides}
+  );
+
+  // memory optimization
+  // find the bounds of data and create span within the bounds
+  // basically discards empty cells
+  size_t xmin = data.extent(1);
+  size_t ymin = data.extent(0);
+  size_t xmax = 0;
+  size_t ymax = 0;
+
+  for (size_t y = 0; y < data.extent(0); y++) {
+    for (size_t x = 0; x < data.extent(1); x++) {
+      if (data[y, x] != 0) {
+        xmin = std::min(xmin, x);
+        ymin = std::min(ymin, y);
+        xmax = std::max(xmax, x);
+        ymax = std::max(ymax, y);
+      }
+    }
+  }
+
+  // check empty image
+  if (xmin > xmax || ymin > ymax) {
+    return {};
+  }
+
+  size_t subWidth = xmax - xmin + 1;
+  size_t subHeight = ymax - ymin + 1;
+
+  // NOTE: use submdspan for c++26
+  auto subData = SubMdspan2d(data, {ymin, xmin}, {subHeight, subWidth});
+
+  return {
+    subData,
+    MakeRegion(
+      glm::vec2((int)xmin - xoffset, (int)ymin - yoffset) / dpiScale,
+      glm::vec2(subWidth, subHeight) / dpiScale
+    ),
+  };
 }
 
 }

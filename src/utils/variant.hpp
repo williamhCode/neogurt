@@ -25,8 +25,3 @@ template <typename VariantType, typename... Types>
 constexpr auto vIndicesSet() {
   return std::set<std::size_t>{vIndex<VariantType, Types>()...};
 }
-
-// template <typename T>
-// auto& vGet(auto& t) noexcept {
-//   return *std::get_if<T>(&t);
-// }

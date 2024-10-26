@@ -175,7 +175,8 @@ asio::awaitable<void> Client::GetData() {
         std::thread([this, msgid = request.msgid, future = std::move(future)] mutable {
           ResponseOut msg;
 
-          if (auto result = future.get()) {
+          auto result = future.get();
+          if (result) {
             msg.msgid = msgid;
             msg.result = (*result).get();
           } else {

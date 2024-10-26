@@ -149,8 +149,8 @@ void FontFamily::ChangeSize(float delta) {
     newFontSet.boldItalic = makeFontHandle(fontSet.boldItalic);
   }
   fonts = std::move(newFonts);
-  boxDrawing = BoxDrawing(DefaultFont().charSize, boxDrawing.dpiScale);
-  textureAtlas = TextureAtlas(DefaultFont().height, textureAtlas.dpiScale);
+  boxDrawing = BoxDrawing(DefaultFont().charSize, DefaultFont().dpiScale);
+  textureAtlas = TextureAtlas(DefaultFont().height, DefaultFont().dpiScale);
 }
 
 void FontFamily::ResetSize() {
@@ -174,8 +174,8 @@ void FontFamily::ResetSize() {
     newFontSet.boldItalic = makeFontHandle(fontSet.boldItalic);
   }
   fonts = std::move(newFonts);
-  boxDrawing = BoxDrawing(DefaultFont().charSize, boxDrawing.dpiScale);
-  textureAtlas = TextureAtlas(DefaultFont().height, textureAtlas.dpiScale);
+  boxDrawing = BoxDrawing(DefaultFont().charSize, DefaultFont().dpiScale);
+  textureAtlas = TextureAtlas(DefaultFont().height, DefaultFont().dpiScale);
 }
 
 const Font& FontFamily::DefaultFont() const {

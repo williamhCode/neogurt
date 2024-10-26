@@ -1,7 +1,10 @@
 #pragma once
-#include <mdspan>
+#include <array>
 #include <variant>
+#include <mdspan>
+#include <set>
 #include "blend2d.h"
+#include "utils/region.hpp"
 
 namespace box {
 
@@ -9,6 +12,7 @@ using BufType = std::mdspan<uint8_t, std::dextents<size_t, 2>>;
 
 enum Weight : uint8_t { None, Light, Heavy, Double };
 enum Side : uint8_t { Up, Down, Left, Right };
+enum QuadDir : uint8_t { UpLeft, UpRight, DownLeft, DownRight };
 
 struct HLine {
   Weight weight = Light;
@@ -18,6 +22,7 @@ struct VLine {
   Weight weight = Light;
 };
 
+// Up, Down, Left, Right
 struct Cross : std::array<Weight, 4> {};
 
 struct HDash {
@@ -30,11 +35,16 @@ struct VDash {
   Weight weight = Light;
 };
 
+// Up, Down, Left, Right
 struct DoubleCross : std::array<Weight, 4> {};
 
-enum ArcDir : uint8_t { UpLeft, UpRight, DownLeft, DownRight };
 struct Arc {
-  ArcDir dir;
+  QuadDir dir;
+};
+
+struct Diagonal {
+  bool forward = false;
+  bool back = false;
 };
 
 struct HalfLine {
@@ -45,26 +55,24 @@ struct HalfLine {
 };
 
 struct UpperBlock {
-  double size;
+  float size;
 };
 
 struct LowerBlock {
-  double size;
+  float size;
 };
 
 struct LeftBlock {
-  double size;
+  float size;
 };
 
 struct RightBlock {
-  double size;
+  float size;
 };
 
-struct Quadrant {
-  bool upperLeft = false;
-  bool upperRight = false;
-  bool lowerLeft = false;
-  bool lowerRight = false;
+struct Quadrant : std::set<QuadDir> {
+  Quadrant(std::initializer_list<QuadDir> dirs)
+    : std::set<QuadDir>(dirs) {}
 };
 
 using DrawDesc = std::variant<
@@ -75,6 +83,7 @@ using DrawDesc = std::variant<
   VDash,
   DoubleCross,
   Arc,
+  Diagonal,
   HalfLine,
   UpperBlock,
   LowerBlock,
@@ -83,35 +92,46 @@ using DrawDesc = std::variant<
   Quadrant>;
 
 struct Pen {
+private:
   BLImage img;
   BLContext ctx;
 
-  // BufType canvas;
-  double xsize;
-  double ysize;
-  double xhalf;
-  double yhalf;
+  float xsize;
+  float ysize;
+  float dpiScale;
+  float xhalf;
+  float yhalf;
 
-  double lightWidth;
-  double heavyWidth;
+  float lightWidth;
+  float heavyWidth;
 
-  void Begin(double width, double height);
-  BLImageData End();
-  double ToWidth(Weight weight);
+  // internal data after drawing
+  BLImageData blData;
 
-  void DrawRect(double left, double top, double width, double height);
+  float ToWidth(Weight weight);
+  void DrawRect(float left, float top, float width, float height);
+  void DrawHLine(float start, float end, Weight weight);
+  void DrawVLine(float start, float end, Weight weight);
 
-  void DrawHLine(double start, double end, Weight weight);
-  void DrawVLine(double start, double end, Weight weight);
   void DrawCross(const Cross& desc);
   void DrawHDash(const HDash& desc);
   void DrawVDash(const VDash& desc);
   void DrawDoubleCross(const DoubleCross& desc);
   void DrawArc(const Arc& desc);
+  void DrawDiagonal(const Diagonal& desc);
   void DrawHalfLine(const HalfLine& desc);
   void DrawQuadrant(const Quadrant& desc);
 
-  void Draw(const DrawDesc& desc);
+public:
+  using BufType = std::mdspan<uint32_t, std::dextents<size_t, 2>, std::layout_stride>;
+  struct ImageData {
+    BufType data;
+    Region localPoss;
+  };
+
+  Pen() = default;
+  Pen(int width, int height, float dpiScale);
+  ImageData Draw(const DrawDesc& desc);
 };
 
 }
