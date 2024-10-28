@@ -341,7 +341,7 @@ Pen::ImageData Pen::Draw(const DrawDesc& desc) {
 
   // create data ----------------------------
   std::extents shape{dataHeight, dataWidth};
-  std::array strides{size_t(blData.stride / sizeof(uint32_t)), 1uz};
+  std::array strides{blData.stride / sizeof(uint32_t), 1uz};
   auto data = std::mdspan(
     (uint32_t*)blData.pixelData, std::layout_stride::mapping{shape, strides}
   );

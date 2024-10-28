@@ -1,5 +1,6 @@
 #include "box_drawing.hpp"
 #include "utils/logger.hpp"
+#include "utils/timer.hpp"
 
 using namespace box;
 
@@ -230,7 +231,11 @@ BoxDrawing::GetGlyphInfo(char32_t charcode, TextureAtlas& textureAtlas) {
     return nullptr;
   }
 
+  // using namespace std::chrono;
+  // auto start = Time();
   auto [data, localPoss] = pen.Draw(boxCharIt->second);
+  // auto end = Time();
+  // totalTime += end - start;
 
   if (data.empty()) {
     LOG_ERR("BoxDrawing::GetGlyphInfo: empty data for charcode: 0x{:x}", (uint32_t)charcode);

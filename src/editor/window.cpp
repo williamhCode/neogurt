@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <utility>
+#include <ranges>
 
 using namespace wgpu;
 
@@ -70,10 +71,11 @@ void WinManager::Pos(const event::WinPos& e) {
     LOG_ERR("WinManager::Pos: grid {} not found", e.grid);
     return;
   }
-  auto [it, first] = windows.try_emplace(
+  auto [winIt, first] = windows.try_emplace(
     e.grid, Win{.id = e.grid, .grid = gridIt->second}
   );
-  auto& win = it->second;
+  auto& win = winIt->second;
+  if (first) windowsOrder.emplace_front(&win);
 
   win.startRow = e.startRow;
   win.startCol = e.startCol;
@@ -127,6 +129,7 @@ void WinManager::FloatPos(const event::WinFloatPos& e) {
     e.grid, Win{.id = e.grid, .grid = gridIt->second}
   );
   auto& win = winIt->second;
+  if (first) windowsOrder.emplace_front(&win);
 
   win.width = win.grid.width;
   win.height = win.grid.height;
@@ -164,6 +167,7 @@ void WinManager::FloatPos(const event::WinFloatPos& e) {
   win.startCol = std::max(win.startCol, 0);
 
   win.floatData = FloatData{
+    .anchorGrid = e.anchorGrid,
     .focusable = e.focusable,
     .zindex = e.zindex,
   };
@@ -194,8 +198,13 @@ void WinManager::Hide(const event::WinHide& e) {
 
 void WinManager::Close(const event::WinClose& e) {
   std::lock_guard lock(windowsMutex);
+  std::erase_if(windowsOrder, [id = e.grid](const Win* win) {
+    return win->id == id;
+  });
   auto removed = windows.erase(e.grid);
-  if (removed == 0) {
+  if (removed == 1) {
+
+  } else {
     // see editor/state.cpp GridDestroy
     // LOG_WARN("WinManager::Close: window {} not found - ignore due to nvim bug",
     // e.grid);
@@ -213,6 +222,7 @@ void WinManager::MsgSetPos(const event::MsgSetPos& e) {
     e.grid, Win{.id = e.grid, .grid = gridIt->second}
   );
   auto& win = winIt->second;
+  if (first) windowsOrder.emplace_front(&win);
 
   win.startRow = e.row;
   win.startCol = 0;
@@ -223,8 +233,8 @@ void WinManager::MsgSetPos(const event::MsgSetPos& e) {
   win.hidden = false;
 
   if (msgWinId != -1 && msgWinId != e.grid) {
-    Close({.grid = msgWinId});
     gridManager->Destroy({.grid = msgWinId});
+    Close({.grid = msgWinId});
   }
   msgWinId = e.grid;
 
@@ -292,20 +302,20 @@ MouseInfo WinManager::GetMouseInfo(glm::vec2 mousePos) const {
   int globalRow = mousePos.y / sizes.charSize.y;
   int globalCol = mousePos.x / sizes.charSize.x;
 
-  std::vector<std::pair<int, const Win*>> sortedWins;
-  for (const auto& [id, win] : windows) {
-    if (win.hidden || id == 1) continue;
-    sortedWins.emplace_back(id, &win);
+  std::vector<const Win*> sortedWins;
+  for (const auto* win : windowsOrder) {
+    if (win->hidden || win->id == 1) continue;
+    sortedWins.emplace_back(win);
   }
 
-  std::ranges::sort(sortedWins, [](const auto& a, const auto& b) {
-    return a.second->floatData.value_or(FloatData{.zindex = 0}).zindex >
-           b.second->floatData.value_or(FloatData{.zindex = 0}).zindex;
+  std::ranges::stable_sort(sortedWins, [](const auto& a, const auto& b) {
+    return a->floatData.value_or(FloatData{.zindex = -1}).zindex >
+           b->floatData.value_or(FloatData{.zindex = -1}).zindex;
   });
 
   int grid = 1; // default grid number
-  for (auto [id, win] : sortedWins) {
-    if (win->hidden || id == 1 || (win->floatData && !win->floatData->focusable)) {
+  for (const auto* win : sortedWins) {
+    if (win->hidden || win->id == 1 || (win->floatData && !win->floatData->focusable)) {
       continue;
     }
 
@@ -316,7 +326,7 @@ MouseInfo WinManager::GetMouseInfo(glm::vec2 mousePos) const {
 
     if (globalRow >= top && globalRow < bottom && globalCol >= left &&
         globalCol < right) {
-      grid = id;
+      grid = win->id;
       break;
     }
   }

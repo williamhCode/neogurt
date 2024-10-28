@@ -19,4 +19,6 @@ struct BoxDrawing {
 
   // returns nullptr if not implemented
   const GlyphInfo* GetGlyphInfo(char32_t charcode, TextureAtlas& textureAtlas);
+
+  // std::chrono::nanoseconds totalTime = std::chrono::nanoseconds(0);
 };

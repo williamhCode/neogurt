@@ -27,6 +27,7 @@
 #include <span>
 #include <vector>
 #include <atomic>
+#include <ranges>
 #include <iostream>
 #include <format>
 #include <chrono>
@@ -289,14 +290,14 @@ int main() {
 
           std::vector<const Win*> windows;
           std::vector<const Win*> floatWindows;
-          for (auto& [id, win] : editorState->winManager.windows) {
-            if (id == 1 || id == editorState->winManager.msgWinId || win.hidden) {
+          for (const auto* win : editorState->winManager.windowsOrder) {
+            if (win->id == 1 || win->id == editorState->winManager.msgWinId || win->hidden) {
               continue;
             }
-            if (win.IsFloating()) {
-              floatWindows.push_back(&win);
+            if (win->IsFloating()) {
+              floatWindows.push_back(win);
             } else {
-              windows.push_back(&win);
+              windows.push_back(win);
             }
           }
           if (auto winIt = editorState->winManager.windows.find(1);
@@ -305,7 +306,7 @@ int main() {
           }
 
           // sort floating windows by zindex
-          std::ranges::sort(floatWindows, [](const Win* win, const Win* other) {
+          std::ranges::stable_sort(floatWindows, [](const Win* win, const Win* other) {
             return win->floatData->zindex > other->floatData->zindex;
           });
 

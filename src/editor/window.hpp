@@ -9,10 +9,12 @@
 #include "app/size.hpp"
 
 #include "glm/ext/vector_float2.hpp"
-#include <map>
+#include <unordered_map>
 #include <optional>
+#include <deque>
 
 struct FloatData {
+  int anchorGrid;
   bool focusable;
   int zindex;
 };
@@ -62,9 +64,8 @@ struct WinManager {
   SizeHandler sizes;
   bool dirty; // true if window pos updated from scrolling
 
-  // not unordered because telescope float background overlaps text
-  // so have to render floats in order else text will be covered
-  std::map<int, Win> windows;
+  std::deque<Win*> windowsOrder;
+  std::unordered_map<int, Win> windows;
   int msgWinId = -1;
 
   // added to public functions called in main thread that reads (main thread doesn't write)
