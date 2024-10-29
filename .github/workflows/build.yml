@@ -55,8 +55,13 @@ jobs:
     - name: Generate package
       run: make package
 
+    - name: Prepare Artifacts
+      run: |
+        cd build/release
+        echo "ARTIFACT_NAME=$(ls Neogurt*.dmg)" >> $GITHUB_ENV
+
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: Neogurt-${{ matrix.os-name }}-${{ matrix.arch }}
-        path: build/release/*.dmg
+        name: ${{ env.ARTIFACT_NAME }}
+        path: build/release/${{ env.ARTIFACT_NAME }}
