@@ -43,7 +43,7 @@ WGPUContext::WGPUContext(SDL_Window* window, glm::uvec2 _size, PresentMode _pres
 void WGPUContext::Init() {
   adapter = utils::RequestAdapter(
     instance,
-    {
+    RequestAdapterOptions{
       .compatibleSurface = surface,
       .powerPreference = PowerPreference::Undefined,
     }
@@ -83,7 +83,7 @@ void WGPUContext::Init() {
     }
   );
 
-  device = utils::RequestDevice(adapter, &deviceDesc);
+  device = utils::RequestDevice(adapter, deviceDesc);
 
   queue = device.GetQueue();
 
