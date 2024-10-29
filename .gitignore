@@ -1,8 +1,6 @@
 build/
-.cache
+.cache/
+xcode/
 compile_commands.json
 .ignore
-xcode
-imgui.ini
 tint
-sessions.txt

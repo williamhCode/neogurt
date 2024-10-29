@@ -3,6 +3,7 @@
 #include "glm/ext/vector_float4.hpp"
 #include <optional>
 #include <unordered_map>
+#include <string>
 
 enum class UnderlineType : uint32_t {
   Underline,
@@ -22,6 +23,7 @@ struct Highlight {
   bool strikethrough;
   std::optional<UnderlineType> underline;
   float bgAlpha = 1; // 0 - 1
+  std::string url;
 };
 
 using HlTable = std::unordered_map<int, Highlight>;

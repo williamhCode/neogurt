@@ -278,6 +278,47 @@ void Pen::DrawHalfLine(const HalfLine& desc) {
   }
 }
 
+void Pen::DrawShade(const Shade& desc) {
+  int numHori = 5;
+  int numVert = (ysize / xsize) * numHori;
+  // round to nearest odd
+  numVert = numVert % 2 == 0 ? numVert + 1 : numVert;
+
+  float horiSize = xsize / numHori;
+  float vertSize = ysize / numVert;
+  float horiHalf = horiSize / 2;
+  float vertHalf = vertSize / 2;
+
+  switch (desc.type) {
+    case SLight: {
+      for (int y = 0; y < numVert; y++) {
+        for (int x = 0; x < numHori; x++) {
+          DrawRect(x * horiSize, y * vertSize, horiHalf, vertHalf);
+        }
+      }
+      break;
+    }
+    case SMedium: {
+      for (int y = 0; y < numVert * 2; y++) {
+        for (int x = 0; x < numHori; x++) {
+          float xPos = y % 2 == 0 ? x : x + 0.5;
+          DrawRect(xPos * horiSize, y * vertHalf, horiHalf, vertHalf);
+        }
+      }
+      break;
+    }
+    case SDark: {
+      for (int y = 0; y < numVert * 2; y++) {
+        for (int x = 0; x < numHori * 2; x++) {
+          if (y % 2 == 1 && x % 2 == 1) continue;
+          DrawRect(x * horiHalf, y * vertHalf, horiHalf, vertHalf);
+        }
+      }
+      break;
+    }
+  }
+}
+
 void Pen::DrawQuadrant(const Quadrant& desc) {
   if (desc.contains(UpLeft)) {
     DrawRect(0, 0, xhalf, yhalf);
@@ -328,6 +369,7 @@ Pen::ImageData Pen::Draw(const DrawDesc& desc) {
     [this](const Arc& desc) { DrawArc(desc); },
     [this](const Diagonal& desc) { DrawDiagonal(desc); },
     [this](const HalfLine& desc) { DrawHalfLine(desc); },
+    [this](const Shade& desc) { DrawShade(desc); },
     [this](const UpperBlock& desc) { DrawRect(0, 0, xsize, desc.size * ysize); },
     [this](const LowerBlock& desc) { DrawRect(0, ysize - (desc.size * ysize), xsize, desc.size * ysize); },
     [this](const LeftBlock& desc) { DrawRect(0, 0, desc.size * xsize, ysize); },

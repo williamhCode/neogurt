@@ -190,6 +190,12 @@ static auto boxChars = [] {
   c[0x258f] = LeftBlock{1/8.};
   c[0x2590] = RightBlock{1/2.};
 
+  // shade characters (0x2591 - 0x2593)
+  // ░ ▒ ▓
+  c[0x2591] = Shade{SLight};
+  c[0x2592] = Shade{SMedium};
+  c[0x2593] = Shade{SDark};
+
   // block elements (0x2594 - 0x2595)
   // ▔ ▕
   c[0x2594] = UpperBlock{1/8.};

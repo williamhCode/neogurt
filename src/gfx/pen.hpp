@@ -57,17 +57,19 @@ struct HalfLine {
 struct UpperBlock {
   float size;
 };
-
 struct LowerBlock {
   float size;
 };
-
 struct LeftBlock {
   float size;
 };
-
 struct RightBlock {
   float size;
+};
+
+enum ShadeType : uint8_t { SLight, SMedium, SDark };
+struct Shade {
+  ShadeType type;
 };
 
 struct Quadrant : std::set<QuadDir> {
@@ -89,6 +91,7 @@ using DrawDesc = std::variant<
   LowerBlock,
   LeftBlock,
   RightBlock,
+  Shade,
   Quadrant>;
 
 struct Pen {
@@ -120,6 +123,7 @@ private:
   void DrawArc(const Arc& desc);
   void DrawDiagonal(const Diagonal& desc);
   void DrawHalfLine(const HalfLine& desc);
+  void DrawShade(const Shade& desc);
   void DrawQuadrant(const Quadrant& desc);
 
 public:

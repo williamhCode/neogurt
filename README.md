@@ -22,5 +22,8 @@ git submodule update  # if submodules become out of sync
 ```sh
 make build-setup
 make build
-make run
+
+make run  # runs executable
+
+make package  # builds .dmg file in build/release
 ```
