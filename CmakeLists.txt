@@ -168,6 +168,7 @@ if (CMAKE_BUILD_TYPE MATCHES RelWithDebInfo)
     ")
 
     set(CPACK_GENERATOR DragNDrop)
+    set(CPACK_PACKAGE_FILE_NAME "Neogurt-${PROJECT_VERSION}-${CMAKE_HOST_SYSTEM_PROCESSOR}")
     include(CPack)
   endif()
 endif()
