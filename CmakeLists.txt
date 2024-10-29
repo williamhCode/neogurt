@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.5...3.28)
 project(
   Neogurt
   VERSION 0.1.0
+  DESCRIPTION "A Neovim GUI Smooth like Yogurt!"
   LANGUAGES C CXX
 )
 
@@ -15,63 +16,63 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)  # clangd
 
 # deps ---------------------------
-add_subdirectory(deps/webgpu_tools)
+add_subdirectory(deps/webgpu_tools EXCLUDE_FROM_ALL)
 
 set(MSGPACK_USE_STATIC_BOOST ON)
-add_subdirectory(deps/msgpack)
+add_subdirectory(deps/msgpack EXCLUDE_FROM_ALL)
 
-add_subdirectory(deps/freetype)
+add_subdirectory(deps/freetype EXCLUDE_FROM_ALL)
 
 set(UTFCPP_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/deps/utfcpp/source)
 
 # temp fix for https://github.com/blend2d/blend2d/issues/216
 set(BLEND2D_NO_JIT OFF)
-add_subdirectory(deps/blend2d)
+add_subdirectory(deps/blend2d EXCLUDE_FROM_ALL)
 
 # neogurt target -------------------------
 set(APP_SRC
-	src/main.cpp
+	main.cpp
 
-  src/app/sdl_window.cpp
-  src/app/sdl_event.cpp
-  src/app/input.cpp
-  src/app/size.cpp
-  src/app/window_funcs.mm
-  src/app/options.cpp
-  src/app/path.cpp
+  app/sdl_window.cpp
+  app/sdl_event.cpp
+  app/input.cpp
+  app/size.cpp
+  app/window_funcs.mm
+  app/options.cpp
+  app/path.cpp
 
-  src/editor/state.cpp
-  src/editor/cursor.cpp
-  src/editor/grid.cpp
-  src/editor/window.cpp
-  src/editor/highlight.cpp
-  src/editor/font.cpp
+  editor/state.cpp
+  editor/cursor.cpp
+  editor/grid.cpp
+  editor/window.cpp
+  editor/highlight.cpp
+  editor/font.cpp
 
-  src/gfx/context.cpp
-  src/gfx/pipeline.cpp
-  src/gfx/renderer.cpp
-  src/gfx/font.cpp
-  src/gfx/pen.cpp
-  src/gfx/box_drawing.cpp
-  src/gfx/camera.cpp
-  src/gfx/render_texture.cpp
-  src/gfx/texture_atlas.cpp
-  src/gfx/font/locator.mm
+  gfx/context.cpp
+  gfx/pipeline.cpp
+  gfx/renderer.cpp
+  gfx/font.cpp
+  gfx/pen.cpp
+  gfx/box_drawing.cpp
+  gfx/camera.cpp
+  gfx/render_texture.cpp
+  gfx/texture_atlas.cpp
+  gfx/font/locator.mm
 
-  src/nvim/nvim.cpp
-  src/nvim/msgpack_rpc/client.cpp
-  src/nvim/events/ui.cpp
-  src/nvim/events/user.cpp
+  nvim/nvim.cpp
+  nvim/msgpack_rpc/client.cpp
+  nvim/events/ui.cpp
+  nvim/events/user.cpp
 
-  # src/session/process.cpp
-  src/session/manager.cpp
+  session/manager.cpp
 
-  src/utils/unicode.cpp
-  src/utils/clock.cpp
-  src/utils/logger.cpp
-  src/utils/timer.cpp
-  src/utils/color.cpp
+  utils/unicode.cpp
+  utils/clock.cpp
+  utils/logger.cpp
+  utils/timer.cpp
+  utils/color.cpp
 )
+list(TRANSFORM APP_SRC PREPEND "src/")
 
 add_executable(neogurt ${APP_SRC})
 
@@ -112,9 +113,6 @@ else()
   #     -fsanitize=address
   #   )
   # endif()
-
-  # assert in release
-  # target_compile_options(neogurt PRIVATE -UNDEBUG)
 endif()
 
 # if no LLVM_PATH env var, then set LLVM_PATH to $(brew --prefix llvm)
@@ -144,3 +142,49 @@ endif()
 target_link_libraries(neogurt PRIVATE 
   "-L$ENV{LLVM_PATH}/lib/c++ -L$ENV{LLVM_PATH}/lib/unwind -lunwind"
 )
+
+# app generation
+if (CMAKE_BUILD_TYPE MATCHES RelWithDebInfo)
+  set(RESOURCE_DIR ${PROJECT_SOURCE_DIR}/res)
+  file(GLOB_RECURSE RESOURCE_FILES
+    "${RESOURCE_DIR}/shaders/*"
+    "${RESOURCE_DIR}/lua/*"
+  )
+  target_sources(neogurt PRIVATE
+    ${RESOURCE_FILES}
+  )
+
+  if (APPLE)
+    foreach (FILE ${RESOURCE_FILES})
+      file(RELATIVE_PATH FILE_REL_PATH "${RESOURCE_DIR}" ${FILE})
+      get_filename_component(FILE_REL_DIR ${FILE_REL_PATH} DIRECTORY)
+      set_source_files_properties(${FILE} PROPERTIES
+        MACOSX_PACKAGE_LOCATION "Resources/${FILE_REL_DIR}"
+      )
+    endforeach()
+
+    set_target_properties(neogurt PROPERTIES
+      MACOSX_BUNDLE TRUE
+      MACOSX_BUNDLE_INFO_PLIST "${RESOURCE_DIR}/Info.plist.in"
+    )
+
+    install(TARGETS neogurt
+      BUNDLE DESTINATION . COMPONENT Runtime
+    )
+
+    set(APPS "\${CMAKE_INSTALL_PREFIX}/Neogurt.app")
+    set(DIRS
+      ${CMAKE_BINARY_DIR}
+      $ENV{LLVM_PATH}/lib/c++
+      $ENV{LLVM_PATH}/lib/unwind
+    )
+
+    install(CODE "
+      include(BundleUtilities)
+      fixup_bundle(\"${APPS}\" \"\" \"${DIRS}\")
+    ")
+
+    set(CPACK_GENERATOR DragNDrop)
+    include(CPack)
+  endif()
+endif()

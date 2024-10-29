@@ -6,6 +6,9 @@ TYPE = release
 build:
 	cmake --build build/$(TYPE) --target neogurt
 	cp build/$(TYPE)/compile_commands.json .
+	if [ "$(TYPE)" = "release" ]; then \
+		cp build/release/neogurt.app/Contents/Macos/neogurt build/release; \
+	fi
 
 build-setup: build-setup-debug build-setup-release
 
@@ -39,10 +42,5 @@ xcode-setup:
 run:
 	build/$(TYPE)/neogurt
 
-gen-app:
-	mkdir -p gen/out/Neogurt.app
-	mkdir -p gen/out/Neogurt.app/Contents/{Resources,MacOS}
-	cp res/Info.plist gen/out/Neogurt.app/Contents
-	cp -r res/lua gen/out/Neogurt.app/Contents/Resources
-	cp -r res/shaders gen/out/Neogurt.app/Contents/Resources
-	cp build/release/neogurt gen/out/Neogurt.app/Contents/MacOS
+package:
+	cmake --build build/release --target package
