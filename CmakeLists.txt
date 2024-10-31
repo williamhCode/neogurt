@@ -4,7 +4,7 @@ set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum OS X deployment ver
 
 project(
   Neogurt
-  VERSION 0.1.0
+  VERSION 0.1.1
   DESCRIPTION "A Neovim GUI Smooth like Yogurt!"
   LANGUAGES C CXX
 )
@@ -159,7 +159,7 @@ if (CMAKE_BUILD_TYPE MATCHES RelWithDebInfo)
 
     set(APPS "\${CMAKE_INSTALL_PREFIX}/Neogurt.app")
     set(DIRS
-      ${CMAKE_BINARY_DIR}
+      ${CMAKE_BINARY_DIR}/_deps/dawn-src/lib  # libwebgpu_dawn.dylib
       $ENV{LLVM_PATH}/lib/c++
       $ENV{LLVM_PATH}/lib/unwind
     )
