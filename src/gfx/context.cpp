@@ -2,10 +2,11 @@
 #include "utils/logger.hpp"
 #include "webgpu_tools/utils/webgpu.hpp"
 #include "webgpu_tools/utils/sdl3webgpu.h"
+#include "dawn/webgpu_cpp_print.h"
 #include <iostream>
 
-#define MAGIC_ENUM_RANGE_MAX 1000
-#include "magic_enum.hpp"
+// #define MAGIC_ENUM_RANGE_MAX 1000
+// #include "magic_enum.hpp"
 
 using namespace wgpu;
 
@@ -79,7 +80,17 @@ void WGPUContext::Init() {
 
   deviceDesc.SetUncapturedErrorCallback(
     [](const Device& device, ErrorType type, const char* message) {
-      LOG_ERR("Device error: {} ({})", magic_enum::enum_name(type), message);
+      std::ostringstream() << type;
+      LOG_ERR("Device error: {} ({})", ToString(type), message);
+    }
+  );
+
+  deviceDesc.SetDeviceLostCallback(
+    CallbackMode::AllowSpontaneous,
+    [](const Device& device, DeviceLostReason reason, const char* message) {
+      if (reason != DeviceLostReason::Destroyed) {
+        LOG_ERR("Device lost: {} ({})", ToString(reason), message);
+      }
     }
   );
 

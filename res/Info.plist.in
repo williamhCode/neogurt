@@ -28,6 +28,10 @@
   <key>NSHumanReadableCopyright</key>
   <string>Copyright (c) Neogurt Contributors 2024. All rights reserved.</string>
 
+  <!-- OS Version -->
+  <key>LSMinimumSystemVersion</key>
+  <string>11.0</string>
+
   <!-- Localization -->
   <key>CFBundleDevelopmentRegion</key>
   <string>English</string>

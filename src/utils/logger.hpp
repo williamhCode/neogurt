@@ -23,10 +23,9 @@ struct Logger {
   void LogErr(const std::string& message);
 };
 
-std::string ToString(const msgpack::object& obj);
-
 inline Logger logger;
 
+// helpers
 #include <format>
 #define LOG(...) logger.Log(std::format(__VA_ARGS__))
 #define LOG_ENABLE() logger.enabled = true
@@ -34,3 +33,8 @@ inline Logger logger;
 #define LOG_INFO(...) logger.LogInfo(std::format(__VA_ARGS__))
 #define LOG_WARN(...) logger.LogWarn(std::format(__VA_ARGS__))
 #define LOG_ERR(...) logger.LogErr(std::format(__VA_ARGS__))
+
+#include <sstream>
+inline std::string ToString(auto&& obj) {
+  return (std::ostringstream() << obj).str();
+}

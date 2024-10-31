@@ -31,10 +31,3 @@ void Logger::LogErr(const std::string& message) {
   std::unique_lock lock(mutex);
   std::cerr << "ERROR: " << message << '\n';
 }
-
-#include "msgpack/object.hpp"
-#include <sstream>
-
-std::string ToString(const msgpack::object& obj) {
-  return (std::ostringstream() << obj).str();
-}
