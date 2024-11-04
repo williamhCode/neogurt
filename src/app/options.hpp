@@ -12,6 +12,8 @@ struct Options {
     int blur = 0;
   } window;
 
+  bool multigrid = true;
+
   struct Margins {
     int top = 0;
     int bottom = 0;
@@ -20,7 +22,6 @@ struct Options {
   } margins;
   static inline float titlebarHeight = 0;
 
-  bool multigrid = true;
   bool macOptIsMeta = true;
   float cursorIdleTime = 10;
   float scrollSpeed = 1;

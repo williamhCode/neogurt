@@ -52,7 +52,7 @@ std::future<Options> LoadOptions(Nvim& nvim) {
     LOAD(margins.left),
     LOAD(margins.right),
 
-    LOAD(multigrid),
+    // LOAD(multigrid),
     LOAD(macOptIsMeta),
     LOAD(cursorIdleTime),
     LOAD(scrollSpeed),

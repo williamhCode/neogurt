@@ -10,6 +10,10 @@ static auto SplitStr(std::string_view str, char delim) {
          std::views::transform([](auto&& r) { return std::string_view(r); });
 }
 
+FontFamily FontFamily::Default(float linespace, float dpiScale) {
+  return FromGuifont("SF Mono:h15", linespace, dpiScale).value();
+}
+
 std::expected<FontFamily, std::string>
 FontFamily::FromGuifont(std::string guifont, float linespace, float dpiScale) {
   if (guifont.empty()) {

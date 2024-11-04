@@ -27,9 +27,9 @@ struct FontFamily {
   float defaultHeight;
   float defaultWidth;
 
+  static FontFamily Default(float linespace, float dpiScale);
   static std::expected<FontFamily, std::string>
   FromGuifont(std::string guifont, float linespace, float dpiScale);
-  // static FontFamily Default(float dpiScale);
 
   void ChangeDpiScale(float dpiScale);
   void ChangeSize(float delta);

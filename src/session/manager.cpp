@@ -51,6 +51,7 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
 
   bool timeout = false;
   auto optionsFut = LoadOptions(nvim);
+  // TODO: make this non-blocking
   if (optionsFut.wait_for(1s) == std::future_status::ready) {
     options = optionsFut.get();
   } else {
@@ -60,15 +61,25 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
 
   std::string guifont;
   if (!timeout) {
-    guifont = nvim.GetOptionValue("guifont", {}).get()->as<std::string>();
+    try {
+      guifont = nvim.GetOptionValue("guifont", {}).get()->as<std::string>();
+    } catch (const msgpack::type_error& e) {
+      // NOTE: neovim should cover this but just in case
+      LOG_WARN("Failed to load guifont option: {}", e.what());
+    }
   } else {
     LOG_WARN("Failed to load guifont option (timeout)");
-    guifont = "SF Mono";
   }
 
   int linespace;
   if (!timeout) {
-    linespace = nvim.GetOptionValue("linespace", {}).get()->convert();
+    try {
+      linespace = nvim.GetOptionValue("linespace", {}).get()->convert();
+    } catch (const msgpack::type_error& e) {
+      // NOTE: neovim should cover this but just in case
+      LOG_WARN("Failed to load linespace option: {}", e.what());
+      linespace = 0;
+    }
   } else {
     LOG_WARN("Failed to load linespace option (timeout)");
     linespace = 0;
@@ -84,11 +95,14 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
     options.margins.top += Options::titlebarHeight;
   }
 
-  auto fontFamilyResult = FontFamily::FromGuifont(guifont, linespace, window.dpiScale);
-  if (!fontFamilyResult) {
-    throw std::runtime_error("Invalid guifont: " + fontFamilyResult.error());
-  }
-  editorState.fontFamily = std::move(*fontFamilyResult);
+  editorState.fontFamily =
+    FontFamily::FromGuifont(guifont, linespace, window.dpiScale)
+      .or_else([&](const std::string& error) -> std::expected<FontFamily, std::string> {
+        LOG_WARN("Failed to load font family: {}", error);
+        LOG_WARN("Using default font family");
+        return FontFamily::Default(linespace, window.dpiScale);
+      })
+      .value();
 
   sizes.UpdateSizes(
     window.size, window.dpiScale, editorState.fontFamily.DefaultFont().charSize,
