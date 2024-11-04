@@ -1,5 +1,7 @@
 #pragma once
 
+#include "app/size.hpp"
+#include "editor/window.hpp"
 #include "utils/region.hpp"
 #include "gfx/render_texture.hpp"
 #include "webgpu/webgpu_cpp.h"
@@ -33,7 +35,7 @@ struct CursorMode {
   }
 };
 
-enum class BlinkState { Wait, On, Off };
+enum class BlinkState : uint8_t { Wait, On, Off };
 
 struct Cursor {
   glm::vec2 size;
@@ -42,6 +44,8 @@ struct Cursor {
   int grid;
   int row;
   int col;
+
+  glm::vec2 prevScrollOffset;
 
   glm::vec2 startPos;
   glm::vec2 destPos;
@@ -67,8 +71,11 @@ struct Cursor {
 
   void Resize(glm::vec2 size, float dpi);
   void Goto(const event::GridCursorGoto& e);
-  bool SetDestPos(glm::vec2 destPos);
   void SetMode(CursorMode* modeInfo);
+
+  // returns true if destPos changes
+  bool SetDestPos(const Win* currWin, const SizeHandler& sizes);
   void Update(float dt);
+
   bool ShouldRender();
 };

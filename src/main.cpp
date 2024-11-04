@@ -215,37 +215,11 @@ int main() {
         // update --------------------------------------------
         editorState->winManager.UpdateScrolling(dt);
 
-        auto& cursor = editorState->cursor;
-        const auto* currWin = editorState->winManager.GetWin(cursor.grid);
-        if (currWin) {
-          auto cursorPos = glm::vec2{cursor.col, cursor.row} * sizes.charSize;
-
-          const auto& winTex = currWin->sRenderTexture;
-          auto scrollOffset = winTex.scrolling
-                                ? glm::vec2(0, (winTex.scrollDist - winTex.scrollCurr))
-                                : glm::vec2(0);
-
-          auto minPos = glm::vec2{0, currWin->margins.top} * sizes.charSize;
-          auto maxPos =
-            glm::vec2{
-              currWin->grid.width,
-              currWin->grid.height - currWin->margins.bottom - 1,
-            } *
-            sizes.charSize;
-
-          cursorPos = cursorPos + scrollOffset;
-          cursorPos = glm::max(cursorPos, minPos);
-          cursorPos = glm::min(cursorPos, maxPos);
-
-          auto winOffset =
-            glm::vec2{currWin->startCol, currWin->startRow} * sizes.charSize;
-
-          cursorPos = cursorPos + winOffset + sizes.offset;
-
-          if (cursor.SetDestPos(cursorPos)) {
-            SDL_Rect rect(cursorPos.x, cursorPos.y, sizes.charSize.x, sizes.charSize.y);
-            SDL_SetTextInputArea(window.Get(), &rect, 0);
-          }
+        const auto* currWin = editorState->winManager.GetWin(editorState->cursor.grid);
+        if (editorState->cursor.SetDestPos(currWin, sizes)) {
+          const auto& cursorPos = editorState->cursor.destPos;
+          SDL_Rect rect(cursorPos.x, cursorPos.y, sizes.charSize.x, sizes.charSize.y);
+          SDL_SetTextInputArea(window.Get(), &rect, 0);
         }
         editorState->cursor.Update(dt);
 
@@ -278,7 +252,7 @@ int main() {
           }
         }
 
-        if (editorState->cursor.dirty && currWin != nullptr) {
+        if (currWin != nullptr && editorState->cursor.dirty) {
           renderer.RenderCursorMask(
             *currWin, editorState->cursor, editorState->fontFamily, editorState->hlTable
           );

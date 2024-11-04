@@ -33,23 +33,6 @@ void Cursor::Goto(const event::GridCursorGoto& e) {
   col = e.col;
 }
 
-bool Cursor::SetDestPos(glm::vec2 _destPos) {
-  if (_destPos == destPos) return false;
-
-  destPos = _destPos;
-  startPos = pos;
-  jumpElasped = 0.0;
-
-  if (blink) {
-    blinkState = BlinkState::Wait;
-    blinkElasped = 0.0;
-  }
-
-  ctx.queue.WriteBuffer(maskPosBuffer, 0, &destPos, sizeof(glm::vec2));
-
-  return true;
-}
-
 void Cursor::SetMode(CursorMode* _modeInfo) {
   cursorMode = _modeInfo;
 
@@ -77,6 +60,53 @@ void Cursor::SetMode(CursorMode* _modeInfo) {
     blinkElasped = 0.0;
   }
   blink = cursorMode->blinkwait != 0 && cursorMode->blinkon != 0 && cursorMode->blinkoff != 0;
+}
+
+bool Cursor::SetDestPos(const Win* currWin, const SizeHandler& sizes) {
+  if (currWin == nullptr) return false;
+
+  const auto& winTex = currWin->sRenderTexture;
+  auto scrollOffset = winTex.scrolling
+                        ? glm::vec2(0, (winTex.scrollDist - winTex.scrollCurr))
+                        : glm::vec2(0);
+
+  if (blink && (dirty || scrollOffset != prevScrollOffset)) {
+    // reset blink state if
+    // - move to new window or row/col
+    // - scrolling
+    blinkState = BlinkState::Wait;
+    blinkElasped = 0.0;
+    prevScrollOffset = scrollOffset;
+  }
+
+  // set relative to window top-left
+  auto cursorPos = glm::vec2(col, row) * sizes.charSize + scrollOffset;
+
+  // clamp to window margins
+  auto minPos = glm::vec2(0, currWin->margins.top) * sizes.charSize;
+  auto maxPos =
+    glm::vec2{
+      currWin->grid.width,
+      currWin->grid.height - currWin->margins.bottom - 1,
+    } *
+    sizes.charSize;
+  cursorPos = glm::max(cursorPos, minPos);
+  cursorPos = glm::min(cursorPos, maxPos);
+
+  auto winOffset = glm::vec2(currWin->startCol, currWin->startRow) * sizes.charSize;
+
+  // set to global position
+  cursorPos += winOffset + sizes.offset;
+
+  if (cursorPos == destPos) return false;
+  destPos = cursorPos;
+
+  startPos = pos;
+  jumpElasped = 0.0;
+
+  ctx.queue.WriteBuffer(maskPosBuffer, 0, &destPos, sizeof(glm::vec2));
+
+  return true;
 }
 
 void Cursor::Update(float dt) {

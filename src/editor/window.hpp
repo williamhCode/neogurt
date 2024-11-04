@@ -89,8 +89,6 @@ public:
   bool ViewportMargins(const event::WinViewportMargins& e);
   void Extmark(const event::WinExtmark& e);
 
-  Grid* GetGrid(int id);
-
   MouseInfo GetMouseInfo(glm::vec2 mousePos) const;
   MouseInfo GetMouseInfo(int grid, glm::vec2 mousePos) const;
 
