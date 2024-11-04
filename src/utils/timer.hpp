@@ -16,14 +16,14 @@ struct Timer {
   std::chrono::nanoseconds GetAverageDuration();
 };
 
-inline auto Time() {
+inline auto TimeNow() {
   return std::chrono::steady_clock::now();
 }
 
 inline auto TimeToUs(std::chrono::nanoseconds time) {
-  return std::chrono::duration_cast<std::chrono::milliseconds>(time);
+  return std::chrono::duration<double, std::micro>(time);
 }
 
 inline auto TimeToMs(std::chrono::nanoseconds time) {
-  return std::chrono::duration_cast<std::chrono::milliseconds>(time);
+  return std::chrono::duration<double, std::milli>(time);
 }

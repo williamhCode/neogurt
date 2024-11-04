@@ -83,7 +83,7 @@ struct TimestampHelper {
 
     timer.RegisterTime(diff);
     auto avgTime = timer.GetAverageDuration();
-    auto avgTimeMilli = duration<double, std::milli>(avgTime);
-    LOG_INFO("Timestamp: {} ms", avgTimeMilli.count());
+    auto avgTimeMilli = TimeToMs(avgTime);
+    LOG_INFO("Timestamp: {} ms", avgTimeMilli);
   }
 };

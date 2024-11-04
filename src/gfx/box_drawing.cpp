@@ -238,9 +238,9 @@ BoxDrawing::GetGlyphInfo(char32_t charcode, TextureAtlas& textureAtlas) {
   }
 
   // using namespace std::chrono;
-  // auto start = Time();
+  // auto start = TimeNow();
   auto [data, localPoss] = pen.Draw(boxCharIt->second);
-  // auto end = Time();
+  // auto end = TimeNow();
   // totalTime += end - start;
 
   if (data.empty()) {

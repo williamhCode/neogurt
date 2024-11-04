@@ -60,8 +60,6 @@ std::future<void> Nvim::Setup() {
 
   // get so exceptions get thrown
   co_await GetAll(
-    SetVar("neogurt", true),
-    Command("runtime! ginit.vim"),
     SetClientInfo(
       "neogurt",
       {
@@ -72,7 +70,8 @@ std::future<void> Nvim::Setup() {
       "ui", {}, {}
     ),
     Command("set runtimepath+=" + resourcesDir),
-    ExecLua(buffer.str(), {})
+    ExecLua(buffer.str(), {}),
+    Command("runtime! ginit.{vim,lua}")
   );
 }
 

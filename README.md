@@ -218,9 +218,18 @@ git submodule update  # if submodules become out of sync
 ```
 
 - Install the latest version of LLVM Clang
-- Make sure Boost is installed and its headers are locatable
-- All other depedencies are bundled
-- Edit Makefile to switch between debug and release mode
+- Install Boost
+- Change $(TYPE) for debug/release (see makefile)
+- Default generator is ninja
+
+Example on macOS:
+```sh
+brew install llvm
+brew install boost
+brew install ninja
+```
+
+Building:
 ```sh
 make build-setup
 make build

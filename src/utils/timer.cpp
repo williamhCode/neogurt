@@ -6,11 +6,11 @@ Timer::Timer(size_t _bufferSize) : bufferSize(_bufferSize) {
 }
 
 void Timer::Start() {
-  start = Time();
+  start = TimeNow();
 }
 
 void Timer::End() {
-  auto end = Time();
+  auto end = TimeNow();
   durations.push_back(end - start);
   if (durations.size() > bufferSize) durations.pop_front();
 }

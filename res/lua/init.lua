@@ -1,6 +1,10 @@
 -- vim.api.nvim_command("autocmd VimEnter * call rpcrequest(1, 'vimenter')")
 -- vim.api.nvim_command("autocmd UIEnter * call rpcrequest(1, 'uienter')")
 
+vim.g.neogurt = true
+vim.g.neogurt_opts = {}
+vim.g.neogurt_startup = function() end
+
 local utils = require("utils")
 
 -- if value is a type name, the option is required
@@ -133,5 +137,3 @@ vim.g.neogurt_cmd = function(cmd, opts)
     return vim.rpcrequest(chan_id, "neogurt_cmd", cmd, opts)
   end
 end
-
-vim.g.neogurt_startup = function() end
