@@ -37,9 +37,11 @@ struct Renderer {
 
   Ortho2D camera;
 
+  SizeHandler sizes;
+  bool resize = false;
+
   int frameIndex = 1;
   std::array<RenderTexture, 2> finalRenderTextures;
-  bool resized = false;
   auto& CurrFinalRenderTexture() {
     return finalRenderTextures[frameIndex];
   }

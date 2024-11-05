@@ -125,13 +125,15 @@ Renderer::Renderer(const SizeHandler& sizes) {
   });
 }
 
-void Renderer::Resize(const SizeHandler& sizes) {
+void Renderer::Resize(const SizeHandler& _sizes) {
+  sizes = _sizes;
+
   camera.Resize(sizes.size);
 
   OtherFinalRenderTexture() =
     RenderTexture(sizes.uiSize, sizes.dpiScale, TextureFormat::RGBA8UnormSrgb);
   OtherFinalRenderTexture().UpdatePos(sizes.offset);
-  resized = true;
+  resize = true;
 
   auto stencilTextureView =
     utils::CreateRenderTexture(ctx.device, {sizes.uiFbSize, TextureFormat::Stencil8})
@@ -480,10 +482,12 @@ void Renderer::RenderWindows(
 ) {
   // increment
   frameIndex = (frameIndex + 1) % 2;
-  if (resized) {
+  if (resize) {
     // resize other texture, since we're using the current one now
-    OtherFinalRenderTexture() = CurrFinalRenderTexture();
-    resized = false;
+    OtherFinalRenderTexture() =
+      RenderTexture(sizes.uiSize, sizes.dpiScale, TextureFormat::RGBA8UnormSrgb);
+    OtherFinalRenderTexture().UpdatePos(sizes.offset);
+    resize = false;
   }
 
   windowsRPD.cColorAttachments[0].view = CurrFinalRenderTexture().textureView;
