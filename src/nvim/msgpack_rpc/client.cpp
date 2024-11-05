@@ -57,7 +57,8 @@ bool Client::ConnectStdio(const std::string& command, const std::string& dir) {
 
   co_spawn(context, GetData(), asio::detached);
 
-  contextThr = std::jthread([this]() { context.run(); });
+  contextThreads.emplace_back([this]() { context.run(); });
+  contextThreads.emplace_back([this]() { context.run(); });
 
   return true;
 }
@@ -80,7 +81,8 @@ bool Client::ConnectTcp(std::string_view host, uint16_t port) {
 
   co_spawn(context, GetData(), asio::detached);
 
-  contextThr = std::jthread([this]() { context.run(); });
+  contextThreads.emplace_back([this]() { context.run(); });
+  contextThreads.emplace_back([this]() { context.run(); });
 
   return true;
 }

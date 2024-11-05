@@ -72,7 +72,7 @@ private:
   // tcp
   std::unique_ptr<asio::ip::tcp::socket> socket;
 
-  std::jthread contextThr;
+  std::vector<std::jthread> contextThreads;
   std::atomic_bool exit;
 
   std::unordered_map<u_int32_t, std::promise<msgpack::object_handle>> responses;
@@ -95,8 +95,7 @@ public:
   void Disconnect();
   bool IsConnected();
 
-  msgpack::object_handle Call(std::string_view method, auto... args);
-  std::future<msgpack::object_handle> AsyncCall(std::string_view func_name, auto... args);
+  std::future<msgpack::object_handle> Call(std::string_view func_name, auto... args);
   void Send(std::string_view func_name, auto... args);
 
   Request PopRequest();
@@ -117,13 +116,8 @@ private:
   asio::awaitable<void> DoWrite();
 };
 
-msgpack::object_handle Client::Call(std::string_view method, auto... args) {
-  auto future = AsyncCall(method, args...);
-  return future.get();
-}
-
 std::future<msgpack::object_handle>
-Client::AsyncCall(std::string_view func_name, auto... args) {
+Client::Call(std::string_view func_name, auto... args) {
   if (!IsConnected()) return {};
 
   RequestOut msg{

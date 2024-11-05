@@ -9,7 +9,7 @@
 
 using namespace std::chrono_literals;
 
-std::future<bool> Nvim::ConnectStdio(const std::string& dir) {
+bool Nvim::ConnectStdio(const std::string& dir) {
   client = std::make_unique<rpc::Client>();
 
   // std::string luaInitPath = ROOT_DIR "/lua/init.lua";
@@ -17,14 +17,7 @@ std::future<bool> Nvim::ConnectStdio(const std::string& dir) {
   //                 "--cmd \"set runtimepath+=" ROOT_DIR "\" "
   //                 "--cmd \"luafile " + luaInitPath + "\"";
   std::string cmd = "nvim --embed";
-
-  if (!client->ConnectStdio(cmd, dir)) {
-    co_return false;
-  }
-
-  co_await Setup();
-
-  co_return true;
+  return client->ConnectStdio(cmd, dir);
 }
 
 std::future<bool> Nvim::ConnectTcp(std::string_view host, uint16_t port) {
@@ -42,7 +35,7 @@ std::future<bool> Nvim::ConnectTcp(std::string_view host, uint16_t port) {
 
   if (!client->IsConnected()) co_return false;
 
-  co_await Setup();
+  // co_await Setup();
 
   // auto result = client->Call("nvim_get_api_info");
   // channelId = result->via.array.ptr[0].convert();
@@ -50,16 +43,16 @@ std::future<bool> Nvim::ConnectTcp(std::string_view host, uint16_t port) {
   co_return true;
 }
 
-std::future<void> Nvim::Setup() {
+void Nvim::Setup() {
   std::stringstream buffer;
-  co_await std::async(std::launch::async, [&buffer] {
-    std::string luaInitPath = resourcesDir + "/lua/init.lua";
-    std::ifstream stream(luaInitPath);
-    buffer << stream.rdbuf();
-  });
+  std::string luaInitPath = resourcesDir + "/lua/init.lua";
+  std::ifstream stream(luaInitPath);
+  buffer << stream.rdbuf();
 
-  // get so exceptions get thrown
-  co_await GetAll(
+  GetAll(
+    Command("set runtimepath+=" + resourcesDir),
+    ExecLua(buffer.str(), {}),
+    Command("runtime! ginit.{vim,lua}"),
     SetClientInfo(
       "neogurt",
       {
@@ -68,11 +61,17 @@ std::future<void> Nvim::Setup() {
         {"patch", 0},
       },
       "ui", {}, {}
-    ),
-    Command("set runtimepath+=" + resourcesDir),
-    ExecLua(buffer.str(), {}),
-    Command("runtime! ginit.{vim,lua}")
-  );
+    )
+  ).get();
+
+  UiAttach(
+    100, 50,
+    {
+      {"rgb", true},
+      {"ext_multigrid", true},
+      {"ext_linegrid", true},
+    }
+  ).get();
 }
 
 bool Nvim::IsConnected() {
@@ -86,23 +85,23 @@ Nvim::Response Nvim::SetClientInfo(
   MapRef methods,
   MapRef attributes
 ) {
-  return client->AsyncCall("nvim_set_client_info", name, version, type, methods, attributes);
+  return client->Call("nvim_set_client_info", name, version, type, methods, attributes);
 }
 
 Nvim::Response Nvim::UiAttach(int width, int height, MapRef options) {
-  return client->AsyncCall("nvim_ui_attach", width, height, options);
+  return client->Call("nvim_ui_attach", width, height, options);
 }
 
 Nvim::Response Nvim::UiDetach() {
-  return client->AsyncCall("nvim_ui_detach");
+  return client->Call("nvim_ui_detach");
 }
 
 Nvim::Response Nvim::UiTryResize(int width, int height) {
-  return client->AsyncCall("nvim_ui_try_resize", width, height);
+  return client->Call("nvim_ui_try_resize", width, height);
 }
 
 Nvim::Response Nvim::Input(std::string_view input) {
-  return client->AsyncCall("nvim_input", input);
+  return client->Call("nvim_input", input);
 }
 
 Nvim::Response Nvim::InputMouse(
@@ -113,29 +112,29 @@ Nvim::Response Nvim::InputMouse(
   int row,
   int col
 ) {
-  return client->AsyncCall("nvim_input_mouse", button, action, modifier, grid, row, col);
+  return client->Call("nvim_input_mouse", button, action, modifier, grid, row, col);
 }
 
 Nvim::Response Nvim::ListUis() {
-  return client->AsyncCall("nvim_list_uis");
+  return client->Call("nvim_list_uis");
 }
 
 Nvim::Response Nvim::GetOptionValue(std::string_view name, MapRef opts) {
-  return client->AsyncCall("nvim_get_option_value", name, opts);
+  return client->Call("nvim_get_option_value", name, opts);
 }
 
 Nvim::Response Nvim::SetVar(std::string_view name, VariantRef value) {
-  return client->AsyncCall("nvim_set_var", name, value);
+  return client->Call("nvim_set_var", name, value);
 }
 
 Nvim::Response Nvim::GetVar(std::string_view name) {
-  return client->AsyncCall("nvim_get_var", name);
+  return client->Call("nvim_get_var", name);
 }
 
 Nvim::Response Nvim::ExecLua(std::string_view code, VectorRef args) {
-  return client->AsyncCall("nvim_exec_lua", code, args);
+  return client->Call("nvim_exec_lua", code, args);
 }
 
 Nvim::Response Nvim::Command(std::string_view command) {
-  return client->AsyncCall("nvim_command", command);
+  return client->Call("nvim_command", command);
 }

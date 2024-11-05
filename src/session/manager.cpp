@@ -36,21 +36,16 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
   auto& nvim = session.nvim;
   auto& editorState = session.editorState;
 
-  if (!nvim.ConnectStdio(opts.dir).get()) {
+  if (!nvim.ConnectStdio(opts.dir)) {
     throw std::runtime_error("Failed to connect to nvim");
   }
+  nvim.Setup();
 
-  nvim.UiAttach(
-    100, 50,
-    {
-      {"rgb", true},
-      {"ext_multigrid", true},
-      {"ext_linegrid", true},
-    }
-  ).get();
+  auto optionsFut = LoadOptions(nvim);
+  auto guifontFut = nvim.GetOptionValue("guifont", {});
+  auto linespaceFut = nvim.GetOptionValue("linespace", {});
 
   bool timeout = false;
-  auto optionsFut = LoadOptions(nvim);
   // TODO: make this non-blocking
   if (optionsFut.wait_for(1s) == std::future_status::ready) {
     options = optionsFut.get();
@@ -62,7 +57,7 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
   std::string guifont;
   if (!timeout) {
     try {
-      guifont = nvim.GetOptionValue("guifont", {}).get()->as<std::string>();
+      guifont = guifontFut.get()->as<std::string>();
     } catch (const msgpack::type_error& e) {
       // NOTE: neovim should cover this but just in case
       LOG_WARN("Failed to load guifont option: {}", e.what());
@@ -71,10 +66,10 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
     LOG_WARN("Failed to load guifont option (timeout)");
   }
 
-  int linespace;
+  int linespace = 0;
   if (!timeout) {
     try {
-      linespace = nvim.GetOptionValue("linespace", {}).get()->convert();
+      linespace = linespaceFut.get()->convert();
     } catch (const msgpack::type_error& e) {
       // NOTE: neovim should cover this but just in case
       LOG_WARN("Failed to load linespace option: {}", e.what());

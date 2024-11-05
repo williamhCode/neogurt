@@ -15,9 +15,9 @@ struct Nvim {
   UiEvents uiEvents;
   // int channelId;
 
-  std::future<bool> ConnectStdio(const std::string& dir = {});
+  bool ConnectStdio(const std::string& dir = {});
   std::future<bool> ConnectTcp(std::string_view host, uint16_t port);
-  std::future<void> Setup();
+  void Setup();
   bool IsConnected();
 
   using Variant = msgpack::type::variant;
