@@ -80,87 +80,10 @@ int main() {
       float idleElasped = 0;
 
       Clock clock;
-      // Timer timer(10);
+      // Timer timer1(10);
 
       while (!exitWindow && !stopToken.stop_requested()) {
-        // if in vsync, disable clock infinite fps (120 for now cuz occlusion events are
-        // not sent immediately when switchint desktop)
-        // TODO: change when bug is fixed
-
-        // however set to maxFps option if any of these happen
-        // 1. idle is true (which bypasses surface.Present() calls)
-        // 2. occluded is true (in which macOS stops presenting at all)
-        // these all prevent vsync from working
-
-        float targetFps =
-          window.vsync && !idle && !windowOccluded ? 120 : options->maxFps;
-        float dt = clock.Tick(targetFps);
-
-        // frameCount++;
-        // if (frameCount % 60 == 0) {
-        //   frameCount = 0;
-        //   auto fps = clock.GetFps();
-        //   auto fpsStr = std::format("fps: {:.2f}", fps);
-        //   std::cout << '\r' << fpsStr << std::string(10, ' ') << std::flush;
-        // }
-
-        // timer.Start();
-
-        // events -------------------------------------------
-        // nvim events
-        if (sessionManager.ShouldQuit()) {
-          SDL_Event quitEvent{.type = SDL_EVENT_QUIT};
-          SDL_PushEvent(&quitEvent);
-          break;
-        };
-        session = sessionManager.CurrSession();
-        options = &session->options;
-        nvim = &session->nvim;
-        editorState = &session->editorState;
-
-        LOG_DISABLE();
-        ProcessUserEvents(*nvim->client, sessionManager);
-        LOG_ENABLE();
-
-        LOG_DISABLE();
-        if (ParseUiEvents(*nvim->client, nvim->uiEvents)) {
-          idle = false;
-          idleElasped = 0;
-        }
-        LOG_ENABLE();
-
-        LOG_DISABLE();
-        ParseEditorState(nvim->uiEvents, session->editorState);
-        LOG_ENABLE();
-
-        // sdl events
-        while (!sdlEvents.Empty()) {
-          auto& event = sdlEvents.Front();
-          switch (event.type) {
-            case SDL_EVENT_WINDOW_FOCUS_GAINED:
-              windowFocused = true;
-              idle = false;
-              idleElasped = 0;
-              editorState->cursor.blinkState = BlinkState::Wait;
-              editorState->cursor.blinkElasped = 0;
-              break;
-            case SDL_EVENT_WINDOW_FOCUS_LOST:
-              windowFocused = false;
-              break;
-
-            case SDL_EVENT_WINDOW_EXPOSED:
-              // LOG_INFO("window exposed");
-              windowOccluded = false;
-              break;
-            case SDL_EVENT_WINDOW_OCCLUDED:
-              // LOG_INFO("window occluded");
-              windowOccluded = true;
-              break;
-          }
-          sdlEvents.Pop();
-        }
-
-        // resize events
+        // resize before getting next texture
         while (!resizeEvents.Empty()) {
           // only process the last 2 resize events
           if (resizeEvents.Size() <= 2) {
@@ -212,6 +135,86 @@ int main() {
           resizeEvents.Pop();
         }
 
+        // get next texture
+        renderer.Begin();
+
+        // timing -------------------------------------------
+        // if in vsync, disable clock infinite fps (120 for now cuz occlusion events are
+        // not sent immediately when switchint desktop)
+        // TODO: change when bug is fixed
+
+        // however set to maxFps option if any of these happen
+        // 1. idle is true (which bypasses surface.Present() calls)
+        // 2. occluded is true (in which macOS stops presenting at all)
+        // these all prevent vsync from working
+
+        float targetFps =
+          window.vsync && !idle && !windowOccluded ? 120 : options->maxFps;
+        float dt = clock.Tick(targetFps);
+
+        // frameCount++;
+        // if (frameCount % 60 == 0) {
+        //   frameCount = 0;
+        //   auto fps = clock.GetFps();
+        //   auto fpsStr = std::format("fps: {:.2f}", fps);
+        //   std::cout << '\r' << fpsStr << std::string(10, ' ') << std::flush;
+        // }
+
+        // timer1.Start();
+
+        // sdl events -----------------------------------------
+        while (!sdlEvents.Empty()) {
+          auto& event = sdlEvents.Front();
+          switch (event.type) {
+            case SDL_EVENT_WINDOW_FOCUS_GAINED:
+              windowFocused = true;
+              idle = false;
+              idleElasped = 0;
+              editorState->cursor.blinkState = BlinkState::Wait;
+              editorState->cursor.blinkElasped = 0;
+              break;
+            case SDL_EVENT_WINDOW_FOCUS_LOST:
+              windowFocused = false;
+              break;
+
+            case SDL_EVENT_WINDOW_EXPOSED:
+              // LOG_INFO("window exposed");
+              windowOccluded = false;
+              break;
+            case SDL_EVENT_WINDOW_OCCLUDED:
+              // LOG_INFO("window occluded");
+              windowOccluded = true;
+              break;
+          }
+          sdlEvents.Pop();
+        }
+
+        // nvim events  -------------------------------------------
+        if (sessionManager.ShouldQuit()) {
+          SDL_Event quitEvent{.type = SDL_EVENT_QUIT};
+          SDL_PushEvent(&quitEvent);
+          break;
+        };
+        session = sessionManager.CurrSession();
+        options = &session->options;
+        nvim = &session->nvim;
+        editorState = &session->editorState;
+
+        LOG_DISABLE();
+        ProcessUserEvents(*nvim->client, sessionManager);
+        LOG_ENABLE();
+
+        LOG_DISABLE();
+        if (ParseUiEvents(*nvim->client, nvim->uiEvents)) {
+          idle = false;
+          idleElasped = 0;
+        }
+        LOG_ENABLE();
+
+        LOG_DISABLE();
+        ParseEditorState(nvim->uiEvents, session->editorState);
+        LOG_ENABLE();
+
         // update --------------------------------------------
         editorState->winManager.UpdateScrolling(dt);
 
@@ -239,13 +242,9 @@ int main() {
         auto color = GetDefaultBackground(editorState->hlTable);
         renderer.SetColors(color, options->gamma);
 
-        renderer.Begin();
-
-        bool mainWindowRendered = false;
         bool renderWindows = false;
         for (auto& [id, win] : editorState->winManager.windows) {
           if (win.grid.dirty) {
-            if (win.id == 1) mainWindowRendered = true;
             renderer.RenderToWindow(win, editorState->fontFamily, editorState->hlTable);
             win.grid.dirty = false;
             renderWindows = true;
@@ -291,11 +290,6 @@ int main() {
           session->reattached = false;
         }
 
-        // switch to current texture only after rendering to it
-        if (renderer.prevFinalRenderTexture.texture && mainWindowRendered) {
-          renderer.prevFinalRenderTexture = {};
-        }
-
         renderer.RenderFinalTexture();
 
         if (editorState->cursor.ShouldRender()) {
@@ -303,13 +297,13 @@ int main() {
         }
 
         renderer.End();
+
         ctx.surface.Present();
         ctx.device.Tick();
 
-        // Reset the promise and future for the next frame
-        // timer.End();
-        // auto avgDuration = duration_cast<microseconds>(timer.GetAverageDuration());
-        // std::cout << '\r' << avgDuration << std::string(10, ' ') << std::flush;
+        // timer1.End();
+        // auto t1 = TimeToMs(timer1.GetAverageDuration());
+        // LOG_INFO("render: {}", t1);
       }
     });
 
