@@ -39,6 +39,13 @@ struct Renderer {
 
   int frameIndex = 1;
   std::array<RenderTexture, 2> finalRenderTextures;
+  bool resized = false;
+  auto& CurrFinalRenderTexture() {
+    return finalRenderTextures[frameIndex];
+  }
+  auto& OtherFinalRenderTexture() {
+    return finalRenderTextures[(frameIndex + 1) % 2];
+  }
 
   // rect (background)
   wgpu::utils::RenderPassDescriptor rectRPD;

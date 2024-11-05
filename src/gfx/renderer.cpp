@@ -128,15 +128,10 @@ Renderer::Renderer(const SizeHandler& sizes) {
 void Renderer::Resize(const SizeHandler& sizes) {
   camera.Resize(sizes.size);
 
-  // if (!prevFinalRenderTexture.texture) {
-  //   prevFinalRenderTexture = std::move(finalRenderTexture);
-  // }
-
-  for (auto& finalRenderTexture : finalRenderTextures) {
-    finalRenderTexture =
-      RenderTexture(sizes.uiSize, sizes.dpiScale, TextureFormat::RGBA8UnormSrgb);
-    finalRenderTexture.UpdatePos(sizes.offset);
-  }
+  OtherFinalRenderTexture() =
+    RenderTexture(sizes.uiSize, sizes.dpiScale, TextureFormat::RGBA8UnormSrgb);
+  OtherFinalRenderTexture().UpdatePos(sizes.offset);
+  resized = true;
 
   auto stencilTextureView =
     utils::CreateRenderTexture(ctx.device, {sizes.uiFbSize, TextureFormat::Stencil8})
@@ -483,16 +478,22 @@ void Renderer::RenderCursorMask(
 void Renderer::RenderWindows(
   const Win* msgWin, std::span<const Win*> windows, std::span<const Win*> floatWindows
 ) {
+  // increment
   frameIndex = (frameIndex + 1) % 2;
+  if (resized) {
+    // resize other texture, since we're using the current one now
+    OtherFinalRenderTexture() = CurrFinalRenderTexture();
+    resized = false;
+  }
 
-  windowsRPD.cColorAttachments[0].view = finalRenderTextures[frameIndex].textureView;
+  windowsRPD.cColorAttachments[0].view = CurrFinalRenderTexture().textureView;
   windowsRPD.cColorAttachments[0].clearValue = linearClearColor;
   windowsRPD.cColorAttachments[0].loadOp = LoadOp::Clear;
   windowsRPD.cDepthStencilAttachmentInfo.stencilLoadOp = LoadOp::Clear;
   {
     auto passEncoder = commandEncoder.BeginRenderPass(&windowsRPD);
     passEncoder.SetPipeline(ctx.pipeline.textureNoBlendRPL);
-    passEncoder.SetBindGroup(0, finalRenderTextures[frameIndex].camera.viewProjBG);
+    passEncoder.SetBindGroup(0, CurrFinalRenderTexture().camera.viewProjBG);
     passEncoder.SetBindGroup(1, gammaBG);
     passEncoder.SetBindGroup(2, defaultColorBG);
 
@@ -519,7 +520,7 @@ void Renderer::RenderWindows(
     passEncoder.SetPipeline(ctx.pipeline.textureRPL);
     // mask 0x02 for floating windows
     passEncoder.SetStencilReference(2);
-    passEncoder.SetBindGroup(0, finalRenderTextures[frameIndex].camera.viewProjBG);
+    passEncoder.SetBindGroup(0, CurrFinalRenderTexture().camera.viewProjBG);
     passEncoder.SetBindGroup(1, gammaBG);
     passEncoder.SetBindGroup(2, defaultColorBG);
     for (const Win* win : floatWindows) {
@@ -540,8 +541,8 @@ void Renderer::RenderFinalTexture() {
   passEncoder.SetBindGroup(0, camera.viewProjBG);
   passEncoder.SetBindGroup(1, gammaBG);
 
-  passEncoder.SetBindGroup(2, finalRenderTextures[frameIndex].textureBG);
-  finalRenderTextures[frameIndex].renderData.Render(passEncoder);
+  passEncoder.SetBindGroup(2, CurrFinalRenderTexture().textureBG);
+  CurrFinalRenderTexture().renderData.Render(passEncoder);
 
   passEncoder.End();
   finalRPD.cColorAttachments[0].view = {};
