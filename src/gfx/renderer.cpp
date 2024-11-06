@@ -40,11 +40,9 @@ Renderer::Renderer(const SizeHandler& sizes) {
   // shared
   camera = Ortho2D(sizes.size);
 
-  for (auto& finalRenderTexture : finalRenderTextures) {
-    finalRenderTexture =
-      RenderTexture(sizes.uiSize, sizes.dpiScale, TextureFormat::RGBA8UnormSrgb);
-    finalRenderTexture.UpdatePos(sizes.offset);
-  }
+  CurrFinalRenderTexture() =
+    RenderTexture(sizes.uiSize, sizes.dpiScale, TextureFormat::RGBA8UnormSrgb);
+  CurrFinalRenderTexture().UpdatePos(sizes.offset);
 
   // rect
   rectRPD = utils::RenderPassDescriptor({
@@ -160,13 +158,15 @@ void Renderer::SetColors(const glm::vec4& color, float gamma) {
   }
 }
 
-void Renderer::Begin() {
-  commandEncoder = ctx.device.CreateCommandEncoder();
+void Renderer::GetNextTexture() {
   SurfaceTexture surfaceTexture;
   ctx.surface.GetCurrentTexture(&surfaceTexture);
   nextTexture = surfaceTexture.texture;
   nextTextureView = nextTexture.CreateView();
+}
 
+void Renderer::Begin() {
+  commandEncoder = ctx.device.CreateCommandEncoder();
   timestamp.Begin(commandEncoder);
   timestamp.Write();
 }
@@ -480,13 +480,10 @@ void Renderer::RenderCursorMask(
 void Renderer::RenderWindows(
   const Win* msgWin, std::span<const Win*> windows, std::span<const Win*> floatWindows
 ) {
-  // increment
-  frameIndex = (frameIndex + 1) % 2;
   if (resize) {
-    // resize other texture, since we're using the current one now
-    OtherFinalRenderTexture() =
-      RenderTexture(sizes.uiSize, sizes.dpiScale, TextureFormat::RGBA8UnormSrgb);
-    OtherFinalRenderTexture().UpdatePos(sizes.offset);
+    // reset texture, since we're rendering to a new texture
+    CurrFinalRenderTexture() = {};
+    SwapFinalRenderTexture();
     resize = false;
   }
 

@@ -40,13 +40,16 @@ struct Renderer {
   SizeHandler sizes;
   bool resize = false;
 
-  int frameIndex = 1;
+  int currTextureIndex = 0;
   std::array<RenderTexture, 2> finalRenderTextures;
+  void SwapFinalRenderTexture() {
+    currTextureIndex = (currTextureIndex + 1) % 2;
+  }
   auto& CurrFinalRenderTexture() {
-    return finalRenderTextures[frameIndex];
+    return finalRenderTextures[currTextureIndex];
   }
   auto& OtherFinalRenderTexture() {
-    return finalRenderTextures[(frameIndex + 1) % 2];
+    return finalRenderTextures[(currTextureIndex + 1) % 2];
   }
 
   // rect (background)
@@ -77,6 +80,7 @@ struct Renderer {
   void Resize(const SizeHandler& sizes);
   void SetColors(const glm::vec4& color, float gamma);
 
+  void GetNextTexture();
   void Begin();
   void RenderToWindow(Win& win, FontFamily& fontFamily, HlTable& hlTable);
   void RenderCursorMask(

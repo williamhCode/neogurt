@@ -1,13 +1,15 @@
 #pragma once
 
-#include <mutex>
 #include <queue>
+#include <mutex>
+#include <condition_variable>
 
 template <typename T>
 struct TSQueue {
 private:
   std::queue<T> queue;
   std::mutex mutex;
+  std::condition_variable cv;
 
 public:
   T& Front() {
@@ -35,13 +37,19 @@ public:
   }
 
   void Push(const T& item) {
-    std::scoped_lock lock(mutex);
-    queue.push(item);
+    {
+      std::scoped_lock lock(mutex);
+      queue.push(item);
+    }
+    cv.notify_all();
   }
 
   void Push(T&& item) {
-    std::scoped_lock lock(mutex);
-    queue.push(std::move(item));
+    {
+      std::scoped_lock lock(mutex);
+      queue.push(std::move(item));
+    }
+    cv.notify_all();
   }
 
   bool Empty() {
@@ -52,5 +60,13 @@ public:
   size_t Size() {
     std::scoped_lock lock(mutex);
     return queue.size();
+  }
+
+  void WaitUntil(auto predicate)
+  {
+    std::unique_lock lock(mutex);
+    cv.wait(lock, [predicate, this] {
+      return predicate(queue);
+    });
   }
 };

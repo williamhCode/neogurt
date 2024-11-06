@@ -21,7 +21,8 @@ RenderTexture::RenderTexture(
 
   textureView = texture.CreateView();
 
-  auto textureSampler = ctx.device.CreateSampler(
+  // same sampler so only create once
+  static auto textureSampler = ctx.device.CreateSampler(
     ToPtr(SamplerDescriptor{
       .addressModeU = AddressMode::ClampToEdge,
       .addressModeV = AddressMode::ClampToEdge,
@@ -155,11 +156,14 @@ void ScrollableRenderTexture::UpdateScrolling(float dt) {
   SetTexturePositions();
 }
 
-void ScrollableRenderTexture::UpdateMargins(const Margins& newMargins) {
-  fmargins = newMargins.ToFloat(charSize);
+void ScrollableRenderTexture::UpdateMargins(const Margins& _margins) {
+  margins = _margins;
+
+  auto oldFmargins = fmargins;
+  fmargins = margins.ToFloat(charSize);
 
   if (fmargins.top != 0) {
-    if (marginTextures.top == nullptr || margins.top != newMargins.top) {
+    if (marginTextures.top == nullptr || fmargins.top != oldFmargins.top) {
       glm::vec2 topMarginSize = {size.x, fmargins.top};
       marginTextures.top = std::make_unique<RenderTexture>(topMarginSize, dpiScale, format);
       marginTextures.top->UpdatePos(posOffset);
@@ -170,7 +174,7 @@ void ScrollableRenderTexture::UpdateMargins(const Margins& newMargins) {
   }
 
   if (fmargins.bottom != 0) {
-    if (marginTextures.bottom == nullptr || margins.bottom != newMargins.bottom) {
+    if (marginTextures.bottom == nullptr || fmargins.bottom != oldFmargins.bottom) {
       glm::vec2 topMarginSize = {size.x, fmargins.bottom};
       marginTextures.bottom = std::make_unique<RenderTexture>(topMarginSize, dpiScale, format);
       marginTextures.bottom->UpdatePos(posOffset + glm::vec2(0, size.y - fmargins.bottom));
@@ -179,8 +183,6 @@ void ScrollableRenderTexture::UpdateMargins(const Margins& newMargins) {
   } else {
     marginTextures.bottom = nullptr;
   }
-
-  margins = newMargins;
 }
 
 void ScrollableRenderTexture::AddOrRemoveTextures() {
@@ -224,6 +226,9 @@ void ScrollableRenderTexture::AddOrRemoveTextures() {
       removed.pop_back();
       return handle;
     }
+    if (renderTextureBuffer != nullptr) {
+      return std::move(renderTextureBuffer);
+    }
     auto texSize = glm::vec2(size.x, textureHeight);
     return std::make_unique<RenderTexture>(texSize, dpiScale, format);
   };
@@ -250,6 +255,11 @@ void ScrollableRenderTexture::AddOrRemoveTextures() {
   }
 
   baseOffset = region.pos - posChange;
+
+  // fill buffer if there's extra
+  if (renderTextureBuffer == nullptr && !removed.empty()) {
+    renderTextureBuffer = std::move(removed.back());
+  }
 }
 
 void ScrollableRenderTexture::SetTexturePositions() {

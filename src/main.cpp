@@ -24,6 +24,9 @@
 
 #include <boost/core/demangle.hpp>
 #include <algorithm>
+#include <cstdint>
+#include <future>
+#include <limits>
 #include <span>
 #include <vector>
 #include <atomic>
@@ -68,8 +71,17 @@ int main() {
 
     // main loop -----------------------------------
     std::atomic_bool exitWindow = false;
-    TSQueue<SDL_Event> resizeEvents;
+    struct ResizeEvents {
+      SDL_Event windowResized;
+      SDL_Event windowPixelSizeChanged;
+    };
+    TSQueue<ResizeEvents> resizeEvents;
     TSQueue<SDL_Event> sdlEvents;
+
+    // std::promise<void> resizePromise;
+    // std::future<void> resizeFuture;
+    // bool resizing = false;
+    // bool uiResizing = false;
 
     int frameCount = 0;
 
@@ -80,63 +92,66 @@ int main() {
       float idleElasped = 0;
 
       Clock clock;
-      // Timer timer1(10);
+      // Timer timer1(1);
 
       while (!exitWindow && !stopToken.stop_requested()) {
-        // resize before getting next texture
+        // resize events, put before getting next texture
         while (!resizeEvents.Empty()) {
-          // only process the last 2 resize events
-          if (resizeEvents.Size() <= 2) {
-            auto& event = resizeEvents.Front();
-            switch (event.type) {
-              case SDL_EVENT_WINDOW_RESIZED:
-                window.size = {event.window.data1, event.window.data2};
-                break;
-              case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: {
-                window.fbSize = {event.window.data1, event.window.data2};
-                // LOG_INFO("pixel size changed, {} {}", window.fbSize.x,
-                // window.fbSize.y);
+          // only process last event
+          if (resizeEvents.Size() == 1) {
+            // resizing = true;
+            const auto& resizeEvent = resizeEvents.Front();
+            {
+              const auto& event = resizeEvent.windowResized;
+              window.size = {event.window.data1, event.window.data2};
+            }
+            {
+              const auto& event = resizeEvent.windowPixelSizeChanged;
 
-                float prevDpiScale = window.dpiScale;
-                window.dpiScale = window.fbSize.x / window.size.x;
-                bool dpiChanged = prevDpiScale != window.dpiScale;
+              window.fbSize = {event.window.data1, event.window.data2};
+              // LOG_INFO("pixel size changed, {} {}", window.fbSize.x,
+              // window.fbSize.y);
 
-                if (dpiChanged) {
-                  editorState->fontFamily.ChangeDpiScale(window.dpiScale);
-                }
+              float prevDpiScale = window.dpiScale;
+              window.dpiScale = window.fbSize.x / window.size.x;
+              bool dpiChanged = prevDpiScale != window.dpiScale;
 
-                auto uiFbSize = sizes.uiFbSize;
-                sizes.UpdateSizes(
-                  window.size, window.dpiScale,
-                  editorState->fontFamily.DefaultFont().charSize, options->margins
-                );
-                editorState->winManager.sizes = sizes;
-
-                if (dpiChanged) {
-                  editorState->cursor.Resize(sizes.charSize, sizes.dpiScale);
-                  // force nvim to resend all events to update dpiScale
-                  nvim->UiTryResize(sizes.uiWidth + 1, sizes.uiHeight);
-                }
-
-                ctx.Resize(sizes.fbSize);
-
-                if (uiFbSize == sizes.uiFbSize) {
-                  renderer.camera.Resize(sizes.size);
-
-                } else {
-                  renderer.Resize(sizes);
-                  nvim->UiTryResize(sizes.uiWidth, sizes.uiHeight);
-                }
-
-                break;
+              if (dpiChanged) {
+                editorState->fontFamily.ChangeDpiScale(window.dpiScale);
               }
+
+              auto uiFbSize = sizes.uiFbSize;
+              sizes.UpdateSizes(
+                window.size, window.dpiScale,
+                editorState->fontFamily.DefaultFont().charSize, options->margins
+              );
+              editorState->winManager.sizes = sizes;
+
+              if (dpiChanged) {
+                editorState->cursor.Resize(sizes.charSize, sizes.dpiScale);
+                // force nvim to resend all events to update dpiScale
+                nvim->UiTryResize(sizes.uiWidth + 1, sizes.uiHeight);
+              }
+
+              ctx.Resize(sizes.fbSize);
+
+              if (uiFbSize == sizes.uiFbSize) {
+                renderer.camera.Resize(sizes.size);
+
+              } else {
+                renderer.Resize(sizes);
+                nvim->UiTryResize(sizes.uiWidth, sizes.uiHeight);
+                // uiResizing = true;
+              }
+
+              break;
             }
           }
           resizeEvents.Pop();
         }
 
-        // get next texture
-        renderer.Begin();
+        // this blocks if vsync is enabled 
+        renderer.GetNextTexture();
 
         // timing -------------------------------------------
         // if in vsync, disable clock infinite fps (120 for now cuz occlusion events are
@@ -205,15 +220,23 @@ int main() {
         LOG_ENABLE();
 
         LOG_DISABLE();
-        if (ParseUiEvents(*nvim->client, nvim->uiEvents)) {
+      // process_events:
+        int numFlushes = ParseUiEvents(*nvim->client, nvim->uiEvents);
+        if (numFlushes) {
           idle = false;
           idleElasped = 0;
         }
+        // if (uiResizing && numFlushes < 1) {
+        //   goto process_events;
+        // }
+        // uiResizing = false;
         LOG_ENABLE();
 
         LOG_DISABLE();
         ParseEditorState(nvim->uiEvents, session->editorState);
         LOG_ENABLE();
+
+        // timer1.End();
 
         // update --------------------------------------------
         editorState->winManager.UpdateScrolling(dt);
@@ -239,6 +262,8 @@ int main() {
         }
 
         // render ----------------------------------------------
+        renderer.Begin();
+
         auto color = GetDefaultBackground(editorState->hlTable);
         renderer.SetColors(color, options->gamma);
 
@@ -298,26 +323,44 @@ int main() {
 
         renderer.End();
 
+        // if (resizing) {
+        //   ctx.instance.WaitAny(
+        //     ctx.queue.OnSubmittedWorkDone(
+        //       CallbackMode::WaitAnyOnly,
+        //       [](QueueWorkDoneStatus status) {
+        //       }
+        //     ),
+        //     std::numeric_limits<uint64_t>::max()
+        //   );
+        //   resizePromise.set_value();
+        //   resizing = false;
+        // }
         ctx.surface.Present();
         ctx.device.Tick();
 
-        // timer1.End();
         // auto t1 = TimeToMs(timer1.GetAverageDuration());
-        // LOG_INFO("render: {}", t1);
+        // if (t1 > 1ms) {
+        //   LOG_INFO("render: {}", t1);
+        // }
       }
     });
 
     // event loop --------------------------------
     // SDL_StartTextInput(window.Get());
 
+    ResizeEvents currResizeEvents{};
     // resize handling
     sdl::AddEventWatch([&](SDL_Event& event) {
       switch (event.type) {
         case SDL_EVENT_WINDOW_RESIZED:
-          resizeEvents.Push(event);
+          currResizeEvents.windowResized = event;
           break;
         case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: {
-          resizeEvents.Push(event);
+          // resizePromise = std::promise<void>();
+          // resizeFuture = resizePromise.get_future();
+          currResizeEvents.windowPixelSizeChanged = event;
+          resizeEvents.Push(currResizeEvents);
+          // resizeFuture.wait();
           break;
         }
       }

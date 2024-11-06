@@ -73,6 +73,7 @@ struct WinManager {
   mutable std::mutex windowsMutex;
 
 private:
+  int CalcMaxTexPerPage(const Win& win);
   void InitRenderData(Win& win);
   void UpdateRenderData(Win& win);
 

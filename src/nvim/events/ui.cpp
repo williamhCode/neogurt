@@ -206,7 +206,7 @@ static void ParseUiEvents(const msgpack::object& params, UiEvents& uiEvents) {
   }
 }
 
-bool ParseUiEvents(rpc::Client& client, UiEvents& uiEvents) {
+int ParseUiEvents(rpc::Client& client, UiEvents& uiEvents) {
   uiEvents.numFlushes = 0;
 
   while (client.HasNotification()) {
@@ -217,5 +217,5 @@ bool ParseUiEvents(rpc::Client& client, UiEvents& uiEvents) {
     }
   }
 
-  return uiEvents.numFlushes > 0;
+  return uiEvents.numFlushes;
 }

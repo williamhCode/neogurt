@@ -75,6 +75,7 @@ struct ScrollableRenderTexture {
   MarginTextures marginTextures;
 
   std::deque<RenderTextureHandle> renderTextures;
+  RenderTextureHandle renderTextureBuffer; // save one for buffer
   float baseOffset = 0; // offset representing top of viewport (prescroll)
 
   bool scrolling = false;
@@ -95,7 +96,7 @@ struct ScrollableRenderTexture {
   void UpdatePos(glm::vec2 pos);
   void UpdateViewport(float newScrollDist = 0);
   void UpdateScrolling(float dt);
-  void UpdateMargins(const Margins& newMargins);
+  void UpdateMargins(const Margins& margins);
 
   void AddOrRemoveTextures();
   void SetTexturePositions();

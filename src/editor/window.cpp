@@ -9,6 +9,13 @@
 
 using namespace wgpu;
 
+int WinManager::CalcMaxTexPerPage(const Win& win) {
+  if (win.id == defaultGridId || win.id == msgWinId) {
+    return 1;
+  }
+  return 3;
+}
+
 void WinManager::InitRenderData(Win& win) {
   auto pos = glm::vec2(win.startCol, win.startRow) * sizes.charSize;
   auto size = glm::vec2(win.width, win.height) * sizes.charSize;
@@ -18,10 +25,8 @@ void WinManager::InitRenderData(Win& win) {
   win.textData.CreateBuffers(numQuads);
   win.shapeData.CreateBuffers(numQuads);
 
-  // default grid doesn't scroll so only need 1 texture
-  int maxTexPerPage = win.id == defaultGridId ? 1 : 2;
   win.sRenderTexture =
-    ScrollableRenderTexture(size, sizes.dpiScale, sizes.charSize, maxTexPerPage);
+    ScrollableRenderTexture(size, sizes.dpiScale, sizes.charSize, CalcMaxTexPerPage(win));
   win.sRenderTexture.UpdatePos(pos);
 
   win.grid.dirty = true;
@@ -48,9 +53,8 @@ void WinManager::UpdateRenderData(Win& win) {
     win.textData.CreateBuffers(numQuads);
     win.shapeData.CreateBuffers(numQuads);
 
-    int maxTexPerPage = win.id == defaultGridId ? 1 : 2;
     win.sRenderTexture =
-      ScrollableRenderTexture(size, sizes.dpiScale, sizes.charSize, maxTexPerPage);
+      ScrollableRenderTexture(size, sizes.dpiScale, sizes.charSize, CalcMaxTexPerPage(win));
   }
   win.sRenderTexture.UpdatePos(pos);
 
@@ -232,6 +236,7 @@ void WinManager::MsgSetPos(const event::MsgSetPos& e) {
 
   win.hidden = false;
 
+  // NOTE: nvim doesn't send grid events for changing msgWin grids
   if (msgWinId != -1 && msgWinId != e.grid) {
     gridManager->Destroy({.grid = msgWinId});
     Close({.grid = msgWinId});

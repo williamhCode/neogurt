@@ -220,5 +220,5 @@ struct UiEvents {
   }
 };
 
-// returns true if there were flush events
-bool ParseUiEvents(rpc::Client& client, UiEvents& uiEvents);
+// returns number of flushes
+int ParseUiEvents(rpc::Client& client, UiEvents& uiEvents);
