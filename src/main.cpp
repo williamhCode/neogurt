@@ -10,7 +10,6 @@
 #include "editor/state.hpp"
 #include "editor/font.hpp"
 #include "gfx/instance.hpp"
-#include "gfx/render_texture.hpp"
 #include "gfx/renderer.hpp"
 #include "glm/ext/vector_float2.hpp"
 #include "glm/gtx/string_cast.hpp"
@@ -220,7 +219,7 @@ int main() {
         LOG_ENABLE();
 
         LOG_DISABLE();
-      // process_events:
+        // process_events:
         int numFlushes = ParseUiEvents(*nvim->client, nvim->uiEvents);
         if (numFlushes) {
           idle = false;

@@ -6,7 +6,7 @@ struct Options {
   // TODO: load these options before connecting
   // and add commandline opts
   static inline bool multigrid = true;
-  static inline bool interactiveShell = false;
+  static inline bool interactiveShell = true;
 
   // window opts are used once at start, only one instance so static
   // so dont use them except in window creation (sdl_window constructor)

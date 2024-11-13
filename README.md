@@ -30,21 +30,17 @@ Below are the all of the default options:
 -- check if nvim is launched by neogurt
 if vim.g.neogurt then
   vim.g.neogurt_opts = {
-    -- window options are per application
-    window = {
-      vsync = true,
-      high_dpi = true,
-      borderless = false,
-      blur = 0,
-    },
+    -- these options are per application
+    vsync = true,
+    high_dpi = true,
+    borderless = false,
+    blur = 0,
 
     -- rest of the options are per session
-    margins = {
-      top = 0,
-      bottom = 0,
-      left = 0,
-      right = 0,
-    },
+    margin_top = 0,
+    margin_bottom = 0,
+    margin_left = 0,
+    margin_right = 0,
 
     mac_opt_is_meta = true,
     cursor_idle_time = 10,
