@@ -1,11 +1,10 @@
 #include "options.hpp"
 #include "utils/logger.hpp"
-#include <format>
 #include <future>
 #include <boost/core/demangle.hpp>
 #include "utils/async.hpp"
 
-static std::string CamelToSnakeCase(std::string_view s) {
+static std::string CamelToSnake(std::string_view s) {
   std::string result;
   for (char c : s) {
     if (isupper(c)) {
@@ -18,52 +17,66 @@ static std::string CamelToSnakeCase(std::string_view s) {
   return result;
 }
 
-static std::future<void> LoadOption(Nvim& nvim, std::string_view name, auto& value) {
-  try {
-    auto luaCode = std::format("return vim.g.neogurt_opts.{}", name);
-    auto result = co_await nvim.ExecLua(luaCode, {});
-    result->convert_if_not_nil(value);
-
-  } catch (const msgpack::type_error& e) {
-    LOG_WARN(
-      "Failed to load option '{}': expected type '{}'",
-      name, boost::core::demangled_name(typeid(value))
-    );
-
-  } catch (const std::exception& e) {
-    LOG_WARN("Failed to load option '{}': {}", name, e.what());
-  }
-};
-
-std::future<Options> LoadOptions(Nvim& nvim) {
+std::future<Options> Options::Load(Nvim& nvim, bool first) {
   Options options;
 
-  #define LOAD(name) LoadOption(nvim, CamelToSnakeCase(#name), options.name)
+  auto opts_handle = co_await nvim.GetVar("neogurt_opts");
+  std::map<std::string_view, msgpack::object> opts_obj;
+  try {
+    if (!opts_handle->convert_if_not_nil(opts_obj)) {
+      co_return options;
+    }
+  } catch (const msgpack::type_error& e) {
+    LOG_WARN("Failed to load neogurt_opts: expected lua table");
+  }
 
-  // load options in parallel
-  co_await WhenAll(
-    LOAD(window.vsync),
-    LOAD(window.highDpi),
-    LOAD(window.borderless),
-    LOAD(window.blur),
+  auto Load = [&] (std::string_view name, auto& value) {
+    try {
+      auto it = opts_obj.find(name);
+      if (it == opts_obj.end()) {
+        return;
+      }
+      it->second.convert_if_not_nil(value);
 
-    LOAD(margins.top),
-    LOAD(margins.bottom),
-    LOAD(margins.left),
-    LOAD(margins.right),
+    } catch (const msgpack::type_error& e) {
+      LOG_WARN(
+        "Failed to load option '{}': expected type '{}'",
+        name, boost::core::demangled_name(typeid(value))
+      );
 
-    // LOAD(multigrid),
-    LOAD(macOptIsMeta),
-    LOAD(cursorIdleTime),
-    LOAD(scrollSpeed),
+    } catch (const std::exception& e) {
+      LOG_WARN("Failed to load option '{}': {}", name, e.what());
+    }
+  };
+  #define LOAD(name) Load(CamelToSnake(#name), options.name)
 
-    LOAD(bgColor),
-    LOAD(opacity),
+  // TODO: load these options before connecting
+  // LOAD(multigrid);
+  // LOAD(interactiveShell);
 
-    LOAD(gamma),
+  if (first) {
+    LOAD(vsync);
+    LOAD(highDpi);
+    LOAD(borderless);
+    LOAD(blur);
+  }
 
-    LOAD(maxFps)
-  );
+  LOAD(marginTop);
+  LOAD(marginBottom);
+  LOAD(marginLeft);
+  LOAD(marginRight);
+
+  LOAD(macOptIsMeta);
+  LOAD(cursorIdleTime);
+  LOAD(scrollSpeed);
+
+  LOAD(bgColor);
+  LOAD(opacity);
+  LOAD(gamma);
+
+  LOAD(maxFps);
+
+  LOAD(interactiveShell);
 
   options.opacity = int(options.opacity * 255) / 255.0f;
 

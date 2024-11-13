@@ -88,7 +88,9 @@ public:
   Client& operator=(const Client&) = delete;
   ~Client();
 
-  bool ConnectStdio(const std::string& command, const std::string& dir = {});
+  bool ConnectStdio(
+    const std::string& command, bool interactive, const std::string& dir = {}
+  );
   bool ConnectTcp(std::string_view host, uint16_t port);
 
   // public functions below are thread-safe

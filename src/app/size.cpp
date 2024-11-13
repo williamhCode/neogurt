@@ -3,7 +3,7 @@
 #include "app/options.hpp"
 
 void SizeHandler::UpdateSizes(
-  glm::vec2 _size, float _dpiScale, glm::vec2 _charSize, Options::Margins margins
+  glm::vec2 _size, float _dpiScale, glm::vec2 _charSize, const Options& options
 ) {
   size = _size;
   dpiScale = _dpiScale;
@@ -13,8 +13,8 @@ void SizeHandler::UpdateSizes(
   charFbSize = charSize * dpiScale;
 
   glm::vec2 innerSize{
-    size.x - margins.left - margins.right,
-    size.y - margins.top - margins.bottom,
+    size.x - options.marginLeft - options.marginRight,
+    size.y - options.marginTop - options.marginBottom,
   };
   auto uiWidthHeight = glm::floor(innerSize / charSize);
   uiWidth = uiWidthHeight.x;
@@ -24,7 +24,7 @@ void SizeHandler::UpdateSizes(
   uiFbSize = uiSize * dpiScale;
 
   // offset = (size - uiSize) / 2.0f;
-  offset = {margins.left, margins.top};
+  offset = {options.marginLeft, options.marginTop};
   offset = glm::round(offset * dpiScale) / dpiScale;
   fbOffset = offset * dpiScale;
 }

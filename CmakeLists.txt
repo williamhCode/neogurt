@@ -18,6 +18,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)  # clangd
 
 # deps ---------------------------
+set(Boost_USE_STATIC_LIBS ON)
+find_package(Boost 1.86.0 REQUIRED COMPONENTS process)
+
 add_subdirectory(deps/webgpu_tools EXCLUDE_FROM_ALL)
 
 set(MSGPACK_USE_STATIC_BOOST ON)
@@ -94,6 +97,7 @@ if (NOT DEFINED ENV{LLVM_PATH})
 endif()
 
 target_link_libraries(neogurt PRIVATE 
+  Boost::process
   webgpu_tools
   msgpack-cxx
   freetype

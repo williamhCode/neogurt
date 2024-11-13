@@ -9,6 +9,7 @@
 #include "boost/asio/connect.hpp"
 #include "boost/process/io.hpp"
 #include "boost/process/start_dir.hpp"
+#include "boost/process/search_path.hpp"
 #include "messages.hpp"
 #include "msgpack/v3/object_fwd_decl.hpp"
 #include "utils/logger.hpp"
@@ -26,23 +27,34 @@ Client::~Client() {
   }
 }
 
-bool Client::ConnectStdio(const std::string& command, const std::string& dir) {
+bool Client::ConnectStdio(
+  const std::string& command, bool interactive, const std::string& dir
+) {
   clientType = ClientType::Stdio;
   readPipe = std::make_unique<bp::async_pipe>(context);
   writePipe = std::make_unique<bp::async_pipe>(context);
 
-  std::string shellPath = std::getenv("SHELL");
-  if (shellPath.empty()) {
-    LOG_ERR("SHELL environment variable not set");
-    exit = true;
-    return false;
+  auto GetEnv = [](const char* name) -> std::string {
+    char* value = std::getenv(name);
+    return value ? value : "";
+  };
+
+  std::string shell = GetEnv("SHELL");
+  if (shell.empty()) {
+    shell = bp::search_path("bash").string();
   }
 
-  // LOG_INFO("Starting process: {}, {}", command, dir);
-  // interactive shell if is app
-  std::string flags = isAppBundle ? "-ilc" : "-ic";
+  std::vector<std::string> flags;
+  if (GetEnv("TERM").empty()) {
+    flags.emplace_back("-l");
+  }
+  if (interactive) {
+    flags.emplace_back("-i");
+  }
+  flags.emplace_back("-c");
+
   process = bp::child(
-    shellPath, flags, command,
+    shell, flags, command,
     bp::start_dir = dir,
     bp::std_out > *readPipe,
     bp::std_in < *writePipe

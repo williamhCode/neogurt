@@ -3,24 +3,22 @@
 #include <cstdint>
 
 struct Options {
-  // window opts are used once at start
+  // TODO: load these options before connecting
+  // and add commandline opts
+  static inline bool multigrid = true;
+  static inline bool interactiveShell = false;
+
+  // window opts are used once at start, only one instance so static
   // so dont use them except in window creation (sdl_window constructor)
-  struct Window {
-    bool vsync = true;
-    bool highDpi = true;
-    bool borderless = false;
-    int blur = 0;
-  } window;
+  static inline bool vsync = true;
+  static inline bool highDpi = true;
+  static inline bool borderless = false;
+  static inline int blur = 0;
 
-  bool multigrid = true;
-
-  struct Margins {
-    int top = 0;
-    int bottom = 0;
-    int left = 0;
-    int right = 0;
-  } margins;
-  static inline float titlebarHeight = 0;
+  int marginTop = 0;
+  int marginBottom = 0;
+  int marginLeft = 0;
+  int marginRight = 0;
 
   bool macOptIsMeta = true;
   float cursorIdleTime = 10;
@@ -28,10 +26,10 @@ struct Options {
 
   uint32_t bgColor = 0x000000;
   float opacity = 1;
-
   float gamma = 1.7;
 
   float maxFps = 60;
+
+  static std::future<Options> Load(Nvim& nvim, bool first);
 };
 
-std::future<Options> LoadOptions(Nvim& nvim);

@@ -24,5 +24,5 @@ struct SizeHandler {
   // SizeHandler(const SizeHandler&) = delete;
   // SizeHandler& operator=(const SizeHandler&) = delete;
 
-  void UpdateSizes(glm::vec2 size, float dpiScale, glm::vec2 charSize, Options::Margins margins);
+  void UpdateSizes(glm::vec2 size, float dpiScale, glm::vec2 charSize, const Options& options);
 };

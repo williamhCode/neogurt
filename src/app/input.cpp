@@ -120,7 +120,8 @@ void InputHandler::HandleTextInput(const SDL_TextInputEvent& event) {
 
 void InputHandler::HandleMouseButton(const SDL_MouseButtonEvent& event) {
   if (event.down) {
-    if (event.y < Options::titlebarHeight) return;
+    if (event.y < options.marginTop) return;
+
     mouseButton = event.button;
   } else {
     mouseButton.reset();

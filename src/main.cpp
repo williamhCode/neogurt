@@ -123,7 +123,7 @@ int main() {
               auto uiFbSize = sizes.uiFbSize;
               sizes.UpdateSizes(
                 window.size, window.dpiScale,
-                editorState->fontFamily.DefaultFont().charSize, options->margins
+                editorState->fontFamily.DefaultFont().charSize, *options
               );
               editorState->winManager.sizes = sizes;
 

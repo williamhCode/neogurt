@@ -36,12 +36,12 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
   auto& nvim = session.nvim;
   auto& editorState = session.editorState;
 
-  if (!nvim.ConnectStdio(opts.dir)) {
+  if (!nvim.ConnectStdio(Options::interactiveShell, opts.dir)) {
     throw std::runtime_error("Failed to connect to nvim");
   }
   nvim.Setup();
 
-  auto optionsFut = LoadOptions(nvim);
+  auto optionsFut = Options::Load(nvim, first);
   auto guifontFut = nvim.GetOptionValue("guifont", {});
   auto linespaceFut = nvim.GetOptionValue("linespace", {});
 
@@ -80,14 +80,14 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
     linespace = 0;
   }
 
+  static float titlebarHeight = 0;
   if (first) {
-    window = sdl::Window({1200, 800}, "Neogurt", options);
-    // needs to be in main thread
-    Options::titlebarHeight = GetTitlebarHeight(window.Get());
+    window = sdl::Window({1200, 800}, "Neogurt");
+    // run in main thread only, so first
+    titlebarHeight = GetTitlebarHeight(window.Get());
   }
-
-  if (options.window.borderless) {
-    options.margins.top += Options::titlebarHeight;
+  if (Options::borderless) {
+    options.marginTop += titlebarHeight;
   }
 
   editorState.fontFamily =
@@ -101,7 +101,7 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
 
   sizes.UpdateSizes(
     window.size, window.dpiScale, editorState.fontFamily.DefaultFont().charSize,
-    options.margins
+    options
   );
 
   if (first) {
@@ -285,7 +285,7 @@ void SessionManager::FontSizeReset(bool all) {
 void SessionManager::UpdateSessionSizes(SessionState& session) {
   sizes.UpdateSizes(
     window.size, window.dpiScale, session.editorState.fontFamily.DefaultFont().charSize,
-    session.options.margins
+    session.options
   );
   renderer.Resize(sizes);
   session.editorState.winManager.sizes = sizes;

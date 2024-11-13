@@ -68,6 +68,7 @@ void SetTransparentTitlebar(SDL_Window* sdlWindow) {
   window.titlebarAppearsTransparent = true;
 }
 
+// run in main thread
 float GetTitlebarHeight(SDL_Window* sdlWindow) {
   NSWindow* window = GetNSWindow(sdlWindow);
   NSRect fullFrame = [window frame];

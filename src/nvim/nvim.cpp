@@ -9,7 +9,7 @@
 
 using namespace std::chrono_literals;
 
-bool Nvim::ConnectStdio(const std::string& dir) {
+bool Nvim::ConnectStdio(bool interactive, const std::string& dir) {
   client = std::make_unique<rpc::Client>();
 
   // std::string luaInitPath = ROOT_DIR "/lua/init.lua";
@@ -17,7 +17,7 @@ bool Nvim::ConnectStdio(const std::string& dir) {
   //                 "--cmd \"set runtimepath+=" ROOT_DIR "\" "
   //                 "--cmd \"luafile " + luaInitPath + "\"";
   std::string cmd = "nvim --embed";
-  return client->ConnectStdio(cmd, dir);
+  return client->ConnectStdio(cmd, interactive, dir);
 }
 
 std::future<bool> Nvim::ConnectTcp(std::string_view host, uint16_t port) {
