@@ -14,7 +14,7 @@ void Cursor::Resize(glm::vec2 _size, float dpi) {
 
   maskRenderTexture = RenderTexture(size, dpi, TextureFormat::R8Unorm);
 
-  maskPosBuffer = utils::CreateUniformBuffer(ctx.device, sizeof(glm::vec2), &destPos);
+  maskPosBuffer = utils::CreateUniformBuffer(ctx.device, sizeof(glm::vec2), &maskPos);
 
   maskPosBG = utils::MakeBindGroup(
     ctx.device, ctx.pipeline.cursorMaskPosBGL,
@@ -81,6 +81,7 @@ bool Cursor::SetDestPos(const Win* currWin, const SizeHandler& sizes) {
 
   // set relative to window top-left
   auto cursorPos = glm::vec2(col, row) * sizes.charSize + scrollOffset;
+  auto newMaskPos = cursorPos;
 
   // clamp to window margins
   auto minPos = glm::vec2(0, currWin->margins.top) * sizes.charSize;
@@ -97,14 +98,18 @@ bool Cursor::SetDestPos(const Win* currWin, const SizeHandler& sizes) {
 
   // set to global position
   cursorPos += winOffset + sizes.offset;
+  newMaskPos += winOffset + sizes.offset;
+
+  if (newMaskPos != maskPos) {
+    maskPos = newMaskPos;
+    ctx.queue.WriteBuffer(maskPosBuffer, 0, &maskPos, sizeof(glm::vec2));
+  }
 
   if (cursorPos == destPos) return false;
   destPos = cursorPos;
 
   startPos = pos;
   jumpElasped = 0.0;
-
-  ctx.queue.WriteBuffer(maskPosBuffer, 0, &destPos, sizeof(glm::vec2));
 
   return true;
 }

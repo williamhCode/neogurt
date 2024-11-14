@@ -49,6 +49,7 @@ struct Cursor {
 
   glm::vec2 startPos;
   glm::vec2 destPos;
+  glm::vec2 maskPos; // cursor mask, actual position of cell
   glm::vec2 pos;
   float jumpTime = 0.06;
   float jumpElasped;
