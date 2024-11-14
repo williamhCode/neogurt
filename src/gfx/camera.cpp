@@ -9,10 +9,10 @@ using namespace wgpu;
 
 Ortho2D::Ortho2D(glm::vec2 size) {
   auto view = glm::ortho<float>(0, size.x, size.y, 0, -1, 1);
-  viewProjBuffer = utils::CreateUniformBuffer(ctx.device, sizeof(glm::mat4), &view);
+  viewProjBuffer = ctx.CreateUniformBuffer(sizeof(glm::mat4), &view);
 
-  viewProjBG = utils::MakeBindGroup(
-    ctx.device, ctx.pipeline.viewProjBGL,
+  viewProjBG = ctx.MakeBindGroup(
+    ctx.pipeline.viewProjBGL,
     {
       {0, viewProjBuffer},
     }

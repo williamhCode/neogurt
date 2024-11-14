@@ -17,7 +17,7 @@ RenderTexture::RenderTexture(
   camera = Ortho2D(size);
 
   auto fbSize = size * dpiScale;
-  texture = utils::CreateRenderTexture(ctx.device, {fbSize, format}, data);
+  texture = ctx.CreateRenderTexture({fbSize, format}, data);
 
   textureView = texture.CreateView();
 
@@ -31,8 +31,8 @@ RenderTexture::RenderTexture(
     })
   );
 
-  textureBG = utils::MakeBindGroup(
-    ctx.device, ctx.pipeline.textureBGL,
+  textureBG = ctx.MakeBindGroup(
+    ctx.pipeline.textureBGL,
     {
       {0, textureView},
       {1, textureSampler},

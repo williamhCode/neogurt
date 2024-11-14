@@ -55,10 +55,8 @@ struct QuadRenderData {
     quads.resize(numQuads);
     indices.resize(numQuads * 6);
 
-    vertexBuffer =
-      wgpu::utils::CreateVertexBuffer(ctx.device, sizeof(VertexType) * 4 * numQuads);
-    indexBuffer =
-      wgpu::utils::CreateIndexBuffer(ctx.device, sizeof(uint32_t) * 6 * numQuads);
+    vertexBuffer = ctx.CreateVertexBuffer(sizeof(VertexType) * 4 * numQuads);
+    indexBuffer = ctx.CreateIndexBuffer(sizeof(uint32_t) * 6 * numQuads);
   }
 
   void ResetCounts() {
@@ -100,12 +98,8 @@ struct QuadRenderData {
       size_t bufferQuadCount = vertexBuffer.GetSize() / (sizeof(VertexType) * 4);
       if (bufferQuadCount != quads.size()) {
         // LOG_INFO("Resizing vertex buffer from {} to {}", bufferQuadCount, quads.size());
-        vertexBuffer = wgpu::utils::CreateVertexBuffer(
-          ctx.device, sizeof(VertexType) * 4 * quads.size()
-        );
-        indexBuffer = wgpu::utils::CreateIndexBuffer(
-          ctx.device, sizeof(uint32_t) * 6 * quads.size()
-        );
+        vertexBuffer = ctx.CreateVertexBuffer(sizeof(VertexType) * 4 * quads.size());
+        indexBuffer = ctx.CreateIndexBuffer(sizeof(uint32_t) * 6 * quads.size());
       }
     }
 

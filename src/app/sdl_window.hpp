@@ -1,8 +1,7 @@
 #pragma once
 
 #include "glm/ext/vector_uint2.hpp"
-#include "gfx/context.hpp"
-#include "app/options.hpp"
+#include <memory>
 
 struct SDL_Window;
 

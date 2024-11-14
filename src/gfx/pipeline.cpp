@@ -1,6 +1,5 @@
 #include "pipeline.hpp"
 #include "context.hpp"
-#include "utils/logger.hpp"
 #include "webgpu_tools/utils/webgpu.hpp"
 #include "app/path.hpp"
 
@@ -8,33 +7,23 @@ using namespace wgpu;
 
 Pipeline::Pipeline(const WGPUContext& ctx) {
   // shared ------------------------------------------------
-  viewProjBGL = utils::MakeBindGroupLayout(
-    ctx.device,
-    {
-      {0, ShaderStage::Vertex | ShaderStage::Fragment, BufferBindingType::Uniform},
-    }
-  );
+  viewProjBGL = ctx.MakeBindGroupLayout({
+    {0, ShaderStage::Vertex | ShaderStage::Fragment, BufferBindingType::Uniform},
+  });
 
-  textureBGL = utils::MakeBindGroupLayout(
-    ctx.device,
-    {
-      {0, ShaderStage::Fragment, TextureSampleType::UnfilterableFloat},
-      {1, ShaderStage::Fragment, SamplerBindingType::NonFiltering},
-    }
-  );
+  textureBGL = ctx.MakeBindGroupLayout({
+    {0, ShaderStage::Fragment, TextureSampleType::UnfilterableFloat},
+    {1, ShaderStage::Fragment, SamplerBindingType::NonFiltering},
+  });
 
-  gammaBGL = utils::MakeBindGroupLayout(
-    ctx.device,
-    {
-      {0, ShaderStage::Vertex | ShaderStage::Fragment, BufferBindingType::Uniform},
-    }
-  );
+  gammaBGL = ctx.MakeBindGroupLayout({
+    {0, ShaderStage::Vertex | ShaderStage::Fragment, BufferBindingType::Uniform},
+  });
 
   // shapes pipeline ---------------------------------------------
-  ShaderModule shapesShader =
-    utils::LoadShaderModule(ctx.device, resourcesDir + "/shaders/shapes.wgsl");
+  ShaderModule shapesShader = ctx.LoadShaderModule(resourcesDir + "/shaders/shapes.wgsl");
 
-  shapesRPL = utils::MakeRenderPipeline(ctx.device, {
+  shapesRPL = ctx.MakeRenderPipeline({
     .vs = shapesShader,
     .fs = shapesShader,
     .bgls = {viewProjBGL, gammaBGL},
@@ -59,10 +48,9 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
   });
 
   // rect pipeline -------------------------------------------
-  ShaderModule rectShader =
-    utils::LoadShaderModule(ctx.device, resourcesDir + "/shaders/rect.wgsl");
+  ShaderModule rectShader = ctx.LoadShaderModule(resourcesDir + "/shaders/rect.wgsl");
 
-  rectRPL = utils::MakeRenderPipeline(ctx.device, {
+  rectRPL = ctx.MakeRenderPipeline({
     .vs = rectShader,
     .fs = rectShader,
     .bgls = {viewProjBGL, gammaBGL},
@@ -79,17 +67,13 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
   });
 
   // text pipeline -------------------------------------------
-  ShaderModule textShader =
-    utils::LoadShaderModule(ctx.device, resourcesDir + "/shaders/text.wgsl");
+  ShaderModule textShader = ctx.LoadShaderModule(resourcesDir + "/shaders/text.wgsl");
 
-  textureSizeBGL = utils::MakeBindGroupLayout(
-    ctx.device,
-    {
-      {0, ShaderStage::Vertex, BufferBindingType::Uniform},
-    }
-  );
+  textureSizeBGL = ctx.MakeBindGroupLayout({
+    {0, ShaderStage::Vertex, BufferBindingType::Uniform},
+  });
 
-  textRPL = utils::MakeRenderPipeline(ctx.device, {
+  textRPL = ctx.MakeRenderPipeline({
     .vs = textShader,
     .fs = textShader,
     .bgls = {viewProjBGL, gammaBGL, textureSizeBGL, textureBGL},
@@ -112,10 +96,9 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
   });
 
   // mask
-  ShaderModule textMaskShader =
-    utils::LoadShaderModule(ctx.device, resourcesDir + "/shaders/text_mask.wgsl");
+  ShaderModule textMaskShader = ctx.LoadShaderModule(resourcesDir + "/shaders/text_mask.wgsl");
 
-  textMaskRPL = utils::MakeRenderPipeline(ctx.device, {
+  textMaskRPL = ctx.MakeRenderPipeline({
     .vs = textMaskShader,
     .fs = textMaskShader,
     .bgls = {viewProjBGL, textureSizeBGL, textureBGL},
@@ -134,8 +117,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
   });
 
   // texture pipeline ------------------------------------------------
-  ShaderModule textureShader =
-    utils::LoadShaderModule(ctx.device, resourcesDir + "/shaders/texture.wgsl");
+  ShaderModule textureShader = ctx.LoadShaderModule(resourcesDir + "/shaders/texture.wgsl");
 
   utils::VertexBufferLayout textureQuadVBL{
     .arrayStride = sizeof(TextureQuadVertex),
@@ -145,11 +127,11 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
     }
   };
 
-  defaultColorBGL = utils::MakeBindGroupLayout(
-    ctx.device, {{0, ShaderStage::Fragment, BufferBindingType::Uniform}}
-  );
+  defaultColorBGL = ctx.MakeBindGroupLayout({
+    {0, ShaderStage::Fragment, BufferBindingType::Uniform},
+  });
 
-  textureNoBlendRPL = utils::MakeRenderPipeline(ctx.device, {
+  textureNoBlendRPL = ctx.MakeRenderPipeline({
     .vs = textureShader,
     .fs = textureShader,
     .bgls = {viewProjBGL, gammaBGL, defaultColorBGL, textureBGL},
@@ -171,7 +153,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
     },
   });
 
-  textureRPL = utils::MakeRenderPipeline(ctx.device, {
+  textureRPL = ctx.MakeRenderPipeline({
     .vs = textureShader,
     .fs = textureShader,
     .bgls = {viewProjBGL, gammaBGL, defaultColorBGL, textureBGL},
@@ -195,11 +177,9 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
   });
 
   // final texture pipeline -------------------------------------
-  ShaderModule textureFinalShader = utils::LoadShaderModule(
-    ctx.device, resourcesDir + "/shaders/texture_final.wgsl"
-  );
+  ShaderModule textureFinalShader = ctx.LoadShaderModule(resourcesDir + "/shaders/texture_final.wgsl");
 
-  textureFinalRPL = utils::MakeRenderPipeline(ctx.device, {
+  textureFinalRPL = ctx.MakeRenderPipeline({
     .vs = textureFinalShader,
     .fs = textureFinalShader,
     .bgls = {viewProjBGL, gammaBGL, textureBGL},
@@ -207,21 +187,8 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
     .targets = {{.format = TextureFormat::BGRA8Unorm}},
   });
 
-  // ShaderModule textureFinalBorderlessShader = utils::LoadShaderModule(
-  //   ctx.device, resourcesDir + "/shaders/texture_final_borderless.wgsl"
-  // );
-
-  // textureFinalBorderlessRPL = utils::MakeRenderPipeline(ctx.device, {
-  //   .vs = textureFinalBorderlessShader,
-  //   .fs = textureFinalBorderlessShader,
-  //   .bgls = {viewProjBGL, textureBGL},
-  //   .buffers = {textureQuadVBL},
-  //   .targets = {{.format = TextureFormat::BGRA8Unorm}},
-  // });
-
   // cursor pipeline ------------------------------------------------
-  ShaderModule cursorShader =
-    utils::LoadShaderModule(ctx.device, resourcesDir + "/shaders/cursor.wgsl");
+  ShaderModule cursorShader = ctx.LoadShaderModule(resourcesDir + "/shaders/cursor.wgsl");
 
   utils::VertexBufferLayout cursorQuadVBL{
     sizeof(CursorQuadVertex),
@@ -232,30 +199,15 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
     }
   };
 
-  cursorMaskPosBGL = utils::MakeBindGroupLayout(
-    ctx.device,
-    {
-      {0, ShaderStage::Vertex, BufferBindingType::Uniform},
-    }
-  );
+  cursorMaskPosBGL = ctx.MakeBindGroupLayout({
+    {0, ShaderStage::Vertex, BufferBindingType::Uniform},
+  });
 
-  cursorRPL = utils::MakeRenderPipeline(ctx.device, {
+  cursorRPL = ctx.MakeRenderPipeline({
     .vs = cursorShader,
     .fs = cursorShader,
     .bgls = {viewProjBGL, viewProjBGL, cursorMaskPosBGL, textureBGL},
     .buffers = {cursorQuadVBL},
     .targets = {{.format = TextureFormat::BGRA8Unorm}},
   });
-
-  // post process pipeline ------------------------------------------------
-  // ShaderModule postProcessShader =
-  //   utils::LoadShaderModule(ctx.device, resourcesDir + "/shaders/post_process.wgsl");
-
-  // postProcessRPL = utils::MakeRenderPipeline(ctx.device, {
-  //   .vs = postProcessShader,
-  //   .fs = postProcessShader,
-  //   .bgls = {viewProjBGL, textureBGL},
-  //   .buffers = {textureQuadVBL},
-  //   .targets = {{.format = TextureFormat::BGRA8Unorm}},
-  // });
 }

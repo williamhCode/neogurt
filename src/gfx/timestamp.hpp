@@ -29,16 +29,11 @@ struct TimestampHelper {
     };
     querySet = ctx.device.CreateQuerySet(&desc);
 
-    queryBuffer = utils::CreateBuffer(
-      ctx.device,
-      BufferUsage::CopySrc | BufferUsage::QueryResolve,
-      8 * capacity
-    );
+    queryBuffer =
+      ctx.CreateBuffer(BufferUsage::CopySrc | BufferUsage::QueryResolve, 8 * capacity);
 
-    outputBuffer = utils::CreateBuffer(
-      ctx.device, BufferUsage::CopyDst | BufferUsage::MapRead,
-      8 * capacity
-    );
+    outputBuffer =
+      ctx.CreateBuffer(BufferUsage::CopyDst | BufferUsage::MapRead, 8 * capacity);
   }
 
   void Begin(wgpu::CommandEncoder& encoder) {

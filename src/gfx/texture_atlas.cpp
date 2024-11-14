@@ -16,11 +16,10 @@ TextureAtlas::TextureAtlas(float _glyphSize, float _dpiScale)
   data = std::mdspan(dataRaw.data(), bufferSize.y, bufferSize.x);
 
   // init bind group data
-  textureSizeBuffer =
-    utils::CreateUniformBuffer(ctx.device, sizeof(glm::vec2), &textureSize);
+  textureSizeBuffer = ctx.CreateUniformBuffer(sizeof(glm::vec2), &textureSize);
 
-  textureSizeBG = utils::MakeBindGroup(
-    ctx.device, ctx.pipeline.textureSizeBGL,
+  textureSizeBG = ctx.MakeBindGroup(
+    ctx.pipeline.textureSizeBGL,
     {
       {0, textureSizeBuffer},
     }
@@ -48,11 +47,10 @@ void TextureAtlas::Update() {
     // replace buffer because we dont want to change previous buffer data
     // we wanna create copy of it so different instances of the buffer
     // can be used in the same command encoder
-    textureSizeBuffer =
-      utils::CreateUniformBuffer(ctx.device, sizeof(glm::vec2), &textureSize);
+    textureSizeBuffer = ctx.CreateUniformBuffer(sizeof(glm::vec2), &textureSize);
 
-    textureSizeBG = utils::MakeBindGroup(
-      ctx.device, ctx.pipeline.textureSizeBGL,
+    textureSizeBG = ctx.MakeBindGroup(
+      ctx.pipeline.textureSizeBGL,
       {
         {0, textureSizeBuffer},
       }
@@ -62,6 +60,6 @@ void TextureAtlas::Update() {
     resized = false;
   }
 
-  utils::WriteTexture(ctx.device, renderTexture.texture, bufferSize, dataRaw.data());
+  ctx.WriteTexture(renderTexture.texture, bufferSize, dataRaw.data());
   dirty = false;
 }

@@ -21,17 +21,17 @@ Renderer::Renderer(const SizeHandler& sizes) {
   timestamp = TimestampHelper(2, false);
 
   // color stuff
-  gammaBuffer = utils::CreateUniformBuffer(ctx.device, sizeof(float));
-  gammaBG = utils::MakeBindGroup(
-    ctx.device, ctx.pipeline.gammaBGL,
+  gammaBuffer = ctx.CreateUniformBuffer(sizeof(float));
+  gammaBG = ctx.MakeBindGroup(
+    ctx.pipeline.gammaBGL,
     {
       {0, gammaBuffer},
     }
   );
 
-  linearColorBuffer = utils::CreateUniformBuffer(ctx.device, sizeof(glm::vec4));
-  defaultColorBG = utils::MakeBindGroup(
-    ctx.device, ctx.pipeline.defaultColorBGL,
+  linearColorBuffer = ctx.CreateUniformBuffer(sizeof(glm::vec4));
+  defaultColorBG = ctx.MakeBindGroup(
+    ctx.pipeline.defaultColorBGL,
     {
       {0, linearColorBuffer},
     }
@@ -86,7 +86,7 @@ Renderer::Renderer(const SizeHandler& sizes) {
 
   // windows
   auto stencilTextureView =
-    utils::CreateRenderTexture(ctx.device, {sizes.uiFbSize, TextureFormat::Stencil8})
+    ctx.CreateRenderTexture({sizes.uiFbSize, TextureFormat::Stencil8})
     .CreateView();
 
   windowsRPD = utils::RenderPassDescriptor(
@@ -134,7 +134,7 @@ void Renderer::Resize(const SizeHandler& _sizes) {
   resize = true;
 
   auto stencilTextureView =
-    utils::CreateRenderTexture(ctx.device, {sizes.uiFbSize, TextureFormat::Stencil8})
+    ctx.CreateRenderTexture({sizes.uiFbSize, TextureFormat::Stencil8})
     .CreateView();
   windowsRPD.cDepthStencilAttachmentInfo.view = stencilTextureView;
 }
