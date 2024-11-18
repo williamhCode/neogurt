@@ -309,7 +309,9 @@ MouseInfo WinManager::GetMouseInfo(glm::vec2 mousePos) const {
 
   std::vector<const Win*> sortedWins;
   for (const auto* win : windowsOrder) {
-    if (win->hidden || win->id == 1) continue;
+    if (win->hidden || win->id == 1 || (win->floatData && !win->floatData->focusable)) {
+      continue;
+    }
     sortedWins.emplace_back(win);
   }
 
@@ -320,10 +322,6 @@ MouseInfo WinManager::GetMouseInfo(glm::vec2 mousePos) const {
 
   int grid = 1; // default grid number
   for (const auto* win : sortedWins) {
-    if (win->hidden || win->id == 1 || (win->floatData && !win->floatData->focusable)) {
-      continue;
-    }
-
     int top = win->startRow;
     int bottom = win->startRow + win->height;
     int left = win->startCol;

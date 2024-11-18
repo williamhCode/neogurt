@@ -1,6 +1,5 @@
 #pragma once
 
-#include "msgpack/v3/object_fwd_decl.hpp"
 #include <atomic>
 #include <mutex>
 #include <string>
@@ -27,9 +26,9 @@ inline Logger logger;
 
 // helpers
 #include <format>
-#define LOG(...) logger.Log(std::format(__VA_ARGS__))
 #define LOG_ENABLE() logger.enabled = true
 #define LOG_DISABLE() logger.enabled = false
+#define LOG(...) logger.Log(std::format(__VA_ARGS__))
 #define LOG_INFO(...) logger.LogInfo(std::format(__VA_ARGS__))
 #define LOG_WARN(...) logger.LogWarn(std::format(__VA_ARGS__))
 #define LOG_ERR(...) logger.LogErr(std::format(__VA_ARGS__))

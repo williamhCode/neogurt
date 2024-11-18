@@ -123,11 +123,13 @@ void InputHandler::HandleMouseButton(const SDL_MouseButtonEvent& event) {
     if (event.y < options.marginTop) return;
 
     mouseButton = event.button;
+    HandleMouseButtonAndMotion(event.down, {event.x, event.y});
+
   } else {
-    mouseButton.reset();
+    HandleMouseButtonAndMotion(event.down, {event.x, event.y});
     currGrid.reset();
+    mouseButton.reset();
   }
-  HandleMouseButtonAndMotion(event.down, {event.x, event.y});
 }
 
 void InputHandler::HandleMouseMotion(const SDL_MouseMotionEvent& event) {
@@ -182,7 +184,7 @@ void InputHandler::HandleMouseButtonAndMotion(int state, glm::vec2 mousePos) {
   } else {
     info = winManager->GetMouseInfo(*currGrid, mousePos);
   }
-  if (!options.multigrid) info.grid = 0;
+  if (!Options::multigrid) info.grid = 0;
 
   // LOG_INFO(
   //   "buttonStr {}, actionStr {}, modStr {}, info.grid {}, info.row {}, info.col {}",

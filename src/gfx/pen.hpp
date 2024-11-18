@@ -109,6 +109,7 @@ private:
   float heavyWidth;
 
   // internal data after drawing
+  // Draw() returns a view on blData.pixelData
   BLImageData blData;
 
   float ToWidth(Weight weight);

@@ -214,6 +214,7 @@ FontFamily::GetGlyphInfo(char32_t charcode, bool bold, bool italic) {
     }
   }
 
+  // TODO: draw a question mark symbol instead
   for (const auto& fontSet : fonts) {
     if (const auto* glyphInfo = fontSet.normal->GetGlyphInfo(' ', textureAtlas)) {
       return *glyphInfo;
