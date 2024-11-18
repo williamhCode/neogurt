@@ -6,7 +6,7 @@
 #include <cassert>
 #include <cmath>
 
-namespace box {
+namespace shape {
 
 Pen::Pen(int width, int height, float dpiScale)
     : xsize(width), ysize(height), dpiScale(dpiScale) {

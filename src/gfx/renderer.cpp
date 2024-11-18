@@ -184,8 +184,6 @@ void Renderer::RenderToWindow(
       win.id, win.grid.width, win.grid.height, win.width, win.height,
       win.IsFloating()
     );
-
-    // if (win.grid.width != win.width) return;
   }
 
   // keep track of quad index after each row
@@ -299,7 +297,7 @@ void Renderer::RenderToWindow(
 
           glm::vec2 textQuadPos{
             textOffset.x,
-            textOffset.y + (glyphInfo.boxDrawing ? 0 : defaultFont.ascender)
+            textOffset.y + (glyphInfo.useAscender ? defaultFont.ascender : 0)
           };
 
           auto& quad = textData.NextQuad();
@@ -414,7 +412,7 @@ void Renderer::RenderToWindow(
       passEncoder.End();
     }
 
-    // render braille
+    // render shapes
     start = shapeIntervals[range.start];
     end = shapeIntervals[range.end];
     if (start != end) {
@@ -444,7 +442,7 @@ void Renderer::RenderCursorMask(
   const auto& glyphInfo = fontFamily.GetGlyphInfo(charcode, hl.bold, hl.italic);
 
   glm::vec2 textQuadPos{
-    0, glyphInfo.boxDrawing ? 0 : fontFamily.DefaultFont().ascender
+    0, glyphInfo.useAscender ? fontFamily.DefaultFont().ascender : 0
   };
 
   textMaskData.ResetCounts();

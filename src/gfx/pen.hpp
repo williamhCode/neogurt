@@ -6,7 +6,7 @@
 #include "blend2d.h"
 #include "utils/region.hpp"
 
-namespace box {
+namespace shape {
 
 using BufType = std::mdspan<uint8_t, std::dextents<size_t, 2>>;
 

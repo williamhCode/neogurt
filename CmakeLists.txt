@@ -58,7 +58,7 @@ set(APP_SRC
   gfx/renderer.cpp
   gfx/font.cpp
   gfx/pen.cpp
-  gfx/box_drawing.cpp
+  gfx/shape_drawing.cpp
   gfx/camera.cpp
   gfx/render_texture.cpp
   gfx/texture_atlas.cpp

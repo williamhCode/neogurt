@@ -1,8 +1,8 @@
-#include "box_drawing.hpp"
+#include "shape_drawing.hpp"
 #include "utils/logger.hpp"
 #include "utils/timer.hpp"
 
-using namespace box;
+using namespace shape;
 
 static auto boxChars = [] {
   std::unordered_map<char32_t, DrawDesc> c{};
@@ -217,14 +217,14 @@ static auto boxChars = [] {
   return c;
 }();
 
-BoxDrawing::BoxDrawing(glm::vec2 charSize, float dpiScale) {
+ShapeDrawing::ShapeDrawing(glm::vec2 charSize, float dpiScale) {
   int width = charSize.x * dpiScale;
   int height = charSize.y * dpiScale;
   pen = Pen(width, height, dpiScale);
 }
 
 const GlyphInfo*
-BoxDrawing::GetGlyphInfo(char32_t charcode, TextureAtlas& textureAtlas) {
+ShapeDrawing::GetGlyphInfo(char32_t charcode, TextureAtlas& textureAtlas) {
   // return cached
   auto glyphIt = glyphInfoMap.find(charcode);
   if (glyphIt != glyphInfoMap.end()) {
@@ -255,7 +255,7 @@ BoxDrawing::GetGlyphInfo(char32_t charcode, TextureAtlas& textureAtlas) {
     GlyphInfo{
       .localPoss = localPoss,
       .atlasRegion = region,
-      .boxDrawing = true,
+      .useAscender = false,
     }
   );
 

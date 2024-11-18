@@ -8,14 +8,14 @@
 
 void PopulateBoxChars();
 
-struct BoxDrawing {
-  box::Pen pen;
+struct ShapeDrawing {
+  shape::Pen pen;
 
   using GlyphInfoMap = std::unordered_map<char32_t, GlyphInfo>;
   GlyphInfoMap glyphInfoMap;
 
-  BoxDrawing() = default;
-  BoxDrawing(glm::vec2 charSize, float dpiScale);
+  ShapeDrawing() = default;
+  ShapeDrawing(glm::vec2 charSize, float dpiScale);
 
   // returns nullptr if not implemented
   const GlyphInfo* GetGlyphInfo(char32_t charcode, TextureAtlas& textureAtlas);

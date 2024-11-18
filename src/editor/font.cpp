@@ -87,7 +87,7 @@ FontFamily::FromGuifont(std::string guifont, float linespace, float dpiScale) {
         return fontSet;
       }) |
       std::ranges::to<std::vector>(),
-      .boxDrawing{fontFamily.DefaultFont().charSize, dpiScale},
+      .shapeDrawing{fontFamily.DefaultFont().charSize, dpiScale},
       .textureAtlas{height, dpiScale},
       .defaultHeight = height,
       .defaultWidth = width,
@@ -120,7 +120,7 @@ void FontFamily::ChangeDpiScale(float dpiScale) {
     newFontSet.boldItalic = makeFontHandle(fontSet.boldItalic);
   }
   fonts = std::move(newFonts);
-  boxDrawing = BoxDrawing(DefaultFont().charSize, dpiScale);
+  shapeDrawing = ShapeDrawing(DefaultFont().charSize, dpiScale);
   textureAtlas = TextureAtlas(DefaultFont().height, dpiScale);
 }
 
@@ -153,7 +153,7 @@ void FontFamily::ChangeSize(float delta) {
     newFontSet.boldItalic = makeFontHandle(fontSet.boldItalic);
   }
   fonts = std::move(newFonts);
-  boxDrawing = BoxDrawing(DefaultFont().charSize, DefaultFont().dpiScale);
+  shapeDrawing = ShapeDrawing(DefaultFont().charSize, DefaultFont().dpiScale);
   textureAtlas = TextureAtlas(DefaultFont().height, DefaultFont().dpiScale);
 }
 
@@ -178,7 +178,7 @@ void FontFamily::ResetSize() {
     newFontSet.boldItalic = makeFontHandle(fontSet.boldItalic);
   }
   fonts = std::move(newFonts);
-  boxDrawing = BoxDrawing(DefaultFont().charSize, DefaultFont().dpiScale);
+  shapeDrawing = ShapeDrawing(DefaultFont().charSize, DefaultFont().dpiScale);
   textureAtlas = TextureAtlas(DefaultFont().height, DefaultFont().dpiScale);
 }
 
@@ -188,8 +188,9 @@ const Font& FontFamily::DefaultFont() const {
 
 const GlyphInfo&
 FontFamily::GetGlyphInfo(char32_t charcode, bool bold, bool italic) {
+  // box drawing chars
   if (charcode >= 0x2500 && charcode <= 0x259F) {
-    if (const auto *glyphInfo = boxDrawing.GetGlyphInfo(charcode, textureAtlas)) {
+    if (const auto *glyphInfo = shapeDrawing.GetGlyphInfo(charcode, textureAtlas)) {
       return *glyphInfo;
     }
   }
