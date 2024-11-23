@@ -1,5 +1,6 @@
 #pragma once
 
+#include "webgpu_utils/render_pass.hpp"
 #include "app/size.hpp"
 #include "editor/cursor.hpp"
 #include "editor/font.hpp"

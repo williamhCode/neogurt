@@ -1,6 +1,6 @@
 #pragma once
 
-#include "webgpu_tools/webgpu_utils.hpp"
+#include "webgpu_utils/device.hpp"
 #include "glm/ext/vector_uint2.hpp"
 #include "gfx/pipeline.hpp"
 

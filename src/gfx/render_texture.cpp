@@ -1,5 +1,6 @@
 #include "./render_texture.hpp"
 
+#include "webgpu_utils/to_ptr.hpp"
 #include "gfx/instance.hpp"
 #include "glm/common.hpp"
 #include "utils/line.hpp"

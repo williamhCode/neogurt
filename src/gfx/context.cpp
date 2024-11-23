@@ -1,6 +1,7 @@
 #include "./context.hpp"
 #include "utils/logger.hpp"
-#include "webgpu_tools/sdl3webgpu.hpp"
+#include "webgpu_utils/init.hpp"
+#include "sdl3webgpu.hpp"
 #include "dawn/webgpu_cpp_print.h"
 
 using namespace wgpu;
