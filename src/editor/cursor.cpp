@@ -1,6 +1,6 @@
 #include "cursor.hpp"
 
-#include "webgpu_tools/utils/webgpu.hpp"
+#include "webgpu_tools/webgpu_utils.hpp"
 #include "gfx/instance.hpp"
 #include "glm/common.hpp"
 #include "utils/easing_funcs.hpp"

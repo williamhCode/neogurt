@@ -9,7 +9,7 @@
 #include "utils/region.hpp"
 #include "utils/unicode.hpp"
 #include "utils/color.hpp"
-#include "webgpu_tools/utils/webgpu.hpp"
+#include "webgpu_tools/webgpu_utils.hpp"
 #include <utility>
 #include <vector>
 #include <array>

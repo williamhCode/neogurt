@@ -25,6 +25,10 @@ Client::~Client() {
   } else if (clientType == ClientType::Tcp) {
     if (socket->is_open()) socket->close();
   }
+
+  for (auto& thread : contextThreads) {
+    thread.join();
+  }
 }
 
 bool Client::ConnectStdio(
@@ -257,7 +261,7 @@ void Client::Write(msgpack::sbuffer&& buffer) {
 }
 
 asio::awaitable<void> Client::DoWrite() {
-  while (!msgsOut.Empty()) {
+  while (IsConnected() && !msgsOut.Empty()) {
     auto& msgBuffer = msgsOut.Front();
     auto buffer = asio::buffer(msgBuffer.data(), msgBuffer.size());
 

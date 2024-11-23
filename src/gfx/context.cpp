@@ -1,12 +1,8 @@
 #include "context.hpp"
 #include "utils/logger.hpp"
-#include "webgpu_tools/utils/webgpu.hpp"
-#include "webgpu_tools/utils/sdl3webgpu.h"
+#include "webgpu_tools/webgpu_utils.hpp"
+#include "webgpu_tools/sdl3webgpu.hpp"
 #include "dawn/webgpu_cpp_print.h"
-#include <iostream>
-
-// #define MAGIC_ENUM_RANGE_MAX 1000
-// #include "magic_enum.hpp"
 
 using namespace wgpu;
 

@@ -236,9 +236,7 @@ void WinManager::MsgSetPos(const event::MsgSetPos& e) {
 
   win.hidden = false;
 
-  // NOTE: nvim doesn't send grid events for changing msgWin grids
   if (msgWinId != -1 && msgWinId != e.grid) {
-    gridManager->Destroy({.grid = msgWinId});
     Close({.grid = msgWinId});
   }
   msgWinId = e.grid;

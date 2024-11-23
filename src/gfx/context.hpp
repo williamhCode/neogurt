@@ -1,13 +1,12 @@
 #pragma once
 
 #include "glm/ext/vector_uint2.hpp"
-#include "webgpu/webgpu_cpp.h"
-#include "webgpu_tools/utils/webgpu_device.hpp"
+#include "webgpu_tools/webgpu_utils.hpp"
 #include "gfx/pipeline.hpp"
 
 struct SDL_Window;
 
-struct WGPUContext : DeviceUtils {
+struct WGPUContext : wgpu::utils::DeviceWrapper {
   wgpu::Instance instance;
   wgpu::Surface surface;
   wgpu::Adapter adapter;

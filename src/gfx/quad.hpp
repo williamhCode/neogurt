@@ -1,7 +1,7 @@
 #pragma once
 
 #include "utils/logger.hpp"
-#include "webgpu_tools/utils/webgpu.hpp"
+#include "webgpu_tools/webgpu_utils.hpp"
 #include "gfx/instance.hpp"
 #include <algorithm>
 #include <vector>
