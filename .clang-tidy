@@ -1,7 +1,10 @@
 ---
 Checks: '
   clang-analyzer-*,
+
   performance-*,
+  -performance-enum-size,
+
   portability-*,
 
   cppcoreguidelines-*,
@@ -18,6 +21,7 @@ Checks: '
   -cppcoreguidelines-avoid-c-arrays,
   -cppcoreguidelines-prefer-member-initializer,
   -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
+  -cppcoreguidelines-macro-usage,
   # -cppcoreguidelines-pro-type-member-init,
 
   modernize-*,

@@ -35,7 +35,7 @@ struct CursorMode {
   }
 };
 
-enum class BlinkState : uint8_t { Wait, On, Off };
+enum class BlinkState { Wait, On, Off };
 
 struct Cursor {
   glm::vec2 size;

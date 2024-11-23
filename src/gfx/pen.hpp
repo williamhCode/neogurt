@@ -11,9 +11,9 @@ namespace shape {
 
 using BufType = std::mdspan<uint8_t, std::dextents<size_t, 2>>;
 
-enum Weight : uint8_t { None, Light, Heavy, Double };
-enum Side : uint8_t { Up, Down, Left, Right };
-enum QuadDir : uint8_t { UpLeft, UpRight, DownLeft, DownRight };
+enum Weight { None, Light, Heavy, Double };
+enum Side { Up, Down, Left, Right };
+enum QuadDir { UpLeft, UpRight, DownLeft, DownRight };
 
 struct HLine {
   Weight weight = Light;
@@ -68,7 +68,7 @@ struct RightBlock {
   float size;
 };
 
-enum ShadeType : uint8_t { SLight, SMedium, SDark };
+enum ShadeType { SLight, SMedium, SDark };
 struct Shade {
   ShadeType type;
 };

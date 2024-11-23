@@ -9,7 +9,7 @@ class RingBuffer {
 private:
   std::vector<T> buffer;
   size_t head = 0;
-  size_t size;
+  size_t size = 0;
 
   size_t wrapIndex(size_t index) const {
     return index >= size ? index - size : index;

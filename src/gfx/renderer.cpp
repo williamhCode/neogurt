@@ -122,9 +122,7 @@ Renderer::Renderer(const SizeHandler& sizes) {
   });
 }
 
-void Renderer::Resize(const SizeHandler& _sizes) {
-  sizes = _sizes;
-
+void Renderer::Resize(const SizeHandler& sizes) {
   camera.Resize(sizes.size);
 
   OtherFinalRenderTexture() =

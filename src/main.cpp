@@ -51,7 +51,7 @@ int main() {
   try {
     // init variables ---------------------
     sdl::Window window;
-    SizeHandler sizes{};
+    SizeHandler sizes;
     Renderer renderer;
     InputHandler input;
 

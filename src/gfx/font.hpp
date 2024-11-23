@@ -39,7 +39,6 @@ struct Font {
   static std::expected<Font, std::string>
   FromName(const FontDescriptorWithName& desc, float linespace, float dpiScale);
 
-  Font() = default;
   Font(std::string path, float height, float width, float linespace, float dpiScale);
 
   // returns nullptr when charcode is not found.

@@ -37,7 +37,6 @@ struct Renderer {
 
   Ortho2D camera;
 
-  SizeHandler sizes;
   bool resize = false;
 
   int currTextureIndex = 0;

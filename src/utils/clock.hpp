@@ -2,7 +2,6 @@
 
 #include <chrono>
 #include <deque>
-#include <optional>
 
 class Clock {
 private:

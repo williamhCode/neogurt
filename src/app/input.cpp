@@ -34,21 +34,21 @@ static bool IsProcessableKey(SDL_Keycode key) {
   return key < SDLK_CAPSLOCK || key > SDLK_ENDCALL || specialKeys.contains(key);
 }
 
-static void PrintMods(SDL_Keymod mod) {
-  std::string modStr;
-  if (mod & SDL_KMOD_LSHIFT) modStr += "LShift ";
-  if (mod & SDL_KMOD_RSHIFT) modStr += "RShift ";
-  if (mod & SDL_KMOD_LCTRL) modStr += "LCtrl ";
-  if (mod & SDL_KMOD_RCTRL) modStr += "RCtrl ";
-  if (mod & SDL_KMOD_LALT) modStr += "LAlt ";
-  if (mod & SDL_KMOD_RALT) modStr += "RAlt ";
-  if (mod & SDL_KMOD_LGUI) modStr += "LGui ";
-  if (mod & SDL_KMOD_RGUI) modStr += "RGui ";
-  if (mod & SDL_KMOD_NUM) modStr += "Num ";
-  if (mod & SDL_KMOD_CAPS) modStr += "Caps ";
-  if (mod & SDL_KMOD_MODE) modStr += "Mode ";
-  LOG_INFO("mods: {}", modStr);
-}
+// static void PrintMods(SDL_Keymod mod) {
+//   std::string modStr;
+//   if (mod & SDL_KMOD_LSHIFT) modStr += "LShift ";
+//   if (mod & SDL_KMOD_RSHIFT) modStr += "RShift ";
+//   if (mod & SDL_KMOD_LCTRL) modStr += "LCtrl ";
+//   if (mod & SDL_KMOD_RCTRL) modStr += "RCtrl ";
+//   if (mod & SDL_KMOD_LALT) modStr += "LAlt ";
+//   if (mod & SDL_KMOD_RALT) modStr += "RAlt ";
+//   if (mod & SDL_KMOD_LGUI) modStr += "LGui ";
+//   if (mod & SDL_KMOD_RGUI) modStr += "RGui ";
+//   if (mod & SDL_KMOD_NUM) modStr += "Num ";
+//   if (mod & SDL_KMOD_CAPS) modStr += "Caps ";
+//   if (mod & SDL_KMOD_MODE) modStr += "Mode ";
+//   LOG_INFO("mods: {}", modStr);
+// }
 
 void InputHandler::HandleKeyboard(const SDL_KeyboardEvent& event) {
   SDL_Scancode scancode = event.scancode;

@@ -9,11 +9,13 @@ using namespace wgpu;
 WGPUContext::WGPUContext(SDL_Window* window, glm::uvec2 _size, PresentMode _presentMode)
     : size(_size), presentMode(_presentMode) {
 
+  // instance -----------------------------
   std::vector<std::string> enabledToggles = {
     "enable_immediate_error_handling", "allow_unsafe_apis"
   };
 
   std::vector<const char*> enabledToggleNames;
+  enabledToggleNames.reserve(enabledToggles.size());
   for (const std::string& toggle : enabledToggles) {
     enabledToggleNames.push_back(toggle.c_str());
   }
@@ -34,10 +36,8 @@ WGPUContext::WGPUContext(SDL_Window* window, glm::uvec2 _size, PresentMode _pres
   }
 
   surface = SDL_GetWGPUSurface(instance, window);
-  Init();
-}
 
-void WGPUContext::Init() {
+  // adapter ------------------------------------
   adapter = utils::RequestAdapter(
     instance,
     {
@@ -64,6 +64,7 @@ void WGPUContext::Init() {
   // surface.GetCapabilities(adapter, &surfaceCaps);
   // utils::PrintSurfaceCapabilities(surfaceCaps);
 
+  // device -------------------------------------
   std::vector<FeatureName> requiredFeatures{
     FeatureName::TimestampQuery,
   };
@@ -75,7 +76,7 @@ void WGPUContext::Init() {
   });
 
   deviceDesc.SetUncapturedErrorCallback(
-    [](const Device& device, ErrorType type, const char* message) {
+    [](const Device& _, ErrorType type, const char* message) {
       std::ostringstream() << type;
       LOG_ERR("Device error: {} ({})", ToString(type), message);
     }
@@ -83,7 +84,7 @@ void WGPUContext::Init() {
 
   deviceDesc.SetDeviceLostCallback(
     CallbackMode::AllowSpontaneous,
-    [](const Device& device, DeviceLostReason reason, const char* message) {
+    [](const Device& _, DeviceLostReason reason, const char* message) {
       if (reason != DeviceLostReason::Destroyed) {
         LOG_ERR("Device lost: {} ({})", ToString(reason), message);
       }
@@ -91,12 +92,11 @@ void WGPUContext::Init() {
   );
 
   device = utils::RequestDevice(adapter, deviceDesc);
-  SetDevice(device); // utils
+  DeviceWrapper::device = device;
 
   queue = device.GetQueue();
 
-  // auto prefFormat = surface.GetPreferredFormat(adapter);
-  // LOG_INFO("preferred format: {}", magic_enum::enum_name(prefFormat));
+  // surface --------------------------------
   surfaceFormat = TextureFormat::BGRA8Unorm;
 
   // apple doesn't support unpremultiplied alpha

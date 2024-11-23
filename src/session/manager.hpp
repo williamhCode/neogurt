@@ -54,7 +54,7 @@ public:
     InputHandler& inputHandler
   );
 
-  inline SessionState* CurrSession() {
+   SessionState* CurrSession() {
     auto it = sessionsOrder.begin();
     return it == sessionsOrder.end() ? nullptr : *it;
   }

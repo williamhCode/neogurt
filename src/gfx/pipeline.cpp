@@ -1,5 +1,5 @@
 #include "./pipeline.hpp"
-#include "webgpu_utils.hpp"
+#include "webgpu_utils/blend.hpp"
 #include "gfx/context.hpp"
 #include "app/path.hpp"
 

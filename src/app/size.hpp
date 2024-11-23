@@ -17,12 +17,5 @@ struct SizeHandler {
   glm::vec2 offset;
   glm::vec2 fbOffset;
 
-  // SizeHandler() = default;
-  // ~SizeHandler() = default;
-
-  // disable copy
-  // SizeHandler(const SizeHandler&) = delete;
-  // SizeHandler& operator=(const SizeHandler&) = delete;
-
   void UpdateSizes(glm::vec2 size, float dpiScale, glm::vec2 charSize, const Options& options);
 };
