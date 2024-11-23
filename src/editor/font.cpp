@@ -1,6 +1,4 @@
-#include "font.hpp"
-#include "gfx/instance.hpp"
-#include "webgpu_tools/webgpu_utils.hpp"
+#include "./font.hpp"
 #include <ranges>
 #include <string>
 #include <boost/lexical_cast.hpp>

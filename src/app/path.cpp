@@ -1,4 +1,4 @@
-#include "path.hpp"
+#include "./path.hpp"
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreServices/CoreServices.h>
 

@@ -1,4 +1,4 @@
-#include "sdl_event.hpp"
+#include "./sdl_event.hpp"
 
 namespace sdl {
 

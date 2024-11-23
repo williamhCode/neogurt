@@ -1,4 +1,4 @@
-#include "state.hpp"
+#include "./state.hpp"
 #include "glm/gtx/string_cast.hpp"
 #include "utils/color.hpp"
 #include "utils/logger.hpp"

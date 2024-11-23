@@ -3,8 +3,6 @@
 #include "gfx/instance.hpp"
 #include "utils/logger.hpp"
 #include "utils/timer.hpp"
-#include "webgpu_tools/webgpu_utils.hpp"
-#include <iostream>
 
 struct TimestampHelper {
   bool disable;

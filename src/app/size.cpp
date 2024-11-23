@@ -1,4 +1,4 @@
-#include "size.hpp"
+#include "./size.hpp"
 #include "glm/common.hpp"
 #include "app/options.hpp"
 

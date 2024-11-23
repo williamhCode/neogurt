@@ -1,4 +1,4 @@
-#include "input.hpp"
+#include "./input.hpp"
 
 #include "editor/window.hpp"
 #include "utils/logger.hpp"

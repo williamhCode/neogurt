@@ -1,4 +1,4 @@
-#include "locator.hpp"
+#include "./locator.hpp"
 #include "utils/logger.hpp"
 #import <AppKit/NSFontDescriptor.h>
 #import <Foundation/NSString.h>

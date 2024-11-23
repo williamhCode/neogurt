@@ -1,4 +1,4 @@
-#include "logger.hpp"
+#include "./logger.hpp"
 #include <iostream>
 
 void Logger::RedirToPath(const fs::path& path) {

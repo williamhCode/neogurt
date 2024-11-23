@@ -1,5 +1,4 @@
-#include "timer.hpp"
-
+#include "./timer.hpp"
 #include <numeric>
 
 Timer::Timer(size_t _bufferSize) : bufferSize(_bufferSize) {

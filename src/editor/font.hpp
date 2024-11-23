@@ -4,8 +4,6 @@
 #include "gfx/shape_drawing.hpp"
 #include "gfx/texture_atlas.hpp"
 
-#include <array>
-#include <string_view>
 #include <vector>
 #include <expected>
 

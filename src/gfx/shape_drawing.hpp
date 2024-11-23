@@ -1,4 +1,5 @@
 #pragma once
+
 #include "gfx/glyph_info.hpp"
 #include "gfx/pen.hpp"
 #include "gfx/texture_atlas.hpp"

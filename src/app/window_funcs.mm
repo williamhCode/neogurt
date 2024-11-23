@@ -1,4 +1,4 @@
-#include "window_funcs.h"
+#include "./window_funcs.h"
 #include "utils/logger.hpp"
 #include "SDL3/SDL.h"
 

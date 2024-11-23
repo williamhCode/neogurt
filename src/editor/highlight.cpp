@@ -1,4 +1,4 @@
-#include "highlight.hpp"
+#include "./highlight.hpp"
 #include "utils/logger.hpp"
 
 glm::vec4 GetDefaultBackground(const HlTable& table) {

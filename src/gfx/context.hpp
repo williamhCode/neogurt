@@ -1,7 +1,7 @@
 #pragma once
 
-#include "glm/ext/vector_uint2.hpp"
 #include "webgpu_tools/webgpu_utils.hpp"
+#include "glm/ext/vector_uint2.hpp"
 #include "gfx/pipeline.hpp"
 
 struct SDL_Window;

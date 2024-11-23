@@ -1,6 +1,5 @@
-#include "pipeline.hpp"
-#include "context.hpp"
-#include "webgpu_tools/webgpu_utils.hpp"
+#include "./pipeline.hpp"
+#include "gfx/context.hpp"
 #include "app/path.hpp"
 
 using namespace wgpu;

@@ -1,7 +1,5 @@
-#include "texture_atlas.hpp"
-#include "utils/region.hpp"
+#include "./texture_atlas.hpp"
 #include "gfx/instance.hpp"
-#include "webgpu_tools/webgpu_utils.hpp"
 
 using namespace wgpu;
 

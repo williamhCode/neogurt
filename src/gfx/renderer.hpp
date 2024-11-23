@@ -11,7 +11,6 @@
 #include "gfx/quad.hpp"
 #include "gfx/render_texture.hpp"
 #include "gfx/timestamp.hpp"
-#include "webgpu_tools/webgpu_utils.hpp"
 #include <span>
 
 struct Renderer {

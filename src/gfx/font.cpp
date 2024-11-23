@@ -1,4 +1,4 @@
-#include "font.hpp"
+#include "./font.hpp"
 #include "gfx/font/locator.hpp"
 #include "utils/logger.hpp"
 #include "utils/region.hpp"

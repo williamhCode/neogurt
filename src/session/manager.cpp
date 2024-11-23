@@ -1,4 +1,4 @@
-#include "manager.hpp"
+#include "./manager.hpp"
 #include "app/window_funcs.h"
 #include "utils/color.hpp"
 #include "utils/logger.hpp"

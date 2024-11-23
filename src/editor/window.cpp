@@ -1,4 +1,4 @@
-#include "window.hpp"
+#include "./window.hpp"
 #include "glm/ext/vector_float2.hpp"
 #include "glm/gtx/string_cast.hpp"
 #include "utils/logger.hpp"

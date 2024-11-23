@@ -1,4 +1,4 @@
-#include "locator.hpp"
+#include "./locator.hpp"
 #include "SDL3/SDL_platform_defines.h"
 
 #if defined(SDL_PLATFORM_MACOS)
