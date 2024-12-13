@@ -84,7 +84,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4f {
       }
     }
     case 5 { // braille circle
-      let radius = h * 0.5;
+      let radius = w * 0.5;
       let fade = min(radius * 0.1, 1);
 
       let dist = distance(in.coords, in.size / 2.);

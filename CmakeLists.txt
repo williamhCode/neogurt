@@ -19,7 +19,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)  # clangd
 
 # deps ---------------------------
 set(Boost_USE_STATIC_LIBS ON)
-find_package(Boost 1.86.0 REQUIRED COMPONENTS process)
+find_package(Boost 1.86.0 REQUIRED COMPONENTS
+  process
+  program_options
+)
 
 add_subdirectory(deps/webgpu_tools EXCLUDE_FROM_ALL)
 
@@ -82,6 +85,7 @@ list(TRANSFORM APP_SRC PREPEND "src/")
 add_executable(neogurt ${APP_SRC})
 
 target_compile_definitions(neogurt PRIVATE
+  VERSION="${PROJECT_VERSION}"
   ROOT_DIR="${PROJECT_SOURCE_DIR}"
 )
 
@@ -98,6 +102,7 @@ endif()
 
 target_link_libraries(neogurt PRIVATE 
   Boost::process
+  Boost::program_options
   webgpu_tools
   msgpack-cxx
   freetype

@@ -1,5 +1,6 @@
 #include "./render_texture.hpp"
 
+#include "utils/logger.hpp"
 #include "webgpu_utils/to_ptr.hpp"
 #include "gfx/instance.hpp"
 #include "glm/common.hpp"
@@ -90,7 +91,9 @@ ScrollableRenderTexture::ScrollableRenderTexture(
   clearData.CreateBuffers(1);
 }
 
-// round to prevent floating point errors (very sus but it works)
+// round to prevent floating point errors
+// round to a factor of 1 / dpiScale
+// (very sus but it works)
 float ScrollableRenderTexture::RoundOffset(float offset) const {
   return glm::round(offset * dpiScale) / dpiScale;
 }

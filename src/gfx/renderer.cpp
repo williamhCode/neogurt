@@ -280,11 +280,14 @@ void Renderer::RenderToWindow(
             float radius =
               std::min(charSize.x / xNumDots, charSize.y / yNumDots) / 2;
             radius *= 0.6; // add some padding
+            auto halfSize = glm::vec2(radius, radius);
 
             Rect quadRect{
-              .pos = textOffset + (centerPos - glm::vec2(radius, radius)),
-              .size = glm::vec2(radius * 2, radius * 2),
+              .pos = textOffset + centerPos - halfSize,
+              .size = halfSize * 2.0f, 
             };
+            // quadRect.RoundToPixel(defaultFont.dpiScale);
+
             static uint32_t brailleShapeId = 5;
             AddShapeQuad(shapeData, quadRect, foreground, brailleShapeId);
           }
@@ -357,7 +360,7 @@ void Renderer::RenderToWindow(
 
   // gpu texture is reallocated if resized
   // old gpu texture is not referenced by texture atlas anymore
-  // but still referenced by command encoder if used by previous windows
+  // but still referenced by command encoder if used by other windows
   fontFamily.textureAtlas.Update();
 
   auto renderInfos = win.sRenderTexture.GetRenderInfos(rows);

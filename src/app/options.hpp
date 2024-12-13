@@ -8,6 +8,8 @@ struct Options {
   static inline bool multigrid = true;
   static inline bool interactiveShell = true;
 
+  static std::optional<int> LoadFromCommandLine(int argc, char** argv);
+
   // window opts are used once at start, only one instance so static
   // so dont use them except in window creation (sdl_window constructor)
   static inline bool vsync = true;

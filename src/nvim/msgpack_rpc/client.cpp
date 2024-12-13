@@ -42,7 +42,7 @@ bool Client::ConnectStdio(
 
   std::string shell = GetEnv("SHELL");
   if (shell.empty()) {
-    shell = bp::search_path("bash").string();
+    shell = bp::search_path("zsh").string();
   }
 
   std::vector<std::string> flags;

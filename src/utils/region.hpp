@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include "glm/common.hpp"
 #include "glm/ext/vector_float2.hpp"
 
 using Region = std::array<glm::vec2, 4>;
@@ -36,6 +37,17 @@ struct Rect {
 
   float Right() const {
     return pos.x + size.x;
+  }
+
+  // rounds rect to nearest pixel
+  void RoundToPixel(float dpi) {
+    auto roundPixel = [dpi](float val) -> float {
+      return glm::round(val * dpi) / dpi;
+    };
+    pos.x = roundPixel(pos.x);
+    pos.y = roundPixel(pos.y);
+    size.x = roundPixel(size.x);
+    size.y = roundPixel(size.y);
   }
 };
 

@@ -35,7 +35,11 @@ using namespace std::chrono;
 
 WGPUContext ctx;
 
-int main() {
+int main(int argc, char** argv) {
+  if (auto exit = Options::LoadFromCommandLine(argc, argv)) {
+    return *exit;
+  }
+
   SetupPaths();
 
   if (!SDL_Init(SDL_INIT_VIDEO)) {

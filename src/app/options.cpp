@@ -1,8 +1,54 @@
 #include "./options.hpp"
+
+#include "boost/program_options.hpp"
+#include <iostream>
+
 #include "utils/logger.hpp"
 #include <future>
 #include <boost/core/demangle.hpp>
 #include "utils/async.hpp"
+
+std::optional<int> Options::LoadFromCommandLine(int argc, char** argv) {
+  namespace po = boost::program_options;
+
+  // Define command-line options
+  po::options_description desc("Options");
+  desc.add_options()
+    ("help,h", "Show help message")
+    ("version,V", "Show version")
+    ("multigrid", po::value<bool>()->default_value(multigrid), "Use multigrid")
+    ("interactiveShell,i", po::value<bool>()->default_value(interactiveShell), "Spawn neovim in an interactive shell")
+  ;
+
+  po::variables_map vm;
+
+  try {
+    po::store(po::parse_command_line(argc, argv, desc), vm);
+    po::notify(vm);
+
+    if (vm.count("help")) {
+      std::cout << desc << "\n";
+      return 0;
+    }
+    if (vm.count("version")) {
+      std::cout << "Neogurt " VERSION "\n";
+      return 0;
+    }
+    if (vm.count("multigrid")) {
+      multigrid = vm["multigrid"].as<bool>();
+    }
+    if (vm.count("interactiveShell")) {
+      interactiveShell = vm["interactiveShell"].as<bool>();
+    }
+
+  } catch (const po::error& ex) {
+    std::cerr << "Error: " << ex.what() << "\n";
+    std::cerr << desc << "\n";
+    return 1;
+  }
+
+  return {};
+}
 
 static std::string CamelToSnake(std::string_view s) {
   std::string result;

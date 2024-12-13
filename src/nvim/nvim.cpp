@@ -2,6 +2,7 @@
 #include "msgpack_rpc/client.hpp"
 #include <fstream>
 #include <future>
+#include "app/options.hpp"
 #include "utils/async.hpp"
 #include "utils/logger.hpp"
 #include "app/path.hpp"
@@ -67,7 +68,7 @@ void Nvim::Setup() {
     100, 50,
     {
       {"rgb", true},
-      {"ext_multigrid", true},
+      {"ext_multigrid", Options::multigrid},
       {"ext_linegrid", true},
     }
   ).get();
