@@ -17,6 +17,10 @@ local cmds_table = {
   session_kill = {
     id = 0
   },
+  session_restart = {
+    id = 0,
+    curr_dir = false,
+  },
   session_switch = {
     id = "number",
   },
@@ -36,8 +40,8 @@ local cmds_table = {
   },
 
   font_size_change = {
-    all = false,
     [1] = "number",
+    all = false,
   },
   font_size_reset = {
     all = false,
@@ -59,28 +63,10 @@ vim.api.nvim_create_user_command("Neogurt", function(cmd_opts)
     return
   end
 
-  -- handle command output
+  -- print command output
   local result = vim.g.neogurt_cmd(cmd, opts)
-  if cmd == "session_new" then
+  vim.print(result)
 
-  elseif cmd == "session_kill" then
-    if result == true then
-      print("Session killed")
-    else
-      print("Session not found")
-    end
-
-  elseif cmd == "session_prev" then
-    if result == false then
-      print("No previous session")
-    end
-
-  elseif cmd == "session_info" then
-    vim.print(result)
-
-  elseif cmd == "session_list" then
-    vim.print(result)
-  end
 end, { nargs = "*" })
 
 --- Sends a session command to neogurt
@@ -118,7 +104,7 @@ vim.g.neogurt_cmd = function(cmd, opts)
     vim.ui.select(list, {
       prompt = "Select a session",
       format_item = function(item)
-        local line = "(" .. item.id .. ") - " .. item.name
+        local line = item.name
         if item.id == curr_id then
           line = line .. " (current)"
         end

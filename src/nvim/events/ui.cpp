@@ -27,7 +27,7 @@ static const std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
   }},
 
   {"chdir", [](const msgpack::object& args, UiEvents& uiEvents) {
-    // uiEvents.currEvents().emplace_back(args.as<Chdir>());
+    uiEvents.Curr().emplace_back(args.as<Chdir>());
   }},
 
   {"mode_change", [](const msgpack::object& args, UiEvents& uiEvents) {

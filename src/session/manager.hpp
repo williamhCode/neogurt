@@ -27,7 +27,8 @@ struct SessionListOpts {
 struct SessionListEntry {
   int id;
   std::string name;
-  MSGPACK_DEFINE_MAP(id, name);
+  std::string dir;
+  MSGPACK_DEFINE_MAP(id, name, dir);
 };
 
 struct SessionManager {
@@ -59,11 +60,12 @@ public:
     return it == sessionsOrder.end() ? nullptr : *it;
   }
 
-  int SessionNew(const SessionNewOpts& opts = {}); // return session id
-  bool SessionKill(int id = 0);                    // return true if successful
-  bool SessionSwitch(int id);                      // return true if successful
-  bool SessionPrev();                              // return true if successful
-  SessionListEntry SessionInfo(int id = 0);        // return true if successful
+  int SessionNew(const SessionNewOpts& opts = {});      // returns session id (0 if failed)
+  bool SessionKill(int id = 0);                         // returns success
+  int SessionRestart(int id = 0, bool currDir = false); // returns session id (0 if failed)
+  bool SessionSwitch(int id);                           // returns success
+  bool SessionPrev();                                   // returns success
+  SessionListEntry SessionInfo(int id = 0);             // returns {} if failed
   std::vector<SessionListEntry> SessionList(const SessionListOpts& opts = {});
   // returns true if all sessions are closed
   bool ShouldQuit();

@@ -1,12 +1,11 @@
 #include "./options.hpp"
 
-#include "boost/program_options.hpp"
-#include <iostream>
-
 #include "utils/logger.hpp"
-#include <future>
-#include <boost/core/demangle.hpp>
 #include "utils/async.hpp"
+#include "boost/program_options.hpp"
+#include "boost/core/demangle.hpp"
+#include <iostream>
+#include <future>
 
 std::optional<int> Options::LoadFromCommandLine(int argc, char** argv) {
   namespace po = boost::program_options;
@@ -43,7 +42,7 @@ std::optional<int> Options::LoadFromCommandLine(int argc, char** argv) {
 
   } catch (const po::error& ex) {
     std::cerr << "Error: " << ex.what() << "\n";
-    std::cerr << desc << "\n";
+    // std::cerr << desc << "\n";
     return 1;
   }
 

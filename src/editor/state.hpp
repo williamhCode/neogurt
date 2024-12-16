@@ -11,6 +11,7 @@
 // All state information that gets parsed from ui events.
 // Editor refers to neovim, so per neovim instance, there is an editor state.
 struct EditorState {
+  std::string currDir;
   UiOptions uiOptions;
   GridManager gridManager;
   WinManager winManager;

@@ -117,7 +117,8 @@ void ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
           }
         },
         [&](Chdir& e) {
-          // LOG("chdir");
+          LOG("chdir: {}", e.dir);
+          editorState.currDir = e.dir;
         },
         [&](ModeChange& e) {
           editorState.cursor.SetMode(&editorState.cursorModes[e.modeIdx]);

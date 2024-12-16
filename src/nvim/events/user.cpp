@@ -27,6 +27,17 @@ void ProcessUserEvents(rpc::Client& client, SessionManager& sessionManager) {
           bool success = sessionManager.SessionKill(opts.at("id").convert());
           request.SetValue(success);
 
+        } else if (cmd == "session_restart") {
+          int id = sessionManager.SessionRestart(
+            opts.at("id").convert(),
+            opts.at("curr_dir").convert()
+          );
+          if (id == 0) {
+            request.SetValue(nil_t());
+          } else {
+            request.SetValue(id);
+          }
+
         } else if (cmd == "session_switch") {
           bool success = sessionManager.SessionSwitch(opts.at("id").convert());
           request.SetValue(success);

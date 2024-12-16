@@ -3,8 +3,7 @@
 #include <cstdint>
 
 struct Options {
-  // TODO: load these options before connecting
-  // and add commandline opts
+  // startup options
   static inline bool multigrid = true;
   static inline bool interactiveShell = true;
 

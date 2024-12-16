@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <stdexcept>
 #include <ranges>
+#include <utility>
 #include <vector>
 #include "glm/gtx/string_cast.hpp"
 
@@ -26,9 +27,9 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
   int id = currId++;
   auto name = opts.name.empty() ? std::to_string(id) : opts.name;
 
-  auto [it, success] = sessions.try_emplace(id, id, name);
+  auto [it, success] = sessions.try_emplace(id, id, name, opts.dir);
   if (!success) {
-    throw std::runtime_error("Session with id " + std::to_string(id) + " already exists");
+    throw std::runtime_error("Session with id " + std::to_string(id) + " failed to be created");
   }
 
   auto& session = it->second;
@@ -146,6 +147,23 @@ bool SessionManager::SessionKill(int id) {
   return true;
 }
 
+int SessionManager::SessionRestart(int id, bool currDir) {
+  if (id == 0) id = CurrSession()->id;
+
+  auto it = sessions.find(id);
+  if (it == sessions.end()) {
+    return false;
+  }
+  auto& session = it->second;
+
+  session.nvim.client->Disconnect();
+
+  auto dir = currDir ? session.editorState.currDir : session.dir;
+  int newId = SessionNew({session.name, dir});
+
+  return newId;
+}
+
 bool SessionManager::SessionSwitch(int id) {
   auto it = sessions.find(id);
   if (it == sessions.end()) {
@@ -181,17 +199,17 @@ SessionListEntry SessionManager::SessionInfo(int id) {
 
   auto it = sessions.find(id);
   if (it == sessions.end()) {
-    return {0, ""};
+    return {};
   }
   auto& session = it->second;
 
-  return {session.id, session.name};
+  return {session.id, session.name, session.dir};
 }
 
 std::vector<SessionListEntry> SessionManager::SessionList(const SessionListOpts& opts) {
   auto entries =
     sessionsOrder | std::views::transform([](auto* session) {
-      return SessionListEntry{session->id, session->name};
+      return SessionListEntry{session->id, session->name, session->dir};
     }) |
     std::ranges::to<std::vector>();
 
@@ -227,7 +245,7 @@ bool SessionManager::ShouldQuit() {
     return toErase;
   });
 
-  // no sessions left
+  // check if no sessions left
   auto* curr = CurrSession();
   if (curr == nullptr) {
     return true;

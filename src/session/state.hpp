@@ -6,6 +6,7 @@
 struct SessionState {
   int id;
   std::string name;
+  std::string dir;
 
   // session data ----------------------
   Nvim nvim;
