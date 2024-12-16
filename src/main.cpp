@@ -24,6 +24,7 @@
 #include <boost/core/demangle.hpp>
 #include <algorithm>
 #include <future>
+#include <print>
 #include <span>
 #include <vector>
 #include <atomic>
@@ -47,8 +48,8 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  if (FtInit()) {
-    LOG_ERR("Unable to initialize freetype");
+  if (int error = FtInit()) {
+    LOG_ERR("Unable to initialize freetype: {}", FT_Error_String(error));
     return 1;
   }
 
@@ -77,11 +78,6 @@ int main(int argc, char** argv) {
     TSQueue<ResizeEvents> resizeEvents;
     TSQueue<SDL_Event> sdlEvents;
 
-    // std::promise<void> resizePromise;
-    // std::future<void> resizeFuture;
-    // bool resizing = false;
-    // bool uiResizing = false;
-
     int frameCount = 0;
 
     std::jthread renderThread([&](std::stop_token stopToken) {
@@ -94,6 +90,7 @@ int main(int argc, char** argv) {
       // Timer timer1(1);
 
       while (!exitWindow && !stopToken.stop_requested()) {
+
         // resize events, put before getting next texture
         while (!resizeEvents.Empty()) {
           // only process last event
@@ -140,7 +137,6 @@ int main(int argc, char** argv) {
               } else {
                 renderer.Resize(sizes);
                 nvim->UiTryResize(sizes.uiWidth, sizes.uiHeight);
-                // uiResizing = true;
               }
 
               break;
@@ -171,7 +167,7 @@ int main(int argc, char** argv) {
         //   frameCount = 0;
         //   auto fps = clock.GetFps();
         //   auto fpsStr = std::format("fps: {:.2f}", fps);
-        //   std::cout << '\r' << fpsStr << std::string(10, ' ') << std::flush;
+        //   std::print("\rfps: {:.2f}", fps);
         // }
 
         // timer1.Start();
@@ -225,10 +221,6 @@ int main(int argc, char** argv) {
           idle = false;
           idleElasped = 0;
         }
-        // if (uiResizing && numFlushes < 1) {
-        //   goto process_events;
-        // }
-        // uiResizing = false;
         LOG_ENABLE();
 
         LOG_DISABLE();
@@ -322,18 +314,6 @@ int main(int argc, char** argv) {
 
         renderer.End();
 
-        // if (resizing) {
-        //   ctx.instance.WaitAny(
-        //     ctx.queue.OnSubmittedWorkDone(
-        //       CallbackMode::WaitAnyOnly,
-        //       [](QueueWorkDoneStatus status) {
-        //       }
-        //     ),
-        //     std::numeric_limits<uint64_t>::max()
-        //   );
-        //   resizePromise.set_value();
-        //   resizing = false;
-        // }
         ctx.surface.Present();
         ctx.device.Tick();
 
@@ -347,19 +327,17 @@ int main(int argc, char** argv) {
     // event loop --------------------------------
     // SDL_StartTextInput(window.Get());
 
-    ResizeEvents currResizeEvents{};
     // resize handling
+    ResizeEvents currResizeEvents{};
+
     sdl::AddEventWatch([&](SDL_Event& event) {
       switch (event.type) {
         case SDL_EVENT_WINDOW_RESIZED:
           currResizeEvents.windowResized = event;
           break;
         case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: {
-          // resizePromise = std::promise<void>();
-          // resizeFuture = resizePromise.get_future();
           currResizeEvents.windowPixelSizeChanged = event;
           resizeEvents.Push(currResizeEvents);
-          // resizeFuture.wait();
           break;
         }
       }
@@ -422,6 +400,6 @@ int main(int argc, char** argv) {
   }
 
   // destructors cleans up window and font before quitting sdl and freetype
-  // FtDone();
-  // SDL_Quit();
+  FtDone();
+  SDL_Quit();
 }
