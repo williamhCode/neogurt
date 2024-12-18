@@ -55,17 +55,28 @@ void WinManager::UpdateRenderData(Win& win) {
 
     win.sRenderTexture =
       ScrollableRenderTexture(size, sizes.dpiScale, sizes.charSize, CalcMaxTexPerPage(win));
-  }
-  win.sRenderTexture.UpdatePos(pos);
-
-  if (sizeChanged) {
     win.sRenderTexture.UpdateMargins(win.margins);
   }
+  win.sRenderTexture.UpdatePos(pos);
 
   win.grid.dirty = true;
 
   win.pos = pos;
   win.size = size;
+}
+
+void WinManager::TryChangeDpiScale(float dpiScale) {
+  for (auto& [id, win] : windows) {
+    if (dpiScale != win.sRenderTexture.dpiScale) {
+      LOG_INFO("WinManager::ChangeDpiScale: window {} dpi changed", id);
+      win.sRenderTexture = ScrollableRenderTexture(
+        win.size, sizes.dpiScale, sizes.charSize, CalcMaxTexPerPage(win)
+      );
+      win.sRenderTexture.UpdatePos(win.pos);
+      win.sRenderTexture.UpdateMargins(win.margins);
+      win.grid.dirty = true;
+    }
+  }
 }
 
 void WinManager::Pos(const event::WinPos& e) {
@@ -271,9 +282,10 @@ void WinManager::Viewport(const event::WinViewport& e) {
 void WinManager::UpdateScrolling(float dt) {
   std::lock_guard lock(windowsMutex);
   for (auto& [id, win] : windows) {
-    if (!win.sRenderTexture.scrolling) continue;
-    win.sRenderTexture.UpdateScrolling(dt);
-    dirty = true;
+    if (win.sRenderTexture.scrolling) {
+      win.sRenderTexture.UpdateScrolling(dt);
+      dirty = true;
+    }
   }
 }
 

@@ -29,7 +29,7 @@ struct FontFamily {
   static std::expected<FontFamily, std::string>
   FromGuifont(std::string guifont, float linespace, float dpiScale);
 
-  void ChangeDpiScale(float dpiScale);
+  bool TryChangeDpiScale(float dpiScale); // returns true if changed
   void ChangeSize(float delta);
   void ResetSize();
 

@@ -97,7 +97,9 @@ FontFamily::FromGuifont(std::string guifont, float linespace, float dpiScale) {
   }
 }
 
-void FontFamily::ChangeDpiScale(float dpiScale) {
+bool FontFamily::TryChangeDpiScale(float dpiScale) {
+  if (DefaultFont().dpiScale == dpiScale) return false;
+
   std::vector<FontSet> newFonts;
   for (auto& fontSet : fonts) {
     FontSet& newFontSet = newFonts.emplace_back();
@@ -120,6 +122,8 @@ void FontFamily::ChangeDpiScale(float dpiScale) {
   fonts = std::move(newFonts);
   shapeDrawing = ShapeDrawing(DefaultFont().charSize, dpiScale);
   textureAtlas = TextureAtlas(DefaultFont().height, dpiScale);
+
+  return true;
 }
 
 void FontFamily::ChangeSize(float delta) {

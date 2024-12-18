@@ -78,6 +78,9 @@ private:
   void UpdateRenderData(Win& win);
 
 public:
+  // updates dpi scale for all windows if changed
+  void TryChangeDpiScale(float dpiScale);
+
   void Pos(const event::WinPos& e);
   void FloatPos(int grid);
   void FloatPos(const event::WinFloatPos& e);

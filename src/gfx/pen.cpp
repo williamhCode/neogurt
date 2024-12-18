@@ -348,7 +348,7 @@ Pen::ImageData Pen::Draw(const DrawDesc& desc) {
   // diagonal needs extra space
   if (std::holds_alternative<Diagonal>(desc)) {
     xoffset += xhalf / 2;
-    dataWidth += xoffset * 2;
+    dataWidth += xhalf;
   }
 
   // begin -----------------------------

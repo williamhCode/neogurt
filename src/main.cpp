@@ -72,7 +72,7 @@ int main(int argc, char** argv) {
     // main loop -----------------------------------
     std::atomic_bool exitWindow = false;
     struct ResizeEvents {
-      SDL_Event windowResized;
+      std::optional<SDL_Event> windowResized;
       SDL_Event windowPixelSizeChanged;
     };
     TSQueue<ResizeEvents> resizeEvents;
@@ -89,32 +89,25 @@ int main(int argc, char** argv) {
       Clock clock;
       // Timer timer1(1);
 
+      // main loop
       while (!exitWindow && !stopToken.stop_requested()) {
 
         // resize events, put before getting next texture
         while (!resizeEvents.Empty()) {
-          // only process last event
-          if (resizeEvents.Size() == 1) {
-            // resizing = true;
+
+          if (resizeEvents.Size() == 1) { // only process last event
             const auto& resizeEvent = resizeEvents.Front();
-            {
-              const auto& event = resizeEvent.windowResized;
-              window.size = {event.window.data1, event.window.data2};
+
+            if (const auto& event = resizeEvent.windowResized) {
+              window.size = {event->window.data1, event->window.data2};
             }
+
             {
               const auto& event = resizeEvent.windowPixelSizeChanged;
-
               window.fbSize = {event.window.data1, event.window.data2};
-              // LOG_INFO("pixel size changed, {} {}", window.fbSize.x,
-              // window.fbSize.y);
-
-              float prevDpiScale = window.dpiScale;
               window.dpiScale = window.fbSize.x / window.size.x;
-              bool dpiChanged = prevDpiScale != window.dpiScale;
 
-              if (dpiChanged) {
-                editorState->fontFamily.ChangeDpiScale(window.dpiScale);
-              }
+              bool dpiChanged = editorState->fontFamily.TryChangeDpiScale(window.dpiScale);
 
               auto uiFbSize = sizes.uiFbSize;
               sizes.UpdateSizes(
@@ -125,8 +118,6 @@ int main(int argc, char** argv) {
 
               if (dpiChanged) {
                 editorState->cursor.Resize(sizes.charSize, sizes.dpiScale);
-                // force nvim to resend all events to update dpiScale
-                nvim->UiTryResize(sizes.uiWidth + 1, sizes.uiHeight);
               }
 
               ctx.Resize(sizes.fbSize);
@@ -227,9 +218,12 @@ int main(int argc, char** argv) {
         ParseEditorState(nvim->uiEvents, session->editorState);
         LOG_ENABLE();
 
+
         // timer1.End();
 
         // update --------------------------------------------
+        editorState->winManager.TryChangeDpiScale(window.dpiScale);
+
         editorState->winManager.UpdateScrolling(dt);
 
         const auto* currWin = editorState->winManager.GetWin(editorState->cursor.grid);
@@ -338,6 +332,7 @@ int main(int argc, char** argv) {
         case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: {
           currResizeEvents.windowPixelSizeChanged = event;
           resizeEvents.Push(currResizeEvents);
+          currResizeEvents = {};
           break;
         }
       }

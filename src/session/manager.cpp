@@ -301,6 +301,7 @@ void SessionManager::FontSizeReset(bool all) {
 }
 
 void SessionManager::UpdateSessionSizes(SessionState& session) {
+  session.editorState.fontFamily.TryChangeDpiScale(window.dpiScale);
   sizes.UpdateSizes(
     window.size, window.dpiScale, session.editorState.fontFamily.DefaultFont().charSize,
     session.options

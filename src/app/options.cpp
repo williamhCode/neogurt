@@ -10,7 +10,7 @@
 std::optional<int> Options::LoadFromCommandLine(int argc, char** argv) {
   namespace po = boost::program_options;
 
-  // Define command-line options
+  // command-line options
   po::options_description desc("Options");
   desc.add_options()
     ("help,h", "Show help message")
@@ -21,6 +21,7 @@ std::optional<int> Options::LoadFromCommandLine(int argc, char** argv) {
 
   po::variables_map vm;
 
+  // parse options
   try {
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);
@@ -42,7 +43,6 @@ std::optional<int> Options::LoadFromCommandLine(int argc, char** argv) {
 
   } catch (const po::error& ex) {
     std::cerr << "Error: " << ex.what() << "\n";
-    // std::cerr << desc << "\n";
     return 1;
   }
 

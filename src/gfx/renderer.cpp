@@ -286,7 +286,7 @@ void Renderer::RenderToWindow(
               .pos = textOffset + centerPos - halfSize,
               .size = halfSize * 2.0f, 
             };
-            // quadRect.RoundToPixel(defaultFont.dpiScale);
+            quadRect.RoundToPixel(defaultFont.dpiScale);
 
             static uint32_t brailleShapeId = 5;
             AddShapeQuad(shapeData, quadRect, foreground, brailleShapeId);
@@ -337,6 +337,8 @@ void Renderer::RenderToWindow(
             thickness,
           },
         };
+        quadRect.RoundToPixel(defaultFont.dpiScale);
+
         auto underlineColor = GetSpecial(hlTable, hl);
         AddShapeQuad(
           shapeData, quadRect, underlineColor,

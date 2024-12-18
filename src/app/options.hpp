@@ -7,6 +7,7 @@ struct Options {
   static inline bool multigrid = true;
   static inline bool interactiveShell = true;
 
+  // return optional exit code
   static std::optional<int> LoadFromCommandLine(int argc, char** argv);
 
   // window opts are used once at start, only one instance so static
