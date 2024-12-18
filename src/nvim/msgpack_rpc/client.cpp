@@ -68,7 +68,8 @@ bool Client::ConnectStdio(
   }
   exit = false;
 
-  co_spawn(context, GetData(), asio::detached);
+  co_spawn(context, DoRead(), asio::detached);
+  co_spawn(context, DoWrite(), asio::detached);
 
   contextThreads.emplace_back([this]() { context.run(); });
   contextThreads.emplace_back([this]() { context.run(); });
@@ -92,7 +93,8 @@ bool Client::ConnectTcp(std::string_view host, uint16_t port) {
   }
   exit = false;
 
-  co_spawn(context, GetData(), asio::detached);
+  co_spawn(context, DoRead(), asio::detached);
+  co_spawn(context, DoWrite(), asio::detached);
 
   contextThreads.emplace_back([this]() { context.run(); });
   contextThreads.emplace_back([this]() { context.run(); });
@@ -102,6 +104,7 @@ bool Client::ConnectTcp(std::string_view host, uint16_t port) {
 
 void Client::Disconnect() {
   exit = true;
+  msgsOut.Exit();
 }
 
 bool Client::IsConnected() {
@@ -132,7 +135,7 @@ uint32_t Client::Msgid() {
   return currId++;
 }
 
-asio::awaitable<void> Client::GetData() {
+asio::awaitable<void> Client::DoRead() {
   unpacker.reserve_buffer(readSize);
 
   while (IsConnected()) {
@@ -153,12 +156,12 @@ asio::awaitable<void> Client::GetData() {
 
     if (ec) {
       if (ec == asio::error::eof) {
-        LOG_INFO("Client::GetData: The server closed the connection");
+        LOG_INFO("Client::DoRead: The server closed the connection");
         Disconnect();
         co_return;
 
       } else {
-        LOG_ERR("Client::GetData: Error - {}", ec.message());
+        LOG_ERR("Client::DoRead: Error - {}", ec.message());
         continue;
       }
     }
@@ -169,7 +172,7 @@ asio::awaitable<void> Client::GetData() {
     while (unpacker.next(handle)) {
       const auto& obj = handle.get();
       if (obj.type != msgpack::type::ARRAY) {
-        LOG_ERR("Client::GetData: Not an array");
+        LOG_ERR("Client::DoRead: Not an array");
         continue;
       }
 
@@ -224,7 +227,7 @@ asio::awaitable<void> Client::GetData() {
             responses.erase(it);
 
           } else {
-            LOG_ERR("Client::GetData: Response not found for msgid: {}", response.msgid);
+            LOG_ERR("Client::DoRead: Response not found for msgid: {}", response.msgid);
           }
         }
 
@@ -237,7 +240,7 @@ asio::awaitable<void> Client::GetData() {
         });
 
       } else {
-        LOG_WARN("Client::GetData: Unknown type: {}", type);
+        LOG_WARN("Client::DoRead: Unknown type: {}", type);
       }
     }
 
@@ -251,14 +254,10 @@ asio::awaitable<void> Client::GetData() {
 
 void Client::Write(msgpack::sbuffer&& buffer) {
   msgsOut.Push(std::move(buffer));
-
-  if (msgsOut.Size() == 1) {
-    co_spawn(context, DoWrite(), asio::detached);
-  }
 }
 
 asio::awaitable<void> Client::DoWrite() {
-  while (IsConnected() && !msgsOut.Empty()) {
+  while (msgsOut.Wait()) {
     auto& msgBuffer = msgsOut.Front();
     auto buffer = asio::buffer(msgBuffer.data(), msgBuffer.size());
 

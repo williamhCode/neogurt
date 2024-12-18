@@ -113,7 +113,7 @@ private:
   std::atomic_uint32_t currId = 0;
 
   uint32_t Msgid();
-  asio::awaitable<void> GetData();
+  asio::awaitable<void> DoRead();
   void Write(msgpack::sbuffer&& buffer);
   asio::awaitable<void> DoWrite();
 };

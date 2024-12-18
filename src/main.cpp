@@ -192,7 +192,9 @@ int main(int argc, char** argv) {
 
         // nvim events  -------------------------------------------
         if (sessionManager.ShouldQuit()) {
-          SDL_Event quitEvent{.type = SDL_EVENT_QUIT};
+          SDL_Event quitEvent;
+          SDL_zero(quitEvent);
+          quitEvent.type = SDL_EVENT_QUIT;
           SDL_PushEvent(&quitEvent);
           break;
         };
@@ -324,7 +326,7 @@ int main(int argc, char** argv) {
     // resize handling
     ResizeEvents currResizeEvents{};
 
-    sdl::AddEventWatch([&](SDL_Event& event) {
+    sdl::SetEventFilter([&](SDL_Event& event) {
       switch (event.type) {
         case SDL_EVENT_WINDOW_RESIZED:
           currResizeEvents.windowResized = event;
@@ -335,8 +337,20 @@ int main(int argc, char** argv) {
           currResizeEvents = {};
           break;
         }
+
+        case SDL_EVENT_QUIT: {
+          const bool* state = SDL_GetKeyboardState(nullptr);
+          SDL_Keymod mods = SDL_GetModState();
+
+          auto scancode = SDL_GetScancodeFromKey(SDLK_W, nullptr);
+          if (state[scancode] && (mods & SDL_KMOD_GUI)) {
+            return false;
+          }
+
+          break;
+        }
       }
-      return 0;
+      return true;
     });
 
     SDL_Event event;

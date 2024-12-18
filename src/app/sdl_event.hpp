@@ -6,6 +6,6 @@
 namespace sdl {
 
 using EventFilter = std::function<bool(SDL_Event&)>;
-void AddEventWatch(EventFilter&& callback);
+void SetEventFilter(EventFilter&& callback);
 
 } // namespace sdl

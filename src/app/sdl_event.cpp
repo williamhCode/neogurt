@@ -2,17 +2,17 @@
 
 namespace sdl {
 
-static std::vector<std::pair<SDL_EventFilter, EventFilter>> eventFilters;
+static std::pair<SDL_EventFilter, EventFilter> eventFilter;
 
-void AddEventWatch(EventFilter&& callback) {
-  auto& [filter, userData] = eventFilters.emplace_back(
+void SetEventFilter(EventFilter&& callback) {
+  eventFilter = {
     [](void* userdata, SDL_Event* event) {
       auto& callback = *static_cast<EventFilter*>(userdata);
       return callback(*event);
     },
     std::move(callback)
-  );
-  SDL_AddEventWatch(filter, &userData);
+  };
+  SDL_SetEventFilter(eventFilter.first, &eventFilter.second);
 }
 
 } // namespace sdl

@@ -68,7 +68,6 @@ void WinManager::UpdateRenderData(Win& win) {
 void WinManager::TryChangeDpiScale(float dpiScale) {
   for (auto& [id, win] : windows) {
     if (dpiScale != win.sRenderTexture.dpiScale) {
-      LOG_INFO("WinManager::ChangeDpiScale: window {} dpi changed", id);
       win.sRenderTexture = ScrollableRenderTexture(
         win.size, sizes.dpiScale, sizes.charSize, CalcMaxTexPerPage(win)
       );

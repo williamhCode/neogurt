@@ -10,6 +10,7 @@ private:
   std::queue<T> queue;
   std::mutex mutex;
   std::condition_variable cv;
+  bool exit = false;
 
 public:
   T& Front() {
@@ -62,11 +63,17 @@ public:
     return queue.size();
   }
 
-  void WaitUntil(auto predicate)
-  {
+  void Exit() {
+    {
+      std::scoped_lock lock(mutex);
+      exit = true;
+    }
+    cv.notify_all();
+  }
+
+  bool Wait() {
     std::unique_lock lock(mutex);
-    cv.wait(lock, [predicate, this] {
-      return predicate(queue);
-    });
+    cv.wait(lock, [this]() { return !queue.empty() || exit; });
+    return !exit;
   }
 };
