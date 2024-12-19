@@ -48,6 +48,7 @@ set(APP_SRC
   app/window_funcs.mm
   app/options.cpp
   app/path.cpp
+  app/task_helper.cpp
 
   editor/state.cpp
   editor/cursor.cpp

@@ -1,8 +1,10 @@
 #include "./manager.hpp"
+#include "app/task_helper.hpp"
 #include "app/window_funcs.h"
 #include "utils/color.hpp"
 #include "utils/logger.hpp"
 #include <algorithm>
+#include <format>
 #include <stdexcept>
 #include <ranges>
 #include <utility>
@@ -25,7 +27,7 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
   bool first = sessions.empty();
 
   int id = currId++;
-  auto name = opts.name.empty() ? std::to_string(id) : opts.name;
+  auto name = opts.name.empty() ? std::format("session {}", id) : opts.name;
 
   auto [it, success] = sessions.try_emplace(id, id, name, opts.dir);
   if (!success) {
@@ -100,20 +102,7 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
       })
       .value();
 
-  sizes.UpdateSizes(
-    window.size, window.dpiScale, editorState.fontFamily.DefaultFont().charSize,
-    options
-  );
-
-  if (first) {
-    renderer = Renderer(sizes);
-  } else {
-    renderer.Resize(sizes);
-  }
-
-  editorState.winManager.sizes = sizes;
   editorState.winManager.gridManager = &editorState.gridManager;
-  editorState.cursor.Resize(sizes.charSize, sizes.dpiScale);
 
   if (options.opacity < 1) {
     auto& hl = editorState.hlTable[0];
@@ -121,14 +110,18 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
     hl.background->a = options.opacity;
   }
 
-  nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight);
+  if (first) {
+    sizes.UpdateSizes(
+      window.size, window.dpiScale, session.editorState.fontFamily.DefaultFont().charSize,
+      session.options
+    );
+    renderer = Renderer(sizes);
+  }
 
-  inputHandler = InputHandler(&nvim, &editorState.winManager, options);
+  sessionsOrder.push_back(&session);
 
-  sessionsOrder.push_front(&session);
-
-  if (!opts.switchTo) {
-    SessionPrev();
+  if (opts.switchTo) {
+    SessionSwitch(session.id);
   }
 
   return id;
@@ -171,17 +164,13 @@ bool SessionManager::SessionSwitch(int id) {
   }
   auto& session = it->second;
 
-  UpdateSessionSizes(session);
-  inputHandler =
-    InputHandler(&session.nvim, &session.editorState.winManager, session.options);
-  session.reattached = true;
-
+  // move order to front
   auto currIt = std::ranges::find(sessionsOrder, &session);
-  // move to front
-  if (currIt != sessionsOrder.end()) {
-    sessionsOrder.erase(currIt);
-    sessionsOrder.push_front(&session);
-  }
+  assert(currIt != sessionsOrder.end());
+  sessionsOrder.erase(currIt);
+  sessionsOrder.push_front(&session);
+
+  SessionSwitchInternal(session);
 
   return true;
 }
@@ -246,19 +235,14 @@ bool SessionManager::ShouldQuit() {
   });
 
   // check if no sessions left
-  auto* curr = CurrSession();
-  if (curr == nullptr) {
+  auto* currSession = CurrSession();
+  if (currSession == nullptr) {
     return true;
   }
 
   // switch to most recent session if current session was removed
-  if (prevId != curr->id) {
-    auto& session = *curr;
-
-    UpdateSessionSizes(session);
-    inputHandler =
-      InputHandler(&session.nvim, &session.editorState.winManager, session.options);
-    session.reattached = true;
+  if (prevId != currSession->id) {
+    SessionSwitchInternal(*currSession);
   }
 
   return false;
@@ -298,6 +282,19 @@ void SessionManager::FontSizeReset(bool all) {
       UpdateSessionSizes(*session);
     }
   }
+}
+
+void SessionManager::SessionSwitchInternal(SessionState& session) {
+  UpdateSessionSizes(session);
+  inputHandler =
+    InputHandler(&session.nvim, &session.editorState.winManager, session.options);
+
+  DeferToMainThread([winPtr = window.Get(),
+                     title = std::format("Neogurt - {}", session.name)] {
+    SDL_SetWindowTitle(winPtr, title.c_str());
+  });
+
+  session.reattached = true;
 }
 
 void SessionManager::UpdateSessionSizes(SessionState& session) {

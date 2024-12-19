@@ -5,6 +5,7 @@
 #include "app/sdl_window.hpp"
 #include "app/sdl_event.hpp"
 #include "app/options.hpp"
+#include "app/task_helper.hpp"
 #include "editor/grid.hpp"
 #include "editor/highlight.hpp"
 #include "editor/state.hpp"
@@ -396,6 +397,10 @@ int main(int argc, char** argv) {
         case SDL_EVENT_WINDOW_OCCLUDED:
           sdlEvents.Push(event);
           break;
+      }
+
+      if (event.type == EVENT_DEFERRED_TASK) {
+        ProcessNextMainThreadTask();
       }
     }
 

@@ -74,6 +74,8 @@ public:
   void FontSizeReset(bool all = false);
 
 private:
+  // all session switching leads to this function
+  void SessionSwitchInternal(SessionState& session);
   void UpdateSessionSizes(SessionState& session);
 
   // void LoadSessions(std::string_view filename);

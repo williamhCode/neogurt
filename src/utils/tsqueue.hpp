@@ -63,17 +63,17 @@ public:
     return queue.size();
   }
 
+  bool Wait() {
+    std::unique_lock lock(mutex);
+    cv.wait(lock, [this]() { return !queue.empty() || exit; });
+    return !exit;
+  }
+
   void Exit() {
     {
       std::scoped_lock lock(mutex);
       exit = true;
     }
     cv.notify_all();
-  }
-
-  bool Wait() {
-    std::unique_lock lock(mutex);
-    cv.wait(lock, [this]() { return !queue.empty() || exit; });
-    return !exit;
   }
 };

@@ -81,7 +81,7 @@ end, { nargs = "*" })
 
 --- Sends a session command to neogurt
 --- @param cmd string: command to send.
---- @param opts table: command options
+--- @param opts table|nil: command options
 --- @return any: result of the command
 vim.g.neogurt_cmd = function(cmd, opts)
   local chan_id = utils.get_neogurt_channel()
@@ -109,7 +109,7 @@ vim.g.neogurt_cmd = function(cmd, opts)
     end
 
   elseif cmd == "session_select" then
-    local curr_id = vim.g.neogurt_cmd("session_list", { sort = "time" })[1].id
+    local curr_id = vim.g.neogurt_cmd("session_info").id
     local list = vim.g.neogurt_cmd("session_list", opts)
     vim.ui.select(list, {
       prompt = "Select a session",
