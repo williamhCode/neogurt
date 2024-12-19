@@ -226,11 +226,10 @@ bool SessionManager::ShouldQuit() {
   int prevId = CurrSession()->id;
 
   // remove disconnected sessions
-  std::erase_if(sessionsOrder, [this](auto* session) {
+  std::vector<int> toEraseIds;
+  std::erase_if(sessionsOrder, [&toEraseIds](auto* session) {
     bool toErase = !session->nvim.client->IsConnected();
-    if (toErase) {
-      sessions.erase(session->id);
-    }
+    if (toErase) toEraseIds.push_back(session->id);
     return toErase;
   });
 
@@ -243,6 +242,11 @@ bool SessionManager::ShouldQuit() {
   // switch to most recent session if current session was removed
   if (prevId != currSession->id) {
     SessionSwitchInternal(*currSession);
+  }
+
+  // erase after session switch, else main thread might access removed session
+  for (auto id : toEraseIds) {
+    sessions.erase(id);
   }
 
   return false;
