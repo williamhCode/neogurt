@@ -294,10 +294,7 @@ void ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
 
           // apply margins and msg_set_pos after all events
           for (auto* e : margins) {
-            if (!editorState.winManager.ViewportMargins(*e)) {
-              // defer event if failed
-              // uiEvents.queue[0].emplace_front(*e);
-            }
+            editorState.winManager.ViewportMargins(*e);
           }
           for (auto* e : msgSetPos) {
             editorState.winManager.MsgSetPos(*e);

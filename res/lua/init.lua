@@ -9,42 +9,50 @@ local utils = require("utils")
 
 -- if value is a type name, the option is required
 local cmds_table = {
+  -- returns session id
   session_new = {
     name = "",
     dir = "~/",
-    switch_to = true,
+    switch_to = true, -- switch to session after creating it
   },
+  -- returns success (bool)
   session_kill = {
     id = 0
   },
+  -- returns new session id
   session_restart = {
     id = 0,
-    curr_dir = false,
+    curr_dir = false, -- use cwd instead of session dir
   },
+  -- returns success (bool)
   session_switch = {
     id = "number",
   },
+  -- switch to previous session
+  -- returns success (bool)
   session_prev = {},
+  -- returns session info table (id, name, dir)
   session_info = {
     id = 0
   },
+  -- returns list of session info tables
   session_list = {
-    -- id, name, time (recency)
-    sort = "id",
+    sort = "id",  -- id, name, time (recency)
     reverse = false,
   },
+  -- spawns a session picker using vim.ui.select()
+  -- wrapper around session_list
   session_select = {
-    -- forwarded to list opts
     sort = "id",
     reverse = false,
   },
 
   font_size_change = {
     [1] = "number",
-    all = false,
+    all = false,  -- change in all sessions
   },
   font_size_reset = {
-    all = false,
+    all = false,  -- change in all sessions
   },
 }
 
@@ -65,7 +73,9 @@ vim.api.nvim_create_user_command("Neogurt", function(cmd_opts)
 
   -- print command output
   local result = vim.g.neogurt_cmd(cmd, opts)
-  vim.print(result)
+  if result ~= vim.NIL then
+    vim.print(result)
+  end
 
 end, { nargs = "*" })
 

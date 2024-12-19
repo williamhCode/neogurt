@@ -16,64 +16,73 @@ int WinManager::CalcMaxTexPerPage(const Win& win) {
   return 3;
 }
 
-void WinManager::InitRenderData(Win& win) {
+void WinManager::UpdateWinAttributes(Win& win) {
   auto pos = glm::vec2(win.startCol, win.startRow) * sizes.charSize;
   auto size = glm::vec2(win.width, win.height) * sizes.charSize;
 
-  auto numQuads = win.height * std::min(win.width, 80);
-  win.rectData.CreateBuffers(numQuads);
-  win.textData.CreateBuffers(numQuads);
-  win.shapeData.CreateBuffers(numQuads);
+  bool posChanged = win.pos != pos;
+  bool sizeChanged =
+    (win.size != size) || (win.sRenderTexture.charSize != sizes.charSize);
+  bool dpiChanged = win.sRenderTexture.dpiScale != sizes.dpiScale;
 
-  win.sRenderTexture =
-    ScrollableRenderTexture(size, sizes.dpiScale, sizes.charSize, CalcMaxTexPerPage(win));
-  win.sRenderTexture.UpdatePos(pos);
-
-  win.grid.dirty = true;
+  win.posDirty |= posChanged;
+  win.sizeDirty |= sizeChanged || dpiChanged;
 
   win.pos = pos;
   win.size = size;
 }
 
-void WinManager::UpdateRenderData(Win& win) {
-  auto pos = glm::vec2(win.startCol, win.startRow) * sizes.charSize;
-  auto size = glm::vec2(win.width, win.height) * sizes.charSize;
-
-  bool posChanged = pos != win.pos;
-  // sometimes size can be equal, but charSize different
-  // for hidden window, win.sRenderTexture.charSize will always be vec2(0, 0)
-  bool sizeChanged = size != win.size || sizes.charSize != win.sRenderTexture.charSize;
-  if (!posChanged && !sizeChanged) {
-    return;
-  }
-
-  if (sizeChanged) {
-    auto numQuads = win.height * std::min(win.width, 80);
-    win.rectData.CreateBuffers(numQuads);
-    win.textData.CreateBuffers(numQuads);
-    win.shapeData.CreateBuffers(numQuads);
-
-    win.sRenderTexture =
-      ScrollableRenderTexture(size, sizes.dpiScale, sizes.charSize, CalcMaxTexPerPage(win));
-    win.sRenderTexture.UpdateMargins(win.margins);
-  }
-  win.sRenderTexture.UpdatePos(pos);
-
-  win.grid.dirty = true;
-
-  win.pos = pos;
-  win.size = size;
-}
-
-void WinManager::TryChangeDpiScale(float dpiScale) {
+void WinManager::UpdateSizes(const SizeHandler& _sizes) {
+  std::lock_guard lock(windowsMutex);
+  sizes = _sizes;
   for (auto& [id, win] : windows) {
-    if (dpiScale != win.sRenderTexture.dpiScale) {
+    UpdateWinAttributes(win);
+  }
+}
+
+void WinManager::UpdateRenderData() {
+  std::lock_guard lock(windowsMutex);
+  for (auto& [id, win] : windows) {
+    if (win.hidden) continue;
+
+    if (win.sizeDirty) {
+      auto numQuads = win.height * std::min(win.width, 80);
+      win.rectData.CreateBuffers(numQuads);
+      win.textData.CreateBuffers(numQuads);
+      win.shapeData.CreateBuffers(numQuads);
+
       win.sRenderTexture = ScrollableRenderTexture(
         win.size, sizes.dpiScale, sizes.charSize, CalcMaxTexPerPage(win)
       );
-      win.sRenderTexture.UpdatePos(win.pos);
-      win.sRenderTexture.UpdateMargins(win.margins);
       win.grid.dirty = true;
+    }
+
+    if (win.sizeDirty || win.posDirty) {
+      win.sRenderTexture.UpdatePos(win.pos);
+    }
+
+    if (win.sizeDirty || win.updateMargins) {
+      win.sRenderTexture.UpdateMargins(win.margins);
+    }
+
+    if (win.scrollDist) {
+      win.sRenderTexture.UpdateViewport(*win.scrollDist);
+    }
+
+    // reset dirty flags
+    win.sizeDirty = false;
+    win.posDirty = false;
+    win.updateMargins = false;
+    win.scrollDist.reset();
+  }
+}
+
+void WinManager::UpdateScrolling(float dt) {
+  std::lock_guard lock(windowsMutex);
+  for (auto& [id, win] : windows) {
+    if (win.sRenderTexture.scrolling) {
+      win.sRenderTexture.UpdateScrolling(dt);
+      dirty = true;
     }
   }
 }
@@ -99,11 +108,7 @@ void WinManager::Pos(const event::WinPos& e) {
 
   win.hidden = false;
 
-  if (first) {
-    InitRenderData(win);
-  } else {
-    UpdateRenderData(win);
-  }
+  UpdateWinAttributes(win);
 }
 
 // TODO: find a more robust way to handle
@@ -129,7 +134,7 @@ void WinManager::FloatPos(int grid) {
 
   win.hidden = false;
 
-  UpdateRenderData(win);
+  UpdateWinAttributes(win);
 }
 
 void WinManager::FloatPos(const event::WinFloatPos& e) {
@@ -186,11 +191,7 @@ void WinManager::FloatPos(const event::WinFloatPos& e) {
     .zindex = e.zindex,
   };
 
-  if (first) {
-    InitRenderData(win);
-  } else {
-    UpdateRenderData(win);
-  }
+  UpdateWinAttributes(win);
 }
 
 void WinManager::ExternalPos(const event::WinExternalPos& e) {
@@ -251,11 +252,7 @@ void WinManager::MsgSetPos(const event::MsgSetPos& e) {
   }
   msgWinId = e.grid;
 
-  if (first) {
-    InitRenderData(win);
-  } else {
-    UpdateRenderData(win);
-  }
+  UpdateWinAttributes(win);
 }
 
 void WinManager::Viewport(const event::WinViewport& e) {
@@ -267,33 +264,22 @@ void WinManager::Viewport(const event::WinViewport& e) {
   }
   auto& win = it->second;
 
-  bool shouldScroll =              //
-    std::abs(e.scrollDelta) > 0 && //
+  bool shouldScroll =
+    std::abs(e.scrollDelta) > 0 &&
     std::abs(e.scrollDelta) <= win.height - (win.margins.top + win.margins.bottom);
 
   // LOG_INFO("WinManager::Viewport: grid {} scrollDelta {} shouldScroll {}", e.grid,
 
   if (!shouldScroll) return;
-  float scrollDist = e.scrollDelta * sizes.charSize.y;
-  win.sRenderTexture.UpdateViewport(scrollDist);
+  win.scrollDist = e.scrollDelta * sizes.charSize.y;
 }
 
-void WinManager::UpdateScrolling(float dt) {
-  std::lock_guard lock(windowsMutex);
-  for (auto& [id, win] : windows) {
-    if (win.sRenderTexture.scrolling) {
-      win.sRenderTexture.UpdateScrolling(dt);
-      dirty = true;
-    }
-  }
-}
-
-bool WinManager::ViewportMargins(const event::WinViewportMargins& e) {
+void WinManager::ViewportMargins(const event::WinViewportMargins& e) {
   std::lock_guard lock(windowsMutex);
   auto it = windows.find(e.grid);
   if (it == windows.end()) {
     // LOG_ERR("WinManager::ViewportMargins: window {} not found", e.grid);
-    return false;
+    return;
   }
   auto& win = it->second;
 
@@ -302,9 +288,7 @@ bool WinManager::ViewportMargins(const event::WinViewportMargins& e) {
   win.margins.left = e.left;
   win.margins.right = e.right;
 
-  win.sRenderTexture.UpdateMargins(win.margins);
-
-  return true;
+  win.updateMargins = true;
 }
 
 void WinManager::Extmark(const event::WinExtmark& e) {

@@ -101,38 +101,31 @@ local cmds_table = {
     dir = "~/",
     switch_to = true, -- switch to session after creating it
   },
-    
   -- returns success (bool)
   session_kill = {
     id = 0
   },
-
   -- returns new session id
   session_restart = {
     id = 0,
     curr_dir = false, -- use cwd instead of session dir
   },
-
   -- returns success (bool)
   session_switch = {
     id = "number",
   },
-
   -- switch to previous session
   -- returns success (bool)
   session_prev = {},
-
   -- returns session info table (id, name, dir)
   session_info = {
     id = 0
   },
-
   -- returns list of session info tables
   session_list = {
     sort = "id",  -- id, name, time (recency)
     reverse = false,
   },
-    
   -- spawns a session picker using vim.ui.select()
   -- wrapper around session_list
   session_select = {
@@ -144,7 +137,6 @@ local cmds_table = {
     [1] = "number",
     all = false,  -- change in all sessions
   },
-
   font_size_reset = {
     all = false,  -- change in all sessions
   },

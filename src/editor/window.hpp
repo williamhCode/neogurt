@@ -39,15 +39,23 @@ struct Win {
     return floatData.has_value();
   }
 
-  // rendering data
+  // win attributes
   glm::vec2 pos;
-  glm::vec2 size;
+  glm::vec2 size{0, 0};
 
+  bool posDirty;
+  bool sizeDirty;
+
+  // rendering data
   QuadRenderData<RectQuadVertex, true> rectData;
   QuadRenderData<TextQuadVertex, true> textData;
   QuadRenderData<ShapeQuadVertex, true> shapeData;
 
   ScrollableRenderTexture sRenderTexture;
+
+  // other updates
+  std::optional<float> scrollDist; // update viewport
+  bool updateMargins;
 };
 
 // for input handler
@@ -74,12 +82,12 @@ struct WinManager {
 
 private:
   int CalcMaxTexPerPage(const Win& win);
-  void InitRenderData(Win& win);
-  void UpdateRenderData(Win& win);
+  void UpdateWinAttributes(Win& win);
 
 public:
-  // updates dpi scale for all windows if changed
-  void TryChangeDpiScale(float dpiScale);
+  void UpdateSizes(const SizeHandler& sizes);
+  void UpdateRenderData(); // updates all windows rendering data
+  void UpdateScrolling(float dt);
 
   void Pos(const event::WinPos& e);
   void FloatPos(int grid);
@@ -89,8 +97,7 @@ public:
   void Close(const event::WinClose& e);
   void MsgSetPos(const event::MsgSetPos& e);
   void Viewport(const event::WinViewport& e);
-  void UpdateScrolling(float dt);
-  bool ViewportMargins(const event::WinViewportMargins& e);
+  void ViewportMargins(const event::WinViewportMargins& e);
   void Extmark(const event::WinExtmark& e);
 
   MouseInfo GetMouseInfo(glm::vec2 mousePos) const;

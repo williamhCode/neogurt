@@ -114,7 +114,7 @@ int main(int argc, char** argv) {
                 window.size, window.dpiScale,
                 editorState->fontFamily.DefaultFont().charSize, *options
               );
-              editorState->winManager.sizes = sizes;
+              editorState->winManager.UpdateSizes(sizes);
 
               if (dpiChanged) {
                 editorState->cursor.Resize(sizes.charSize, sizes.dpiScale);
@@ -224,8 +224,7 @@ int main(int argc, char** argv) {
         // timer1.End();
 
         // update --------------------------------------------
-        editorState->winManager.TryChangeDpiScale(window.dpiScale);
-
+        editorState->winManager.UpdateRenderData();
         editorState->winManager.UpdateScrolling(dt);
 
         const auto* currWin = editorState->winManager.GetWin(editorState->cursor.grid);
@@ -254,7 +253,7 @@ int main(int argc, char** argv) {
         auto color = GetDefaultBackground(editorState->hlTable);
         renderer.SetColors(color, options->gamma);
 
-        bool renderWindows = false;
+        bool renderWindows = true;
         for (auto& [id, win] : editorState->winManager.windows) {
           if (win.grid.dirty) {
             renderer.RenderToWindow(win, editorState->fontFamily, editorState->hlTable);
