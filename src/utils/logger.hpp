@@ -20,6 +20,7 @@ struct Logger {
   void LogInfo(const std::string& message);
   void LogWarn(const std::string& message);
   void LogErr(const std::string& message);
+  void LogTrace();
 };
 
 inline Logger logger;
@@ -32,6 +33,7 @@ inline Logger logger;
 #define LOG_INFO(...) logger.LogInfo(std::format(__VA_ARGS__))
 #define LOG_WARN(...) logger.LogWarn(std::format(__VA_ARGS__))
 #define LOG_ERR(...) logger.LogErr(std::format(__VA_ARGS__))
+#define LOG_TRACE() logger.LogTrace()
 
 #include <sstream>
 inline std::string ToString(auto&& obj) {

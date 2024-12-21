@@ -31,3 +31,11 @@ void Logger::LogErr(const std::string& message) {
   std::unique_lock lock(mutex);
   std::cerr << "ERROR: " << message << '\n';
 }
+
+#define BOOST_STACKTRACE_GNU_SOURCE_NOT_REQUIRED
+#include <boost/stacktrace.hpp>
+
+void Logger::LogTrace() {
+  std::unique_lock lock(mutex);
+  std::cout << "TRACE: " << boost::stacktrace::stacktrace() << '\n';
+}

@@ -79,6 +79,7 @@ WGPUContext::WGPUContext(SDL_Window* window, glm::uvec2 _size, PresentMode _pres
     [](const Device& _, ErrorType type, const char* message) {
       std::ostringstream() << type;
       LOG_ERR("Device error: {} ({})", ToString(type), message);
+      // LOG_TRACE();
     }
   );
 

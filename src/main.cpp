@@ -106,7 +106,7 @@ int main(int argc, char** argv) {
             {
               const auto& event = resizeEvent.windowPixelSizeChanged;
               window.fbSize = {event.window.data1, event.window.data2};
-              window.dpiScale = window.fbSize.x / window.size.x;
+              window.dpiScale = (float)window.fbSize.x / window.size.x;
 
               bool dpiChanged = editorState->fontFamily.TryChangeDpiScale(window.dpiScale);
 

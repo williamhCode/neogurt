@@ -31,6 +31,8 @@ Window::Window(glm::uvec2 _size, const std::string& title)
     );
   }
 
+  SDL_SetWindowMinimumSize(Get(), 200, 100);
+
   if (Options::blur > 0) {
     SetSDLWindowBlur(Get(), Options::blur);
   }
