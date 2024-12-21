@@ -230,82 +230,18 @@ void Renderer::RenderToWindow(
         glm::vec4 foreground = GetForeground(hlTable, hl);
         char32_t charcode = UTF8ToChar32(cell.text);
 
-        if (charcode >= 0x2800 && charcode <= 0x28FF) { // braille characters
-          // order, hex value
-          // 0 3    1 8
-          // 1 4    2 10
-          // 2 5    4 20
-          // 6 7    8 80
+        const auto& glyphInfo = fontFamily.GetGlyphInfo(charcode, hl.bold, hl.italic);
 
-          uint32_t hexVal = charcode - 0x2800; 
+        glm::vec2 textQuadPos{
+          textOffset.x,
+          textOffset.y + (glyphInfo.useAscender ? defaultFont.ascender : 0)
+        };
 
-          std::span<const glm::vec2> brailleOffsets;
-          int numDots = 0;
-
-          if (charcode < 0x2840) { // 6 dots
-            static const glm::vec2 sixDotBrailleOffsets[6] = {
-              {1/4., 1/6.},
-              {1/4., 3/6.},
-              {1/4., 5/6.},
-              {3/4., 1/6.},
-              {3/4., 3/6.},
-              {3/4., 5/6.},
-            };
-            brailleOffsets = sixDotBrailleOffsets;
-            numDots = 6;
-            
-          } else { // 8 dots
-            static const glm::vec2 eightDotBrailleOffsets[8] = {
-              {1/4., 1/8.},
-              {1/4., 3/8.},
-              {1/4., 5/8.},
-              {3/4., 1/8.},
-              {3/4., 3/8.},
-              {3/4., 5/8.},
-              {1/4., 7/8.},
-              {3/4., 7/8.},
-            };
-            brailleOffsets = eightDotBrailleOffsets;
-            numDots = 8;
-          }
-
-          for (int dotIndex = 0; dotIndex < numDots; dotIndex++) {
-            if (!(hexVal & (1 << dotIndex))) continue;
-
-            auto charSize = defaultFont.charSize;
-            auto centerPos = brailleOffsets[dotIndex] * charSize;
-
-            int xNumDots = 2;
-            int yNumDots = numDots / 2;
-            float radius =
-              std::min(charSize.x / xNumDots, charSize.y / yNumDots) / 2;
-            radius *= 0.6; // add some padding
-            auto halfSize = glm::vec2(radius, radius);
-
-            Rect quadRect{
-              .pos = textOffset + centerPos - halfSize,
-              .size = halfSize * 2.0f, 
-            };
-            quadRect.RoundToPixel(defaultFont.dpiScale);
-
-            static uint32_t brailleShapeId = 5;
-            AddShapeQuad(shapeData, quadRect, foreground, brailleShapeId);
-          }
-
-        } else {
-          const auto& glyphInfo = fontFamily.GetGlyphInfo(charcode, hl.bold, hl.italic);
-
-          glm::vec2 textQuadPos{
-            textOffset.x,
-            textOffset.y + (glyphInfo.useAscender ? defaultFont.ascender : 0)
-          };
-
-          auto& quad = textData.NextQuad();
-          for (size_t i = 0; i < 4; i++) {
-            quad[i].position = textQuadPos + glyphInfo.localPoss[i];
-            quad[i].regionCoord = glyphInfo.atlasRegion[i];
-            quad[i].foreground = foreground;
-          }
+        auto& quad = textData.NextQuad();
+        for (size_t i = 0; i < 4; i++) {
+          quad[i].position = textQuadPos + glyphInfo.localPoss[i];
+          quad[i].regionCoord = glyphInfo.atlasRegion[i];
+          quad[i].foreground = foreground;
         }
       }
 

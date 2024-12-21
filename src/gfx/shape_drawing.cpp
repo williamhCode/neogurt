@@ -4,7 +4,7 @@
 
 using namespace shape;
 
-static auto boxChars = [] {
+static auto shapeDescMap = [] {
   std::unordered_map<char32_t, DrawDesc> c{};
 
   using std::tuple;
@@ -214,6 +214,11 @@ static auto boxChars = [] {
   c[0x259e] = Quadrant{UR, DL};
   c[0x259f] = Quadrant{UR, DL, DR};
 
+  // braille characters
+  for (char32_t charcode = 0x2801; charcode <= 0x28FF; charcode++) {
+    c[charcode] = Braille{charcode};
+  }
+
   return c;
 }();
 
@@ -225,6 +230,12 @@ ShapeDrawing::ShapeDrawing(glm::vec2 charSize, float dpiScale) {
 
 const GlyphInfo*
 ShapeDrawing::GetGlyphInfo(char32_t charcode, TextureAtlas& textureAtlas) {
+  bool isShape = (charcode >= 0x2500 && charcode <= 0x259F) ||
+                 (charcode >= 0x2801 && charcode <= 0x28FF);
+  if (!isShape) {
+    return nullptr;
+  }
+
   // return cached
   auto glyphIt = glyphInfoMap.find(charcode);
   if (glyphIt != glyphInfoMap.end()) {
@@ -232,14 +243,14 @@ ShapeDrawing::GetGlyphInfo(char32_t charcode, TextureAtlas& textureAtlas) {
   }
 
   // if not implemented, return nullptr
-  auto boxCharIt = boxChars.find(charcode);
-  if (boxCharIt == boxChars.end()) {
+  auto shapeDescIt = shapeDescMap.find(charcode);
+  if (shapeDescIt == shapeDescMap.end()) {
     return nullptr;
   }
 
   // using namespace std::chrono;
   // auto start = TimeNow();
-  auto [data, localPoss] = pen.Draw(boxCharIt->second);
+  auto [data, localPoss] = pen.Draw(shapeDescIt->second);
   // auto end = TimeNow();
   // totalTime += end - start;
 

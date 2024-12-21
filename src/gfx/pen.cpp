@@ -336,6 +336,53 @@ void Pen::DrawQuadrant(const Quadrant& desc) {
   }
 }
 
+void Pen::DrawBraille(const Braille& desc) {
+  // order, hex value
+  // 0 3    1 8
+  // 1 4    2 10
+  // 2 5    4 20
+  // 6 7    8 80
+  uint32_t hexVal = desc.charcode - 0x2800;
+
+  std::span<const glm::vec2> brailleOffsets;
+
+  if (desc.charcode < 0x2840) { // 6 dots
+    static const glm::vec2 sixDotBrailleOffsets[6] = {
+      {1/4., 1/6.},
+      {1/4., 3/6.},
+      {1/4., 5/6.},
+      {3/4., 1/6.},
+      {3/4., 3/6.},
+      {3/4., 5/6.},
+    };
+    brailleOffsets = sixDotBrailleOffsets;
+    
+  } else { // 8 dots
+    static const glm::vec2 eightDotBrailleOffsets[8] = {
+      {1/4., 1/8.},
+      {1/4., 3/8.},
+      {1/4., 5/8.},
+      {3/4., 1/8.},
+      {3/4., 3/8.},
+      {3/4., 5/8.},
+      {1/4., 7/8.},
+      {3/4., 7/8.},
+    };
+    brailleOffsets = eightDotBrailleOffsets;
+  }
+
+  auto charSize = glm::vec2(xsize, ysize);
+  float radius = std::min(charSize.x / 2, charSize.y / 4) / 2;
+  radius *= 0.6; // padding
+
+  for (size_t dotIndex = 0; dotIndex < brailleOffsets.size(); dotIndex++) {
+    if (hexVal & (1 << dotIndex)) {
+      auto centerPos = brailleOffsets[dotIndex] * charSize;
+      ctx.fillCircle(centerPos.x, centerPos.y, radius);
+    }
+  }
+}
+
 Pen::ImageData Pen::Draw(const DrawDesc& desc) {
   // init ---------------------------
   int xoffset = 0;
@@ -376,7 +423,8 @@ Pen::ImageData Pen::Draw(const DrawDesc& desc) {
     [this](const LowerBlock& desc) { DrawRect(0, ysize - (desc.size * ysize), xsize, desc.size * ysize); },
     [this](const LeftBlock& desc) { DrawRect(0, 0, desc.size * xsize, ysize); },
     [this](const RightBlock& desc) { DrawRect(xsize - (desc.size * xsize), 0, desc.size * xsize, ysize); },
-    [this](const Quadrant& desc) { DrawQuadrant(desc); }
+    [this](const Quadrant& desc) { DrawQuadrant(desc); },
+    [this](const Braille& desc) { DrawBraille(desc); },
   }, desc);
 
   // end -------------------------------

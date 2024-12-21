@@ -190,11 +190,9 @@ const Font& FontFamily::DefaultFont() const {
 
 const GlyphInfo&
 FontFamily::GetGlyphInfo(char32_t charcode, bool bold, bool italic) {
-  // box drawing chars
-  if (charcode >= 0x2500 && charcode <= 0x259F) {
-    if (const auto *glyphInfo = shapeDrawing.GetGlyphInfo(charcode, textureAtlas)) {
-      return *glyphInfo;
-    }
+  // shapes
+  if (const auto *glyphInfo = shapeDrawing.GetGlyphInfo(charcode, textureAtlas)) {
+    return *glyphInfo;
   }
 
   for (const auto& fontSet : fonts) {

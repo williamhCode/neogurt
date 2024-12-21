@@ -78,6 +78,10 @@ struct Quadrant : std::set<QuadDir> {
     : std::set<QuadDir>(dirs) {}
 };
 
+struct Braille {
+  char32_t charcode;
+};
+
 using DrawDesc = std::variant<
   HLine,
   VLine,
@@ -93,7 +97,8 @@ using DrawDesc = std::variant<
   LeftBlock,
   RightBlock,
   Shade,
-  Quadrant>;
+  Quadrant,
+  Braille>;
 
 struct Pen {
 private:
@@ -127,6 +132,7 @@ private:
   void DrawHalfLine(const HalfLine& desc);
   void DrawShade(const Shade& desc);
   void DrawQuadrant(const Quadrant& desc);
+  void DrawBraille(const Braille& desc);
 
 public:
   using BufType = std::mdspan<uint32_t, std::dextents<size_t, 2>, std::layout_stride>;
