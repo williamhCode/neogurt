@@ -25,6 +25,7 @@
 #include <boost/core/demangle.hpp>
 #include <algorithm>
 #include <future>
+#include <memory>
 #include <print>
 #include <span>
 #include <vector>
@@ -59,11 +60,10 @@ int main(int argc, char** argv) {
     sdl::Window window;
     SizeHandler sizes;
     Renderer renderer;
-    InputHandler input;
 
-    SessionManager sessionManager(SpawnMode::Child, window, sizes, renderer, input);
+    SessionManager sessionManager(SpawnMode::Child, window, sizes, renderer);
     sessionManager.SessionNew();
-    SessionState* session = sessionManager.CurrSession();
+    SessionState* session = sessionManager.CurrSession().get();
     Options* options = &session->options;
     Nvim* nvim = &session->nvim;
     EditorState* editorState = &session->editorState;
@@ -199,7 +199,7 @@ int main(int argc, char** argv) {
           SDL_PushEvent(&quitEvent);
           break;
         };
-        session = sessionManager.CurrSession();
+        session = sessionManager.CurrSession().get();
         options = &session->options;
         nvim = &session->nvim;
         editorState = &session->editorState;
@@ -354,6 +354,7 @@ int main(int argc, char** argv) {
     });
 
     SDL_Event event;
+
     while (!exitWindow) {
       auto success = SDL_WaitEvent(&event);
       if (!success) {
@@ -368,26 +369,27 @@ int main(int argc, char** argv) {
 
         // keyboard handling ----------------------
         case SDL_EVENT_KEY_DOWN:
-        case SDL_EVENT_KEY_UP:
-          input.HandleKeyboard(event.key);
+        case SDL_EVENT_KEY_UP: {
+          sessionManager.GetInputHandler()->HandleKeyboard(event.key);
           break;
+        }
 
         case SDL_EVENT_TEXT_EDITING:
           break;
         case SDL_EVENT_TEXT_INPUT:
-          input.HandleTextInput(event.text);
+          sessionManager.GetInputHandler()->HandleTextInput(event.text);
           break;
 
         // mouse handling ------------------------
         case SDL_EVENT_MOUSE_BUTTON_DOWN:
         case SDL_EVENT_MOUSE_BUTTON_UP:
-          input.HandleMouseButton(event.button);
+          sessionManager.GetInputHandler()->HandleMouseButton(event.button);
           break;
         case SDL_EVENT_MOUSE_MOTION:
-          input.HandleMouseMotion(event.motion);
+          sessionManager.GetInputHandler()->HandleMouseMotion(event.motion);
           break;
         case SDL_EVENT_MOUSE_WHEEL:
-          input.HandleMouseWheel(event.wheel);
+          sessionManager.GetInputHandler()->HandleMouseWheel(event.wheel);
           break;
 
         // window handling -----------------------

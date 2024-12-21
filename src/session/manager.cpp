@@ -12,14 +12,9 @@
 #include "glm/gtx/string_cast.hpp"
 
 SessionManager::SessionManager(
-  SpawnMode _mode,
-  sdl::Window& _window,
-  SizeHandler& _sizes,
-  Renderer& _renderer,
-  InputHandler& _inputHandler
+  SpawnMode _mode, sdl::Window& _window, SizeHandler& _sizes, Renderer& _renderer
 )
-  : mode(_mode), window(_window), sizes(_sizes),
-    renderer(_renderer), inputHandler(_inputHandler) {
+    : mode(_mode), window(_window), sizes(_sizes), renderer(_renderer) {
 }
 
 int SessionManager::SessionNew(const SessionNewOpts& opts) {
@@ -29,15 +24,15 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
   int id = currId++;
   auto name = opts.name.empty() ? std::format("session {}", id) : opts.name;
 
-  auto [it, success] = sessions.try_emplace(id, id, name, opts.dir);
+  auto [it, success] = sessions.try_emplace(id, std::make_shared<SessionState>(id, name, opts.dir));
   if (!success) {
     throw std::runtime_error("Session with id " + std::to_string(id) + " failed to be created");
   }
 
   auto& session = it->second;
-  auto& options = session.options;
-  auto& nvim = session.nvim;
-  auto& editorState = session.editorState;
+  auto& options = session->options;
+  auto& nvim = session->nvim;
+  auto& editorState = session->editorState;
 
   if (!nvim.ConnectStdio(Options::interactiveShell, opts.dir)) {
     throw std::runtime_error("Failed to connect to nvim");
@@ -112,8 +107,8 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
 
   if (first) {
     sizes.UpdateSizes(
-      window.size, window.dpiScale, session.editorState.fontFamily.DefaultFont().charSize,
-      session.options
+      window.size, window.dpiScale, session->editorState.fontFamily.DefaultFont().charSize,
+      session->options
     );
     renderer = Renderer(sizes);
   }
@@ -121,7 +116,7 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
   sessionsOrder.push_back(&session);
 
   if (opts.switchTo) {
-    SessionSwitch(session.id);
+    SessionSwitch(session->id);
   }
 
   return id;
@@ -134,7 +129,7 @@ bool SessionManager::SessionKill(int id) {
   if (it == sessions.end()) {
     return false;
   }
-  auto& session = it->second;
+  auto& session = *it->second;
 
   session.nvim.client->Disconnect();
   return true;
@@ -149,10 +144,10 @@ int SessionManager::SessionRestart(int id, bool currDir) {
   }
   auto& session = it->second;
 
-  session.nvim.client->Disconnect();
+  session->nvim.client->Disconnect();
 
-  auto dir = currDir ? session.editorState.currDir : session.dir;
-  int newId = SessionNew({session.name, dir});
+  auto dir = currDir ? session->editorState.currDir : session->dir;
+  int newId = SessionNew({session->name, dir});
 
   return newId;
 }
@@ -179,7 +174,7 @@ bool SessionManager::SessionPrev() {
   if (sessionsOrder.size() < 2) {
     return false;
   }
-  SessionSwitch(sessionsOrder[1]->id);
+  SessionSwitch((*sessionsOrder[1])->id);
   return true;
 }
 
@@ -192,12 +187,13 @@ SessionListEntry SessionManager::SessionInfo(int id) {
   }
   auto& session = it->second;
 
-  return {session.id, session.name, session.dir};
+  return {session->id, session->name, session->dir};
 }
 
 std::vector<SessionListEntry> SessionManager::SessionList(const SessionListOpts& opts) {
   auto entries =
-    sessionsOrder | std::views::transform([](auto* session) {
+    sessionsOrder | std::views::transform([](auto* sessionPtr) {
+      auto& session = *sessionPtr;
       return SessionListEntry{session->id, session->name, session->dir};
     }) |
     std::ranges::to<std::vector>();
@@ -227,21 +223,22 @@ bool SessionManager::ShouldQuit() {
 
   // remove disconnected sessions
   std::vector<int> toEraseIds;
-  std::erase_if(sessionsOrder, [&toEraseIds](auto* session) {
+  std::erase_if(sessionsOrder, [&toEraseIds](auto* sessionPtr) {
+    auto& session = *sessionPtr;
     bool toErase = !session->nvim.client->IsConnected();
     if (toErase) toEraseIds.push_back(session->id);
     return toErase;
   });
 
   // check if no sessions left
-  auto* currSession = CurrSession();
+  auto& currSession = CurrSession();
   if (currSession == nullptr) {
     return true;
   }
 
   // switch to most recent session if current session was removed
   if (prevId != currSession->id) {
-    SessionSwitchInternal(*currSession);
+    SessionSwitchInternal(currSession);
   }
 
   // erase after session switch, else main thread might access removed session
@@ -254,63 +251,67 @@ bool SessionManager::ShouldQuit() {
 
 void SessionManager::FontSizeChange(float delta, bool all) {
   if (all) {
-    auto* curr = CurrSession();
+    auto& curr = CurrSession();
     for (auto& [_, session] : sessions) {
-      session.editorState.fontFamily.ChangeSize(delta);
-      if (curr == &session) {
+      session->editorState.fontFamily.ChangeSize(delta);
+      if (curr == session) {
         UpdateSessionSizes(session);
       }
     }
 
   } else {
-    if (auto* session = CurrSession()) {
+    if (auto& session = CurrSession()) {
       session->editorState.fontFamily.ChangeSize(delta);
-      UpdateSessionSizes(*session);
+      UpdateSessionSizes(session);
     }
   }
 }
 
 void SessionManager::FontSizeReset(bool all) {
   if (all) {
-    auto* curr = CurrSession();
+    auto& curr = CurrSession();
     for (auto& [_, session] : sessions) {
-      session.editorState.fontFamily.ResetSize();
-      if (curr == &session) {
+      session->editorState.fontFamily.ResetSize();
+      if (curr == session) {
         UpdateSessionSizes(session);
       }
     }
 
   } else {
-    if (auto* session = CurrSession()) {
+    if (auto session = CurrSession()) {
       session->editorState.fontFamily.ResetSize();
-      UpdateSessionSizes(*session);
+      UpdateSessionSizes(session);
     }
   }
 }
 
-void SessionManager::SessionSwitchInternal(SessionState& session) {
+void SessionManager::SessionSwitchInternal(SessionHandle& session) {
   UpdateSessionSizes(session);
-  inputHandler =
-    InputHandler(&session.nvim, &session.editorState.winManager, session.options);
+
+  auto newInputHandler = std::make_shared<InputHandler>(session, session->options);
+  {
+    std::lock_guard lock(inputMutex);
+    inputHandler = std::move(newInputHandler);
+  }
 
   DeferToMainThread([winPtr = window.Get(),
-                     title = std::format("Neogurt - {}", session.name)] {
+                     title = std::format("Neogurt - {}", session->name)] {
     SDL_SetWindowTitle(winPtr, title.c_str());
   });
 
-  session.reattached = true;
+  session->reattached = true;
 }
 
-void SessionManager::UpdateSessionSizes(SessionState& session) {
-  session.editorState.fontFamily.TryChangeDpiScale(window.dpiScale);
+void SessionManager::UpdateSessionSizes(SessionHandle& session) {
+  session->editorState.fontFamily.TryChangeDpiScale(window.dpiScale);
   sizes.UpdateSizes(
-    window.size, window.dpiScale, session.editorState.fontFamily.DefaultFont().charSize,
-    session.options
+    window.size, window.dpiScale,
+    session->editorState.fontFamily.DefaultFont().charSize, session->options
   );
   renderer.Resize(sizes);
-  session.editorState.winManager.sizes = sizes;
-  session.editorState.cursor.Resize(sizes.charSize, sizes.dpiScale);
-  session.nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight);
+  session->editorState.winManager.sizes = sizes;
+  session->editorState.cursor.Resize(sizes.charSize, sizes.dpiScale);
+  session->nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight);
 }
 
 // void SessionManager::LoadSessions(std::string_view filename) {
