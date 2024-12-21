@@ -32,14 +32,6 @@ void WinManager::UpdateWinAttributes(Win& win) {
   win.size = size;
 }
 
-void WinManager::UpdateSizes(const SizeHandler& _sizes) {
-  std::lock_guard lock(windowsMutex);
-  sizes = _sizes;
-  for (auto& [id, win] : windows) {
-    UpdateWinAttributes(win);
-  }
-}
-
 void WinManager::UpdateRenderData() {
   std::lock_guard lock(windowsMutex);
   for (auto& [id, win] : windows) {

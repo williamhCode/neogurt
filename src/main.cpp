@@ -115,7 +115,7 @@ int main(int argc, char** argv) {
                 window.size, window.dpiScale,
                 editorState->fontFamily.DefaultFont().charSize, *options
               );
-              editorState->winManager.UpdateSizes(sizes);
+              editorState->winManager.sizes = sizes;
 
               if (dpiChanged) {
                 editorState->cursor.Resize(sizes.charSize, sizes.dpiScale);

@@ -85,7 +85,6 @@ private:
   void UpdateWinAttributes(Win& win);
 
 public:
-  void UpdateSizes(const SizeHandler& sizes);
   void UpdateRenderData(); // updates all windows rendering data
   void UpdateScrolling(float dt);
 

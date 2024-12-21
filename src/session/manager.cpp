@@ -308,7 +308,7 @@ void SessionManager::UpdateSessionSizes(SessionState& session) {
     session.options
   );
   renderer.Resize(sizes);
-  session.editorState.winManager.UpdateSizes(sizes);
+  session.editorState.winManager.sizes = sizes;
   session.editorState.cursor.Resize(sizes.charSize, sizes.dpiScale);
   session.nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight);
 }
