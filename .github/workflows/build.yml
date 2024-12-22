@@ -2,6 +2,11 @@ name: Build
 
 on:
   workflow_dispatch:
+    inputs:
+      nightly:
+        description: 'Build nightly version'
+        required: false
+        default: 'true'
   push:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'
@@ -55,7 +60,14 @@ jobs:
     - name: Generate package
       run: make package
 
-    - name: Prepare Artifacts
+    - name: Rename DMG for nightly
+      if: ${{ github.event.inputs.nightly == 'true' }}
+      run: |
+        cd build/release
+        COMMIT_HASH=$(git rev-parse --short HEAD)
+        mv Neogurt*.dmg Neogurt-${COMMIT_HASH}.dmg
+
+    - name: Prepare artifacts
       run: |
         cd build/release
         echo "ARTIFACT_NAME=$(ls Neogurt*.dmg)" >> $GITHUB_ENV
@@ -65,3 +77,39 @@ jobs:
       with:
         name: ${{ env.ARTIFACT_NAME }}
         path: build/release/${{ env.ARTIFACT_NAME }}
+
+    # - name: Create release for nightly
+    #   if: ${{ github.event.inputs.nightly == 'true' }}
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #   run: |
+    #     TAG_NAME="nightly-$(date +%Y-%m-%d)"
+    #     RELEASE_NAME="Nightly Build $(date +%Y-%m-%d)"
+    #     FILE_PATH="build/release/${{ env.ARTIFACT_NAME }}"
+    #     gh release create $TAG_NAME $FILE_PATH \
+    #       --title "$RELEASE_NAME" \
+    #       --notes "Nightly build for commit ${{ github.sha }}" \
+    #       --prerelease
+
+  create-release:
+    if: ${{ github.event.inputs.nightly == 'true' }}
+    needs: build
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts/
+
+    - name: Create Release with gh CLI
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        TAG_NAME="nightly-$(date +'%Y-%m-%d')"
+        RELEASE_NAME="Nightly Build $(date +'%Y-%m-%d')"
+        gh release create $TAG_NAME artifacts/* \
+          --title "$RELEASE_NAME" \
+          --notes "Nightly build for commit ${{ github.sha }}" \
+          --prerelease
