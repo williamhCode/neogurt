@@ -67,12 +67,15 @@ jobs:
     - name: Prepare artifacts
       run: |
         cd build/release
-        echo "ARTIFACT_NAME=$(ls Neogurt*.dmg)" >> $GITHUB_ENV
+        ARTIFACT_NAME=$(ls Neogurt*.dmg)
+        ARTIFACT_NAME_NO_EXT=${ARTIFACT_NAME%.dmg}
+        echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> $GITHUB_ENV
+        echo "ARTIFACT_NAME_NO_EXT=$ARTIFACT_NAME_NO_EXT" >> $GITHUB_ENV
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ env.ARTIFACT_NAME }}
+        name: ${{ env.ARTIFACT_NAME_NO_EXT }}
         path: build/release/${{ env.ARTIFACT_NAME }}
 
   create-release:
@@ -93,6 +96,8 @@ jobs:
       run: |
         gh release delete nightly --yes || true
         git push origin :nightly || true
+
+        ls -al artifacts
         gh release create nightly artifacts/* \
           --title "Neogurt dev build" \
           --notes "Dev build for commit ${{ github.sha }}" \
