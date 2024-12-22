@@ -142,7 +142,7 @@ static const std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
   }},
 
   {"win_float_pos", [](const msgpack::object& args, UiEvents& uiEvents) {
-    // LOG("win_float_pos: {}", ToString(args));
+    LOG("win_float_pos: {}", ToString(args));
     uiEvents.Curr().emplace_back(args.as<WinFloatPos>());
   }},
 

@@ -20,7 +20,6 @@
 #include "utils/clock.hpp"
 #include "utils/logger.hpp"
 #include "utils/timer.hpp"
-#include "session/state.hpp"
 
 #include <boost/core/demangle.hpp>
 #include <algorithm>
@@ -63,7 +62,7 @@ int main(int argc, char** argv) {
 
     SessionManager sessionManager(SpawnMode::Child, window, sizes, renderer);
     sessionManager.SessionNew();
-    SessionState* session = sessionManager.CurrSession().get();
+    Session* session = sessionManager.CurrSession().get();
     Options* options = &session->options;
     Nvim* nvim = &session->nvim;
     EditorState* editorState = &session->editorState;
@@ -354,6 +353,7 @@ int main(int argc, char** argv) {
     });
 
     SDL_Event event;
+    SessionHandle currSession;
 
     while (!exitWindow) {
       auto success = SDL_WaitEvent(&event);
@@ -370,26 +370,26 @@ int main(int argc, char** argv) {
         // keyboard handling ----------------------
         case SDL_EVENT_KEY_DOWN:
         case SDL_EVENT_KEY_UP: {
-          sessionManager.GetInputHandler()->HandleKeyboard(event.key);
+          if (currSession) currSession->input.HandleKeyboard(event.key);
           break;
         }
 
         case SDL_EVENT_TEXT_EDITING:
           break;
         case SDL_EVENT_TEXT_INPUT:
-          sessionManager.GetInputHandler()->HandleTextInput(event.text);
+          if (currSession) currSession->input.HandleTextInput(event.text);
           break;
 
         // mouse handling ------------------------
         case SDL_EVENT_MOUSE_BUTTON_DOWN:
         case SDL_EVENT_MOUSE_BUTTON_UP:
-          sessionManager.GetInputHandler()->HandleMouseButton(event.button);
+          if (currSession) currSession->input.HandleMouseButton(event.button);
           break;
         case SDL_EVENT_MOUSE_MOTION:
-          sessionManager.GetInputHandler()->HandleMouseMotion(event.motion);
+          if (currSession) currSession->input.HandleMouseMotion(event.motion);
           break;
         case SDL_EVENT_MOUSE_WHEEL:
-          sessionManager.GetInputHandler()->HandleMouseWheel(event.wheel);
+          if (currSession) currSession->input.HandleMouseWheel(event.wheel);
           break;
 
         // window handling -----------------------
@@ -403,6 +403,8 @@ int main(int argc, char** argv) {
 
       if (event.type == EVENT_DEFERRED_TASK) {
         ProcessNextMainThreadTask();
+      } else if (event.type == EVENT_SWITCH_SESSION) {
+        currSession = PopSessionFromMainThread();
       }
     }
 

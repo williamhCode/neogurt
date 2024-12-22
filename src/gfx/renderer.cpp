@@ -174,13 +174,13 @@ void Renderer::RenderToWindow(
   // if for whatever reason (prob nvim events buggy, events not sent or offsync)
   // the grid is not the same size as the window
   if (win.grid.width != win.width || win.grid.height != win.height) {
-    LOG_WARN(
-      "RenderWindow: grid size not equal to window size for id: {}\n"
-      "Sizes: grid: {}x{}, window: {}x{}\n"
-      "IsFloat: {}",
-      win.id, win.grid.width, win.grid.height, win.width, win.height,
-      win.IsFloating()
-    );
+    // LOG_INFO(
+    //   "RenderWindow: grid size not equal to window size for id: {}\n"
+    //   "Sizes: grid: {}x{}, window: {}x{}\n"
+    //   "IsFloat: {}",
+    //   win.id, win.grid.width, win.grid.height, win.width, win.height,
+    //   win.IsFloating()
+    // );
   }
 
   // keep track of quad index after each row

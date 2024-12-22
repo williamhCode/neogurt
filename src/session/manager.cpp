@@ -1,4 +1,5 @@
 #include "./manager.hpp"
+#include "app/input.hpp"
 #include "app/task_helper.hpp"
 #include "app/window_funcs.h"
 #include "utils/color.hpp"
@@ -24,7 +25,7 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
   int id = currId++;
   auto name = opts.name.empty() ? std::format("session {}", id) : opts.name;
 
-  auto [it, success] = sessions.try_emplace(id, std::make_shared<SessionState>(id, name, opts.dir));
+  auto [it, success] = sessions.try_emplace(id, std::make_shared<Session>(id, name, opts.dir));
   if (!success) {
     throw std::runtime_error("Session with id " + std::to_string(id) + " failed to be created");
   }
@@ -98,6 +99,8 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
       .value();
 
   editorState.winManager.gridManager = &editorState.gridManager;
+
+  session->input = InputHandler(&editorState.winManager, &nvim, options);
 
   if (options.opacity < 1) {
     auto& hl = editorState.hlTable[0];
@@ -287,17 +290,11 @@ void SessionManager::FontSizeReset(bool all) {
 
 void SessionManager::SessionSwitchInternal(SessionHandle& session) {
   UpdateSessionSizes(session);
-
-  auto newInputHandler = std::make_shared<InputHandler>(session, session->options);
-  {
-    std::lock_guard lock(inputMutex);
-    inputHandler = std::move(newInputHandler);
-  }
-
   DeferToMainThread([winPtr = window.Get(),
                      title = std::format("Neogurt - {}", session->name)] {
     SDL_SetWindowTitle(winPtr, title.c_str());
   });
+  PushSessionToMainThread(session);
 
   session->reattached = true;
 }

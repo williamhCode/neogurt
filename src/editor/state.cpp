@@ -211,11 +211,9 @@ void ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
                 if (e.grid == 1) {
                   editorState.winManager.Pos({1, {}, 0, 0, e.width, e.height});
                 } else {
-                  // TODO: find a more robust way to handle
-                  // grid and win events not syncing up
-                  // weird workaround for nvim only sending GridResize
-                  // but not WinFloatPos for when float resizes
-                  editorState.winManager.FloatPos(e.grid);
+                  // TODO: find a more robust way to handle grid and win events not syncing up
+                  // workaround for nvim only sending GridResize but not WinPos/WinFloatPos when resizing
+                  editorState.winManager.SyncResize(e.grid);
                 }
               },
               [&](GridClear& e) {
@@ -256,19 +254,22 @@ void ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
                 // if no corresponding GridResize was sent, defer event
                 auto it = editorState.gridManager.grids.find(e.grid);
                 if (it == editorState.gridManager.grids.end()) {
+                  LOG_WARN("WinPos: grid {} not found", e.grid);
                   uiEvents.queue[0].emplace_front(e);
                   return;
                 }
-                auto& grid = it->second;
 
-                if (grid.width == e.width && grid.height == e.height) {
-                  editorState.winManager.Pos(e);
-                } else {
-                  // defer event to next flush
-                  // LOG_INFO("deferred WinPos {} {} {} {} {}",
-                  //   e.grid, grid.width, grid.height, e.width, e.height);
-                  uiEvents.queue[0].emplace_front(e);
-                }
+                editorState.winManager.Pos(e);
+
+                // // defer event to next flush if size mismatch
+                // auto& grid = it->second;
+                // if (grid.width == e.width && grid.height == e.height) {
+                //   editorState.winManager.Pos(e);
+                // } else {
+                //   LOG_INFO("deferred WinPos {} {} {} {} {}",
+                //     e.grid, grid.width, grid.height, e.width, e.height);
+                //   uiEvents.queue[0].emplace_front(e);
+                // }
               },
               [&](WinFloatPos& e) {
                 editorState.winManager.FloatPos(e);

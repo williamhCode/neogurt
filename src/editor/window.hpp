@@ -89,7 +89,7 @@ public:
   void UpdateScrolling(float dt);
 
   void Pos(const event::WinPos& e);
-  void FloatPos(int grid);
+  void SyncResize(int grid);
   void FloatPos(const event::WinFloatPos& e);
   void ExternalPos(const event::WinExternalPos& e);
   void Hide(const event::WinHide& e);

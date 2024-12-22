@@ -1,9 +1,10 @@
 #pragma once
 
+#include "app/input.hpp"
 #include "nvim/nvim.hpp"
 #include "editor/state.hpp"
 
-struct SessionState {
+struct Session {
   int id;
   std::string name;
   std::string dir;
@@ -12,5 +13,6 @@ struct SessionState {
   Nvim nvim;
   Options options;
   EditorState editorState;
+  InputHandler input;
   bool reattached = false;
 };

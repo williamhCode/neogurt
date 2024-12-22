@@ -103,9 +103,8 @@ void WinManager::Pos(const event::WinPos& e) {
   UpdateWinAttributes(win);
 }
 
-// TODO: find a more robust way to handle
-// grid and win events not syncing up
-void WinManager::FloatPos(int grid) {
+// TODO: find a more robust way to handle grid and win events not syncing up
+void WinManager::SyncResize(int grid) {
   std::lock_guard lock(windowsMutex);
   auto gridIt = gridManager->grids.find(grid);
   if (gridIt == gridManager->grids.end()) {
@@ -118,8 +117,6 @@ void WinManager::FloatPos(int grid) {
     return;
   }
   auto& win = winIt->second;
-
-  if (!win.IsFloating()) return;
 
   win.width = win.grid.width;
   win.height = win.grid.height;

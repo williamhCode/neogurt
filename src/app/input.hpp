@@ -5,15 +5,13 @@
 #include "app/options.hpp"
 #include "nvim/nvim.hpp"
 #include "editor/window.hpp"
-#include "session/state.hpp"
 
 #include <memory>
 #include <optional>
 
 struct InputHandler {
-  std::shared_ptr<SessionState> session;
-  WinManager& winManager;
-  Nvim& nvim;
+  WinManager* winManager;
+  Nvim* nvim;
 
   // options
   Options options;
@@ -25,8 +23,10 @@ struct InputHandler {
   double yAccum = 0;
   double xAccum = 0;
 
+  InputHandler() = default;
   InputHandler(
-    std::shared_ptr<SessionState> session,
+    WinManager* winManager,
+    Nvim* nvim,
     const Options& options
   );
 

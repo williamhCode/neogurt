@@ -1,13 +1,10 @@
 #pragma once
 
-#include "app/input.hpp"
 #include "session/state.hpp"
-#include "app/options.hpp"
 #include "app/sdl_window.hpp"
 #include "gfx/renderer.hpp"
 #include <deque>
 #include <memory>
-#include <mutex>
 
 enum class SpawnMode {
   Child,
@@ -33,7 +30,7 @@ struct SessionListEntry {
   MSGPACK_DEFINE_MAP(id, name, dir);
 };
 
-using SessionHandle = std::shared_ptr<SessionState>;
+using SessionHandle = std::shared_ptr<Session>;
 
 struct SessionManager {
 private:
@@ -43,11 +40,9 @@ private:
   SizeHandler& sizes;
   Renderer& renderer;
 
-  std::shared_ptr<InputHandler> inputHandler;
-  std::mutex inputMutex;
-
   int currId = 1;
-  // session should only be held by sessions and inputHandler
+  // sessions are only owned by sessions map and main thread
+  // others should hold pointer/reference to sessions in the sessions map
   std::map<int, SessionHandle> sessions;
   SessionHandle nullSession{nullptr};
 
@@ -79,11 +74,6 @@ public:
 
   void FontSizeChange(float delta, bool all = false);
   void FontSizeReset(bool all = false);
-
-  std::shared_ptr<InputHandler> GetInputHandler() {
-    std::lock_guard lock(inputMutex);
-    return inputHandler;
-  }
 
 private:
   // all session switching leads to this function
