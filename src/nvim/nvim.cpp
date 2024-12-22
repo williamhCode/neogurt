@@ -56,9 +56,11 @@ void Nvim::Setup() {
     SetClientInfo(
       "neogurt",
       {
-        {"major", MAJOR_VERSION},
-        {"minor", MINOR_VERSION},
-        {"patch", PATCH_VERSION},
+        {"major", VERSION_MAJOR},
+        {"minor", VERSION_MINOR},
+        {"patch", VERSION_PATCH},
+        {"prerelease", VERSION_SUFFIX},
+        {"commit", VERSION_COMMIT},
       },
       "ui", {}, {}
     )
