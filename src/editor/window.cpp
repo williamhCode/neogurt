@@ -260,7 +260,12 @@ void WinManager::Viewport(const event::WinViewport& e) {
   // LOG_INFO("WinManager::Viewport: grid {} scrollDelta {} shouldScroll {}", e.grid,
 
   if (!shouldScroll) return;
-  win.scrollDist = e.scrollDelta * sizes.charSize.y;
+  float scrollDist = e.scrollDelta * sizes.charSize.y;
+  if (win.scrollDist) {
+    *win.scrollDist += scrollDist;
+  } else {
+    win.scrollDist = scrollDist;
+  }
 }
 
 void WinManager::ViewportMargins(const event::WinViewportMargins& e) {
