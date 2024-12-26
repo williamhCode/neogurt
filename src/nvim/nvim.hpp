@@ -11,7 +11,7 @@ namespace rpc { struct Client; }
 
 // Nvim client that wraps the rpc client.
 struct Nvim {
-  std::unique_ptr<rpc::Client> client;
+  std::shared_ptr<rpc::Client> client;
   UiEvents uiEvents;
   // int channelId;
 

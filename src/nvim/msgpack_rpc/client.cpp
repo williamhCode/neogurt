@@ -23,8 +23,10 @@ Client::~Client() {
     if (socket->is_open()) socket->close();
   }
 
-  for (auto& thread : contextThreads) {
-    thread.join();
+  for (auto& thread : rwThreads) {
+    if (thread.joinable()) {
+      thread.join();
+    }
   }
 }
 
@@ -32,6 +34,7 @@ bool Client::ConnectStdio(
   const std::string& command, bool interactive, const std::string& dir
 ) {
   clientType = ClientType::Stdio;
+
   readPipe = std::make_unique<bp::async_pipe>(context);
   writePipe = std::make_unique<bp::async_pipe>(context);
 
@@ -68,11 +71,8 @@ bool Client::ConnectStdio(
   }
   exit = false;
 
-  co_spawn(context, DoRead(), asio::detached);
-  co_spawn(context, DoWrite(), asio::detached);
-
-  contextThreads.emplace_back([this]() { context.run(); });
-  contextThreads.emplace_back([this]() { context.run(); });
+  rwThreads.emplace_back([this]() { DoRead(); });
+  rwThreads.emplace_back([this]() { DoWrite(); });
 
   return true;
 }
@@ -93,18 +93,17 @@ bool Client::ConnectTcp(std::string_view host, uint16_t port) {
   }
   exit = false;
 
-  co_spawn(context, DoRead(), asio::detached);
-  co_spawn(context, DoWrite(), asio::detached);
-
-  contextThreads.emplace_back([this]() { context.run(); });
-  contextThreads.emplace_back([this]() { context.run(); });
+  rwThreads.emplace_back([this]() { DoRead(); });
+  rwThreads.emplace_back([this]() { DoWrite(); });
 
   return true;
 }
 
 void Client::Disconnect() {
-  exit = true;
-  msgsOut.Exit();
+  if (!exit) {
+    msgsOut.Exit();
+    exit = true;
+  }
 }
 
 bool Client::IsConnected() {
@@ -135,7 +134,7 @@ uint32_t Client::Msgid() {
   return currId++;
 }
 
-asio::awaitable<void> Client::DoRead() {
+void Client::DoRead() {
   unpacker.reserve_buffer(readSize);
 
   while (IsConnected()) {
@@ -145,25 +144,19 @@ asio::awaitable<void> Client::DoRead() {
     std::size_t length;
 
     if (clientType == ClientType::Stdio) {
-      length = co_await readPipe->async_read_some(
-        buffer, asio::redirect_error(asio::use_awaitable, ec)
-      );
+      length = readPipe->read_some(buffer, ec);
     } else if (clientType == ClientType::Tcp) {
-      length = co_await socket->async_read_some(
-        buffer, asio::redirect_error(asio::use_awaitable, ec)
-      );
+      length = socket->read_some(buffer, ec);
     }
 
     if (ec) {
       if (ec == asio::error::eof) {
         LOG_INFO("Client::DoRead: The server closed the connection");
         Disconnect();
-        co_return;
-
-      } else {
-        LOG_ERR("Client::DoRead: Error - {}", ec.message());
-        continue;
-      }
+        return;
+      } 
+      LOG_ERR("Client::DoRead: Error - {}", ec.message());
+      continue;
     }
 
     unpacker.buffer_consumed(length);
@@ -190,7 +183,7 @@ asio::awaitable<void> Client::DoRead() {
           .promise = std::move(promise),
         });
 
-        std::thread([this, msgid = request.msgid, future = std::move(future)] mutable {
+        std::thread([weak_self = weak_from_this(), msgid = request.msgid, future = std::move(future)] mutable {
           ResponseOut msg;
 
           auto result = future.get();
@@ -204,7 +197,10 @@ asio::awaitable<void> Client::DoRead() {
 
           msgpack::sbuffer buffer;
           msgpack::pack(buffer, msg);
-          Write(std::move(buffer));
+
+          if (auto self = weak_self.lock()) {
+            self->Write(std::move(buffer));
+          }
         }).detach();
 
       } else if (type == MessageType::Response) {
@@ -248,29 +244,24 @@ asio::awaitable<void> Client::DoRead() {
       unpacker.reserve_buffer(readSize);
     }
   }
-
-  co_return;
 }
 
 void Client::Write(msgpack::sbuffer&& buffer) {
   msgsOut.Push(std::move(buffer));
 }
 
-asio::awaitable<void> Client::DoWrite() {
-  while (msgsOut.Wait()) {
+void Client::DoWrite() {
+  while (IsConnected() && msgsOut.Wait()) {
+
     auto& msgBuffer = msgsOut.Front();
     auto buffer = asio::buffer(msgBuffer.data(), msgBuffer.size());
 
     boost::system::error_code ec;
 
     if (clientType == ClientType::Stdio) {
-      co_await writePipe->async_write_some(
-        buffer, asio::redirect_error(asio::use_awaitable, ec)
-      );
+      writePipe->write_some(buffer, ec);
     } else if (clientType == ClientType::Tcp) {
-      co_await socket->async_write_some(
-        buffer, asio::redirect_error(asio::use_awaitable, ec)
-      );
+      socket->write_some(buffer, ec);
     }
 
     if (ec) {
@@ -279,8 +270,6 @@ asio::awaitable<void> Client::DoWrite() {
 
     msgsOut.Pop();
   }
-
-  co_return;
 }
 
 } // namespace rpc

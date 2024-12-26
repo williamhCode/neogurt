@@ -10,7 +10,7 @@
 using namespace std::chrono_literals;
 
 bool Nvim::ConnectStdio(bool interactive, const std::string& dir) {
-  client = std::make_unique<rpc::Client>();
+  client = std::make_shared<rpc::Client>();
 
   // std::string luaInitPath = ROOT_DIR "/lua/init.lua";
   // std::string cmd = "nvim --embed --headless "
@@ -21,7 +21,7 @@ bool Nvim::ConnectStdio(bool interactive, const std::string& dir) {
 }
 
 std::future<bool> Nvim::ConnectTcp(std::string_view host, uint16_t port) {
-  client = std::make_unique<rpc::Client>();
+  client = std::make_shared<rpc::Client>();
 
   auto timeout = 500ms;
   auto elapsed = 0ms;

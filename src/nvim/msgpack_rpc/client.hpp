@@ -58,7 +58,7 @@ enum class ClientType {
   Tcp,
 };
 
-struct Client {
+struct Client : std::enable_shared_from_this<Client> {
 private:
   asio::io_context context;
 
@@ -72,7 +72,7 @@ private:
   // tcp
   std::unique_ptr<asio::ip::tcp::socket> socket;
 
-  std::vector<std::jthread> contextThreads;
+  std::vector<std::jthread> rwThreads;
   std::atomic_bool exit;
 
   std::unordered_map<u_int32_t, std::promise<msgpack::object_handle>> responses;
@@ -113,9 +113,9 @@ private:
   std::atomic_uint32_t currId = 0;
 
   uint32_t Msgid();
-  asio::awaitable<void> DoRead();
+  void DoRead();
   void Write(msgpack::sbuffer&& buffer);
-  asio::awaitable<void> DoWrite();
+  void DoWrite();
 };
 
 std::future<msgpack::object_handle>
