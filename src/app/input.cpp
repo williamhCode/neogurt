@@ -122,7 +122,7 @@ void InputHandler::HandleKeyboard(const SDL_KeyboardEvent& event) {
       }
     }
 
-    LOG_INFO("Key: {}", inputStr);
+    // LOG_INFO("Key: {}", inputStr);
     nvim->Input(inputStr);
   }
 }
@@ -130,7 +130,7 @@ void InputHandler::HandleKeyboard(const SDL_KeyboardEvent& event) {
 void InputHandler::HandleTextEditing(const SDL_TextEditingEvent& event) {
   std::string text = event.text;
   if (!text.empty()) {
-    LOG_INFO("Text editing: {}", text);
+    // LOG_INFO("Text editing: {}", text);
     editingText = std::move(text);
   }
 }
@@ -143,7 +143,7 @@ void InputHandler::HandleTextInput(const SDL_TextInputEvent& event) {
   // if (inputStr == " ") return;
   // if (inputStr == "<") inputStr = "<lt>";
 
-  LOG_INFO("Text: {}", inputStr);
+  // LOG_INFO("Text: {}", inputStr);
   nvim->Input(inputStr);
 }
 
