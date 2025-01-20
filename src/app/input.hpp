@@ -16,6 +16,9 @@ struct InputHandler {
   // options
   Options options;
 
+  // ime
+  std::string editingText;
+
   // mouse related
   std::optional<int> mouseButton;
   std::optional<int> currGrid;

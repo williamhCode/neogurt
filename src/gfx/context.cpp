@@ -92,7 +92,7 @@ WGPUContext::WGPUContext(SDL_Window* window, glm::uvec2 _size, PresentMode _pres
     }
   );
 
-  device = utils::RequestDevice(adapter, deviceDesc);
+  device = utils::RequestDevice(instance, adapter, deviceDesc);
   DeviceWrapper::device = device;
 
   queue = device.GetQueue();

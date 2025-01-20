@@ -1,4 +1,6 @@
+#include "SDL3/SDL_hints.h"
 #include "SDL3/SDL_init.h"
+#include "SDL3/SDL_stdinc.h"
 #include "app/path.hpp"
 #include "app/size.hpp"
 #include "app/input.hpp"
@@ -43,6 +45,8 @@ int main(int argc, char** argv) {
   }
 
   SetupPaths();
+
+  SDL_SetHint(SDL_HINT_IME_IMPLEMENTED_UI, "composition");
 
   if (!SDL_Init(SDL_INIT_VIDEO)) {
     LOG_ERR("Unable to initialize SDL: {}", SDL_GetError());
@@ -320,7 +324,7 @@ int main(int argc, char** argv) {
     });
 
     // event loop --------------------------------
-    // SDL_StartTextInput(window.Get());
+    SDL_StartTextInput(window.Get());
 
     // resize handling
     ResizeEvents currResizeEvents{};
@@ -375,6 +379,7 @@ int main(int argc, char** argv) {
         }
 
         case SDL_EVENT_TEXT_EDITING:
+          if (currSession) currSession->input.HandleTextEditing(event.edit);
           break;
         case SDL_EVENT_TEXT_INPUT:
           if (currSession) currSession->input.HandleTextInput(event.text);

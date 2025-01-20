@@ -4,6 +4,7 @@
 #include "utils/async.hpp"
 #include "boost/program_options.hpp"
 #include "boost/core/demangle.hpp"
+#include "SDL3/SDL_hints.h"
 #include <iostream>
 #include <future>
 
@@ -95,6 +96,8 @@ std::future<Options> Options::Load(Nvim& nvim, bool first) {
   };
   #define LOAD(name) Load(CamelToSnake(#name), options.name)
 
+  std::string macosOptionIsMetaString;
+
   // TODO: load these options before connecting
   // LOAD(multigrid);
   // LOAD(interactiveShell);
@@ -110,8 +113,7 @@ std::future<Options> Options::Load(Nvim& nvim, bool first) {
   LOAD(marginBottom);
   LOAD(marginLeft);
   LOAD(marginRight);
-
-  LOAD(macOptIsMeta);
+  LOAD(macosOptionIsMeta);
   LOAD(cursorIdleTime);
   LOAD(scrollSpeed);
 
@@ -122,6 +124,8 @@ std::future<Options> Options::Load(Nvim& nvim, bool first) {
   LOAD(maxFps);
 
   LOAD(interactiveShell);
+
+  SDL_SetHint(SDL_HINT_MAC_OPTION_AS_ALT, options.macosOptionIsMeta.c_str());
 
   options.opacity = int(options.opacity * 255) / 255.0f;
 

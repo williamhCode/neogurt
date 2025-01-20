@@ -21,8 +21,7 @@ struct Options {
   int marginBottom = 0;
   int marginLeft = 0;
   int marginRight = 0;
-
-  bool macOptIsMeta = true;
+  std::string macosOptionIsMeta = "none";
   float cursorIdleTime = 10;
   float scrollSpeed = 1;
 

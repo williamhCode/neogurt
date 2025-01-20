@@ -477,4 +477,4 @@ Pen::ImageData Pen::Draw(const DrawDesc& desc) {
   };
 }
 
-}
+} // namespace shape

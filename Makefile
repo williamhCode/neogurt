@@ -15,7 +15,7 @@ build-setup: build-setup-debug build-setup-release
 build-setup-debug:
 	cmake . -B build/debug \
 		-D CMAKE_BUILD_TYPE=Debug \
-		-GNinja \
+		-G Ninja \
 		-D CMAKE_C_COMPILER=clang \
 		-D CMAKE_CXX_COMPILER=clang++ \
 		-D CMAKE_C_COMPILER_LAUNCHER=ccache \
@@ -26,7 +26,7 @@ build-setup-debug:
 build-setup-release:
 	cmake . -B build/release \
 		-D CMAKE_BUILD_TYPE=RelWithDebInfo \
-		-GNinja \
+		-G Ninja \
 		-D CMAKE_C_COMPILER=clang \
 		-D CMAKE_CXX_COMPILER=clang++ \
 		-D CMAKE_C_COMPILER_LAUNCHER=ccache \
