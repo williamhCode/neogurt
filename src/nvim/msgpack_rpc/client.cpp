@@ -18,6 +18,8 @@ Client::~Client() {
 
   if (clientType == ClientType::Stdio) {
     if (process.running()) process.terminate();
+    readPipe->close();
+    writePipe->close();
 
   } else if (clientType == ClientType::Tcp) {
     if (socket->is_open()) socket->close();

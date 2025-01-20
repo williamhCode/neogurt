@@ -322,7 +322,12 @@ MouseInfo WinManager::GetMouseInfo(glm::vec2 mousePos) const {
   }
 
   auto it = windows.find(grid);
-  assert(it != windows.end() && "Windows changed mid function, data race occured");
+  // assert(it != windows.end() && "Windows changed mid function, data race occured");
+
+  if (it == windows.end()) {
+    return {grid, 0, 0};
+  }
+
   const auto& win = it->second;
   int row = std::max(globalRow - win.startRow, 0);
   int col = std::max(globalCol - win.startCol, 0);
