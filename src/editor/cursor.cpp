@@ -11,7 +11,8 @@ using namespace wgpu;
 void Cursor::Resize(glm::vec2 _size, float dpi) {
   size = _size;
 
-  maskRenderTexture = RenderTexture(size, dpi, TextureFormat::R8Unorm);
+  // account for double width chars
+  maskRenderTexture = RenderTexture({size.x * 2, size.y}, dpi, TextureFormat::R8Unorm);
 
   maskPosBuffer = ctx.CreateUniformBuffer(sizeof(glm::vec2), &maskPos);
 
@@ -32,33 +33,15 @@ void Cursor::Goto(const event::GridCursorGoto& e) {
   col = e.col;
 }
 
-void Cursor::SetMode(CursorMode* _modeInfo) {
-  cursorMode = _modeInfo;
-
-  float ratio = cursorMode->cellPercentage / 100.0;
-  auto currSize = this->size;
-  glm::vec2 offset(0, 0);
-  switch (cursorMode->cursorShape) {
-    case CursorShape::Block: break;
-    case CursorShape::Horizontal:
-      currSize.y *= ratio;
-      offset.y = this->size.y * (1 - ratio);
-      break;
-    case CursorShape::Vertical: currSize.x *= ratio; break;
-    case CursorShape::None:
-      LOG_ERR("Invalid cursor shape");
-      break;
-  }
-
-  destCorners = MakeRegion(offset, currSize);
-  startCorners = corners;
-  cornerElasped = 0.0;
+void Cursor::SetMode(CursorMode* _cursorMode) {
+  cursorMode = _cursorMode;
 
   if (blink) {
     blinkState = BlinkState::Wait;
     blinkElasped = 0.0;
   }
-  blink = cursorMode->blinkwait != 0 && cursorMode->blinkon != 0 && cursorMode->blinkoff != 0;
+  blink =
+    cursorMode->blinkwait != 0 && cursorMode->blinkon != 0 && cursorMode->blinkoff != 0;
 }
 
 bool Cursor::SetDestPos(const Win* currWin, const SizeHandler& sizes) {
@@ -104,31 +87,46 @@ bool Cursor::SetDestPos(const Win* currWin, const SizeHandler& sizes) {
     ctx.queue.WriteBuffer(maskPosBuffer, 0, &maskPos, sizeof(glm::vec2));
   }
 
+  // set corners
+  float cellRatio = cursorMode->cellPercentage / 100.0;
+  bool doubleWidth = currWin->grid.lines[row][col].doubleWidth;
+  // LOG_INFO("doubleWidth: {}", doubleWidth);
+  float widthRatio = doubleWidth ? 2 : 1;
+
+  glm::vec2 currSize;
+  glm::vec2 offset(0, 0);
+
+  switch (cursorMode->cursorShape) {
+    case CursorShape::Block:
+      currSize = {size.x * widthRatio, size.y};
+      break;
+    case CursorShape::Horizontal:
+      currSize = {size.x * widthRatio, size.y * cellRatio};
+      offset.y = size.y * (1 - cellRatio);
+      break;
+    case CursorShape::Vertical:
+      currSize = {size.x * cellRatio, size.y};
+      break;
+    case CursorShape::None:
+      LOG_ERR("Invalid cursor shape");
+      break;
+  }
+
+  auto newDestCorners = MakeRegion(cursorPos + offset, currSize);
+  if (newDestCorners != destCorners) {
+    destCorners = newDestCorners;
+    startCorners = corners;
+    cornerElasped = 0.0;
+  }
+
   if (cursorPos == destPos) return false;
   destPos = cursorPos;
-
-  startPos = pos;
-  jumpElasped = 0.0;
 
   return true;
 }
 
 void Cursor::Update(float dt) {
-  // position
-  if (pos != destPos) {
-    jumpElasped += dt;
-    if (jumpElasped >= jumpTime) {
-      pos = destPos;
-      jumpElasped = 0.0;
-    } else {
-      // use smoothstep
-      float t = jumpElasped / jumpTime;
-      float y = EaseOutCubic(t);
-      pos = glm::mix(startPos, destPos, y);
-    }
-  }
-
-  // Shape transition
+  // moving
   if (corners != destCorners) {
     cornerElasped += dt;
     if (cornerElasped >= cornerTime) {
@@ -137,7 +135,7 @@ void Cursor::Update(float dt) {
     } else {
       float t = cornerElasped / cornerTime;
       for (size_t i = 0; i < 4; i++) {
-        float y = EaseOutQuad(t);
+        float y = EaseOutCubic(t);
         corners[i] = glm::mix(startCorners[i], destCorners[i], y);
       }
     }

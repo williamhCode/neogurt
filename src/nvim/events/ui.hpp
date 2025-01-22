@@ -79,13 +79,16 @@ struct GridCursorGoto {
 struct GridLine {
   struct Cell {
     std::string text;
-    int hlId;
-    int repeat = 1;
+    std::optional<int> hlId;
+    std::optional<int> repeat;
+    MSGPACK_DEFINE(text, hlId, repeat);
   };
   int grid;
   int row;
   int colStart;
   std::vector<Cell> cells;
+  bool wrap;
+  MSGPACK_DEFINE(grid, row, colStart, cells, wrap);
 };
 struct GridScroll {
   int grid;

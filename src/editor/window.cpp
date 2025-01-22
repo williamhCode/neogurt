@@ -322,10 +322,10 @@ MouseInfo WinManager::GetMouseInfo(glm::vec2 mousePos) const {
   }
 
   auto it = windows.find(grid);
-  // assert(it != windows.end() && "Windows changed mid function, data race occured");
 
+  // grid events not sent yet, no windows
   if (it == windows.end()) {
-    return {grid, 0, 0};
+    return {grid, globalRow, globalCol};
   }
 
   const auto& win = it->second;

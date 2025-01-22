@@ -57,12 +57,30 @@ void GridManager::Line(const event::GridLine& e) {
   auto& grid = it->second;
 
   auto& line = grid.lines[e.row];
-  int col = e.colStart;
-  for (const auto& cell : e.cells) {
-    for (int i = 0; i < cell.repeat; i++) {
-      auto& lineCell = line[col];
-      lineCell.text = cell.text;
-      lineCell.hlId = cell.hlId;
+  size_t col = e.colStart;
+  int recentHlId = 0;
+
+  for (size_t i = 0; i < e.cells.size(); i++) {
+    const auto& eventCell = e.cells[i];
+    if (eventCell.hlId) {
+      recentHlId = *eventCell.hlId;
+    }
+
+    if (eventCell.repeat) {
+      for (int j = 0; j < eventCell.repeat; j++) {
+        auto& cell = line[col];
+        cell.text = eventCell.text;
+        cell.hlId = recentHlId;
+        cell.doubleWidth = false;
+        col++;
+      }
+    } else {
+      auto& cell = line[col];
+      cell.text = eventCell.text;
+      cell.hlId = recentHlId;
+      // "The right cell of a double-width char will be represented as the empty
+      // string. Double-width chars never use repeat."
+      cell.doubleWidth = i + 1 < e.cells.size() && e.cells[i + 1].text.empty();
       col++;
     }
   }

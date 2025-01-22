@@ -47,12 +47,8 @@ struct Cursor {
 
   glm::vec2 prevScrollOffset;
 
-  glm::vec2 startPos;
   glm::vec2 destPos;
   glm::vec2 maskPos; // cursor mask, actual position of cell
-  glm::vec2 pos;
-  float jumpTime = 0.06;
-  float jumpElasped;
 
   CursorMode* cursorMode;
 
@@ -72,7 +68,7 @@ struct Cursor {
 
   void Resize(glm::vec2 size, float dpi);
   void Goto(const event::GridCursorGoto& e);
-  void SetMode(CursorMode* modeInfo);
+  void SetMode(CursorMode* cursorMode);
 
   // returns true if destPos changes
   bool SetDestPos(const Win* currWin, const SizeHandler& sizes);

@@ -11,7 +11,8 @@ struct Grid {
 
   struct Cell {
     std::string text;
-    int hlId = 0;
+    int hlId;
+    bool doubleWidth;
   };
   using Line = std::vector<Cell>;
   using Lines = RingBuffer<Line>;

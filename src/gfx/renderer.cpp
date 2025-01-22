@@ -495,7 +495,7 @@ void Renderer::RenderCursor(const Cursor& cursor, HlTable& hlTable) {
   cursorData.ResetCounts();
   auto& quad = cursorData.NextQuad();
   for (size_t i = 0; i < 4; i++) {
-    quad[i].position = cursor.pos + cursor.corners[i];
+    quad[i].position = cursor.corners[i];
     quad[i].foreground = foreground;
     quad[i].background = background;
   }

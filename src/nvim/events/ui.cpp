@@ -92,38 +92,7 @@ static const std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
   }},
 
   {"grid_line", [](const msgpack::object& args, UiEvents& uiEvents) {
-    // LOG("grid_line: {}", ToString(args));
-    auto [grid, row, col_start, cells, wrap] =
-      args.as<std::tuple<int, int, int, msgpack::object, bool>>();
-    GridLine gridLine{grid, row, col_start, {}};
-
-    std::span<const msgpack::object> cellsList = cells.via.array;
-    gridLine.cells.reserve(cellsList.size());
-
-    int recent_hl_id;
-    for (const auto& cell : cellsList) {
-      switch (cell.via.array.size) {
-        case 3: {
-          auto [text, hl_id, repeat] = cell.as<std::tuple<std::string, int, int>>();
-          gridLine.cells.emplace_back(std::move(text), hl_id, repeat);
-          recent_hl_id = hl_id;
-          break;
-        }
-        case 2: {
-          auto [text, hl_id] = cell.as<std::tuple<std::string, int>>();
-          gridLine.cells.emplace_back(std::move(text), hl_id);
-          recent_hl_id = hl_id;
-          break;
-        }
-        case 1: {
-          auto [text] = cell.as<std::tuple<std::string>>();
-          gridLine.cells.emplace_back(std::move(text), recent_hl_id);
-          break;
-        }
-      }
-    }
-
-    uiEvents.Curr().emplace_back(std::move(gridLine));
+    uiEvents.Curr().emplace_back(args.as<GridLine>());
   }},
 
   {"grid_scroll", [](const msgpack::object& args, UiEvents& uiEvents) {
@@ -201,7 +170,11 @@ static void ParseUiEvents(const msgpack::object& params, UiEvents& uiEvents) {
     auto uiEventFunc = it->second;
 
     for (const msgpack::object& arg : eventArgs) {
-      uiEventFunc(arg, uiEvents);
+      try {
+        uiEventFunc(arg, uiEvents);
+      } catch (const msgpack::type_error& e) {
+        LOG_ERR("ParseUiEvents: {}", e.what());
+      }
     }
   }
 }
