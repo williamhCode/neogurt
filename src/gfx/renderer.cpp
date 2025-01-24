@@ -9,6 +9,7 @@
 #include "utils/region.hpp"
 #include "utils/unicode.hpp"
 #include "utils/color.hpp"
+#include <limits>
 #include <utility>
 #include <vector>
 #include <array>
@@ -423,6 +424,11 @@ void Renderer::RenderWindows(
     resize = false;
   }
 
+  // - msg window covers normal + floating win
+  // - normal window covers normal win
+  // - ime window covers floating + msg win
+  // - floating window covers floating win
+
   windowsRPD.cColorAttachments[0].view = CurrFinalRenderTexture().textureView;
   windowsRPD.cColorAttachments[0].clearValue = linearClearColor;
   windowsRPD.cColorAttachments[0].loadOp = LoadOp::Clear;
@@ -435,14 +441,13 @@ void Renderer::RenderWindows(
     passEncoder.SetBindGroup(2, defaultColorBG);
 
     if (msgWin) {
-      // msgWin covers all windows, including floating windows
-      // set to 3, so read by both masks for normal and floating windows
-      passEncoder.SetStencilReference(3);
+      // writes for both floating and normal win
+      passEncoder.SetStencilReference(0b011);
       msgWin->sRenderTexture.Render(passEncoder, 3);
     }
 
-    // mask 0x01 for normal windows
-    passEncoder.SetStencilReference(1);
+    // writes for normal windows
+    passEncoder.SetStencilReference(0b001);
     for (const Win* win : windows) {
       win->sRenderTexture.Render(passEncoder, 3);
     }
@@ -455,12 +460,17 @@ void Renderer::RenderWindows(
   {
     auto passEncoder = commandEncoder.BeginRenderPass(&windowsRPD);
     passEncoder.SetPipeline(ctx.pipeline.textureRPL);
-    // mask 0x02 for floating windows
-    passEncoder.SetStencilReference(2);
     passEncoder.SetBindGroup(0, CurrFinalRenderTexture().camera.viewProjBG);
     passEncoder.SetBindGroup(1, gammaBG);
     passEncoder.SetBindGroup(2, defaultColorBG);
     for (const Win* win : floatWindows) {
+      if (win->floatData->zindex == std::numeric_limits<int>::max()) {
+        // writes for only floating win (0b010),
+        // but reads 0b110 so not blocked by msg win
+        passEncoder.SetStencilReference(0b110);
+      } else {
+        passEncoder.SetStencilReference(0b010);
+      }
       win->sRenderTexture.Render(passEncoder, 3);
     }
     passEncoder.End();

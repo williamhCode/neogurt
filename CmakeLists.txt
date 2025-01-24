@@ -57,6 +57,7 @@ set(APP_SRC
   app/sdl_window.cpp
   app/sdl_event.cpp
   app/input.cpp
+  app/ime.cpp
   app/size.cpp
   app/window_funcs.mm
   app/options.cpp

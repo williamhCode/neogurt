@@ -28,9 +28,14 @@ void Cursor::Resize(glm::vec2 _size, float dpi) {
 
 void Cursor::Goto(const event::GridCursorGoto& e) {
   dirty = true;
+
   grid = e.grid;
   row = e.row;
   col = e.col;
+
+  // LOG_INFO("Cursor Goto: {}, {}, {}", grid, row, col);
+
+  cursorGoto = e;
 }
 
 void Cursor::SetMode(CursorMode* _cursorMode) {
@@ -42,6 +47,21 @@ void Cursor::SetMode(CursorMode* _cursorMode) {
   }
   blink =
     cursorMode->blinkwait != 0 && cursorMode->blinkon != 0 && cursorMode->blinkoff != 0;
+}
+
+
+void Cursor::ImeGoto(const event::GridCursorGoto& e) {
+  dirty = true;
+  grid = e.grid;
+  row = e.row;
+  col = e.col;
+}
+
+void Cursor::ImeClear() {
+  dirty = true;
+  grid = cursorGoto.grid;
+  row = cursorGoto.row;
+  col = cursorGoto.col;
 }
 
 bool Cursor::SetDestPos(const Win* currWin, const SizeHandler& sizes) {

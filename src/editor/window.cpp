@@ -144,17 +144,21 @@ void WinManager::FloatPos(const event::WinFloatPos& e) {
 
   win.hidden = false;
 
+  int startRow = 0;
+  int startCol = 0;
   auto anchorIt = windows.find(e.anchorGrid);
-  if (anchorIt == windows.end()) {
+  if (anchorIt != windows.end()) {
+    auto& anchorWin = anchorIt->second;
+    startRow = anchorWin.startRow;
+    startCol = anchorWin.startCol;
+  } else {
     LOG_ERR("WinManager::FloatPos: anchor grid {} not found", e.anchorGrid);
-    return;
   }
-  auto& anchorWin = anchorIt->second;
 
-  auto north = anchorWin.startRow + e.anchorRow;
-  auto south = anchorWin.startRow + e.anchorRow - win.height;
-  auto west = anchorWin.startCol + e.anchorCol;
-  auto east = anchorWin.startCol + e.anchorCol - win.width;
+  int north = startRow + e.anchorRow;
+  int south = startRow + e.anchorRow - win.height;
+  int west = startCol + e.anchorCol;
+  int east = startCol + e.anchorCol - win.width;
   if (e.anchor == "NW") {
     win.startRow = north;
     win.startCol = west;

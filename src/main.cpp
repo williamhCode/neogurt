@@ -4,6 +4,7 @@
 #include "app/path.hpp"
 #include "app/size.hpp"
 #include "app/input.hpp"
+#include "app/ime.hpp"
 #include "app/sdl_window.hpp"
 #include "app/sdl_event.hpp"
 #include "app/options.hpp"
@@ -22,10 +23,12 @@
 #include "utils/clock.hpp"
 #include "utils/logger.hpp"
 #include "utils/timer.hpp"
+#include "utils/unicode.hpp"
 
 #include <boost/core/demangle.hpp>
 #include <algorithm>
 #include <future>
+#include <limits>
 #include <memory>
 #include <print>
 #include <span>
@@ -33,6 +36,7 @@
 #include <atomic>
 #include <ranges>
 #include <chrono>
+#include <locale>
 
 using namespace wgpu;
 using namespace std::chrono;
@@ -40,6 +44,9 @@ using namespace std::chrono;
 WGPUContext ctx;
 
 int main(int argc, char** argv) {
+  // for wcwidth()
+  setlocale(LC_ALL, "en_US.UTF-8");
+
   if (auto exit = Options::LoadFromCommandLine(argc, argv)) {
     return *exit;
   }
@@ -170,7 +177,14 @@ int main(int argc, char** argv) {
         // sdl events -----------------------------------------
         while (!sdlEvents.Empty()) {
           auto& event = sdlEvents.Front();
+
           switch (event.type) {
+            case SDL_EVENT_TEXT_EDITING:
+              idle = false;
+              idleElasped = 0;
+              session->ime.HandleTextEditing(event.edit);
+              break;
+
             case SDL_EVENT_WINDOW_FOCUS_GAINED:
               windowFocused = true;
               idle = false;
@@ -180,6 +194,7 @@ int main(int argc, char** argv) {
               break;
             case SDL_EVENT_WINDOW_FOCUS_LOST:
               windowFocused = false;
+              session->ime.Clear();
               break;
 
             case SDL_EVENT_WINDOW_EXPOSED:
@@ -223,7 +238,6 @@ int main(int argc, char** argv) {
         LOG_DISABLE();
         ParseEditorState(nvim->uiEvents, session->editorState);
         LOG_ENABLE();
-
 
         // timer1.End();
 
@@ -379,7 +393,12 @@ int main(int argc, char** argv) {
         }
 
         case SDL_EVENT_TEXT_EDITING:
-          if (currSession) currSession->input.HandleTextEditing(event.edit);
+          if (currSession) {
+            currSession->input.HandleTextEditing(event.edit);
+            // copy event.edit.text
+            event.edit.text = SDL_strdup(event.edit.text);
+            sdlEvents.Push(event);
+          }
           break;
         case SDL_EVENT_TEXT_INPUT:
           if (currSession) currSession->input.HandleTextInput(event.text);

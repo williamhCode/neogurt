@@ -1,5 +1,3 @@
-
-
 {
   error_types = {
     Exception = {
@@ -12,13 +10,13 @@
   functions = { {
       method = false,
       name = "nvim_get_autocmds",
-      parameters = { { "Dictionary", "opts" } },
+      parameters = { { "Dict", "opts" } },
       return_type = "Array",
       since = 9
     }, {
       method = false,
       name = "nvim_create_autocmd",
-      parameters = { { "Object", "event" }, { "Dictionary", "opts" } },
+      parameters = { { "Object", "event" }, { "Dict", "opts" } },
       return_type = "Integer",
       since = 9
     }, {
@@ -30,13 +28,13 @@
     }, {
       method = false,
       name = "nvim_clear_autocmds",
-      parameters = { { "Dictionary", "opts" } },
+      parameters = { { "Dict", "opts" } },
       return_type = "void",
       since = 9
     }, {
       method = false,
       name = "nvim_create_augroup",
-      parameters = { { "String", "name" }, { "Dictionary", "opts" } },
+      parameters = { { "String", "name" }, { "Dict", "opts" } },
       return_type = "Integer",
       since = 9
     }, {
@@ -54,7 +52,7 @@
     }, {
       method = false,
       name = "nvim_exec_autocmds",
-      parameters = { { "Object", "event" }, { "Dictionary", "opts" } },
+      parameters = { { "Object", "event" }, { "Dict", "opts" } },
       return_type = "void",
       since = 9
     }, {
@@ -66,7 +64,7 @@
     }, {
       method = true,
       name = "nvim_buf_attach",
-      parameters = { { "Buffer", "buffer" }, { "Boolean", "send_buffer" }, { "Dictionary", "opts" } },
+      parameters = { { "Buffer", "buffer" }, { "Boolean", "send_buffer" }, { "Dict", "opts" } },
       return_type = "Boolean",
       since = 4
     }, {
@@ -96,7 +94,7 @@
     }, {
       method = true,
       name = "nvim_buf_get_text",
-      parameters = { { "Buffer", "buffer" }, { "Integer", "start_row" }, { "Integer", "start_col" }, { "Integer", "end_row" }, { "Integer", "end_col" }, { "Dictionary", "opts" } },
+      parameters = { { "Buffer", "buffer" }, { "Integer", "start_row" }, { "Integer", "start_col" }, { "Integer", "end_row" }, { "Integer", "end_col" }, { "Dict", "opts" } },
       return_type = "ArrayOf(String)",
       since = 9
     }, {
@@ -121,12 +119,12 @@
       method = true,
       name = "nvim_buf_get_keymap",
       parameters = { { "Buffer", "buffer" }, { "String", "mode" } },
-      return_type = "ArrayOf(Dictionary)",
+      return_type = "ArrayOf(Dict)",
       since = 3
     }, {
       method = true,
       name = "nvim_buf_set_keymap",
-      parameters = { { "Buffer", "buffer" }, { "String", "mode" }, { "String", "lhs" }, { "String", "rhs" }, { "Dictionary", "opts" } },
+      parameters = { { "Buffer", "buffer" }, { "String", "mode" }, { "String", "lhs" }, { "String", "rhs" }, { "Dict", "opts" } },
       return_type = "void",
       since = 6
     }, {
@@ -168,7 +166,7 @@
     }, {
       method = true,
       name = "nvim_buf_delete",
-      parameters = { { "Buffer", "buffer" }, { "Dictionary", "opts" } },
+      parameters = { { "Buffer", "buffer" }, { "Dict", "opts" } },
       return_type = "void",
       since = 7
     }, {
@@ -186,7 +184,7 @@
     }, {
       method = true,
       name = "nvim_buf_set_mark",
-      parameters = { { "Buffer", "buffer" }, { "String", "name" }, { "Integer", "line" }, { "Integer", "col" }, { "Dictionary", "opts" } },
+      parameters = { { "Buffer", "buffer" }, { "String", "name" }, { "Integer", "line" }, { "Integer", "col" }, { "Dict", "opts" } },
       return_type = "Boolean",
       since = 8
     }, {
@@ -204,19 +202,19 @@
     }, {
       method = false,
       name = "nvim_parse_cmd",
-      parameters = { { "String", "str" }, { "Dictionary", "opts" } },
-      return_type = "Dictionary",
+      parameters = { { "String", "str" }, { "Dict", "opts" } },
+      return_type = "Dict",
       since = 10
     }, {
       method = false,
       name = "nvim_cmd",
-      parameters = { { "Dictionary", "cmd" }, { "Dictionary", "opts" } },
+      parameters = { { "Dict", "cmd" }, { "Dict", "opts" } },
       return_type = "String",
       since = 10
     }, {
       method = false,
       name = "nvim_create_user_command",
-      parameters = { { "String", "name" }, { "Object", "command" }, { "Dictionary", "opts" } },
+      parameters = { { "String", "name" }, { "Object", "command" }, { "Dict", "opts" } },
       return_type = "void",
       since = 9
     }, {
@@ -228,7 +226,7 @@
     }, {
       method = true,
       name = "nvim_buf_create_user_command",
-      parameters = { { "Buffer", "buffer" }, { "String", "name" }, { "Object", "command" }, { "Dictionary", "opts" } },
+      parameters = { { "Buffer", "buffer" }, { "String", "name" }, { "Object", "command" }, { "Dict", "opts" } },
       return_type = "void",
       since = 9
     }, {
@@ -240,14 +238,14 @@
     }, {
       method = false,
       name = "nvim_get_commands",
-      parameters = { { "Dictionary", "opts" } },
-      return_type = "Dictionary",
+      parameters = { { "Dict", "opts" } },
+      return_type = "Dict",
       since = 4
     }, {
       method = true,
       name = "nvim_buf_get_commands",
-      parameters = { { "Buffer", "buffer" }, { "Dictionary", "opts" } },
-      return_type = "Dictionary",
+      parameters = { { "Buffer", "buffer" }, { "Dict", "opts" } },
+      return_type = "Dict",
       since = 4
     }, {
       deprecated_since = 11,
@@ -288,7 +286,7 @@
       deprecated_since = 8,
       method = true,
       name = "nvim_buf_set_virtual_text",
-      parameters = { { "Buffer", "buffer" }, { "Integer", "src_id" }, { "Integer", "line" }, { "Array", "chunks" }, { "Dictionary", "opts" } },
+      parameters = { { "Buffer", "buffer" }, { "Integer", "src_id" }, { "Integer", "line" }, { "Array", "chunks" }, { "Dict", "opts" } },
       return_type = "Integer",
       since = 5
     }, {
@@ -296,14 +294,14 @@
       method = false,
       name = "nvim_get_hl_by_id",
       parameters = { { "Integer", "hl_id" }, { "Boolean", "rgb" } },
-      return_type = "Dictionary",
+      return_type = "Dict",
       since = 3
     }, {
       deprecated_since = 9,
       method = false,
       name = "nvim_get_hl_by_name",
       parameters = { { "String", "name" }, { "Boolean", "rgb" } },
-      return_type = "Dictionary",
+      return_type = "Dict",
       since = 3
     }, {
       deprecated_since = 1,
@@ -408,7 +406,7 @@
       method = false,
       name = "nvim_get_option_info",
       parameters = { { "String", "name" } },
-      return_type = "Dictionary",
+      return_type = "Dict",
       since = 7
     }, {
       deprecated_since = 11,
@@ -453,6 +451,27 @@
       return_type = "void",
       since = 1
     }, {
+      deprecated_since = 12,
+      method = false,
+      name = "nvim_call_atomic",
+      parameters = { { "Array", "calls" } },
+      return_type = "Array",
+      since = 1
+    }, {
+      deprecated_since = 13,
+      method = false,
+      name = "nvim_subscribe",
+      parameters = { { "String", "event" } },
+      return_type = "void",
+      since = 1
+    }, {
+      deprecated_since = 13,
+      method = false,
+      name = "nvim_unsubscribe",
+      parameters = { { "String", "event" } },
+      return_type = "void",
+      since = 1
+    }, {
       method = false,
       name = "nvim_create_namespace",
       parameters = { { "String", "name" } },
@@ -462,24 +481,24 @@
       method = false,
       name = "nvim_get_namespaces",
       parameters = {},
-      return_type = "Dictionary",
+      return_type = "Dict",
       since = 5
     }, {
       method = true,
       name = "nvim_buf_get_extmark_by_id",
-      parameters = { { "Buffer", "buffer" }, { "Integer", "ns_id" }, { "Integer", "id" }, { "Dictionary", "opts" } },
+      parameters = { { "Buffer", "buffer" }, { "Integer", "ns_id" }, { "Integer", "id" }, { "Dict", "opts" } },
       return_type = "ArrayOf(Integer)",
       since = 7
     }, {
       method = true,
       name = "nvim_buf_get_extmarks",
-      parameters = { { "Buffer", "buffer" }, { "Integer", "ns_id" }, { "Object", "start" }, { "Object", "end" }, { "Dictionary", "opts" } },
+      parameters = { { "Buffer", "buffer" }, { "Integer", "ns_id" }, { "Object", "start" }, { "Object", "end" }, { "Dict", "opts" } },
       return_type = "Array",
       since = 7
     }, {
       method = true,
       name = "nvim_buf_set_extmark",
-      parameters = { { "Buffer", "buffer" }, { "Integer", "ns_id" }, { "Integer", "line" }, { "Integer", "col" }, { "Dictionary", "opts" } },
+      parameters = { { "Buffer", "buffer" }, { "Integer", "ns_id" }, { "Integer", "line" }, { "Integer", "col" }, { "Dict", "opts" } },
       return_type = "Integer",
       since = 7
     }, {
@@ -503,50 +522,32 @@
     }, {
       method = false,
       name = "nvim_set_decoration_provider",
-      parameters = { { "Integer", "ns_id" }, { "Dictionary", "opts" } },
+      parameters = { { "Integer", "ns_id" }, { "Dict", "opts" } },
       return_type = "void",
       since = 7
     }, {
-      method = true,
-      name = "nvim_win_add_ns",
-      parameters = { { "Window", "window" }, { "Integer", "ns_id" } },
-      return_type = "Boolean",
-      since = 12
-    }, {
-      method = true,
-      name = "nvim_win_get_ns",
-      parameters = { { "Window", "window" } },
-      return_type = "ArrayOf(Integer)",
-      since = 12
-    }, {
-      method = true,
-      name = "nvim_win_remove_ns",
-      parameters = { { "Window", "window" }, { "Integer", "ns_id" } },
-      return_type = "Boolean",
-      since = 12
-    }, {
       method = false,
       name = "nvim_get_option_value",
-      parameters = { { "String", "name" }, { "Dictionary", "opts" } },
+      parameters = { { "String", "name" }, { "Dict", "opts" } },
       return_type = "Object",
       since = 9
     }, {
       method = false,
       name = "nvim_set_option_value",
-      parameters = { { "String", "name" }, { "Object", "value" }, { "Dictionary", "opts" } },
+      parameters = { { "String", "name" }, { "Object", "value" }, { "Dict", "opts" } },
       return_type = "void",
       since = 9
     }, {
       method = false,
       name = "nvim_get_all_options_info",
       parameters = {},
-      return_type = "Dictionary",
+      return_type = "Dict",
       since = 7
     }, {
       method = false,
       name = "nvim_get_option_info2",
-      parameters = { { "String", "name" }, { "Dictionary", "opts" } },
-      return_type = "Dictionary",
+      parameters = { { "String", "name" }, { "Dict", "opts" } },
+      return_type = "Dict",
       since = 11
     }, {
       method = true,
@@ -599,7 +600,7 @@
     }, {
       method = false,
       name = "nvim_ui_attach",
-      parameters = { { "Integer", "width" }, { "Integer", "height" }, { "Dictionary", "options" } },
+      parameters = { { "Integer", "width" }, { "Integer", "height" }, { "Dict", "options" } },
       return_type = "void",
       since = 1
     }, {
@@ -666,19 +667,19 @@
     }, {
       method = false,
       name = "nvim_get_hl",
-      parameters = { { "Integer", "ns_id" }, { "Dictionary", "opts" } },
-      return_type = "Dictionary",
+      parameters = { { "Integer", "ns_id" }, { "Dict", "opts" } },
+      return_type = "Dict",
       since = 11
     }, {
       method = false,
       name = "nvim_set_hl",
-      parameters = { { "Integer", "ns_id" }, { "String", "name" }, { "Dictionary", "val" } },
+      parameters = { { "Integer", "ns_id" }, { "String", "name" }, { "Dict", "val" } },
       return_type = "void",
       since = 7
     }, {
       method = false,
       name = "nvim_get_hl_ns",
-      parameters = { { "Dictionary", "opts" } },
+      parameters = { { "Dict", "opts" } },
       return_type = "Integer",
       since = 12
     }, {
@@ -726,7 +727,7 @@
     }, {
       method = false,
       name = "nvim_notify",
-      parameters = { { "String", "msg" }, { "Integer", "log_level" }, { "Dictionary", "opts" } },
+      parameters = { { "String", "msg" }, { "Integer", "log_level" }, { "Dict", "opts" } },
       return_type = "Object",
       since = 7
     }, {
@@ -804,7 +805,7 @@
     }, {
       method = false,
       name = "nvim_echo",
-      parameters = { { "Array", "chunks" }, { "Boolean", "history" }, { "Dictionary", "opts" } },
+      parameters = { { "Array", "chunks" }, { "Boolean", "history" }, { "Dict", "opts" } },
       return_type = "void",
       since = 7
     }, {
@@ -870,7 +871,7 @@
     }, {
       method = false,
       name = "nvim_open_term",
-      parameters = { { "Buffer", "buffer" }, { "Dictionary", "opts" } },
+      parameters = { { "Buffer", "buffer" }, { "Dict", "opts" } },
       return_type = "Integer",
       since = 7
     }, {
@@ -911,18 +912,6 @@
       since = 6
     }, {
       method = false,
-      name = "nvim_subscribe",
-      parameters = { { "String", "event" } },
-      return_type = "void",
-      since = 1
-    }, {
-      method = false,
-      name = "nvim_unsubscribe",
-      parameters = { { "String", "event" } },
-      return_type = "void",
-      since = 1
-    }, {
-      method = false,
       name = "nvim_get_color_by_name",
       parameters = { { "String", "name" } },
       return_type = "Integer",
@@ -931,36 +920,36 @@
       method = false,
       name = "nvim_get_color_map",
       parameters = {},
-      return_type = "Dictionary",
+      return_type = "Dict",
       since = 1
     }, {
       method = false,
       name = "nvim_get_context",
-      parameters = { { "Dictionary", "opts" } },
-      return_type = "Dictionary",
+      parameters = { { "Dict", "opts" } },
+      return_type = "Dict",
       since = 6
     }, {
       method = false,
       name = "nvim_load_context",
-      parameters = { { "Dictionary", "dict" } },
+      parameters = { { "Dict", "dict" } },
       return_type = "Object",
       since = 6
     }, {
       method = false,
       name = "nvim_get_mode",
       parameters = {},
-      return_type = "Dictionary",
+      return_type = "Dict",
       since = 2
     }, {
       method = false,
       name = "nvim_get_keymap",
       parameters = { { "String", "mode" } },
-      return_type = "ArrayOf(Dictionary)",
+      return_type = "ArrayOf(Dict)",
       since = 3
     }, {
       method = false,
       name = "nvim_set_keymap",
-      parameters = { { "String", "mode" }, { "String", "lhs" }, { "String", "rhs" }, { "Dictionary", "opts" } },
+      parameters = { { "String", "mode" }, { "String", "lhs" }, { "String", "rhs" }, { "Dict", "opts" } },
       return_type = "void",
       since = 6
     }, {
@@ -978,14 +967,14 @@
     }, {
       method = false,
       name = "nvim_set_client_info",
-      parameters = { { "String", "name" }, { "Dictionary", "version" }, { "String", "type" }, { "Dictionary", "methods" }, { "Dictionary", "attributes" } },
+      parameters = { { "String", "name" }, { "Dict", "version" }, { "String", "type" }, { "Dict", "methods" }, { "Dict", "attributes" } },
       return_type = "void",
       since = 4
     }, {
       method = false,
       name = "nvim_get_chan_info",
       parameters = { { "Integer", "chan" } },
-      return_type = "Dictionary",
+      return_type = "Dict",
       since = 4
     }, {
       method = false,
@@ -993,12 +982,6 @@
       parameters = {},
       return_type = "Array",
       since = 4
-    }, {
-      method = false,
-      name = "nvim_call_atomic",
-      parameters = { { "Array", "calls" } },
-      return_type = "Array",
-      since = 1
     }, {
       method = false,
       name = "nvim_list_uis",
@@ -1020,7 +1003,7 @@
     }, {
       method = false,
       name = "nvim_select_popupmenu_item",
-      parameters = { { "Integer", "item" }, { "Boolean", "insert" }, { "Boolean", "finish" }, { "Dictionary", "opts" } },
+      parameters = { { "Integer", "item" }, { "Boolean", "insert" }, { "Boolean", "finish" }, { "Dict", "opts" } },
       return_type = "void",
       since = 6
     }, {
@@ -1032,26 +1015,20 @@
     }, {
       method = false,
       name = "nvim_get_mark",
-      parameters = { { "String", "name" }, { "Dictionary", "opts" } },
+      parameters = { { "String", "name" }, { "Dict", "opts" } },
       return_type = "Array",
       since = 8
     }, {
       method = false,
       name = "nvim_eval_statusline",
-      parameters = { { "String", "str" }, { "Dictionary", "opts" } },
-      return_type = "Dictionary",
+      parameters = { { "String", "str" }, { "Dict", "opts" } },
+      return_type = "Dict",
       since = 8
     }, {
       method = false,
-      name = "nvim_complete_set",
-      parameters = { { "Integer", "index" }, { "Dictionary", "opts" } },
-      return_type = "Dictionary",
-      since = 12
-    }, {
-      method = false,
       name = "nvim_exec2",
-      parameters = { { "String", "src" }, { "Dictionary", "opts" } },
-      return_type = "Dictionary",
+      parameters = { { "String", "src" }, { "Dict", "opts" } },
+      return_type = "Dict",
       since = 11
     }, {
       method = false,
@@ -1081,25 +1058,25 @@
       method = false,
       name = "nvim_parse_expression",
       parameters = { { "String", "expr" }, { "String", "flags" }, { "Boolean", "highlight" } },
-      return_type = "Dictionary",
+      return_type = "Dict",
       since = 4
     }, {
       method = false,
       name = "nvim_open_win",
-      parameters = { { "Buffer", "buffer" }, { "Boolean", "enter" }, { "Dictionary", "config" } },
+      parameters = { { "Buffer", "buffer" }, { "Boolean", "enter" }, { "Dict", "config" } },
       return_type = "Window",
       since = 6
     }, {
       method = true,
       name = "nvim_win_set_config",
-      parameters = { { "Window", "window" }, { "Dictionary", "config" } },
+      parameters = { { "Window", "window" }, { "Dict", "config" } },
       return_type = "void",
       since = 6
     }, {
       method = true,
       name = "nvim_win_get_config",
       parameters = { { "Window", "window" } },
-      return_type = "Dictionary",
+      return_type = "Dict",
       since = 6
     }, {
       method = true,
@@ -1218,8 +1195,8 @@
     }, {
       method = true,
       name = "nvim_win_text_height",
-      parameters = { { "Window", "window" }, { "Dictionary", "opts" } },
-      return_type = "Dictionary",
+      parameters = { { "Window", "window" }, { "Dict", "opts" } },
+      return_type = "Dict",
       since = 12
     }, {
       deprecated_since = 1,
@@ -1338,6 +1315,20 @@
       method = true,
       name = "window_set_option",
       parameters = { { "Window", "window" }, { "String", "name" }, { "Object", "value" } },
+      return_type = "void",
+      since = 0
+    }, {
+      deprecated_since = 1,
+      method = false,
+      name = "vim_subscribe",
+      parameters = { { "String", "event" } },
+      return_type = "void",
+      since = 0
+    }, {
+      deprecated_since = 1,
+      method = false,
+      name = "vim_unsubscribe",
+      parameters = { { "String", "event" } },
       return_type = "void",
       since = 0
     }, {
@@ -1553,20 +1544,6 @@
     }, {
       deprecated_since = 1,
       method = false,
-      name = "vim_subscribe",
-      parameters = { { "String", "event" } },
-      return_type = "void",
-      since = 0
-    }, {
-      deprecated_since = 1,
-      method = false,
-      name = "vim_unsubscribe",
-      parameters = { { "String", "event" } },
-      return_type = "void",
-      since = 0
-    }, {
-      deprecated_since = 1,
-      method = false,
       name = "vim_name_to_color",
       parameters = { { "String", "name" } },
       return_type = "Integer",
@@ -1576,7 +1553,7 @@
       method = false,
       name = "vim_get_color_map",
       parameters = {},
-      return_type = "Dictionary",
+      return_type = "Dict",
       since = 0
     }, {
       deprecated_since = 1,
@@ -1848,7 +1825,7 @@
       since = 6
     }, {
       name = "win_float_pos",
-      parameters = { { "Integer", "grid" }, { "Window", "win" }, { "String", "anchor" }, { "Integer", "anchor_grid" }, { "Float", "anchor_row" }, { "Float", "anchor_col" }, { "Boolean", "focusable" }, { "Integer", "zindex" } },
+      parameters = { { "Integer", "grid" }, { "Window", "win" }, { "String", "anchor" }, { "Integer", "anchor_grid" }, { "Float", "anchor_row" }, { "Float", "anchor_col" }, { "Boolean", "mouse_enabled" }, { "Integer", "zindex" } },
       since = 6
     }, {
       name = "win_external_pos",
@@ -1970,12 +1947,13 @@
   ui_options = { "rgb", "ext_cmdline", "ext_popupmenu", "ext_tabline", "ext_wildmenu", "ext_messages", "ext_linegrid", "ext_multigrid", "ext_hlstate", "ext_termcolors" },
   version = {
     api_compatible = 0,
-    api_level = 12,
+    api_level = 13,
     api_prerelease = true,
-    build = "g35239e977",
+    build = "gb03e790cdd",
     major = 0,
-    minor = 10,
+    minor = 11,
     patch = 0,
     prerelease = true
   }
 }
+

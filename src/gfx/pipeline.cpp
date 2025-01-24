@@ -136,11 +136,12 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
     .fs = textureShader,
     .bgls = {viewProjBGL, gammaBGL, defaultColorBGL, textureBGL},
     .buffers = {textureQuadVBL},
-    .targets = {
+    .targets =
       {
-        .format = TextureFormat::RGBA8UnormSrgb,
+        {
+          .format = TextureFormat::RGBA8UnormSrgb,
+        },
       },
-    },
     .depthStencil{
       .format = TextureFormat::Stencil8,
       // textures are clockwise, so backface
@@ -149,7 +150,8 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
         .failOp = StencilOperation::Keep,
         .passOp = StencilOperation::Replace,
       },
-      .stencilReadMask = 0x01,
+      .stencilReadMask = 0b001,
+      .stencilWriteMask = 0b011,
     },
   });
 
@@ -172,7 +174,8 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
         .failOp = StencilOperation::Keep,
         .passOp = StencilOperation::Replace,
       },
-      .stencilReadMask = 0x02,
+      .stencilReadMask = 0b110, 
+      .stencilWriteMask = 0b010,
     },
   });
 

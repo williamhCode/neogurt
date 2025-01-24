@@ -101,6 +101,7 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
   editorState.winManager.gridManager = &editorState.gridManager;
 
   session->input = InputHandler(&editorState.winManager, &nvim, options);
+  session->ime.editorState = &editorState;
 
   if (options.opacity < 1) {
     auto& hl = editorState.hlTable[0];

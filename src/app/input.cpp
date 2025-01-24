@@ -130,7 +130,6 @@ void InputHandler::HandleKeyboard(const SDL_KeyboardEvent& event) {
 void InputHandler::HandleTextEditing(const SDL_TextEditingEvent& event) {
   std::string text = event.text;
   if (!text.empty()) {
-    // LOG_INFO("Text editing: {}", text);
     editingText = std::move(text);
   }
 }
