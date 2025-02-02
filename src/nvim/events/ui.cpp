@@ -73,6 +73,7 @@ static const std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
   }},
 
   {"hl_group_set", [](const msgpack::object& args, UiEvents& uiEvents) {
+    // LOG_INFO("hl_group_set: {}", ToString(args));
     uiEvents.Curr().emplace_back(args.as<HlGroupSet>());
   }},
 
@@ -154,7 +155,7 @@ static const std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
 };
 // clang-format on
 
-static void ParseUiEvents(const msgpack::object& params, UiEvents& uiEvents) {
+void ParseUiEvents(const msgpack::object& params, UiEvents& uiEvents) {
   std::span<const msgpack::object> events = params.via.array;
 
   for (const msgpack::object& eventObj : events) {
@@ -177,18 +178,4 @@ static void ParseUiEvents(const msgpack::object& params, UiEvents& uiEvents) {
       }
     }
   }
-}
-
-int ParseUiEvents(rpc::Client& client, UiEvents& uiEvents) {
-  uiEvents.numFlushes = 0;
-
-  while (client.HasNotification()) {
-    auto notification = client.PopNotification();
-
-    if (notification.method == "redraw") {
-      ParseUiEvents(notification.params, uiEvents);
-    }
-  }
-
-  return uiEvents.numFlushes;
 }

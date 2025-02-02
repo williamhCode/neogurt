@@ -83,9 +83,10 @@ set(APP_SRC
   gfx/font/locator.mm
 
   nvim/nvim.cpp
-  nvim/msgpack_rpc/client.cpp
+  nvim/event.cpp
   nvim/events/ui.cpp
   nvim/events/user.cpp
+  nvim/msgpack_rpc/client.cpp
 
   session/manager.cpp
 
@@ -135,7 +136,7 @@ target_link_libraries(neogurt PRIVATE
 
 target_compile_options(neogurt PRIVATE
   -Wall -Wextra -Wshadow -pedantic 
-  -Wno-missing-field-initializers
+  # -Wno-missing-field-initializers
   -Wno-deprecated-declarations
   # jthread clang
   -fexperimental-library

@@ -2,6 +2,7 @@
 #include "app/input.hpp"
 #include "app/task_helper.hpp"
 #include "app/window_funcs.h"
+#include "editor/highlight.hpp"
 #include "utils/color.hpp"
 #include "utils/logger.hpp"
 #include <algorithm>
@@ -34,6 +35,8 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
   auto& options = session->options;
   auto& nvim = session->nvim;
   auto& editorState = session->editorState;
+  auto& input = session->input;
+  auto& ime = session->ime;
 
   if (!nvim.ConnectStdio(Options::interactiveShell, opts.dir)) {
     throw std::runtime_error("Failed to connect to nvim");
@@ -100,14 +103,14 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
 
   editorState.winManager.gridManager = &editorState.gridManager;
 
-  session->input = InputHandler(&editorState.winManager, &nvim, options);
-  session->ime.editorState = &editorState;
+  input = InputHandler(&editorState.winManager, &nvim, options);
 
-  if (options.opacity < 1) {
-    auto& hl = editorState.hlTable[0];
-    hl.background = IntToColor(options.bgColor);
-    hl.background->a = options.opacity;
-  }
+  ime.editorState = &editorState;
+
+  HlTableInit(editorState.hlTable, options);
+  auto imeHl = nvim.GetHl(0, {{"name", "NeogurtIme"}, {"link", false}}).get();
+  editorState.hlTable[ImeHandler::imeHlId] = Highlight::FromDesc(imeHl->convert());
+  // LOG("ime hl: {}", ToString(imeHl));
 
   if (first) {
     sizes.UpdateSizes(

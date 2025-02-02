@@ -201,7 +201,7 @@ void Renderer::RenderToWindow(
 
   glm::vec2 textOffset(0, 0);
   const auto& defaultFont = fontFamily.DefaultFont();
-  auto defaultBG = GetDefaultBackground(hlTable);
+  auto defaultBg = GetDefaultBackground(hlTable);
 
   for (size_t row = 0; row < rows; row++) {
     auto& line = win.grid.lines[row];
@@ -214,16 +214,15 @@ void Renderer::RenderToWindow(
     for (size_t col = 0; col < cols; col++) {
       auto& cell = line[col];
       const Highlight& hl = hlTable[cell.hlId];
-      // don't render background if default
-      if (cell.hlId != 0 && hl.background.has_value() && hl.background != defaultBG) {
+      auto hlBg = GetBackground(hlTable, hl);
+      // don't render background if same as default background
+      if (hlBg != defaultBg) {
         auto rectPositions = MakeRegion({0, 0}, defaultFont.charSize);
 
-        auto background = *hl.background;
-        background.a = hl.bgAlpha;
         auto& quad = rectData.NextQuad();
         for (size_t i = 0; i < 4; i++) {
           quad[i].position = textOffset + rectPositions[i];
-          quad[i].color = background;
+          quad[i].color = hlBg;
         }
       }
 
@@ -446,7 +445,7 @@ void Renderer::RenderWindows(
       msgWin->sRenderTexture.Render(passEncoder, 3);
     }
 
-    // writes for normal windows
+    // writes for normal win
     passEncoder.SetStencilReference(0b001);
     for (const Win* win : windows) {
       win->sRenderTexture.Render(passEncoder, 3);
@@ -469,6 +468,7 @@ void Renderer::RenderWindows(
         // but reads 0b110 so not blocked by msg win
         passEncoder.SetStencilReference(0b110);
       } else {
+        // writes for floating win
         passEncoder.SetStencilReference(0b010);
       }
       win->sRenderTexture.Render(passEncoder, 3);

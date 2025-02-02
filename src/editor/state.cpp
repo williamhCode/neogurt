@@ -6,7 +6,7 @@
 #include <utility>
 #include <vector>
 #include "utils/variant.hpp"
-#include <boost/core/demangle.hpp>
+#include <boost/core/typeinfo.hpp>
 
 // parse ------------------------------------------
 using namespace event;
@@ -142,7 +142,9 @@ void ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
           // LOG("default_colors_set");
           auto& hl = editorState.hlTable[0];
           hl.foreground = IntToColor(e.rgbFg);
-          if (!hl.background.has_value()) {
+          // bgAlpha != 1 means neogurt opacity < 1
+          // so don't set
+          if (hl.bgAlpha == 1) {
             hl.background = IntToColor(e.rgbBg);
           }
           hl.special = IntToColor(e.rgbSp);
@@ -186,11 +188,13 @@ void ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
               LOG_INFO("unknown hl attr key: {}, type: {}", key, boost::core::demangled_name(value.type()));
             }
           }
+          if (hl.background) {
+            hl.background->a = hl.bgAlpha;
+          }
         },
         [&](HlGroupSet& e) {
           // not needed to render grids, but used for rendering
           // own elements with consistent highlighting
-          // editorState.hlGroupTable.emplace(e.id, e.name);
         },
         [&](MsgSetPos& e) {
           LOG("MsgSetPos: {}", e.grid);

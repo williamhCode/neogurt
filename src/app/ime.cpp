@@ -30,9 +30,15 @@ void ImeHandler::Update() {
     }
 
   } else {
+    text.append(" "); // cursor
     auto cells =
       SplitUTF8(text) |
-      std::views::transform([](auto& text) { return event::GridLine::Cell{text}; }) |
+      std::views::transform([](auto& text) {
+        return event::GridLine::Cell{
+          .text = text,
+          .hlId = imeHlId,
+        };
+      }) |
       std::ranges::to<std::vector>();
 
     if (start != -1) {
@@ -51,7 +57,7 @@ void ImeHandler::Update() {
 
     editorState->gridManager.Resize({
       .grid = imeGrid,
-      .width = (int)cells.size() + 1, // +1 width for cursor
+      .width = (int)cells.size(),
       .height = 1,
     });
     editorState->gridManager.Clear({.grid = imeGrid});

@@ -70,8 +70,8 @@ void Nvim::Setup() {
     100, 50,
     {
       {"rgb", true},
-      {"ext_multigrid", Options::multigrid},
       {"ext_linegrid", true},
+      {"ext_multigrid", Options::multigrid},
     }
   ).get();
 }
@@ -139,4 +139,8 @@ Nvim::Response Nvim::ExecLua(std::string_view code, VectorRef args) {
 
 Nvim::Response Nvim::Command(std::string_view command) {
   return client->Call("nvim_command", command);
+}
+
+Nvim::Response Nvim::GetHl(int nsId, MapRef opts) {
+  return client->Call("nvim_get_hl", nsId, opts);
 }

@@ -133,3 +133,5 @@ vim.g.neogurt_cmd = function(cmd, opts)
     return vim.rpcrequest(chan_id, "neogurt_cmd", cmd, opts)
   end
 end
+
+vim.api.nvim_set_hl(0, "NeogurtIme", { link = "Normal" })

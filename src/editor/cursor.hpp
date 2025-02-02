@@ -46,7 +46,6 @@ struct Cursor {
   int col;
 
   event::GridCursorGoto cursorGoto;
-  bool imeEditing = false;
 
   glm::vec2 prevScrollOffset;
 

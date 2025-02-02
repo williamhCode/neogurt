@@ -66,7 +66,7 @@ struct MouseInfo {
 };
 
 struct WinManager {
-  static const int defaultGridId = 1;
+  static constexpr int defaultGridId = 1;
 
   GridManager* gridManager;
   SizeHandler sizes;

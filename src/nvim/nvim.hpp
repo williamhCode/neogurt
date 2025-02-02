@@ -52,4 +52,5 @@ struct Nvim {
   Response GetVar(std::string_view name);
   Response ExecLua(std::string_view code, VectorRef args);
   Response Command(std::string_view command);
+  Response GetHl(int nsId, MapRef opts);
 };

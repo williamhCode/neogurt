@@ -22,7 +22,7 @@ Checks: '
   -cppcoreguidelines-prefer-member-initializer,
   -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
   -cppcoreguidelines-macro-usage,
-  # -cppcoreguidelines-pro-type-member-init,
+  -cppcoreguidelines-pro-type-member-init,
 
   modernize-*,
   -modernize-use-trailing-return-type,

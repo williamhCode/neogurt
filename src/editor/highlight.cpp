@@ -1,56 +1,89 @@
 #include "./highlight.hpp"
+#include "utils/color.hpp"
 #include "utils/logger.hpp"
 
-glm::vec4 GetDefaultBackground(const HlTable& table) {
-  auto it = table.find(0);
-  if (it == table.end()) {
-    return {0, 0, 0, 1};
+static int VariantAsInt(const msgpack::type::variant& v) {
+  if (v.is_uint64_t()) return v.as_uint64_t();
+  if (v.is_int64_t()) return v.as_int64_t();
+  LOG_ERR("VariantAsInt: variant is not convertible to int");
+  return 0;
+}
+
+Highlight Highlight::FromDesc(const std::map<std::string, msgpack::type::variant>& hlDesc) {
+  Highlight hl{};
+
+  for (const auto& [key, value] : hlDesc) {
+    if (key == "fg") {
+      hl.foreground = IntToColor(VariantAsInt(value));
+    } else if (key == "bg") {
+      hl.background = IntToColor(VariantAsInt(value));
+    } else if (key == "sp") {
+      hl.special = IntToColor(VariantAsInt(value));
+    } else if (key == "reverse") {
+      hl.reverse = value.as_bool();
+    } else if (key == "italic") {
+      hl.italic = value.as_bool();
+    } else if (key == "bold") {
+      hl.bold = value.as_bool();
+    } else if (key == "strikethrough") {
+      hl.strikethrough = value.as_bool();
+    } else if (key == "underline") {
+      hl.underline = UnderlineType::Underline;
+    } else if (key == "undercurl") {
+      hl.underline = UnderlineType::Undercurl;
+    } else if (key == "underdouble") {
+      hl.underline = UnderlineType::Underdouble;
+    } else if (key == "underdotted") {
+      hl.underline = UnderlineType::Underdotted;
+    } else if (key == "underdashed") {
+      hl.underline = UnderlineType::Underdashed;
+    } else if (key == "blend") {
+      hl.bgAlpha = 1 - (VariantAsInt(value) / 100.0f);
+    } else if (key == "url") {
+      // TODO: make urls clickable
+      hl.url = value.as_string();
+    } else if (key == "nocombine") {
+      // NOTE: ignore for now
+    }
   }
-  return it->second.background.or_else([&] {
-    LOG_ERR("GetDefaultBackground: default highlight table entry (0) has no background color");
-    return std::make_optional<glm::vec4>(0, 0, 0, 1);
-  }).value();
+  if (hl.background) {
+    hl.background->a = hl.bgAlpha;
+  }
+
+  return hl;
+}
+
+void HlTableInit(HlTable& table, const Options& options) {
+  auto& hl = table[0];
+  hl.foreground = {0, 0, 0, 1};
+  hl.background = {0, 0, 0, 1};
+  hl.special = {0, 0, 0, 1};
+
+  if (options.opacity < 1) {
+    hl.background = IntToColor(options.bgColor);
+    hl.background->a = options.opacity;
+    hl.bgAlpha = options.opacity;
+  }
+}
+
+glm::vec4 GetDefaultBackground(const HlTable& table) {
+  return table.at(0).background.value();
 }
 
 glm::vec4 GetForeground(const HlTable& table, const Highlight& hl) {
-  return hl.foreground.or_else([&] {
-    auto it = table.find(0);
-    if (it == table.end()) {
-      LOG_ERR("GetForeground: default highlight table entry (0) not found");
-      return std::make_optional<glm::vec4>(0, 0, 0, 1);
-    }
-    return it->second.foreground.or_else([&] {
-      LOG_ERR("GetForeground: default highlight table entry (0) has no foreground color");
-      return std::make_optional<glm::vec4>(0, 0, 0, 1);
-    });
-  }).value();
+  if (hl.reverse) {
+    return hl.background.value_or(table.at(0).background.value());
+  }
+  return hl.foreground.value_or(table.at(0).foreground.value());
 }
 
 glm::vec4 GetBackground(const HlTable& table, const Highlight& hl) {
-  return hl.background.or_else([&] {
-    auto it = table.find(0);
-    if (it == table.end()) {
-      LOG_ERR("GetBoreground: default highlight table entry (0) not found");
-      return std::make_optional<glm::vec4>(0, 0, 0, 1);
-    }
-    return it->second.background.or_else([&] {
-      LOG_ERR("GetBoreground: default highlight table entry (0) has no background color");
-      return std::make_optional<glm::vec4>(0, 0, 0, 1);
-    });
-  }).value();
+  if (hl.reverse) {
+    return hl.foreground.value_or(table.at(0).foreground.value());
+  }
+  return hl.background.value_or(table.at(0).background.value());
 }
 
 glm::vec4 GetSpecial(const HlTable& table, const Highlight& hl) {
-  return hl.special.or_else([&] {
-    auto it = table.find(0);
-    if (it == table.end()) {
-      LOG_ERR("GetSpecial: default highlight table entry (0) not found");
-      return std::make_optional<glm::vec4>(0, 0, 0, 1);
-    }
-    // use foreground cuz special color is weird
-    return it->second.foreground.or_else([&] {
-      LOG_ERR("GetSpecial: default highlight table entry (0) has no foreground color");
-      return std::make_optional<glm::vec4>(0, 0, 0, 1);
-    });
-  }).value();
+  return hl.special.value_or(table.at(0).special.value());
 }

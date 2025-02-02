@@ -4,18 +4,18 @@
 
 struct Options {
   // startup options
-  static inline bool multigrid = true;
-  static inline bool interactiveShell = true;
+  inline static bool multigrid = true;
+  inline static bool interactiveShell = true;
 
   // return optional exit code
   static std::optional<int> LoadFromCommandLine(int argc, char** argv);
 
   // window opts are used once at start, only one instance so static
   // so dont use them except in window creation (sdl_window constructor)
-  static inline bool vsync = true;
-  static inline bool highDpi = true;
-  static inline bool borderless = false;
-  static inline int blur = 0;
+  inline static bool vsync = true;
+  inline static bool highDpi = true;
+  inline static bool borderless = false;
+  inline static int blur = 0;
 
   int marginTop = 0;
   int marginBottom = 0;

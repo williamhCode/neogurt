@@ -223,5 +223,4 @@ struct UiEvents {
   }
 };
 
-// returns number of flushes
-int ParseUiEvents(rpc::Client& client, UiEvents& uiEvents);
+void ParseUiEvents(const msgpack::object& params, UiEvents& uiEvents);

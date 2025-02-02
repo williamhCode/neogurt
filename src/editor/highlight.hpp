@@ -1,9 +1,12 @@
 #pragma once
 
 #include "glm/ext/vector_float4.hpp"
+#include "app/options.hpp"
 #include <optional>
 #include <unordered_map>
 #include <string>
+#include <map>
+#include "msgpack/adaptor/boost/msgpack_variant.hpp"
 
 enum class UnderlineType : uint32_t {
   Underline,
@@ -24,9 +27,13 @@ struct Highlight {
   std::optional<UnderlineType> underline;
   float bgAlpha = 1; // 0 - 1
   std::string url;
+
+  static Highlight FromDesc(const std::map<std::string, msgpack::type::variant>& hlDesc);
 };
 
 using HlTable = std::unordered_map<int, Highlight>;
+
+void HlTableInit(HlTable& table, const Options& options);
 
 glm::vec4 GetDefaultBackground(const HlTable& table);
 glm::vec4 GetForeground(const HlTable& table, const Highlight& hl);

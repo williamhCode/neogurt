@@ -17,6 +17,7 @@
 #include "gfx/renderer.hpp"
 #include "glm/ext/vector_float2.hpp"
 #include "glm/gtx/string_cast.hpp"
+#include "nvim/event.hpp"
 #include "nvim/events/ui.hpp"
 #include "nvim/events/user.hpp"
 #include "session/manager.hpp"
@@ -25,7 +26,7 @@
 #include "utils/timer.hpp"
 #include "utils/unicode.hpp"
 
-#include <boost/core/demangle.hpp>
+#include <boost/core/typeinfo.hpp>
 #include <algorithm>
 #include <future>
 #include <limits>
@@ -69,6 +70,7 @@ int main(int argc, char** argv) {
     // init variables ---------------------
     sdl::Window window;
     SizeHandler sizes;
+
     Renderer renderer;
 
     SessionManager sessionManager(SpawnMode::Child, window, sizes, renderer);
@@ -94,8 +96,13 @@ int main(int argc, char** argv) {
     std::jthread renderThread([&](std::stop_token stopToken) {
       bool windowFocused = true;
       bool windowOccluded = false;
+
       bool idle = false;
       float idleElasped = 0;
+      auto IdleReset = [&] {
+        idle = false;
+        idleElasped = 0;
+      };
 
       Clock clock;
       // Timer timer1(1);
@@ -180,15 +187,13 @@ int main(int argc, char** argv) {
 
           switch (event.type) {
             case SDL_EVENT_TEXT_EDITING:
-              idle = false;
-              idleElasped = 0;
+              IdleReset();
               session->ime.HandleTextEditing(event.edit);
               break;
 
             case SDL_EVENT_WINDOW_FOCUS_GAINED:
               windowFocused = true;
-              idle = false;
-              idleElasped = 0;
+              IdleReset();
               editorState->cursor.blinkState = BlinkState::Wait;
               editorState->cursor.blinkElasped = 0;
               break;
@@ -228,10 +233,9 @@ int main(int argc, char** argv) {
 
         LOG_DISABLE();
         // process_events:
-        int numFlushes = ParseUiEvents(*nvim->client, nvim->uiEvents);
-        if (numFlushes) {
-          idle = false;
-          idleElasped = 0;
+        ParseNotifications(*nvim->client, nvim->uiEvents);
+        if (nvim->uiEvents.numFlushes) {
+          IdleReset();
         }
         LOG_ENABLE();
 
@@ -250,6 +254,7 @@ int main(int argc, char** argv) {
           const auto& cursorPos = editorState->cursor.destPos;
           SDL_Rect rect(cursorPos.x, cursorPos.y, sizes.charSize.x, sizes.charSize.y);
           SDL_SetTextInputArea(window.Get(), &rect, 0);
+          // LOG_INFO("cursorPos: {}", glm::to_string(cursorPos));
         }
         editorState->cursor.Update(dt);
 
@@ -388,7 +393,10 @@ int main(int argc, char** argv) {
         // keyboard handling ----------------------
         case SDL_EVENT_KEY_DOWN:
         case SDL_EVENT_KEY_UP: {
-          if (currSession) currSession->input.HandleKeyboard(event.key);
+          // we dont want ime moving around, so disable keyboard
+          if (currSession && !currSession->ime.active) {
+            currSession->input.HandleKeyboard(event.key);
+          }
           break;
         }
 
