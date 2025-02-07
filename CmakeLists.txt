@@ -138,6 +138,8 @@ target_compile_options(neogurt PRIVATE
   -Wall -Wextra -Wshadow -pedantic 
   # -Wno-missing-field-initializers
   -Wno-deprecated-declarations
+  -Wno-gnu-anonymous-struct
+  -Wno-nested-anon-types
   # jthread clang
   -fexperimental-library
   -Wno-error=narrowing

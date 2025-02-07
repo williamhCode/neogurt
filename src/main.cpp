@@ -158,17 +158,10 @@ int main(int argc, char** argv) {
         renderer.GetNextTexture();
 
         // timing -------------------------------------------
-        // if in vsync, disable clock infinite fps (120 for now cuz occlusion events are
-        // not sent immediately when switchint desktop)
-        // TODO: change when bug is fixed
-
-        // however set to maxFps option if any of these happen
-        // 1. idle is true (which bypasses surface.Present() calls)
-        // 2. occluded is true (in which macOS stops presenting at all)
-        // these all prevent vsync from working
-
-        float targetFps =
-          window.vsync && !idle && !windowOccluded ? 120 : options->maxFps;
+        float targetFps = window.vsync ? 120 : options->maxFps;
+        if (idle) {
+          targetFps = windowOccluded ? 10 : 60;
+        }
         float dt = clock.Tick(targetFps);
 
         // frameCount++;
@@ -194,8 +187,7 @@ int main(int argc, char** argv) {
             case SDL_EVENT_WINDOW_FOCUS_GAINED:
               windowFocused = true;
               IdleReset();
-              editorState->cursor.blinkState = BlinkState::Wait;
-              editorState->cursor.blinkElasped = 0;
+              editorState->cursor.SetBlinkState(BlinkState::Wait);
               break;
             case SDL_EVENT_WINDOW_FOCUS_LOST:
               windowFocused = false;
@@ -205,6 +197,7 @@ int main(int argc, char** argv) {
             case SDL_EVENT_WINDOW_EXPOSED:
               // LOG_INFO("window exposed");
               windowOccluded = false;
+              IdleReset();
               break;
             case SDL_EVENT_WINDOW_OCCLUDED:
               // LOG_INFO("window occluded");
@@ -261,13 +254,13 @@ int main(int argc, char** argv) {
         // check idle -----------------------------------
         if (idle) continue;
         idleElasped += dt;
-        if (idleElasped >= options->cursorIdleTime) {
+        if (idleElasped >= options->cursorIdleTime || windowOccluded) {
           idle = true;
-          editorState->cursor.blinkState = BlinkState::On;
+          editorState->cursor.SetBlinkState(BlinkState::On);
         }
 
         if (!windowFocused) {
-          editorState->cursor.blinkState = BlinkState::On;
+          editorState->cursor.SetBlinkState(BlinkState::On);
         }
 
         // render ----------------------------------------------

@@ -110,7 +110,7 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
   HlTableInit(editorState.hlTable, options);
   auto imeHl = nvim.GetHl(0, {{"name", "NeogurtIme"}, {"link", false}}).get();
   editorState.hlTable[ImeHandler::imeHlId] = Highlight::FromDesc(imeHl->convert());
-  // LOG("ime hl: {}", ToString(imeHl));
+  // LOG("ime hl: {}", ToString(imeHl.get()));
 
   if (first) {
     sizes.UpdateSizes(

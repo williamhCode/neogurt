@@ -238,7 +238,8 @@ void Pen::DrawArc(const Arc& desc) {
 }
 
 void Pen::DrawDiagonal(const Diagonal& desc) {
-  // so double diagonal has same effect as gpu blend, cross section is more consistent
+  // make double diagonal has same effect as gpu blend
+  // so cross section is more consistent
   ctx.setCompOp(BL_COMP_OP_SRC_OVER);
 
   float ratio = xsize / ysize;

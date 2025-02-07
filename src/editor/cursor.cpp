@@ -64,6 +64,11 @@ void Cursor::ImeClear() {
   col = cursorGoto.col;
 }
 
+void Cursor::SetBlinkState(BlinkState state) {
+  blinkState = state;
+  blinkElasped = 0.0;
+}
+
 bool Cursor::SetDestPos(const Win* currWin, const SizeHandler& sizes) {
   if (currWin == nullptr) return false;
 

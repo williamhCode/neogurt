@@ -75,6 +75,7 @@ struct Cursor {
   void ImeGoto(const event::GridCursorGoto& e);
   void ImeClear();
 
+  void SetBlinkState(BlinkState state);
   // returns true if destPos changes
   bool SetDestPos(const Win* currWin, const SizeHandler& sizes);
   void Update(float dt);
