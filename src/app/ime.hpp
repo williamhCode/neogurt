@@ -8,7 +8,9 @@ struct ImeHandler {
   EditorState* editorState;
 
   static constexpr int imeGrid = -1;
-  static constexpr int imeHlId = -1;
+
+  static constexpr int imeNormalHlId = -1;
+  static constexpr int imeSelectedHlId = -2;
 
   std::atomic_bool active = false;
 

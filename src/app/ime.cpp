@@ -30,28 +30,32 @@ void ImeHandler::Update() {
     }
 
   } else {
-    text.append(" "); // cursor
+    text.append(" "); // extra space for cursor
     auto cells =
-      SplitUTF8(text) |
-      std::views::transform([](auto& text) {
+      SplitUTF8(text) | std::views::transform([](auto& text) {
         return event::GridLine::Cell{
           .text = text,
-          .hlId = imeHlId,
+          .hlId = imeNormalHlId,
         };
       }) |
       std::ranges::to<std::vector>();
 
     if (start != -1) {
-      // get actual column from start cuz double width stuff
+      int end = start + (length != -1 ? length : 0);
+
+      // actual column from start cuz double width stuff
       int col = 0;
-      int end = start;
-      if (length != -1) end += length;
       for (int i = 0; i < end; i++) {
-        if (col + 1 < (int)cells.size() && cells[col + 1].text.empty()) {
-          col++;
+        bool isDouble = col + 1 < (int)cells.size() && cells[col + 1].text.empty();
+
+        if (i >= start && i < end) {
+          cells[col].hlId = imeSelectedHlId;
+          if (isDouble) cells[col + 1].hlId = imeSelectedHlId;
         }
-        col++;
+
+        col += isDouble ? 2 : 1;
       }
+
       editorState->cursor.ImeGoto({.grid = imeGrid, .row = 0, .col = col});
     }
 

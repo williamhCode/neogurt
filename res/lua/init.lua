@@ -134,4 +134,5 @@ vim.g.neogurt_cmd = function(cmd, opts)
   end
 end
 
-vim.api.nvim_set_hl(0, "NeogurtIme", { link = "Normal" })
+vim.api.nvim_set_hl(0, "NeogurtImeNormal", { link = "Normal" })
+vim.api.nvim_set_hl(0, "NeogurtImeSelected", { link = "Underlined" })

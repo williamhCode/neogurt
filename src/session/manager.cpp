@@ -43,6 +43,7 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
   }
   nvim.Setup();
 
+  // request all things here
   auto optionsFut = Options::Load(nvim, first);
   auto guifontFut = nvim.GetOptionValue("guifont", {});
   auto linespaceFut = nvim.GetOptionValue("linespace", {});
@@ -108,8 +109,10 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
   ime.editorState = &editorState;
 
   HlTableInit(editorState.hlTable, options);
-  auto imeHl = nvim.GetHl(0, {{"name", "NeogurtIme"}, {"link", false}}).get();
-  editorState.hlTable[ImeHandler::imeHlId] = Highlight::FromDesc(imeHl->convert());
+  auto imeNormalHlFut = nvim.GetHl(0, {{"name", "NeogurtImeNormal"}, {"link", false}});
+  auto imeSelectedHlFut = nvim.GetHl(0, {{"name", "NeogurtImeSelected"}, {"link", false}});
+  editorState.hlTable[ImeHandler::imeNormalHlId] = Highlight::FromDesc(imeNormalHlFut.get()->convert());
+  editorState.hlTable[ImeHandler::imeSelectedHlId] = Highlight::FromDesc(imeSelectedHlFut.get()->convert());
   // LOG("ime hl: {}", ToString(imeHl.get()));
 
   if (first) {
