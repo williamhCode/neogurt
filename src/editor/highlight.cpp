@@ -85,5 +85,6 @@ glm::vec4 GetBackground(const HlTable& table, const Highlight& hl) {
 }
 
 glm::vec4 GetSpecial(const HlTable& table, const Highlight& hl) {
-  return hl.special.value_or(table.at(0).special.value());
+  // use foreground if no special
+  return hl.special.value_or(GetForeground(table, hl));
 }
