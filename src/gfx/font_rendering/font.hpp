@@ -1,8 +1,8 @@
 #pragma once
 
-#include "gfx/font/descriptor.hpp"
-#include "gfx/texture_atlas.hpp"
-#include "gfx/glyph_info.hpp"
+#include "./font_descriptor.hpp"
+#include "./glyph_info.hpp"
+#include "./texture_atlas.hpp"
 #include <expected>
 
 #include <ft2build.h>

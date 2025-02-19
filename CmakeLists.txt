@@ -74,13 +74,15 @@ set(APP_SRC
   gfx/context.cpp
   gfx/pipeline.cpp
   gfx/renderer.cpp
-  gfx/font.cpp
-  gfx/pen.cpp
-  gfx/shape_drawing.cpp
   gfx/camera.cpp
   gfx/render_texture.cpp
-  gfx/texture_atlas.cpp
-  gfx/font/locator.mm
+  
+  gfx/font_rendering/font.cpp
+  gfx/font_rendering/font_locator.mm
+  gfx/font_rendering/shape_drawing.cpp
+  gfx/font_rendering/shape_drawing.hpp
+  gfx/font_rendering/shape_pen.cpp
+  gfx/font_rendering/texture_atlas.cpp
 
   nvim/nvim.cpp
   nvim/event.cpp

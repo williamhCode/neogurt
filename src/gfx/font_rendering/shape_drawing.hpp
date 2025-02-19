@@ -1,8 +1,8 @@
 #pragma once
 
-#include "gfx/glyph_info.hpp"
-#include "gfx/pen.hpp"
-#include "gfx/texture_atlas.hpp"
+#include "./glyph_info.hpp"
+#include "./shape_pen.hpp"
+#include "./texture_atlas.hpp"
 #include "glm/ext/vector_float2.hpp"
 #include <mdspan>
 #include <unordered_map>

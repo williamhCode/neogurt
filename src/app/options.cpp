@@ -121,7 +121,7 @@ std::future<Options> Options::Load(Nvim& nvim, bool first) {
   LOAD(opacity);
   LOAD(gamma);
 
-  LOAD(maxFps);
+  LOAD(fps);
 
   LOAD(interactiveShell);
 

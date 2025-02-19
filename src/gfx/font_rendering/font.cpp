@@ -1,5 +1,5 @@
 #include "./font.hpp"
-#include "gfx/font/locator.hpp"
+#include "./font_locator.hpp"
 #include "utils/logger.hpp"
 #include "utils/region.hpp"
 #include "glm/gtx/string_cast.hpp"

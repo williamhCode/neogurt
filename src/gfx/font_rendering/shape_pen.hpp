@@ -1,11 +1,11 @@
 #pragma once
 
+#include "blend2d.h"
+#include "utils/region.hpp"
 #include <array>
 #include <variant>
 #include <mdspan>
 #include <set>
-#include "blend2d.h"
-#include "utils/region.hpp"
 
 namespace shape {
 

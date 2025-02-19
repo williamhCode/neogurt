@@ -29,7 +29,7 @@ struct Options {
   float opacity = 1;
   float gamma = 1.7;
 
-  float maxFps = 60;
+  float fps = 60;
 
   static std::future<Options> Load(Nvim& nvim, bool first);
 };

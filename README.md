@@ -51,12 +51,18 @@ if vim.g.neogurt then
 
     gamma = 1.7,
 
-    max_fps = 60,
+    fps = 60,
   }
 
   vim.o.guifont = "SF Mono:h15"
   vim.o.linespace = 0
 end
+
+-- highlights set by Neogurt
+-- ime highlight
+vim.api.nvim_set_hl(0, "NeogurtImeNormal", { link = "Normal" })
+-- ime highlight for selected text
+vim.api.nvim_set_hl(0, "NeogurtImeSelected", { link = "Underlined" })
 ```
 
 ### Commands/API

@@ -158,7 +158,7 @@ int main(int argc, char** argv) {
         renderer.GetNextTexture();
 
         // timing -------------------------------------------
-        float targetFps = window.vsync ? 120 : options->maxFps;
+        float targetFps = window.vsync ? 200 : options->fps;
         if (idle) {
           targetFps = windowOccluded ? 10 : 60;
         }
@@ -195,12 +195,12 @@ int main(int argc, char** argv) {
               break;
 
             case SDL_EVENT_WINDOW_EXPOSED:
-              // LOG_INFO("window exposed");
+              LOG_INFO("window exposed");
               windowOccluded = false;
               IdleReset();
               break;
             case SDL_EVENT_WINDOW_OCCLUDED:
-              // LOG_INFO("window occluded");
+              LOG_INFO("window occluded");
               windowOccluded = true;
               break;
           }

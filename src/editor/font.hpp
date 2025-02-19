@@ -1,8 +1,8 @@
 #pragma once
 
-#include "gfx/font.hpp"
-#include "gfx/shape_drawing.hpp"
-#include "gfx/texture_atlas.hpp"
+#include "gfx/font_rendering/texture_atlas.hpp"
+#include "gfx/font_rendering/font.hpp"
+#include "gfx/font_rendering/shape_drawing.hpp"
 
 #include <vector>
 #include <expected>
