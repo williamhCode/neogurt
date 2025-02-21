@@ -9,8 +9,6 @@
 
 namespace shape {
 
-using BufType = std::mdspan<uint8_t, std::dextents<size_t, 2>>;
-
 enum Weight { None, Light, Heavy, Double };
 enum Side { Up, Down, Left, Right };
 enum QuadDir { UpLeft, UpRight, DownLeft, DownRight };

@@ -9,9 +9,20 @@
 #include <print>
 
 enum class GlyphFormat {
-  Grayscale,
-  BGRA
+  BGRA8,
+  A8,
+  A32,
 };
+
+template <typename T, typename ElementType>
+concept MdSpan2D =
+  std::same_as<typename T::element_type, ElementType> && (T::extents_type::rank() == 2);
+
+template <GlyphFormat Format, typename DataType>
+concept ValidGlyphDataType =
+    (Format == GlyphFormat::BGRA8 && MdSpan2D<DataType, uint32_t>) ||
+    (Format == GlyphFormat::A8 && MdSpan2D<DataType, uint8_t>) ||
+    (Format == GlyphFormat::A32 && MdSpan2D<DataType, uint32_t>);
 
 // texture atlas for storing glyphs
 // width is constant, size expands vertically
@@ -47,8 +58,9 @@ struct TextureAtlas {
 
   // Adds data to texture atlas, and returns the region where the data was added.
   // Region coordinates is relative to textureSize.
-  template <GlyphFormat Format, class T, class LayoutPolicy>
-  Region AddGlyph(std::mdspan<T, std::dextents<size_t, 2>, LayoutPolicy> glyphData);
+  template <GlyphFormat Format, typename DataType>
+    requires ValidGlyphDataType<Format, DataType>
+  Region AddGlyph(DataType glyphData);
 
   // Resize cpu side data and sizes
   void Resize();
@@ -56,10 +68,9 @@ struct TextureAtlas {
   void Update();
 };
 
-template <GlyphFormat Format, class T, class LayoutPolicy>
-Region TextureAtlas::AddGlyph(
-  std::mdspan<T, std::dextents<size_t, 2>, LayoutPolicy> glyphData
-) {
+template <GlyphFormat Format, typename DataType>
+  requires ValidGlyphDataType<Format, DataType>
+Region TextureAtlas::AddGlyph(DataType glyphData) {
   // check if current row is full
   // if so, move to next row
   if (currentPos.x + glyphData.extent(1) > bufferSize.x) {
@@ -72,30 +83,28 @@ Region TextureAtlas::AddGlyph(
   }
 
   // fill data
-
-  if constexpr (Format == GlyphFormat::BGRA) {
-    static_assert(std::is_same_v<T, uint32_t>);
+  if constexpr (Format == GlyphFormat::BGRA8) {
     for (size_t row = 0; row < glyphData.extent(0); row++) {
       for (size_t col = 0; col < glyphData.extent(1); col++) {
         Color& dest = data[currentPos.y + row, currentPos.x + col];
-        dest.b = glyphData[row, col] & 0xFF;
-        dest.g = (glyphData[row, col] >> 8) & 0xFF;
-        dest.r = (glyphData[row, col] >> 16) & 0xFF;
-        dest.a = (glyphData[row, col] >> 24) & 0xFF;
+        const uint32_t pixel = glyphData[row, col];
+        dest.b = pixel & 0xFF;
+        dest.g = (pixel >> 8) & 0xFF;
+        dest.r = (pixel >> 16) & 0xFF;
+        dest.a = (pixel >> 24) & 0xFF;
       }
     }
 
   } else {
-    static_assert(std::is_same_v<T, uint8_t> || std::is_same_v<T, uint32_t>);
     for (size_t row = 0; row < glyphData.extent(0); row++) {
       for (size_t col = 0; col < glyphData.extent(1); col++) {
         Color& dest = data[currentPos.y + row, currentPos.x + col];
         dest.r = 255;
         dest.g = 255;
         dest.b = 255;
-        if constexpr (std::is_same_v<T, uint8_t>) {
+        if constexpr (Format == GlyphFormat::A8) {
           dest.a = glyphData[row, col];
-        } else if constexpr (std::is_same_v<T, uint32_t>) {
+        } else if constexpr (Format == GlyphFormat::A32) {
           dest.a = (glyphData[row, col] >> 24) & 0xFF;
         }
       }

@@ -259,7 +259,7 @@ ShapeDrawing::GetGlyphInfo(char32_t charcode, TextureAtlas& textureAtlas) {
     return nullptr;
   }
 
-  auto region = textureAtlas.AddGlyph<GlyphFormat::Grayscale>(data);
+  auto region = textureAtlas.AddGlyph<GlyphFormat::A32>(data);
 
   auto pair = glyphInfoMap.emplace(
     charcode,

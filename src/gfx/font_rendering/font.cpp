@@ -3,9 +3,11 @@
 #include "utils/logger.hpp"
 #include "utils/region.hpp"
 #include "glm/gtx/string_cast.hpp"
+#include <cstdlib>
 #include <mdspan>
 
 #include "freetype/ftmodapi.h"
+#include "utils/timer.hpp"
 
 using namespace wgpu;
 
@@ -135,37 +137,27 @@ Font::GetGlyphInfo(char32_t charcode, TextureAtlas& textureAtlas) {
     ),
   };
 
+  // NOTE: assume pitch is positive, glyph will be flipped vertically if negative
+  // https://freetype.org/freetype2/docs/glyphs/glyphs-7.html
   if (bitmap.pixel_mode == FT_PIXEL_MODE_BGRA) {
-    // log charcode
-    // if (charcode == 0x1F600) {
-    //   LOG_INFO("charcode: {}", (uint32_t)charcode);
-    //   LOG_INFO("path: {}", path);
-    //   LOG_INFO("pixel_mode: {}", bitmap.pixel_mode);
-    //   LOG_INFO("bitmap.width, bitmap.rows: {}, {}", bitmap.width, bitmap.rows);
-    // }
-
-    // convert
-    uint8_t* source = bitmap.buffer;
-    std::vector<uint32_t> buffer(bitmap.rows * bitmap.width);
-    for (size_t i = 0; i < bitmap.rows * bitmap.width; i++) {
-      uint8_t b = *source++;
-      uint8_t g = *source++;
-      uint8_t r = *source++;
-      uint8_t a = *source++;
-      buffer[i] = (a << 24) | (r << 16) | (g << 8) | b;
-    }
-    auto view = std::mdspan(buffer.data(), bitmap.rows, bitmap.width);
-    // auto view = std::mdspan(
-    //   reinterpret_cast<uint32_t*>(bitmap.buffer), bitmap.rows, bitmap.width
-    // );
-
-    glyphInfo.atlasRegion = textureAtlas.AddGlyph<GlyphFormat::BGRA>(view);
+    std::extents shape{bitmap.rows, bitmap.width};
+    std::array strides{std::abs(bitmap.pitch) / sizeof(uint32_t), 1uz};
+    auto view = std::mdspan(
+      // should be safe since freetype treats bitmap.buffer as typeless
+      // so should be 32-bit aligned and in correct order for BGRA
+      reinterpret_cast<uint32_t*>(bitmap.buffer),
+      std::layout_stride::mapping{shape, strides}
+    );
+    glyphInfo.atlasRegion = textureAtlas.AddGlyph<GlyphFormat::BGRA8>(view);
     glyphInfo.isEmoji = true;
 
   } else {
     // log charcode
-    auto view = std::mdspan(bitmap.buffer, bitmap.rows, bitmap.width);
-    glyphInfo.atlasRegion = textureAtlas.AddGlyph<GlyphFormat::Grayscale>(view);
+    std::extents shape{bitmap.rows, bitmap.width};
+    std::array strides{std::abs(bitmap.pitch) / sizeof(uint8_t), 1uz};
+    auto view = std::mdspan(bitmap.buffer, std::layout_stride::mapping{shape, strides});
+
+    glyphInfo.atlasRegion = textureAtlas.AddGlyph<GlyphFormat::A8>(view);
   }
 
   auto pair = glyphInfoMap.emplace(glyphIndex, glyphInfo);
