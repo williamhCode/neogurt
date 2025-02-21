@@ -4,6 +4,7 @@
 #include "utils/logger.hpp"
 #include "utils/unicode.hpp"
 #include "SDL3/SDL_stdinc.h"
+#include <algorithm>
 #include <ranges>
 
 void ImeHandler::Clear() {
@@ -42,20 +43,26 @@ void ImeHandler::Update() {
 
     if (start != -1) {
       int end = start + (length != -1 ? length : 0);
+      LOG_INFO("--------------");
+      LOG_INFO("text: {}", text);
+      LOG_INFO("start: {}, length: {}", start, length);
 
       // actual column from start cuz double width stuff
       int col = 0;
       for (int i = 0; i < end; i++) {
         bool isDouble = col + 1 < (int)cells.size() && cells[col + 1].text.empty();
 
+        // set selected text highlight
         if (i >= start && i < end) {
           cells[col].hlId = imeSelectedHlId;
           if (isDouble) cells[col + 1].hlId = imeSelectedHlId;
         }
 
         col += isDouble ? 2 : 1;
+        // counteract issue
+        // https://github.com/libsdl-org/SDL/issues/12344
+        col = std::min(col, (int)cells.size() - 1);
       }
-
       editorState->cursor.ImeGoto({.grid = imeGrid, .row = 0, .col = col});
     }
 

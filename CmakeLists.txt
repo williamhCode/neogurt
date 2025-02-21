@@ -42,7 +42,8 @@ add_subdirectory(deps/webgpu_tools EXCLUDE_FROM_ALL)
 set(MSGPACK_USE_STATIC_BOOST ON)
 add_subdirectory(deps/msgpack EXCLUDE_FROM_ALL)
 
-add_subdirectory(deps/freetype EXCLUDE_FROM_ALL)
+set(FT_REQUIRE_PNG ON)
+find_package(Freetype REQUIRED)
 
 set(UTFCPP_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/deps/utfcpp/source)
 
@@ -116,6 +117,7 @@ target_compile_definitions(neogurt PRIVATE
 target_include_directories(neogurt PRIVATE 
   ${PROJECT_SOURCE_DIR}/src
   ${UTFCPP_INCLUDE_DIR}
+  ${FREETYPE_INCLUDE_DIRS}
 )
 
 # custom LLVM path in github actions, else use brew
@@ -129,7 +131,7 @@ target_link_libraries(neogurt PRIVATE
   Boost::program_options
   webgpu_tools
   msgpack-cxx
-  freetype
+  ${FREETYPE_LIBRARIES}
   blend2d::blend2d
   # https://github.com/llvm/llvm-project/issues/77653
   # stack unwinding breaking and linking breaks without this

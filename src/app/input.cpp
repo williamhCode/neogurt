@@ -81,7 +81,7 @@ void InputHandler::HandleKeyboard(const SDL_KeyboardEvent& event) {
     if (keycode & SDLK_SCANCODE_MASK || isSpecialKey) {
       keyname = SDL_GetKeyName(keycode);
     } else {
-      keyname = Char32ToUTF8(keycode);
+      keyname = Char32ToUtf8(keycode);
     }
 
     if (keyname.empty()) return;
@@ -135,6 +135,10 @@ void InputHandler::HandleTextEditing(const SDL_TextEditingEvent& event) {
 }
 
 void InputHandler::HandleTextInput(const SDL_TextInputEvent& event) {
+  // std::string inputStr = event.text;
+  // LOG_INFO("Text: {}", inputStr);
+
+  // TODO: don't return for emojis
   if (editingText.empty()) return;
   editingText = "";
 

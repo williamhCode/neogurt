@@ -20,19 +20,11 @@ fn vs_main(in: VertexInput) -> VertexOutput {
   let uv = in.regionCoords / textureSize;
   let out = VertexOutput(
     viewProj * vec4f(in.position, 0.0, 1.0),
-    uv, ToLinear(in.foreground)
+    uv,
+    in.foreground
   );
 
   return out;
-}
-
-fn ToLinear(color: vec4f) -> vec4f {
-  return vec4f(
-    pow(color.r, gamma),
-    pow(color.g, gamma),
-    pow(color.b, gamma),
-    color.a
-  );
 }
 
 struct FragmentInput {
@@ -52,7 +44,16 @@ fn fs_main(in: FragmentInput) -> FragmentOutput {
   var out: FragmentOutput;
 
   out.color = textureSample(fontTexture, fontSampler, in.uv);
-  out.color = in.foreground * out.color;
+  out.color = ToLinear(in.foreground * out.color);
 
   return out;
+}
+
+fn ToLinear(color: vec4f) -> vec4f {
+  return vec4f(
+    pow(color.r, gamma),
+    pow(color.g, gamma),
+    pow(color.b, gamma),
+    color.a
+  );
 }

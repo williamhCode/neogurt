@@ -6,7 +6,7 @@
 #include <expected>
 
 #include <ft2build.h>
-#include <freetype/freetype.h>
+#include FT_FREETYPE_H
 
 int FtInit();
 void FtDone();
@@ -38,6 +38,9 @@ struct Font {
 
   static std::expected<Font, std::string>
   FromName(const FontDescriptorWithName& desc, float linespace, float dpiScale);
+
+  static std::expected<Font, std::string>
+  UseEmoji(const FontDescriptorWithName& desc, float linespace, float dpiScale);
 
   Font(std::string path, float height, float width, float linespace, float dpiScale);
 

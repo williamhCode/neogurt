@@ -12,7 +12,6 @@
 #include "editor/grid.hpp"
 #include "editor/highlight.hpp"
 #include "editor/state.hpp"
-#include "editor/font.hpp"
 #include "gfx/instance.hpp"
 #include "gfx/renderer.hpp"
 #include "glm/ext/vector_float2.hpp"
@@ -39,6 +38,8 @@
 #include <chrono>
 #include <locale>
 
+#include "gfx/font_rendering/font.hpp"
+
 using namespace wgpu;
 using namespace std::chrono;
 
@@ -47,6 +48,12 @@ WGPUContext ctx;
 int main(int argc, char** argv) {
   // for wcwidth()
   setlocale(LC_ALL, "en_US.UTF-8");
+
+  // auto beecode = UTF8ToChar32("🐝");
+  // LOG_INFO("bee: {:x}", (uint32_t)beecode);
+  // LOG_INFO("bee width: {}", wcwidth(beecode));
+
+  // return 0;
 
   if (auto exit = Options::LoadFromCommandLine(argc, argv)) {
     return *exit;
@@ -195,12 +202,12 @@ int main(int argc, char** argv) {
               break;
 
             case SDL_EVENT_WINDOW_EXPOSED:
-              LOG_INFO("window exposed");
+              // LOG_INFO("window exposed");
               windowOccluded = false;
               IdleReset();
               break;
             case SDL_EVENT_WINDOW_OCCLUDED:
-              LOG_INFO("window occluded");
+              // LOG_INFO("window occluded");
               windowOccluded = true;
               break;
           }
@@ -271,7 +278,7 @@ int main(int argc, char** argv) {
 
         bool renderWindows = true;
         for (auto& [id, win] : editorState->winManager.windows) {
-          if (win.grid.dirty) {
+          if (win.grid.dirty && !win.hidden) {
             renderer.RenderToWindow(win, editorState->fontFamily, editorState->hlTable);
             win.grid.dirty = false;
             renderWindows = true;

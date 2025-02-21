@@ -1,29 +1,33 @@
 #include "./unicode.hpp"
 #include "utf8/checked.h"
 #include "utils/logger.hpp"
+#include <string>
 #include <cwchar>
 
-std::string Char32ToUTF8(char32_t unicode) {
+// converts a char32_t value to a utf8 string
+std::string Char32ToUtf8(char32_t unicode) {
   std::string utf8String;
   try {
     utf8::append(unicode, utf8String);
   } catch (const std::exception& e) {
-    LOG_ERR("UnicodeToUTF8: {}, {}", e.what(), (uint32_t)unicode); 
+    LOG_ERR("Char32ToUtf8: {}, {}", e.what(), (uint32_t)unicode); 
     utf8String = "";
   }
   return utf8String;
 }
 
-char32_t UTF8ToChar32(const std::string& utf8String) {
-  auto it = utf8String.begin();
+// converts the first unicode character in a utf8 string to a char32_t value
+char32_t Utf8ToChar32(std::string_view utf8String) {
+  const auto *it = utf8String.begin();
   try {
     return utf8::next(it, utf8String.end());
   } catch (const std::exception& e) {
-    LOG_ERR("UTF8ToUnicode: {}, {}", e.what(), utf8String);
+    LOG_ERR("Utf8ToChar32: {}, {}", e.what(), utf8String);
     return 0;
   }
 }
 
+// TODO: merge ligatures and multi-unicode emojis
 std::vector<std::string> SplitUTF8(const std::string& input) {
   std::vector<std::string> outputChars;
   auto it = input.begin();

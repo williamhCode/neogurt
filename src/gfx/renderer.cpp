@@ -227,15 +227,16 @@ void Renderer::RenderToWindow(
       }
 
       if (!cell.text.empty() && cell.text != " ") {
-        glm::vec4 foreground = GetForeground(hlTable, hl);
-        char32_t charcode = UTF8ToChar32(cell.text);
-
+        char32_t charcode = Utf8ToChar32(cell.text);
         const auto& glyphInfo = fontFamily.GetGlyphInfo(charcode, hl.bold, hl.italic);
 
         glm::vec2 textQuadPos{
           textOffset.x,
           textOffset.y + (glyphInfo.useAscender ? defaultFont.ascender : 0)
         };
+
+        glm::vec4 foreground =
+          glyphInfo.isEmoji ? glm::vec4{1, 1, 1, 1} : GetForeground(hlTable, hl);
 
         auto& quad = textData.NextQuad();
         for (size_t i = 0; i < 4; i++) {
@@ -375,7 +376,7 @@ void Renderer::RenderCursorMask(
   auto& cell = win.grid.lines[cursor.row][cursor.col];
 
   // if (!cell.text.empty() && cell.text != " ") {
-  char32_t charcode = UTF8ToChar32(cell.text);
+  char32_t charcode = Utf8ToChar32(cell.text);
   const auto& hl = hlTable[cell.hlId];
   const auto& glyphInfo = fontFamily.GetGlyphInfo(charcode, hl.bold, hl.italic);
 

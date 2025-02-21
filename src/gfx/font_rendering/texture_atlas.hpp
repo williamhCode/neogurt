@@ -6,6 +6,12 @@
 #include <cstdint>
 #include <vector>
 #include <mdspan>
+#include <print>
+
+enum class GlyphFormat {
+  Grayscale,
+  BGRA
+};
 
 // texture atlas for storing glyphs
 // width is constant, size expands vertically
@@ -41,7 +47,7 @@ struct TextureAtlas {
 
   // Adds data to texture atlas, and returns the region where the data was added.
   // Region coordinates is relative to textureSize.
-  template <class T, class LayoutPolicy>
+  template <GlyphFormat Format, class T, class LayoutPolicy>
   Region AddGlyph(std::mdspan<T, std::dextents<size_t, 2>, LayoutPolicy> glyphData);
 
   // Resize cpu side data and sizes
@@ -50,7 +56,7 @@ struct TextureAtlas {
   void Update();
 };
 
-template <class T, class LayoutPolicy>
+template <GlyphFormat Format, class T, class LayoutPolicy>
 Region TextureAtlas::AddGlyph(
   std::mdspan<T, std::dextents<size_t, 2>, LayoutPolicy> glyphData
 ) {
@@ -66,18 +72,32 @@ Region TextureAtlas::AddGlyph(
   }
 
   // fill data
-  for (size_t row = 0; row < glyphData.extent(0); row++) {
-    for (size_t col = 0; col < glyphData.extent(1); col++) {
-      Color& dest = data[currentPos.y + row, currentPos.x + col];
-      dest.r = 255;
-      dest.g = 255;
-      dest.b = 255;
-      if constexpr (std::is_same_v<T, uint32_t>) {
-        dest.a = glyphData[row, col] >> 24;
-      } else if constexpr (std::is_same_v<T, uint8_t>) {
-        dest.a = glyphData[row, col];
-      } else {
-        static_assert(false, "Unsupported type");
+
+  if constexpr (Format == GlyphFormat::BGRA) {
+    static_assert(std::is_same_v<T, uint32_t>);
+    for (size_t row = 0; row < glyphData.extent(0); row++) {
+      for (size_t col = 0; col < glyphData.extent(1); col++) {
+        Color& dest = data[currentPos.y + row, currentPos.x + col];
+        dest.b = glyphData[row, col] & 0xFF;
+        dest.g = (glyphData[row, col] >> 8) & 0xFF;
+        dest.r = (glyphData[row, col] >> 16) & 0xFF;
+        dest.a = (glyphData[row, col] >> 24) & 0xFF;
+      }
+    }
+
+  } else {
+    static_assert(std::is_same_v<T, uint8_t> || std::is_same_v<T, uint32_t>);
+    for (size_t row = 0; row < glyphData.extent(0); row++) {
+      for (size_t col = 0; col < glyphData.extent(1); col++) {
+        Color& dest = data[currentPos.y + row, currentPos.x + col];
+        dest.r = 255;
+        dest.g = 255;
+        dest.b = 255;
+        if constexpr (std::is_same_v<T, uint8_t>) {
+          dest.a = glyphData[row, col];
+        } else if constexpr (std::is_same_v<T, uint32_t>) {
+          dest.a = (glyphData[row, col] >> 24) & 0xFF;
+        }
       }
     }
   }

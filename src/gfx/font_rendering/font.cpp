@@ -114,32 +114,60 @@ Font::GetGlyphInfo(char32_t charcode, TextureAtlas& textureAtlas) {
     return &(it->second);
   }
 
-  FT_Int32 loadFlags = FT_LOAD_DEFAULT;
-  FT_Load_Glyph(face.get(), glyphIndex, loadFlags);
+  // if (FT_HAS_COLOR(face))
+
+  FT_Load_Glyph(face.get(), glyphIndex, FT_LOAD_COLOR);
   FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL);
 
   FT_GlyphSlot slot = face->glyph;
   FT_Bitmap& bitmap = slot->bitmap;
 
-  auto view = std::mdspan(bitmap.buffer, bitmap.rows, bitmap.width);
-  auto region = textureAtlas.AddGlyph(view);
+  GlyphInfo glyphInfo{
+    .localPoss = MakeRegion(
+      {
+        slot->bitmap_left / dpiScale,
+        -slot->bitmap_top / dpiScale,
+      },
+      {
+        bitmap.width / dpiScale,
+        bitmap.rows / dpiScale,
+      }
+    ),
+  };
 
-  auto pair = glyphInfoMap.emplace(
-    glyphIndex,
-    GlyphInfo{
-      .localPoss = MakeRegion(
-        {
-          slot->bitmap_left / dpiScale,
-          -slot->bitmap_top / dpiScale,
-        },
-        {
-          bitmap.width / dpiScale,
-          bitmap.rows / dpiScale,
-        }
-      ),
-      .atlasRegion = region,
+  if (bitmap.pixel_mode == FT_PIXEL_MODE_BGRA) {
+    // log charcode
+    // if (charcode == 0x1F600) {
+    //   LOG_INFO("charcode: {}", (uint32_t)charcode);
+    //   LOG_INFO("path: {}", path);
+    //   LOG_INFO("pixel_mode: {}", bitmap.pixel_mode);
+    //   LOG_INFO("bitmap.width, bitmap.rows: {}, {}", bitmap.width, bitmap.rows);
+    // }
+
+    // convert
+    uint8_t* source = bitmap.buffer;
+    std::vector<uint32_t> buffer(bitmap.rows * bitmap.width);
+    for (size_t i = 0; i < bitmap.rows * bitmap.width; i++) {
+      uint8_t b = *source++;
+      uint8_t g = *source++;
+      uint8_t r = *source++;
+      uint8_t a = *source++;
+      buffer[i] = (a << 24) | (r << 16) | (g << 8) | b;
     }
-  );
+    auto view = std::mdspan(buffer.data(), bitmap.rows, bitmap.width);
+    // auto view = std::mdspan(
+    //   reinterpret_cast<uint32_t*>(bitmap.buffer), bitmap.rows, bitmap.width
+    // );
 
+    glyphInfo.atlasRegion = textureAtlas.AddGlyph<GlyphFormat::BGRA>(view);
+    glyphInfo.isEmoji = true;
+
+  } else {
+    // log charcode
+    auto view = std::mdspan(bitmap.buffer, bitmap.rows, bitmap.width);
+    glyphInfo.atlasRegion = textureAtlas.AddGlyph<GlyphFormat::Grayscale>(view);
+  }
+
+  auto pair = glyphInfoMap.emplace(glyphIndex, glyphInfo);
   return &(pair.first->second);
 }
