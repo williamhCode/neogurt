@@ -137,7 +137,7 @@ Font::GetGlyphInfo(char32_t charcode, TextureAtlas& textureAtlas) {
     ),
   };
 
-  // NOTE: assume pitch is positive, glyph will be flipped vertically if negative
+  // NOTE: assuming pitch is positive here, glyph will be flipped vertically if negative
   // https://freetype.org/freetype2/docs/glyphs/glyphs-7.html
   if (bitmap.pixel_mode == FT_PIXEL_MODE_BGRA) {
     std::extents shape{bitmap.rows, bitmap.width};
@@ -152,7 +152,6 @@ Font::GetGlyphInfo(char32_t charcode, TextureAtlas& textureAtlas) {
     glyphInfo.isEmoji = true;
 
   } else {
-    // log charcode
     std::extents shape{bitmap.rows, bitmap.width};
     std::array strides{std::abs(bitmap.pitch) / sizeof(uint8_t), 1uz};
     auto view = std::mdspan(bitmap.buffer, std::layout_stride::mapping{shape, strides});

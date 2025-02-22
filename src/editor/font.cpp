@@ -1,7 +1,12 @@
 #include "./font.hpp"
 #include <ranges>
 #include <string>
+#include <algorithm>
 #include <boost/lexical_cast.hpp>
+
+static float ClampHeight(float height) {
+  return std::clamp(height, 4.0f, 72.0f);
+}
 
 static auto SplitStr(std::string_view str, char delim) {
   return std::views::split(str, delim) |
@@ -56,7 +61,7 @@ FontFamily::FromGuifont(std::string guifont, float linespace, float dpiScale) {
           auto font = Font::FromName(
             {
               .name = std::string(fontName),
-              .height = height,
+              .height = ClampHeight(height),
               .width = width,
               .bold = bold,
               .italic = italic,
@@ -138,7 +143,7 @@ void FontFamily::ChangeSize(float delta) {
       }
 
       float newHeight = fontHandle->height + delta;
-      newHeight = std::max(4.0f, newHeight);
+      newHeight = ClampHeight(newHeight);
 
       float widthHeightRatio = defaultWidth / defaultHeight;
       float newWidth = newHeight * widthHeightRatio;

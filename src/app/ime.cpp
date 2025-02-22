@@ -32,37 +32,39 @@ void ImeHandler::Update() {
 
   } else {
     text.append(" "); // extra space for cursor
+
+    int col = -1;
+    int colIdx = 0;
+
+    // NOTE: for macos, start and length are utf32 lengths
+    // was a bug cuz it was utf16, but SDL abi stuff so changed to utf32
+    // use utf8 lengths for other platforms
+    int u32idx = 0;
+    int end = start + (length != -1 ? length : 0);
+
     auto cells =
-      SplitUTF8(text) | std::views::transform([](auto& text) {
+      SplitByGraphemes(text) |
+      std::views::transform([&, this](auto& info) {
+        int hlId = imeNormalHlId;
+        if (start != -1) {
+          if (u32idx >= start && u32idx < end) {
+            hlId = imeSelectedHlId;
+          }
+          if (u32idx == end) {
+            col = colIdx;
+          }
+        }
+        u32idx += info.u32Len;
+        colIdx++;
+
         return event::GridLine::Cell{
-          .text = text,
-          .hlId = imeNormalHlId,
+          .text = info.str,
+          .hlId = hlId,
         };
       }) |
       std::ranges::to<std::vector>();
 
-    if (start != -1) {
-      int end = start + (length != -1 ? length : 0);
-      LOG_INFO("--------------");
-      LOG_INFO("text: {}", text);
-      LOG_INFO("start: {}, length: {}", start, length);
-
-      // actual column from start cuz double width stuff
-      int col = 0;
-      for (int i = 0; i < end; i++) {
-        bool isDouble = col + 1 < (int)cells.size() && cells[col + 1].text.empty();
-
-        // set selected text highlight
-        if (i >= start && i < end) {
-          cells[col].hlId = imeSelectedHlId;
-          if (isDouble) cells[col + 1].hlId = imeSelectedHlId;
-        }
-
-        col += isDouble ? 2 : 1;
-        // counteract issue
-        // https://github.com/libsdl-org/SDL/issues/12344
-        col = std::min(col, (int)cells.size() - 1);
-      }
+    if (col != -1) {
       editorState->cursor.ImeGoto({.grid = imeGrid, .row = 0, .col = col});
     }
 

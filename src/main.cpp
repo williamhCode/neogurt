@@ -37,23 +37,21 @@
 #include <ranges>
 #include <chrono>
 #include <locale>
+#include <iostream>
 
 #include "gfx/font_rendering/font.hpp"
+#include "boost/locale.hpp"
 
 using namespace wgpu;
 using namespace std::chrono;
 
 WGPUContext ctx;
 
+// Convert UTF-8 string to wide string
+
 int main(int argc, char** argv) {
-  // for wcwidth()
-  setlocale(LC_ALL, "en_US.UTF-8");
-
-  // auto beecode = UTF8ToChar32("🐝");
-  // LOG_INFO("bee: {:x}", (uint32_t)beecode);
-  // LOG_INFO("bee width: {}", wcwidth(beecode));
-
-  // return 0;
+  // std::locale::global(std::locale("en_US.UTF-8"));
+  std::locale::global(std::locale(""));
 
   if (auto exit = Options::LoadFromCommandLine(argc, argv)) {
     return *exit;

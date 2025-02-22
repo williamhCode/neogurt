@@ -31,8 +31,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)  # clangd
 
 # deps ---------------------------
-set(Boost_USE_STATIC_LIBS ON)
+# set(Boost_USE_STATIC_LIBS ON)
 find_package(Boost 1.86.0 REQUIRED COMPONENTS
+  locale
   process
   program_options
 )
@@ -127,6 +128,7 @@ if (NOT DEFINED ENV{LLVM_PATH})
 endif()
 
 target_link_libraries(neogurt PRIVATE 
+  Boost::locale
   Boost::process
   Boost::program_options
   webgpu_tools
@@ -141,6 +143,7 @@ target_link_libraries(neogurt PRIVATE
 target_compile_options(neogurt PRIVATE
   -Wall -Wextra -Wshadow -pedantic 
   # -Wno-missing-field-initializers
+  # -Wmissing-designated-field-initializers
   -Wno-deprecated-declarations
   -Wno-gnu-anonymous-struct
   -Wno-nested-anon-types
