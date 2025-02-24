@@ -3,11 +3,14 @@
 
 using namespace wgpu;
 
-TextureAtlas::TextureAtlas(float _glyphSize, float _dpiScale)
-    : dpiScale(_dpiScale), trueGlyphSize(_glyphSize * dpiScale) {
+template <bool IsColor>
+TextureAtlas<IsColor>::TextureAtlas(float _height, float _dpiScale)
+    : dpiScale(_dpiScale), trueHeight(_height * dpiScale) {
 
-  int initialTextureHeight = trueGlyphSize * 3;
-  bufferSize = {trueGlyphSize * glyphsPerRow, initialTextureHeight};
+  int initialHeight = trueHeight * 3;
+  int initialWidth = trueHeight * glyphsPerRow;
+  initialWidth = std::min<int>(initialWidth, ctx.limits.maxTextureDimension2D);
+  bufferSize = {initialWidth, initialHeight};
   textureSize = glm::vec2(bufferSize) / dpiScale;
 
   dataRaw.resize(bufferSize.x * bufferSize.y);
@@ -23,12 +26,23 @@ TextureAtlas::TextureAtlas(float _glyphSize, float _dpiScale)
     }
   );
 
-  renderTexture = RenderTexture(textureSize, dpiScale, TextureFormat::RGBA8Unorm);
+  if constexpr (IsColor) {
+    renderTexture = RenderTexture(textureSize, dpiScale, TextureFormat::RGBA8Unorm);
+  } else {
+    renderTexture = RenderTexture(textureSize, dpiScale, TextureFormat::R8Unorm);
+  }
 }
 
-void TextureAtlas::Resize() {
-  int heightIncrease = trueGlyphSize * 3;
-  bufferSize.y += heightIncrease;
+template <bool IsColor>
+void TextureAtlas<IsColor>::Resize() {
+  int heightIncrease = trueHeight * 3;
+  int newBufferHeight = bufferSize.y + heightIncrease;
+  if (newBufferHeight > ctx.limits.maxTextureDimension2D) {
+    // TODO: implement LRU cache
+    throw std::runtime_error("TextureAtlas: Texture size limit reached");
+  } else {
+    bufferSize.y = newBufferHeight;
+  }
   textureSize = glm::vec2(bufferSize) / dpiScale;
 
   dataRaw.resize(bufferSize.x * bufferSize.y);
@@ -38,7 +52,8 @@ void TextureAtlas::Resize() {
   // LOG_INFO("Resized texture atlas to {}x{}", bufferSize.x, bufferSize.y);
 }
 
-void TextureAtlas::Update() {
+template <bool IsColor>
+void TextureAtlas<IsColor>::Update() {
   if (!dirty) return;
 
   if (resized) {
@@ -54,10 +69,19 @@ void TextureAtlas::Update() {
       }
     );
 
-    renderTexture = RenderTexture(textureSize, dpiScale, TextureFormat::RGBA8Unorm);
+    if constexpr (IsColor) {
+      renderTexture = RenderTexture(textureSize, dpiScale, TextureFormat::RGBA8Unorm);
+    } else {
+      renderTexture = RenderTexture(textureSize, dpiScale, TextureFormat::R8Unorm);
+    }
     resized = false;
   }
 
   ctx.WriteTexture(renderTexture.texture, bufferSize, dataRaw.data());
   dirty = false;
 }
+
+// explicit template instantiation
+template struct TextureAtlas<true>;
+template struct TextureAtlas<false>;
+

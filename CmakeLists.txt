@@ -31,7 +31,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)  # clangd
 
 # deps ---------------------------
-# set(Boost_USE_STATIC_LIBS ON)
+set(Boost_USE_STATIC_LIBS ON)
+# set(Boost_USE_DEBUG_LIBS OFF)
 find_package(Boost 1.86.0 REQUIRED COMPONENTS
   locale
   process
@@ -127,6 +128,12 @@ if (NOT DEFINED ENV{LLVM_PATH})
   set(ENV{LLVM_PATH} ${LLVM_PATH})
 endif()
 
+# https://github.com/Homebrew/homebrew-core/issues/67427
+execute_process(COMMAND brew --prefix icu4c OUTPUT_VARIABLE ICU_PATH OUTPUT_STRIP_TRAILING_WHITESPACE)
+target_link_directories(neogurt PRIVATE
+  "${ICU_PATH}/lib"
+)
+
 target_link_libraries(neogurt PRIVATE 
   Boost::locale
   Boost::process
@@ -180,6 +187,7 @@ if (CMAKE_BUILD_TYPE MATCHES RelWithDebInfo)
   )
 
   if (APPLE)
+    # NOTE: rerun make build-setup when adding resource files
     foreach (FILE ${RESOURCE_FILES})
       file(RELATIVE_PATH FILE_REL_PATH "${RESOURCE_DIR}" ${FILE})
       get_filename_component(FILE_REL_DIR ${FILE_REL_PATH} DIRECTORY)

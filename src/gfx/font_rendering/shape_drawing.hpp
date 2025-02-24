@@ -19,7 +19,7 @@ struct ShapeDrawing {
   ShapeDrawing(glm::vec2 charSize, float dpiScale);
 
   // returns nullptr if not implemented
-  const GlyphInfo* GetGlyphInfo(char32_t charcode, TextureAtlas& textureAtlas);
+  const GlyphInfo* GetGlyphInfo(char32_t charcode, TextureAtlas<false>& textureAtlas);
 
   // std::chrono::nanoseconds totalTime = std::chrono::nanoseconds(0);
 };

@@ -32,6 +32,6 @@ struct FragmentOutput {
 
 @fragment
 fn fs_main(in: FragmentInput) -> FragmentOutput {
-  let alpha = textureSample(fontTexture, fontSampler, in.uv).a;
+  let alpha = textureSample(fontTexture, fontSampler, in.uv).r;
   return FragmentOutput(alpha);
 }

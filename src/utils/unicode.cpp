@@ -66,13 +66,13 @@ std::vector<GraphemeInfo> SplitByGraphemes(const std::string& text) {
 
   for (const auto& i : index) {
     std::string utf8Str = i.str();
-    std::u32string u32Str = boost::locale::conv::utf_to_utf<char32_t>(utf8Str);
+    std::u32string utf32Str = boost::locale::conv::utf_to_utf<char32_t>(utf8Str);
 
     if (GetGraphemeWidth(i.str()) >= 2) {
       graphemes.emplace_back(utf8Str, 0, 0);
-      graphemes.emplace_back("", utf8Str.length(), u32Str.length());
+      graphemes.emplace_back("", utf8Str.length(), utf32Str.length());
     } else {
-      graphemes.emplace_back(utf8Str, utf8Str.length(), u32Str.length());
+      graphemes.emplace_back(utf8Str, utf8Str.length(), utf32Str.length());
     }
   }
 

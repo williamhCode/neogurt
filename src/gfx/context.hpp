@@ -13,6 +13,8 @@ struct WGPUContext : wgpu::utils::DeviceWrapper {
   wgpu::Device device;
   wgpu::Queue queue;
 
+  wgpu::Limits limits;
+
   // surface config stuff
   glm::uvec2 size;
   wgpu::TextureFormat surfaceFormat;

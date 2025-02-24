@@ -26,8 +26,8 @@ RenderTexture::RenderTexture(
     ToPtr(SamplerDescriptor{
       .addressModeU = AddressMode::ClampToEdge,
       .addressModeV = AddressMode::ClampToEdge,
-      .magFilter = FilterMode::Nearest,
-      .minFilter = FilterMode::Nearest,
+      .magFilter = FilterMode::Linear,
+      .minFilter = FilterMode::Linear,
     })
   );
 

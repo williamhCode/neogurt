@@ -229,7 +229,7 @@ ShapeDrawing::ShapeDrawing(glm::vec2 charSize, float dpiScale) {
 }
 
 const GlyphInfo*
-ShapeDrawing::GetGlyphInfo(char32_t charcode, TextureAtlas& textureAtlas) {
+ShapeDrawing::GetGlyphInfo(char32_t charcode, TextureAtlas<false>& textureAtlas) {
   bool isShape = (charcode >= 0x2500 && charcode <= 0x259F) ||
                  (charcode >= 0x2801 && charcode <= 0x28FF);
   if (!isShape) {
@@ -259,7 +259,7 @@ ShapeDrawing::GetGlyphInfo(char32_t charcode, TextureAtlas& textureAtlas) {
     return nullptr;
   }
 
-  auto region = textureAtlas.AddGlyph<GlyphFormat::A32>(data);
+  auto region = textureAtlas.AddGlyph(data);
 
   auto pair = glyphInfoMap.emplace(
     charcode,

@@ -37,10 +37,6 @@
 #include <ranges>
 #include <chrono>
 #include <locale>
-#include <iostream>
-
-#include "gfx/font_rendering/font.hpp"
-#include "boost/locale.hpp"
 
 using namespace wgpu;
 using namespace std::chrono;

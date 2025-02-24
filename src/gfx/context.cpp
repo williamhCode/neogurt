@@ -46,9 +46,10 @@ WGPUContext::WGPUContext(SDL_Window* window, glm::uvec2 _size, PresentMode _pres
     }
   );
 
-  // SupportedLimits supportedLimits;
-  // adapter.GetLimits(&supportedLimits);
-  // utils::PrintLimits(supportedLimits.limits);
+  SupportedLimits supportedLimits;
+  adapter.GetLimits(&supportedLimits);
+  limits = supportedLimits.limits;
+  // utils::PrintLimits(limits);
 
   // FeatureName features[256];
   // size_t featureCount = adapter.EnumerateFeatures(features);
@@ -56,9 +57,9 @@ WGPUContext::WGPUContext(SDL_Window* window, glm::uvec2 _size, PresentMode _pres
   //   LOG_INFO("feature: {}", magic_enum::enum_name(features[i]));
   // }
 
-  // RequiredLimits requiredLimits{
-  //   .limits = supportedLimits.limits,
-  // };
+  RequiredLimits requiredLimits{
+    .limits = {.maxTextureDimension2D = limits.maxTextureDimension2D}
+  };
 
   // SurfaceCapabilities surfaceCaps;
   // surface.GetCapabilities(adapter, &surfaceCaps);
@@ -72,7 +73,7 @@ WGPUContext::WGPUContext(SDL_Window* window, glm::uvec2 _size, PresentMode _pres
   DeviceDescriptor deviceDesc({
     .requiredFeatureCount = requiredFeatures.size(),
     .requiredFeatures = requiredFeatures.data(),
-    // .requiredLimits = &requiredLimits,
+    .requiredLimits = &requiredLimits,
   });
 
   deviceDesc.SetUncapturedErrorCallback(

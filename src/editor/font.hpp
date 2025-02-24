@@ -21,7 +21,10 @@ struct FontSet {
 struct FontFamily {
   std::vector<FontSet> fonts;
   ShapeDrawing shapeDrawing;
-  TextureAtlas textureAtlas;
+
+  TextureAtlas<false> textureAtlas;
+  TextureAtlas<true> colorTextureAtlas;
+
   float defaultHeight;
   float defaultWidth;
 

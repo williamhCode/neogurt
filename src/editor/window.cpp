@@ -41,6 +41,7 @@ void WinManager::UpdateRenderData() {
       auto numQuads = win.height * std::min(win.width, 80);
       win.rectData.CreateBuffers(numQuads);
       win.textData.CreateBuffers(numQuads);
+      win.emojiData.CreateBuffers(numQuads);
       win.shapeData.CreateBuffers(numQuads);
 
       win.sRenderTexture = ScrollableRenderTexture(

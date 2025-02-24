@@ -12,8 +12,8 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
   });
 
   textureBGL = ctx.MakeBindGroupLayout({
-    {0, ShaderStage::Fragment, TextureSampleType::UnfilterableFloat},
-    {1, ShaderStage::Fragment, SamplerBindingType::NonFiltering},
+    {0, ShaderStage::Fragment, TextureSampleType::Float},
+    {1, ShaderStage::Fragment, SamplerBindingType::Filtering},
   });
 
   gammaBGL = ctx.MakeBindGroupLayout({
@@ -73,7 +73,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
     {0, ShaderStage::Vertex, BufferBindingType::Uniform},
   });
 
-  textRPL = ctx.MakeRenderPipeline({
+  utils::RenderPipelineDescriptor textRPLDesc{
     .vs = textShader,
     .fs = textShader,
     .bgls = {viewProjBGL, gammaBGL, textureSizeBGL, textureBGL},
@@ -93,7 +93,17 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
         .blend = &utils::BlendState::AlphaBlending,
       },
     },
-  });
+  };
+
+  textRPL = ctx.MakeRenderPipeline(textRPLDesc);
+
+  // emoji pipeline -------------------------------------------
+  ShaderModule emojiShader = ctx.LoadShaderModule(resourcesDir + "/shaders/emoji.wgsl");
+
+  textRPLDesc.vs = emojiShader;
+  textRPLDesc.fs = emojiShader;
+
+  emojiRPL = ctx.MakeRenderPipeline(textRPLDesc);
 
   // mask
   ShaderModule textMaskShader = ctx.LoadShaderModule(resourcesDir + "/shaders/text_mask.wgsl");

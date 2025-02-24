@@ -58,16 +58,8 @@ Renderer::Renderer(const SizeHandler& sizes) {
     },
   });
 
-  // text
-  textRPD = utils::RenderPassDescriptor({
-    RenderPassColorAttachment{
-      .loadOp = LoadOp::Load,
-      .storeOp = StoreOp::Store,
-    },
-  });
-
-  // shapes
-  shapesRPD = utils::RenderPassDescriptor({
+  // text and shapes
+  textAndShapesRPD = utils::RenderPassDescriptor({
     RenderPassColorAttachment{
       .loadOp = LoadOp::Load,
       .storeOp = StoreOp::Store,
@@ -189,14 +181,17 @@ void Renderer::RenderToWindow(
   size_t cols = std::min(win.grid.width, win.width);
   std::vector<int> rectIntervals; rectIntervals.reserve(rows + 1);
   std::vector<int> textIntervals; textIntervals.reserve(rows + 1);
+  std::vector<int> emojiIntervals; emojiIntervals.reserve(rows + 1);
   std::vector<int> shapeIntervals; shapeIntervals.reserve(rows + 1);
 
   auto& rectData = win.rectData;
   auto& textData = win.textData;
+  auto& emojiData = win.emojiData;
   auto& shapeData = win.shapeData;
 
   rectData.ResetCounts();
   textData.ResetCounts();
+  emojiData.ResetCounts();
   shapeData.ResetCounts();
 
   glm::vec2 textOffset(0, 0);
@@ -209,6 +204,7 @@ void Renderer::RenderToWindow(
 
     rectIntervals.push_back(rectData.quadCount);
     textIntervals.push_back(textData.quadCount);
+    emojiIntervals.push_back(emojiData.quadCount);
     shapeIntervals.push_back(shapeData.quadCount);
 
     for (size_t col = 0; col < cols; col++) {
@@ -235,10 +231,16 @@ void Renderer::RenderToWindow(
           textOffset.y + (glyphInfo.useAscender ? defaultFont.ascender : 0)
         };
 
-        glm::vec4 foreground =
-          glyphInfo.isEmoji ? glm::vec4{1, 1, 1, 1} : GetForeground(hlTable, hl);
+        glm::vec4 foreground{};
+        QuadRenderData<TextQuadVertex, true>* quadData;
+        if (glyphInfo.isEmoji) {
+          quadData = &emojiData;
+        } else {
+          foreground = GetForeground(hlTable, hl);
+          quadData = &textData;
+        }
 
-        auto& quad = textData.NextQuad();
+        auto& quad = quadData->NextQuad();
         for (size_t i = 0; i < 4; i++) {
           quad[i].position = textQuadPos + glyphInfo.localPoss[i];
           quad[i].regionCoord = glyphInfo.atlasRegion[i];
@@ -291,16 +293,19 @@ void Renderer::RenderToWindow(
 
   rectIntervals.push_back(rectData.quadCount);
   textIntervals.push_back(textData.quadCount);
+  emojiIntervals.push_back(emojiData.quadCount);
   shapeIntervals.push_back(shapeData.quadCount);
 
   rectData.WriteBuffers();
   textData.WriteBuffers();
+  emojiData.WriteBuffers();
   shapeData.WriteBuffers();
 
   // gpu texture is reallocated if resized
   // old gpu texture is not referenced by texture atlas anymore
   // but still referenced by command encoder if used by other windows
   fontFamily.textureAtlas.Update();
+  fontFamily.colorTextureAtlas.Update();
 
   auto renderInfos = win.sRenderTexture.GetRenderInfos(rows);
 
@@ -336,12 +341,13 @@ void Renderer::RenderToWindow(
       passEncoder.End();
     }
 
-    // render text
+    // render text and shapes
+    textAndShapesRPD.cColorAttachments[0].view = renderTexture->textureView;
+
     start = textIntervals[range.start];
     end = textIntervals[range.end];
     if (start != end) {
-      textRPD.cColorAttachments[0].view = renderTexture->textureView;
-      RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textRPD);
+      RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textAndShapesRPD);
       passEncoder.SetPipeline(ctx.pipeline.textRPL);
       passEncoder.SetBindGroup(0, renderTexture->camera.viewProjBG);
       passEncoder.SetBindGroup(1, gammaBG);
@@ -351,12 +357,23 @@ void Renderer::RenderToWindow(
       passEncoder.End();
     }
 
-    // render shapes
+    start = emojiIntervals[range.start];
+    end = emojiIntervals[range.end];
+    if (start != end) {
+      RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textAndShapesRPD);
+      passEncoder.SetPipeline(ctx.pipeline.emojiRPL);
+      passEncoder.SetBindGroup(0, renderTexture->camera.viewProjBG);
+      passEncoder.SetBindGroup(1, gammaBG);
+      passEncoder.SetBindGroup(2, fontFamily.colorTextureAtlas.textureSizeBG);
+      passEncoder.SetBindGroup(3, fontFamily.colorTextureAtlas.renderTexture.textureBG);
+      if (start != end) emojiData.Render(passEncoder, start, end - start);
+      passEncoder.End();
+    }
+
     start = shapeIntervals[range.start];
     end = shapeIntervals[range.end];
     if (start != end) {
-      shapesRPD.cColorAttachments[0].view = renderTexture->textureView;
-      RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&shapesRPD);
+      RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textAndShapesRPD);
       passEncoder.SetPipeline(ctx.pipeline.shapesRPL);
       passEncoder.SetBindGroup(0, renderTexture->camera.viewProjBG);
       passEncoder.SetBindGroup(1, gammaBG);
@@ -366,8 +383,8 @@ void Renderer::RenderToWindow(
   }
 
   rectRPD.cColorAttachments[0].view = {};
-  textRPD.cColorAttachments[0].view = {};
-  shapesRPD.cColorAttachments[0].view = {};
+  rectNoClearRPD.cColorAttachments[0].view = {};
+  textAndShapesRPD.cColorAttachments[0].view = {};
 }
 
 void Renderer::RenderCursorMask(

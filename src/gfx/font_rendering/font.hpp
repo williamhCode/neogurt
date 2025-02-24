@@ -24,6 +24,7 @@ struct Font {
   std::string path;
   float height;     // font size
   float width;
+  float emojiRatio;
   float linespace;
   float dpiScale;
 
@@ -46,5 +47,9 @@ struct Font {
 
   // returns nullptr when charcode is not found.
   // updates glyphInfoMap when charcode not in map.
-  const GlyphInfo* GetGlyphInfo(char32_t charcode, TextureAtlas& textureAtlas);
+  const GlyphInfo* GetGlyphInfo(
+    char32_t charcode,
+    TextureAtlas<false>& textureAtlas,
+    TextureAtlas<true>& colorTextureAtlas
+  );
 };

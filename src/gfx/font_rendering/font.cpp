@@ -5,6 +5,7 @@
 #include "glm/gtx/string_cast.hpp"
 #include <cstdlib>
 #include <mdspan>
+#include <span>
 
 #include "freetype/ftmodapi.h"
 #include "utils/timer.hpp"
@@ -82,6 +83,28 @@ Font::Font(
   linespace = roundPixel(linespace);
   float topLinespace = roundPixel(linespace / 2);
 
+  emojiRatio = 1;
+  // check has color (color bitmap images)
+  // if so, choose the next biggest size and set the proper ratio
+  if (FT_HAS_COLOR(face)) {
+    std::span bitmapSizes(face->available_sizes, face->num_fixed_sizes);
+    for (size_t i = 0; i < bitmapSizes.size(); i++) {
+      const FT_Bitmap_Size& size = bitmapSizes[i];
+
+      int y_ppem = size.y_ppem >> 6;
+      // if equal size, at least 1.x size, or last size
+      // at least 1.x size makes sure emoji is crisp
+      if (y_ppem == trueHeight || y_ppem >= trueHeight * 1.2 ||
+          i == bitmapSizes.size() - 1) {
+        emojiRatio = (float)trueHeight / y_ppem;
+
+        trueHeight = y_ppem;
+        trueWidth = 0;
+        break;
+      }
+    }
+  }
+
   FT_Set_Pixel_Sizes(face.get(), trueWidth, trueHeight);
   charSize.x = (face->size->metrics.max_advance >> 6) / dpiScale;
   charSize.y = (face->size->metrics.height >> 6) / dpiScale;
@@ -103,8 +126,11 @@ Font::Font(
   // );
 }
 
-const GlyphInfo*
-Font::GetGlyphInfo(char32_t charcode, TextureAtlas& textureAtlas) {
+const GlyphInfo* Font::GetGlyphInfo(
+  char32_t charcode,
+  TextureAtlas<false>& textureAtlas,
+  TextureAtlas<true>& colorTextureAtlas
+) {
   auto glyphIndex = FT_Get_Char_Index(face.get(), charcode);
 
   if (glyphIndex == 0) {
@@ -116,7 +142,6 @@ Font::GetGlyphInfo(char32_t charcode, TextureAtlas& textureAtlas) {
     return &(it->second);
   }
 
-  // if (FT_HAS_COLOR(face))
 
   FT_Load_Glyph(face.get(), glyphIndex, FT_LOAD_COLOR);
   FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL);
@@ -127,12 +152,12 @@ Font::GetGlyphInfo(char32_t charcode, TextureAtlas& textureAtlas) {
   GlyphInfo glyphInfo{
     .localPoss = MakeRegion(
       {
-        slot->bitmap_left / dpiScale,
-        -slot->bitmap_top / dpiScale,
+        slot->bitmap_left / dpiScale * emojiRatio,
+        -slot->bitmap_top / dpiScale * emojiRatio,
       },
       {
-        bitmap.width / dpiScale,
-        bitmap.rows / dpiScale,
+        bitmap.width / dpiScale * emojiRatio,
+        bitmap.rows / dpiScale * emojiRatio,
       }
     ),
   };
@@ -148,7 +173,7 @@ Font::GetGlyphInfo(char32_t charcode, TextureAtlas& textureAtlas) {
       reinterpret_cast<uint32_t*>(bitmap.buffer),
       std::layout_stride::mapping{shape, strides}
     );
-    glyphInfo.atlasRegion = textureAtlas.AddGlyph<GlyphFormat::BGRA8>(view);
+    glyphInfo.atlasRegion = colorTextureAtlas.AddGlyph(view);
     glyphInfo.isEmoji = true;
 
   } else {
@@ -156,7 +181,7 @@ Font::GetGlyphInfo(char32_t charcode, TextureAtlas& textureAtlas) {
     std::array strides{std::abs(bitmap.pitch) / sizeof(uint8_t), 1uz};
     auto view = std::mdspan(bitmap.buffer, std::layout_stride::mapping{shape, strides});
 
-    glyphInfo.atlasRegion = textureAtlas.AddGlyph<GlyphFormat::A8>(view);
+    glyphInfo.atlasRegion = textureAtlas.AddGlyph(view);
   }
 
   auto pair = glyphInfoMap.emplace(glyphIndex, glyphInfo);

@@ -91,7 +91,8 @@ FontFamily::FromGuifont(std::string guifont, float linespace, float dpiScale) {
       }) |
       std::ranges::to<std::vector>(),
       .shapeDrawing{fontFamily.DefaultFont().charSize, dpiScale},
-      .textureAtlas{height, dpiScale},
+      .textureAtlas{fontFamily.DefaultFont().charSize.y, dpiScale},
+      .colorTextureAtlas{fontFamily.DefaultFont().charSize.y, dpiScale},
       .defaultHeight = height,
       .defaultWidth = width,
     };
@@ -126,7 +127,8 @@ bool FontFamily::TryChangeDpiScale(float dpiScale) {
   }
   fonts = std::move(newFonts);
   shapeDrawing = ShapeDrawing(DefaultFont().charSize, dpiScale);
-  textureAtlas = TextureAtlas(DefaultFont().height, dpiScale);
+  textureAtlas = TextureAtlas<false>(DefaultFont().charSize.y, dpiScale);
+  colorTextureAtlas = TextureAtlas<true>(DefaultFont().charSize.y, dpiScale);
 
   return true;
 }
@@ -161,7 +163,8 @@ void FontFamily::ChangeSize(float delta) {
   }
   fonts = std::move(newFonts);
   shapeDrawing = ShapeDrawing(DefaultFont().charSize, DefaultFont().dpiScale);
-  textureAtlas = TextureAtlas(DefaultFont().height, DefaultFont().dpiScale);
+  textureAtlas = TextureAtlas<false>(DefaultFont().charSize.y, DefaultFont().dpiScale);
+  colorTextureAtlas = TextureAtlas<true>(DefaultFont().charSize.y, DefaultFont().dpiScale);
 }
 
 void FontFamily::ResetSize() {
@@ -186,7 +189,8 @@ void FontFamily::ResetSize() {
   }
   fonts = std::move(newFonts);
   shapeDrawing = ShapeDrawing(DefaultFont().charSize, DefaultFont().dpiScale);
-  textureAtlas = TextureAtlas(DefaultFont().height, DefaultFont().dpiScale);
+  textureAtlas = TextureAtlas<false>(DefaultFont().charSize.y, DefaultFont().dpiScale);
+  colorTextureAtlas = TextureAtlas<true>(DefaultFont().charSize.y, DefaultFont().dpiScale);
 }
 
 const Font& FontFamily::DefaultFont() const {
@@ -214,14 +218,16 @@ FontFamily::GetGlyphInfo(char32_t charcode, bool bold, bool italic) {
       return fontSet.normal;
     }();
 
-    if (const auto* glyphInfo = font->GetGlyphInfo(charcode, textureAtlas)) {
+    if (const auto* glyphInfo =
+          font->GetGlyphInfo(charcode, textureAtlas, colorTextureAtlas)) {
       return *glyphInfo;
     }
   }
 
   // TODO: draw a question mark symbol instead
   for (const auto& fontSet : fonts) {
-    if (const auto* glyphInfo = fontSet.normal->GetGlyphInfo(' ', textureAtlas)) {
+    if (const auto* glyphInfo =
+          fontSet.normal->GetGlyphInfo(' ', textureAtlas, colorTextureAtlas)) {
       return *glyphInfo;
     }
   }
