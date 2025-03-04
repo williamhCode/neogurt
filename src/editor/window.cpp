@@ -304,7 +304,7 @@ MouseInfo WinManager::GetMouseInfo(glm::vec2 mousePos) const {
     if (win->hidden || win->id == 1 || (win->floatData && !win->floatData->focusable)) {
       continue;
     }
-    sortedWins.emplace_back(win);
+    sortedWins.push_back(win);
   }
 
   std::ranges::stable_sort(sortedWins, [](const auto& a, const auto& b) {

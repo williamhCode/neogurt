@@ -91,11 +91,11 @@ ScrollableRenderTexture::ScrollableRenderTexture(
   clearData.CreateBuffers(1);
 }
 
-// round to prevent floating point errors
+// round to prevent floating point errors from accumulating
+// also to make sure rendering is pixel perfect
 // round to a factor of 1 / dpiScale
-// (very sus but it works)
-float ScrollableRenderTexture::RoundOffset(float offset) const {
-  return glm::round(offset * dpiScale) / dpiScale;
+float ScrollableRenderTexture::RoundToPixel(float value) const {
+  return glm::round(value * dpiScale) / dpiScale;
 }
 
 void ScrollableRenderTexture::UpdatePos(glm::vec2 pos) {
@@ -135,7 +135,7 @@ void ScrollableRenderTexture::UpdateScrolling(float dt) {
 
   if (scrollElapsed >= scrollTime) {
     baseOffset += scrollDist;
-    baseOffset = RoundOffset(baseOffset);
+    baseOffset = RoundToPixel(baseOffset);
 
     scrolling = false;
     scrollDist = 0;
@@ -212,7 +212,7 @@ void ScrollableRenderTexture::AddOrRemoveTextures() {
 
   // remove from the bottom
   numRemoved = 0;
-  for (size_t i = renderTextures.size() - 1; i >= 0; i--) {
+  for (auto i = ssize(renderTextures) - 1; i >= 0; i--) {
     float currPos = i * textureHeight;
     if (region.Intersects({currPos, textureHeight})) {
       break;
@@ -267,8 +267,8 @@ void ScrollableRenderTexture::AddOrRemoveTextures() {
 void ScrollableRenderTexture::SetTexturePositions() {
   for (size_t i = 0; i < renderTextures.size(); i++) {
     auto& texture = *renderTextures[i];
-    float yposTop = -(baseOffset + scrollCurr) + (i * textureHeight);
-    float yposBottom = yposTop + textureHeight;
+    float yposTop = RoundToPixel(-(baseOffset + scrollCurr) + (i * textureHeight));
+    float yposBottom = RoundToPixel(yposTop + textureHeight);
 
     if (yposBottom <= 0 || yposTop >= size.y) {
       texture.disabled = true;
@@ -311,7 +311,7 @@ void ScrollableRenderTexture::SetTextureCameraPositions() {
 std::vector<RenderInfo> ScrollableRenderTexture::GetRenderInfos(int maxRows) const {
   // top of viewport after scrolling
   float newBaseOffset = baseOffset + scrollDist;
-  newBaseOffset = RoundOffset(newBaseOffset);
+  newBaseOffset = RoundToPixel(newBaseOffset);
 
   int topOffset = newBaseOffset / charSize.y;
   int bottomOffset = (newBaseOffset + size.y) / charSize.y;
@@ -330,15 +330,15 @@ std::vector<RenderInfo> ScrollableRenderTexture::GetRenderInfos(int maxRows) con
     if (bottom <= innerTopOffset) continue;
     if (top >= innerBottomOffset) break;
 
-    auto& renderInfo = renderInfos.emplace_back(RenderInfo{
-      .texture = renderTextures[i].get(),
-    });
-
     int start = glm::max(top - topOffset, margins.top);
     int end = glm::min(bottom - topOffset, totalRows - margins.bottom);
     start = glm::min(start, maxRows);
     end = glm::min(end, maxRows);
-    renderInfo.range = {start, end};
+
+    auto& renderInfo = renderInfos.emplace_back(RenderInfo{
+      .texture = renderTextures[i].get(),
+      .range = {start, end},
+    });
 
     if (top < innerTopOffset && scrollDist > 0) {
       renderInfo.clearRegion = Rect{

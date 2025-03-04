@@ -8,7 +8,10 @@
 #include <span>
 
 #include "freetype/ftmodapi.h"
-#include "utils/timer.hpp"
+#include "freetype/tttables.h"
+
+// #include <harfbuzz/hb.h>
+// #include <harfbuzz/hb-ft.h>
 
 using namespace wgpu;
 
@@ -61,6 +64,7 @@ Font::FromName(const FontDescriptorWithName& desc, float linespace, float dpiSca
   }
 }
 
+
 Font::Font(
   std::string _path, float _height, float _width, float _linespace, float _dpiScale
 )
@@ -92,10 +96,10 @@ Font::Font(
       const FT_Bitmap_Size& size = bitmapSizes[i];
 
       int y_ppem = size.y_ppem >> 6;
-      // if equal size, at least 1.x size, or last size
+      // choose the bitmap size if: equal size, at least 1.x size, or last size
       // at least 1.x size makes sure emoji is crisp
       if (y_ppem == trueHeight || y_ppem >= trueHeight * 1.2 ||
-          i == bitmapSizes.size() - 1) {
+          i + 1 == bitmapSizes.size()) {
         emojiRatio = (float)trueHeight / y_ppem;
 
         trueHeight = y_ppem;
@@ -103,7 +107,25 @@ Font::Font(
         break;
       }
     }
+
+    // for (const auto& size : bitmapSizes) {
+    //   LOG_INFO(
+    //     "Bitmap size: {}x{}, y_ppem: {}", size.width, size.height, size.y_ppem >> 6
+    //   );
+    // }
   }
+
+  // auto IsColorEmojiFont = [&] {
+  //   static const uint32_t tag = FT_MAKE_TAG('C', 'B', 'L', 'C');
+  //   unsigned long length = 0;
+  //   FT_Load_Sfnt_Table(face.get(), tag, 0, nullptr, &length);
+  //   if (length) {
+  //     LOG_INFO("Color bitmap font: {}", path);
+  //     return true;
+  //   }
+  //   return false;
+  // };
+  // IsColorEmojiFont();
 
   FT_Set_Pixel_Sizes(face.get(), trueWidth, trueHeight);
   charSize.x = (face->size->metrics.max_advance >> 6) / dpiScale;
@@ -141,7 +163,6 @@ const GlyphInfo* Font::GetGlyphInfo(
   if (it != glyphInfoMap.end()) {
     return &(it->second);
   }
-
 
   FT_Load_Glyph(face.get(), glyphIndex, FT_LOAD_COLOR);
   FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL);

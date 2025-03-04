@@ -21,7 +21,7 @@ concept MdSpan2D = is_instance_of_v<T, std::mdspan> && T::extents_type::rank() =
 // width is constant, size expands vertically
 template<bool IsColor>
 struct TextureAtlas {
-  static constexpr int glyphsPerRow = 48;
+  static constexpr int glyphsPerRow = 32;
 
   float dpiScale;
   int trueHeight; // only used for approximate scale, no precision needed

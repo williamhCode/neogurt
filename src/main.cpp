@@ -43,8 +43,6 @@ using namespace std::chrono;
 
 WGPUContext ctx;
 
-// Convert UTF-8 string to wide string
-
 int main(int argc, char** argv) {
   // std::locale::global(std::locale("en_US.UTF-8"));
   std::locale::global(std::locale(""));

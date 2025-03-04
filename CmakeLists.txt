@@ -45,6 +45,7 @@ set(MSGPACK_USE_STATIC_BOOST ON)
 add_subdirectory(deps/msgpack EXCLUDE_FROM_ALL)
 
 set(FT_REQUIRE_PNG ON)
+set(FT_REQUIRE_HARFBUZZ ON)
 find_package(Freetype REQUIRED)
 
 set(UTFCPP_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/deps/utfcpp/source)

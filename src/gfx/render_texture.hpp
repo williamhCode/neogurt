@@ -91,7 +91,7 @@ struct ScrollableRenderTexture {
     glm::vec2 size, float dpiScale, glm::vec2 charSize, int maxTexPerPage = 2
   );
 
-  float RoundOffset(float offset) const;
+  float RoundToPixel(float value) const;
 
   void UpdatePos(glm::vec2 pos);
   void UpdateViewport(float newScrollDist = 0);

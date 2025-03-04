@@ -29,15 +29,6 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 
 @fragment
 fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
-  var color = textureSample(texture, textureSampler, uv);
-  if (color.a == 0.0f) {
-    color = defaultColor;
-  }
-  return AdjustAlpha(color);
-}
-
-// adjust alpha due to srgb blending
-fn AdjustAlpha(color: vec4f) -> vec4f {
-  // return vec4f(color.rgb, pow(color.a, 1.0f / gamma));
-  return color;
+  let color = textureSample(texture, textureSampler, uv);
+  return select(color, defaultColor, color.a == 0.0f);
 }

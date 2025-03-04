@@ -43,7 +43,7 @@ struct FragmentOutput {
 fn fs_main(in: FragmentInput) -> FragmentOutput {
   var out: FragmentOutput;
 
-  // R8Unrom texture
+  // R8Unorm texture
   let alpha = textureSample(fontTexture, fontSampler, in.uv).r;
   out.color = ToLinear(vec4f(in.foreground.rgb, in.foreground.a * alpha));
 
