@@ -345,32 +345,16 @@ void Pen::DrawBraille(const Braille& desc) {
   // 6 7    8 80
   uint32_t hexVal = desc.charcode - 0x2800;
 
-  std::span<const glm::vec2> brailleOffsets;
-
-  if (desc.charcode < 0x2840) { // 6 dots
-    static const glm::vec2 sixDotBrailleOffsets[6] = {
-      {1/4., 1/6.},
-      {1/4., 3/6.},
-      {1/4., 5/6.},
-      {3/4., 1/6.},
-      {3/4., 3/6.},
-      {3/4., 5/6.},
-    };
-    brailleOffsets = sixDotBrailleOffsets;
-    
-  } else { // 8 dots
-    static const glm::vec2 eightDotBrailleOffsets[8] = {
-      {1/4., 1/8.},
-      {1/4., 3/8.},
-      {1/4., 5/8.},
-      {3/4., 1/8.},
-      {3/4., 3/8.},
-      {3/4., 5/8.},
-      {1/4., 7/8.},
-      {3/4., 7/8.},
-    };
-    brailleOffsets = eightDotBrailleOffsets;
-  }
+  static const std::array<glm::vec2, 8> brailleOffsets({
+    {1/4., 1/8.},
+    {1/4., 3/8.},
+    {1/4., 5/8.},
+    {3/4., 1/8.},
+    {3/4., 3/8.},
+    {3/4., 5/8.},
+    {1/4., 7/8.},
+    {3/4., 7/8.},
+  });
 
   auto charSize = glm::vec2(xsize, ysize);
   float radius = std::min(charSize.x / 2, charSize.y / 4) / 2;
