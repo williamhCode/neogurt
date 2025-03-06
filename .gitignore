@@ -4,3 +4,4 @@ xcode/
 compile_commands.json
 .ignore
 tint
+*.slang-module

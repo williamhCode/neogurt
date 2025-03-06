@@ -29,11 +29,11 @@ Renderer::Renderer(const SizeHandler& sizes) {
     }
   );
 
-  linearColorBuffer = ctx.CreateUniformBuffer(sizeof(glm::vec4));
-  defaultColorBG = ctx.MakeBindGroup(
-    ctx.pipeline.defaultColorBGL,
+  defaultBgLinearBuffer = ctx.CreateUniformBuffer(sizeof(glm::vec4));
+  defaultBgLinearBG = ctx.MakeBindGroup(
+    ctx.pipeline.defaultBgLinearBGL,
     {
-      {0, linearColorBuffer},
+      {0, defaultBgLinearBuffer},
     }
   );
 
@@ -142,9 +142,9 @@ void Renderer::SetColors(const glm::vec4& color, float gamma) {
   }
 
   auto linearColor = ToLinear(color, gamma);
-  if (this->linearColor != linearColor) {
-    ctx.queue.WriteBuffer(linearColorBuffer, 0, &linearColor, sizeof(linearColor));
-    this->linearColor = linearColor;
+  if (this->defaultBgLinear != linearColor) {
+    ctx.queue.WriteBuffer(defaultBgLinearBuffer, 0, &linearColor, sizeof(linearColor));
+    this->defaultBgLinear = linearColor;
   }
 }
 
@@ -392,41 +392,46 @@ void Renderer::RenderCursorMask(
 ) {
   auto& cell = win.grid.lines[cursor.row][cursor.col];
 
-  // if (!cell.text.empty() && cell.text != " ") {
-  char32_t charcode = Utf8ToChar32(cell.text);
-  const auto& hl = hlTable[cell.hlId];
-  const auto& glyphInfo = fontFamily.GetGlyphInfo(charcode, hl.bold, hl.italic);
+  if (!cell.text.empty() && cell.text != " ") {
+    char32_t charcode = Utf8ToChar32(cell.text);
+    const auto& hl = hlTable[cell.hlId];
+    const auto& glyphInfo = fontFamily.GetGlyphInfo(charcode, hl.bold, hl.italic);
 
-  glm::vec2 textQuadPos{
-    0, glyphInfo.useAscender ? fontFamily.DefaultFont().ascender : 0
-  };
+    glm::vec2 textQuadPos{
+      0, glyphInfo.useAscender ? fontFamily.DefaultFont().ascender : 0
+    };
 
-  textMaskData.ResetCounts();
-  auto& quad = textMaskData.NextQuad();
-  for (size_t i = 0; i < 4; i++) {
-    quad[i].position = textQuadPos + glyphInfo.localPoss[i];
-    quad[i].regionCoord = glyphInfo.atlasRegion[i];
+    textMaskData.ResetCounts();
+    auto& quad = textMaskData.NextQuad();
+    for (size_t i = 0; i < 4; i++) {
+      quad[i].position = textQuadPos + glyphInfo.localPoss[i];
+      quad[i].regionCoord = glyphInfo.atlasRegion[i];
+    }
+    textMaskData.WriteBuffers();
+
+    textMaskRPD.cColorAttachments[0].view = cursor.maskRenderTexture.textureView;
+    RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textMaskRPD);
+    passEncoder.SetPipeline(glyphInfo.isEmoji ? ctx.pipeline.emojiMaskRPL : ctx.pipeline.textMaskRPL);
+    passEncoder.SetBindGroup(0, cursor.maskRenderTexture.camera.viewProjBG);
+    if (glyphInfo.isEmoji) {
+      passEncoder.SetBindGroup(1, fontFamily.colorTextureAtlas.textureSizeBG);
+      passEncoder.SetBindGroup(2, fontFamily.colorTextureAtlas.renderTexture.textureBG);
+    } else {
+      passEncoder.SetBindGroup(1, fontFamily.textureAtlas.textureSizeBG);
+      passEncoder.SetBindGroup(2, fontFamily.textureAtlas.renderTexture.textureBG);
+    }
+    textMaskData.Render(passEncoder);
+    passEncoder.End();
+
+  } else {
+    // TODO: for some reason this only clears half of the mask for
+    // certain font sizes
+
+    // just clear the texture if there's nothing
+    textMaskRPD.cColorAttachments[0].view = cursor.maskRenderTexture.textureView;
+    RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textMaskRPD);
+    passEncoder.End();
   }
-  textMaskData.WriteBuffers();
-
-  textMaskRPD.cColorAttachments[0].view = cursor.maskRenderTexture.textureView;
-  RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textMaskRPD);
-  passEncoder.SetPipeline(ctx.pipeline.textMaskRPL);
-  passEncoder.SetBindGroup(0, cursor.maskRenderTexture.camera.viewProjBG);
-  passEncoder.SetBindGroup(1, fontFamily.textureAtlas.textureSizeBG);
-  passEncoder.SetBindGroup(2, fontFamily.textureAtlas.renderTexture.textureBG);
-  textMaskData.Render(passEncoder);
-  passEncoder.End();
-
-  // TODO: for some reason this only clears half of the mask for
-  // certain font sizes
-
-  // } else {
-  //   // just clear the texture if there's nothing
-  //   textMaskRPD.cColorAttachments[0].view = cursor.maskRenderTexture.textureView;
-  //   RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textMaskRPD);
-  //   passEncoder.End();
-  // }
 
   textMaskRPD.cColorAttachments[0].view = {};
 }
@@ -455,7 +460,7 @@ void Renderer::RenderWindows(
     passEncoder.SetPipeline(ctx.pipeline.textureNoBlendRPL);
     passEncoder.SetBindGroup(0, CurrFinalRenderTexture().camera.viewProjBG);
     passEncoder.SetBindGroup(1, gammaBG);
-    passEncoder.SetBindGroup(2, defaultColorBG);
+    passEncoder.SetBindGroup(2, defaultBgLinearBG);
 
     if (msgWin) {
       // writes for both floating and normal win
@@ -479,7 +484,7 @@ void Renderer::RenderWindows(
     passEncoder.SetPipeline(ctx.pipeline.textureRPL);
     passEncoder.SetBindGroup(0, CurrFinalRenderTexture().camera.viewProjBG);
     passEncoder.SetBindGroup(1, gammaBG);
-    passEncoder.SetBindGroup(2, defaultColorBG);
+    passEncoder.SetBindGroup(2, defaultBgLinearBG);
     for (const Win* win : floatWindows) {
       if (win->floatData->zindex == std::numeric_limits<int>::max()) {
         // writes for only floating win (0b010),

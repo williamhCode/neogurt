@@ -55,8 +55,9 @@ struct Pipeline {
   wgpu::RenderPipeline textRPL;
   wgpu::RenderPipeline emojiRPL;
   wgpu::RenderPipeline textMaskRPL;
+  wgpu::RenderPipeline emojiMaskRPL;
 
-  wgpu::BindGroupLayout defaultColorBGL;
+  wgpu::BindGroupLayout defaultBgLinearBGL;
   wgpu::RenderPipeline textureNoBlendRPL;
   wgpu::RenderPipeline textureRPL;
 

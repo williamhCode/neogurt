@@ -20,11 +20,22 @@ fn vs_main(in: VertexInput) -> VertexOutput {
   let out = VertexOutput(
     viewProj * vec4f(in.position, 0.0, 1.0),
     maskViewProj * vec4f(in.position - maskPos, 0.0, 1.0),
-    in.foreground,
-    in.background,
+    ToLinear(in.foreground),
+    ToLinear(in.background),
   );
 
   return out;
+}
+
+const gamma: f32 = 1.7;
+
+fn ToLinear(color: vec4f) -> vec4f {
+  return vec4f(
+    pow(color.r, gamma),
+    pow(color.g, gamma),
+    pow(color.b, gamma),
+    color.a
+  );
 }
 
 @group(3) @binding(0) var maskTexture: texture_2d<f32>;
@@ -40,7 +51,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4f {
   color.a = 1.0 - mask;
   color = Blend(color, in.foreground);
 
-  return color;
+  return ToSrgb(color);
 }
 
 fn Blend(src: vec4f, dst: vec4f) -> vec4f {
@@ -48,4 +59,13 @@ fn Blend(src: vec4f, dst: vec4f) -> vec4f {
   let outColor = src.rgb * src.a + dst.rgb * (1.0 - src.a);
 
   return vec4f(outColor, outAlpha);
+}
+
+fn ToSrgb(color: vec4f) -> vec4f {
+  return vec4f(
+    pow(color.r, 1.0f / gamma),
+    pow(color.g, 1.0f / gamma),
+    pow(color.b, 1.0f / gamma),
+    color.a
+  );
 }

@@ -26,9 +26,9 @@ struct Renderer {
   wgpu::Buffer gammaBuffer;
   wgpu::BindGroup gammaBG;
 
-  glm::vec4 linearColor{};
-  wgpu::Buffer linearColorBuffer;
-  wgpu::BindGroup defaultColorBG;
+  glm::vec4 defaultBgLinear{};
+  wgpu::Buffer defaultBgLinearBuffer;
+  wgpu::BindGroup defaultBgLinearBG;
 
   // shared
   wgpu::CommandEncoder commandEncoder;

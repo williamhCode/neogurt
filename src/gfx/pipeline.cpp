@@ -1,11 +1,34 @@
 #include "./pipeline.hpp"
+#include "slang_utils/context.hpp"
+#include "utils/logger.hpp"
 #include "webgpu_utils/blend.hpp"
 #include "gfx/context.hpp"
 #include "app/path.hpp"
+#include <stdexcept>
+#include <vector>
 
 using namespace wgpu;
 
 Pipeline::Pipeline(const WGPUContext& ctx) {
+  // slang stuff ---------------
+  SlangContext slang;
+  if (auto result = slang.Init(resourcesDir + "/shaders"); !result) {
+    throw std::runtime_error("Failed to initialize slang: " + result.error());
+  }
+
+  auto LoadShaderModule = [&](
+    const std::string& name,
+    const std::vector<slang::PreprocessorMacroDesc>& macros = {}
+  ) {
+    auto source = slang.GetModuleSource(name, macros);
+    // LOG_INFO("source: {}", source);
+    return ctx.LoadShaderModuleSource(source);
+  };
+
+  // compile utils
+  // TODO: change gamma based on config options
+  slang.CompileModuleObject("utils", {{"GAMMA", "1.7"}});
+
   // shared ------------------------------------------------
   viewProjBGL = ctx.MakeBindGroupLayout({
     {0, ShaderStage::Vertex | ShaderStage::Fragment, BufferBindingType::Uniform},
@@ -67,7 +90,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
   });
 
   // text pipeline -------------------------------------------
-  ShaderModule textShader = ctx.LoadShaderModule(resourcesDir + "/shaders/text.wgsl");
+  ShaderModule textShader = LoadShaderModule("text");
 
   textureSizeBGL = ctx.MakeBindGroupLayout({
     {0, ShaderStage::Vertex, BufferBindingType::Uniform},
@@ -97,18 +120,18 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
 
   textRPL = ctx.MakeRenderPipeline(textRPLDesc);
 
-  // emoji pipeline -------------------------------------------
-  ShaderModule emojiShader = ctx.LoadShaderModule(resourcesDir + "/shaders/emoji.wgsl");
+  // emoji pipeline
+  ShaderModule emojiShader = LoadShaderModule("text", {{"EMOJI"}});
 
   textRPLDesc.vs = emojiShader;
   textRPLDesc.fs = emojiShader;
 
   emojiRPL = ctx.MakeRenderPipeline(textRPLDesc);
 
-  // mask
+  // mask pipeline -------------------------------------------
   ShaderModule textMaskShader = ctx.LoadShaderModule(resourcesDir + "/shaders/text_mask.wgsl");
 
-  textMaskRPL = ctx.MakeRenderPipeline({
+  utils::RenderPipelineDescriptor textMaskRPLDesc{
     .vs = textMaskShader,
     .fs = textMaskShader,
     .bgls = {viewProjBGL, textureSizeBGL, textureBGL},
@@ -124,7 +147,17 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
     .targets = {
       { .format = TextureFormat::R8Unorm },
     },
-  });
+  };
+
+  textMaskRPL = ctx.MakeRenderPipeline(textMaskRPLDesc);
+
+  // emoji mask pipeline
+  ShaderModule emojiMaskShader = ctx.LoadShaderModule(resourcesDir + "/shaders/emoji_mask.wgsl");
+
+  textMaskRPLDesc.vs = emojiMaskShader;
+  textMaskRPLDesc.fs = emojiMaskShader;
+
+  emojiMaskRPL = ctx.MakeRenderPipeline(textMaskRPLDesc);
 
   // texture pipeline ------------------------------------------------
   ShaderModule textureShader = ctx.LoadShaderModule(resourcesDir + "/shaders/texture.wgsl");
@@ -137,14 +170,14 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
     }
   };
 
-  defaultColorBGL = ctx.MakeBindGroupLayout({
+  defaultBgLinearBGL = ctx.MakeBindGroupLayout({
     {0, ShaderStage::Fragment, BufferBindingType::Uniform},
   });
 
   textureNoBlendRPL = ctx.MakeRenderPipeline({
     .vs = textureShader,
     .fs = textureShader,
-    .bgls = {viewProjBGL, gammaBGL, defaultColorBGL, textureBGL},
+    .bgls = {viewProjBGL, gammaBGL, defaultBgLinearBGL, textureBGL},
     .buffers = {textureQuadVBL},
     .targets =
       {
@@ -168,7 +201,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
   textureRPL = ctx.MakeRenderPipeline({
     .vs = textureShader,
     .fs = textureShader,
-    .bgls = {viewProjBGL, gammaBGL, defaultColorBGL, textureBGL},
+    .bgls = {viewProjBGL, gammaBGL, defaultBgLinearBGL, textureBGL},
     .buffers = {textureQuadVBL},
     .targets = {
       {

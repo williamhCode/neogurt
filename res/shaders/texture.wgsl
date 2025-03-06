@@ -21,7 +21,7 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 }
 
 @group(1) @binding(0) var<uniform> gamma: f32;
-@group(2) @binding(0) var<uniform> defaultColor: vec4f;
+@group(2) @binding(0) var<uniform> defaultBgLinear: vec4f;
 
 @group(3) @binding(0) var texture : texture_2d<f32>;
 @group(3) @binding(1) var textureSampler : sampler;
@@ -30,5 +30,5 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 @fragment
 fn fs_main(@location(0) uv: vec2f) -> @location(0) vec4f {
   let color = textureSample(texture, textureSampler, uv);
-  return select(color, defaultColor, color.a == 0.0f);
+  return select(color, defaultBgLinear, color.a == 0.0f);
 }

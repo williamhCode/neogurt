@@ -143,6 +143,7 @@ target_link_libraries(neogurt PRIVATE
   msgpack-cxx
   ${FREETYPE_LIBRARIES}
   blend2d::blend2d
+
   # https://github.com/llvm/llvm-project/issues/77653
   # stack unwinding breaking and linking breaks without this
   "-L$ENV{LLVM_PATH}/lib/c++ -L$ENV{LLVM_PATH}/lib/unwind -lunwind"
@@ -150,7 +151,7 @@ target_link_libraries(neogurt PRIVATE
 
 target_compile_options(neogurt PRIVATE
   -Wall -Wextra -Wshadow -pedantic 
-  # -Wno-missing-field-initializers
+  -Wno-missing-field-initializers
   # -Wmissing-designated-field-initializers
   -Wno-deprecated-declarations
   -Wno-gnu-anonymous-struct
