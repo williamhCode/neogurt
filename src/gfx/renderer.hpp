@@ -23,8 +23,6 @@ struct Renderer {
   wgpu::Color premultClearColor{};
 
   float gamma{};
-  wgpu::Buffer gammaBuffer;
-  wgpu::BindGroup gammaBG;
 
   glm::vec4 defaultBgLinear{};
   wgpu::Buffer defaultBgLinearBuffer;
@@ -82,7 +80,7 @@ struct Renderer {
   void Begin();
   void RenderToWindow(Win& win, FontFamily& fontFamily, HlTable& hlTable);
   void RenderCursorMask(
-    const Win& win, const Cursor& cursor, FontFamily& fontFamily, HlTable& hlTable
+    const Win& win, Cursor& cursor, FontFamily& fontFamily, HlTable& hlTable
   );
   void RenderWindows(const Win* msgWin, std::span<const Win*> windows, std::span<const Win*> floatWindows);
   void RenderFinalTexture();

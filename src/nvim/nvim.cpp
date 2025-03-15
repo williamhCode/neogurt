@@ -43,7 +43,7 @@ std::future<bool> Nvim::ConnectTcp(std::string_view host, uint16_t port) {
   co_return true;
 }
 
-void Nvim::Setup() {
+void Nvim::GuiSetup() {
   std::stringstream buffer;
   std::string luaInitPath = resourcesDir + "/lua/init.lua";
   std::ifstream stream(luaInitPath);

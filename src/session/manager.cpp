@@ -38,11 +38,13 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
   auto& input = session->input;
   auto& ime = session->ime;
 
+  // Nvim ------------------------------------------------------
   if (!nvim.ConnectStdio(Options::interactiveShell, opts.dir)) {
     throw std::runtime_error("Failed to connect to nvim");
   }
-  nvim.Setup();
+  nvim.GuiSetup();
 
+  // Options ---------------------------------------------------
   // request all things here
   auto optionsFut = Options::Load(nvim, first);
   auto guifontFut = nvim.GetOptionValue("guifont", {});
@@ -93,6 +95,16 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
     options.marginTop += titlebarHeight;
   }
 
+  // EditorState ---------------------------------------------------
+  editorState.winManager.gridManager = &editorState.gridManager;
+
+  HlTableInit(editorState.hlTable, options);
+  auto imeNormalHlFut = nvim.GetHl(0, {{"name", "NeogurtImeNormal"}, {"link", false}});
+  auto imeSelectedHlFut = nvim.GetHl(0, {{"name", "NeogurtImeSelected"}, {"link", false}});
+  editorState.hlTable[ImeHandler::imeNormalHlId] = Highlight::FromDesc(imeNormalHlFut.get()->convert());
+  editorState.hlTable[ImeHandler::imeSelectedHlId] = Highlight::FromDesc(imeSelectedHlFut.get()->convert());
+  // LOG("ime hl: {}", ToString(imeHl.get()));
+
   editorState.fontFamily =
     FontFamily::FromGuifont(guifont, linespace, window.dpiScale)
       .or_else([&](const std::string& error) -> std::expected<FontFamily, std::string> {
@@ -102,19 +114,15 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
       })
       .value();
 
-  editorState.winManager.gridManager = &editorState.gridManager;
+  // InputHandler ---------------------------------------------------
+  input.winManager = &editorState.winManager;
+  input.nvim = &nvim;
+  input.options = options;
 
-  input = InputHandler(&editorState.winManager, &nvim, options);
-
+  // ImeHandler ---------------------------------------------------
   ime.editorState = &editorState;
 
-  HlTableInit(editorState.hlTable, options);
-  auto imeNormalHlFut = nvim.GetHl(0, {{"name", "NeogurtImeNormal"}, {"link", false}});
-  auto imeSelectedHlFut = nvim.GetHl(0, {{"name", "NeogurtImeSelected"}, {"link", false}});
-  editorState.hlTable[ImeHandler::imeNormalHlId] = Highlight::FromDesc(imeNormalHlFut.get()->convert());
-  editorState.hlTable[ImeHandler::imeSelectedHlId] = Highlight::FromDesc(imeSelectedHlFut.get()->convert());
-  // LOG("ime hl: {}", ToString(imeHl.get()));
-
+  // others -----------------------------------------------------
   if (first) {
     sizes.UpdateSizes(
       window.size, window.dpiScale, session->editorState.fontFamily.DefaultFont().charSize,

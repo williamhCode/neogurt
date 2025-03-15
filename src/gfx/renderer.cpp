@@ -21,14 +21,6 @@ Renderer::Renderer(const SizeHandler& sizes) {
   timestamp = TimestampHelper(2, false);
 
   // color stuff
-  gammaBuffer = ctx.CreateUniformBuffer(sizeof(float));
-  gammaBG = ctx.MakeBindGroup(
-    ctx.pipeline.gammaBGL,
-    {
-      {0, gammaBuffer},
-    }
-  );
-
   defaultBgLinearBuffer = ctx.CreateUniformBuffer(sizeof(glm::vec4));
   defaultBgLinearBG = ctx.MakeBindGroup(
     ctx.pipeline.defaultBgLinearBGL,
@@ -129,17 +121,14 @@ void Renderer::Resize(const SizeHandler& sizes) {
   windowsRPD.cDepthStencilAttachmentInfo.view = stencilTextureView;
 }
 
-void Renderer::SetColors(const glm::vec4& color, float gamma) {
+void Renderer::SetColors(const glm::vec4& color, float _gamma) {
+  gamma = _gamma;
+
   clearColor = ToWGPUColor(color);
   linearClearColor = ToWGPUColor(ToLinear(color, gamma));
   premultClearColor = ToWGPUColor(
     ToSrgb(PremultiplyAlpha(ToLinear(color, gamma)), gamma)
   );
-
-  if (this->gamma != gamma) {
-    ctx.queue.WriteBuffer(gammaBuffer, 0, &gamma, sizeof(gamma));
-    this->gamma = gamma;
-  }
 
   auto linearColor = ToLinear(color, gamma);
   if (this->defaultBgLinear != linearColor) {
@@ -320,7 +309,6 @@ void Renderer::RenderToWindow(
       RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&currRPD);
       passEncoder.SetPipeline(ctx.pipeline.rectRPL);
       passEncoder.SetBindGroup(0, renderTexture->camera.viewProjBG);
-      passEncoder.SetBindGroup(1, gammaBG);
 
       // this will only be ran at most once inside this loop,
       // so it's safe reset and write buffers directly inside
@@ -350,9 +338,8 @@ void Renderer::RenderToWindow(
       RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textAndShapesRPD);
       passEncoder.SetPipeline(ctx.pipeline.textRPL);
       passEncoder.SetBindGroup(0, renderTexture->camera.viewProjBG);
-      passEncoder.SetBindGroup(1, gammaBG);
-      passEncoder.SetBindGroup(2, fontFamily.textureAtlas.textureSizeBG);
-      passEncoder.SetBindGroup(3, fontFamily.textureAtlas.renderTexture.textureBG);
+      passEncoder.SetBindGroup(1, fontFamily.textureAtlas.textureSizeBG);
+      passEncoder.SetBindGroup(2, fontFamily.textureAtlas.renderTexture.textureBG);
       if (start != end) textData.Render(passEncoder, start, end - start);
       passEncoder.End();
     }
@@ -363,9 +350,8 @@ void Renderer::RenderToWindow(
       RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textAndShapesRPD);
       passEncoder.SetPipeline(ctx.pipeline.emojiRPL);
       passEncoder.SetBindGroup(0, renderTexture->camera.viewProjBG);
-      passEncoder.SetBindGroup(1, gammaBG);
-      passEncoder.SetBindGroup(2, fontFamily.colorTextureAtlas.textureSizeBG);
-      passEncoder.SetBindGroup(3, fontFamily.colorTextureAtlas.renderTexture.textureBG);
+      passEncoder.SetBindGroup(1, fontFamily.colorTextureAtlas.textureSizeBG);
+      passEncoder.SetBindGroup(2, fontFamily.colorTextureAtlas.renderTexture.textureBG);
       if (start != end) emojiData.Render(passEncoder, start, end - start);
       passEncoder.End();
     }
@@ -376,7 +362,6 @@ void Renderer::RenderToWindow(
       RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textAndShapesRPD);
       passEncoder.SetPipeline(ctx.pipeline.shapesRPL);
       passEncoder.SetBindGroup(0, renderTexture->camera.viewProjBG);
-      passEncoder.SetBindGroup(1, gammaBG);
       if (start != end) shapeData.Render(passEncoder, start, end - start);
       passEncoder.End();
     }
@@ -388,7 +373,7 @@ void Renderer::RenderToWindow(
 }
 
 void Renderer::RenderCursorMask(
-  const Win& win, const Cursor& cursor, FontFamily& fontFamily, HlTable& hlTable
+  const Win& win, Cursor& cursor, FontFamily& fontFamily, HlTable& hlTable
 ) {
   auto& cell = win.grid.lines[cursor.row][cursor.col];
 
@@ -396,6 +381,7 @@ void Renderer::RenderCursorMask(
     char32_t charcode = Utf8ToChar32(cell.text);
     const auto& hl = hlTable[cell.hlId];
     const auto& glyphInfo = fontFamily.GetGlyphInfo(charcode, hl.bold, hl.italic);
+    cursor.onEmoji = glyphInfo.isEmoji;
 
     glm::vec2 textQuadPos{
       0, glyphInfo.useAscender ? fontFamily.DefaultFont().ascender : 0
@@ -459,19 +445,18 @@ void Renderer::RenderWindows(
     auto passEncoder = commandEncoder.BeginRenderPass(&windowsRPD);
     passEncoder.SetPipeline(ctx.pipeline.textureNoBlendRPL);
     passEncoder.SetBindGroup(0, CurrFinalRenderTexture().camera.viewProjBG);
-    passEncoder.SetBindGroup(1, gammaBG);
-    passEncoder.SetBindGroup(2, defaultBgLinearBG);
+    passEncoder.SetBindGroup(1, defaultBgLinearBG);
 
     if (msgWin) {
       // writes for both floating and normal win
       passEncoder.SetStencilReference(0b011);
-      msgWin->sRenderTexture.Render(passEncoder, 3);
+      msgWin->sRenderTexture.Render(passEncoder, 2);
     }
 
     // writes for normal win
     passEncoder.SetStencilReference(0b001);
     for (const Win* win : windows) {
-      win->sRenderTexture.Render(passEncoder, 3);
+      win->sRenderTexture.Render(passEncoder, 2);
     }
 
     passEncoder.End();
@@ -483,8 +468,7 @@ void Renderer::RenderWindows(
     auto passEncoder = commandEncoder.BeginRenderPass(&windowsRPD);
     passEncoder.SetPipeline(ctx.pipeline.textureRPL);
     passEncoder.SetBindGroup(0, CurrFinalRenderTexture().camera.viewProjBG);
-    passEncoder.SetBindGroup(1, gammaBG);
-    passEncoder.SetBindGroup(2, defaultBgLinearBG);
+    passEncoder.SetBindGroup(1, defaultBgLinearBG);
     for (const Win* win : floatWindows) {
       if (win->floatData->zindex == std::numeric_limits<int>::max()) {
         // writes for only floating win (0b010),
@@ -494,7 +478,7 @@ void Renderer::RenderWindows(
         // writes for floating win
         passEncoder.SetStencilReference(0b010);
       }
-      win->sRenderTexture.Render(passEncoder, 3);
+      win->sRenderTexture.Render(passEncoder, 2);
     }
     passEncoder.End();
   }
@@ -509,9 +493,7 @@ void Renderer::RenderFinalTexture() {
   auto passEncoder = commandEncoder.BeginRenderPass(&finalRPD);
   passEncoder.SetPipeline(ctx.pipeline.textureFinalRPL);
   passEncoder.SetBindGroup(0, camera.viewProjBG);
-  passEncoder.SetBindGroup(1, gammaBG);
-
-  passEncoder.SetBindGroup(2, CurrFinalRenderTexture().textureBG);
+  passEncoder.SetBindGroup(1, CurrFinalRenderTexture().textureBG);
   CurrFinalRenderTexture().renderData.Render(passEncoder);
 
   passEncoder.End();
@@ -536,7 +518,7 @@ void Renderer::RenderCursor(const Cursor& cursor, HlTable& hlTable) {
 
   cursorRPD.cColorAttachments[0].view = nextTextureView;
   RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&cursorRPD);
-  passEncoder.SetPipeline(ctx.pipeline.cursorRPL);
+  passEncoder.SetPipeline(cursor.onEmoji ? ctx.pipeline.cursorEmojiRPL : ctx.pipeline.cursorRPL);
   passEncoder.SetBindGroup(0, camera.viewProjBG);
   passEncoder.SetBindGroup(1, cursor.maskRenderTexture.camera.viewProjBG);
   passEncoder.SetBindGroup(2, cursor.maskPosBG);

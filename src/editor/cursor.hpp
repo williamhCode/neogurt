@@ -67,6 +67,7 @@ struct Cursor {
   RenderTexture maskRenderTexture;
   wgpu::Buffer maskPosBuffer;
   wgpu::BindGroup maskPosBG;
+  bool onEmoji;
 
   void Resize(glm::vec2 size, float dpi);
   void Goto(const event::GridCursorGoto& e);

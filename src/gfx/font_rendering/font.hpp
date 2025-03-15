@@ -40,8 +40,8 @@ struct Font {
   static std::expected<Font, std::string>
   FromName(const FontDescriptorWithName& desc, float linespace, float dpiScale);
 
-  static std::expected<Font, std::string>
-  UseEmoji(const FontDescriptorWithName& desc, float linespace, float dpiScale);
+  // static std::expected<Font, std::string>
+  // UseEmoji(const FontDescriptorWithName& desc, float linespace, float dpiScale);
 
   Font(std::string path, float height, float width, float linespace, float dpiScale);
 

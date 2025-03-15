@@ -6,14 +6,11 @@
 #include "nvim/nvim.hpp"
 #include "editor/window.hpp"
 
-#include <memory>
 #include <optional>
 
 struct InputHandler {
   WinManager* winManager;
   Nvim* nvim;
-
-  // options
   Options options;
 
   // ime
@@ -25,13 +22,6 @@ struct InputHandler {
 
   double yAccum = 0;
   double xAccum = 0;
-
-  InputHandler() = default;
-  InputHandler(
-    WinManager* winManager,
-    Nvim* nvim,
-    const Options& options
-  );
 
   void HandleKeyboard(const SDL_KeyboardEvent& event);
   void HandleTextEditing(const SDL_TextEditingEvent& event);

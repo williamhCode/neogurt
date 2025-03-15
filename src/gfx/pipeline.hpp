@@ -45,7 +45,6 @@ struct CursorQuadVertex {
 struct Pipeline {
   wgpu::BindGroupLayout viewProjBGL;
   wgpu::BindGroupLayout textureBGL;
-  wgpu::BindGroupLayout gammaBGL;
 
   wgpu::RenderPipeline shapesRPL;
 
@@ -65,6 +64,7 @@ struct Pipeline {
 
   wgpu::BindGroupLayout cursorMaskPosBGL;
   wgpu::RenderPipeline cursorRPL;
+  wgpu::RenderPipeline cursorEmojiRPL;
 
   Pipeline() = default;
   Pipeline(const WGPUContext& ctx);

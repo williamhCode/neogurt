@@ -20,5 +20,6 @@ struct ImeHandler {
 
   void Clear();
   void HandleTextEditing(SDL_TextEditingEvent& event);
+
   void Update();
 };

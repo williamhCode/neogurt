@@ -1,7 +1,7 @@
 .PHONY: build
 
-TYPE = debug
-# TYPE = release
+# TYPE = debug
+TYPE = release
 
 build:
 	cmake --build build/$(TYPE) --target neogurt
@@ -44,3 +44,13 @@ run:
 
 package:
 	cmake --build build/release --target package
+
+build-slang-test:
+	cmake --build build/$(TYPE) --target slang-test
+	cp build/$(TYPE)/slang-test ./test
+
+# shaders:
+# 	deps/webgpu_tools/deps/slang-2025.6.1/bin/slangc res/shaders/utils.slang -o \
+# 	res/shaders/utils.slang-module -DGAMMA=1.7
+
+

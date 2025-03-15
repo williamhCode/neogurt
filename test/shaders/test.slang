@@ -13,6 +13,7 @@ struct VertexOut {
 }
 
 ParameterBlock<float4x4> viewProj;
+ParameterBlock<float> gamma;
 ParameterBlock<float2> textureSize;
 
 [shader("vertex")]

@@ -7,10 +7,6 @@
 #include <set>
 #include <utility>
 
-InputHandler::InputHandler(WinManager* winManager, Nvim* nvim, const Options& options)
-    : winManager(winManager), nvim(nvim), options(options) {
-}
-
 static const std::set<SDL_Keycode> specialKeys{
   SDLK_SPACE,  SDLK_UP,     SDLK_DOWN,     SDLK_LEFT,     SDLK_RIGHT, SDLK_BACKSPACE,
   SDLK_DELETE, SDLK_END,    SDLK_RETURN,   SDLK_ESCAPE,   SDLK_TAB,   SDLK_F1,

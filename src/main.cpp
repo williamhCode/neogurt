@@ -27,8 +27,6 @@
 
 #include <boost/core/typeinfo.hpp>
 #include <algorithm>
-#include <future>
-#include <limits>
 #include <memory>
 #include <print>
 #include <span>
@@ -68,7 +66,7 @@ int main(int argc, char** argv) {
   try {
     // init variables ---------------------
     sdl::Window window;
-    SizeHandler sizes;
+    SizeHandler sizes{};
 
     Renderer renderer;
 
@@ -109,9 +107,8 @@ int main(int argc, char** argv) {
       // main loop
       while (!exitWindow && !stopToken.stop_requested()) {
 
-        // resize events, put before getting next texture
+        // resize handling -------------------------------------------
         while (!resizeEvents.Empty()) {
-
           if (resizeEvents.Size() == 1) { // only process last event
             const auto& resizeEvent = resizeEvents.Front();
 
@@ -119,44 +116,40 @@ int main(int argc, char** argv) {
               window.size = {event->window.data1, event->window.data2};
             }
 
-            {
-              const auto& event = resizeEvent.windowPixelSizeChanged;
-              window.fbSize = {event.window.data1, event.window.data2};
-              window.dpiScale = (float)window.fbSize.x / window.size.x;
+            const auto& event = resizeEvent.windowPixelSizeChanged;
+            window.fbSize = {event.window.data1, event.window.data2};
+            window.dpiScale = (float)window.fbSize.x / window.size.x;
 
-              bool dpiChanged = editorState->fontFamily.TryChangeDpiScale(window.dpiScale);
+            bool dpiChanged = editorState->fontFamily.TryChangeDpiScale(window.dpiScale);
 
-              auto uiFbSize = sizes.uiFbSize;
-              sizes.UpdateSizes(
-                window.size, window.dpiScale,
-                editorState->fontFamily.DefaultFont().charSize, *options
-              );
-              editorState->winManager.sizes = sizes;
+            auto uiFbSize = sizes.uiFbSize;
+            sizes.UpdateSizes(
+              window.size, window.dpiScale,
+              editorState->fontFamily.DefaultFont().charSize, *options
+            );
+            editorState->winManager.sizes = sizes;
 
-              if (dpiChanged) {
-                editorState->cursor.Resize(sizes.charSize, sizes.dpiScale);
-              }
+            if (dpiChanged) {
+              editorState->cursor.Resize(sizes.charSize, sizes.dpiScale);
+            }
 
-              ctx.Resize(sizes.fbSize);
+            ctx.Resize(sizes.fbSize);
 
-              if (uiFbSize == sizes.uiFbSize) {
-                renderer.camera.Resize(sizes.size);
+            if (uiFbSize == sizes.uiFbSize) {
+              renderer.camera.Resize(sizes.size);
 
-              } else {
-                renderer.Resize(sizes);
-                nvim->UiTryResize(sizes.uiWidth, sizes.uiHeight);
-              }
-
-              break;
+            } else {
+              renderer.Resize(sizes);
+              nvim->UiTryResize(sizes.uiWidth, sizes.uiHeight);
             }
           }
           resizeEvents.Pop();
         }
 
-        // this blocks if vsync is enabled 
+        // timing -------------------------------------------
+        // this blocks until next frame if vsync is on
         renderer.GetNextTexture();
 
-        // timing -------------------------------------------
         float targetFps = window.vsync ? 200 : options->fps;
         if (idle) {
           targetFps = windowOccluded ? 10 : 60;
@@ -207,6 +200,18 @@ int main(int argc, char** argv) {
         }
 
         // nvim events  -------------------------------------------
+        LOG_DISABLE();
+        ProcessUserEvents(*nvim->client, sessionManager);
+
+        // process_events
+        ParseNotifications(*nvim->client, nvim->uiEvents);
+        if (nvim->uiEvents.numFlushes) {
+          IdleReset();
+        }
+
+        ParseEditorState(nvim->uiEvents, session->editorState);
+        LOG_ENABLE();
+
         if (sessionManager.ShouldQuit()) {
           SDL_Event quitEvent;
           SDL_zero(quitEvent);
@@ -218,24 +223,6 @@ int main(int argc, char** argv) {
         options = &session->options;
         nvim = &session->nvim;
         editorState = &session->editorState;
-
-        LOG_DISABLE();
-        ProcessUserEvents(*nvim->client, sessionManager);
-        LOG_ENABLE();
-
-        LOG_DISABLE();
-        // process_events:
-        ParseNotifications(*nvim->client, nvim->uiEvents);
-        if (nvim->uiEvents.numFlushes) {
-          IdleReset();
-        }
-        LOG_ENABLE();
-
-        LOG_DISABLE();
-        ParseEditorState(nvim->uiEvents, session->editorState);
-        LOG_ENABLE();
-
-        // timer1.End();
 
         // update --------------------------------------------
         editorState->winManager.UpdateRenderData();
@@ -386,7 +373,7 @@ int main(int argc, char** argv) {
         case SDL_EVENT_KEY_DOWN:
         case SDL_EVENT_KEY_UP: {
           // we dont want ime moving around, so disable keyboard
-          if (currSession && !currSession->ime.active) {
+          if (currSession && !currSession->ime.active.load()) {
             currSession->input.HandleKeyboard(event.key);
           }
           break;

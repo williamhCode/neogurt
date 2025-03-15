@@ -71,7 +71,7 @@ struct WinManager {
 
   GridManager* gridManager;
   SizeHandler sizes;
-  bool dirty; // true if window pos updated from scrolling
+  bool dirty = false; // true if window pos updated from scrolling
 
   std::deque<Win*> windowsOrder;
   std::unordered_map<int, Win> windows;

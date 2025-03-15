@@ -228,3 +228,13 @@ if (CMAKE_BUILD_TYPE MATCHES RelWithDebInfo)
     include(CPack)
   endif()
 endif()
+
+# test targets
+add_executable(slang-test
+  test/slang-test.cpp
+)
+
+target_link_libraries(slang-test PRIVATE 
+  webgpu_tools
+)
+
