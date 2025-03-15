@@ -16,6 +16,7 @@ void ImeHandler::HandleTextEditing(SDL_TextEditingEvent& event) {
   text = event.text;
   start = event.start;
   length = event.length;
+  LOG_INFO("text: {}, start: {}, length: {}", text, start, length);
   Update();
   SDL_free((char*)event.text);
 }

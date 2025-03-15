@@ -61,7 +61,7 @@ std::vector<GraphemeInfo> SplitByGraphemes(const std::string& text) {
   using namespace boost::locale::boundary;
   std::vector<GraphemeInfo> graphemes;
 
-  static std::locale loc = boost::locale::generator().generate("");
+  static std::locale loc = boost::locale::generator().generate("en_US.UTF-8");
   ssegment_index index(character, text.begin(), text.end(), loc);
 
   for (const auto& i : index) {

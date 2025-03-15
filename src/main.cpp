@@ -23,7 +23,6 @@
 #include "utils/clock.hpp"
 #include "utils/logger.hpp"
 #include "utils/timer.hpp"
-#include "utils/unicode.hpp"
 
 #include <boost/core/typeinfo.hpp>
 #include <algorithm>
@@ -43,7 +42,6 @@ WGPUContext ctx;
 
 int main(int argc, char** argv) {
   // std::locale::global(std::locale("en_US.UTF-8"));
-  std::locale::global(std::locale(""));
 
   if (auto exit = Options::LoadFromCommandLine(argc, argv)) {
     return *exit;

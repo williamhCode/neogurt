@@ -15,8 +15,8 @@ struct ImeHandler {
   std::atomic_bool active = false;
 
   std::string text;
-  int32_t start = -1;
-  int32_t length = -1;
+  int start = -1;
+  int length = -1;
 
   void Clear();
   void HandleTextEditing(SDL_TextEditingEvent& event);
