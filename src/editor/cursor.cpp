@@ -38,8 +38,9 @@ void Cursor::Goto(const event::GridCursorGoto& e) {
   cursorGoto = e;
 }
 
-void Cursor::SetMode(CursorMode* _cursorMode) {
-  cursorMode = _cursorMode;
+void Cursor::SetMode(int modeIdx) {
+  assert(modeIdx >= 0 && modeIdx < ssize(cursorModes));
+  cursorMode = &cursorModes[modeIdx];
 
   if (blink) {
     blinkState = BlinkState::Wait;
@@ -70,6 +71,7 @@ void Cursor::SetBlinkState(BlinkState state) {
 }
 
 bool Cursor::SetDestPos(const Win* currWin, const SizeHandler& sizes) {
+  if (cursorMode == nullptr) return false;
   if (currWin == nullptr) return false;
 
   const auto& winTex = currWin->sRenderTexture;

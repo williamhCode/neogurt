@@ -69,7 +69,7 @@ void ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
         },
         [&](ModeInfoSet& e) {
           for (auto& elem : e.modeInfo) {
-            auto& modeInfo = editorState.cursorModes.emplace_back();
+            auto& modeInfo = editorState.cursor.cursorModes.emplace_back();
             for (auto& [key, value] : elem) {
               if (key == "cursor_shape") {
                 auto shape = value.as_string();
@@ -121,7 +121,7 @@ void ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
           editorState.currDir = e.dir;
         },
         [&](ModeChange& e) {
-          editorState.cursor.SetMode(&editorState.cursorModes[e.modeIdx]);
+          editorState.cursor.SetMode(e.modeIdx);
         },
         [&](MouseOn&) {
           // LOG("mouse_on");

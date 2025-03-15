@@ -17,7 +17,7 @@ struct EditorState {
   WinManager winManager;
   HlTable hlTable;
   Cursor cursor;
-  std::vector<CursorMode> cursorModes;
+  // std::vector<CursorMode> cursorModes;
   FontFamily fontFamily;
   // std::map<int, std::string> hlGroupTable;
 };
