@@ -5,7 +5,7 @@
 #include <condition_variable>
 
 template <typename T>
-struct TSQueue {
+struct TsQueue {
 private:
   std::queue<T> queue;
   std::mutex mutex;

@@ -1,8 +1,7 @@
 #include "./font_locator.hpp"
 #include "utils/logger.hpp"
 #import <AppKit/NSFontDescriptor.h>
-#import <Foundation/NSString.h>
-#import <Foundation/NSDictionary.h>
+#import <Foundation/Foundation.h>
 #import <CoreText/CoreText.h>
 
 // clang-format off
@@ -104,6 +103,36 @@ std::string GetFontPathFromName(const FontDescriptorWithName& desc) {
   CFRelease(newDescriptor);
 
   return path;
+}
+
+std::string FindFallbackFontForCharacter(uint32_t unicodeChar) {
+  // Convert the Unicode character to a CFStringRef
+  auto uniChar = static_cast<UniChar>(unicodeChar);
+  CFStringRef charString =
+    CFStringCreateWithCharacters(kCFAllocatorDefault, &uniChar, 1);
+
+  // Ask CoreText to find a suitable font
+  CTFontRef fallbackFont =
+    CTFontCreateForString(nullptr, charString, CFRangeMake(0, 1));
+  CFRelease(charString);
+
+  if (!fallbackFont) {
+    return ""; // No suitable font found
+  }
+
+  // Get the font's PostScript name
+  CFStringRef fontName = CTFontCopyPostScriptName(fallbackFont);
+  CFRelease(fallbackFont);
+
+  if (!fontName) {
+    return "";
+  }
+
+  // Convert CFStringRef to std::string
+  std::string result = [(NSString*)fontName UTF8String];
+  CFRelease(fontName);
+
+  return result;
 }
 
 // std::string GetFontPathFromFamilyAndStyle(const FontDescriptor& desc) {

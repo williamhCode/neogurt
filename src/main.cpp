@@ -83,8 +83,8 @@ int main(int argc, char** argv) {
       std::optional<SDL_Event> windowResized;
       SDL_Event windowPixelSizeChanged;
     };
-    TSQueue<ResizeEvents> resizeEvents;
-    TSQueue<SDL_Event> sdlEvents;
+    TsQueue<ResizeEvents> resizeEvents;
+    TsQueue<SDL_Event> sdlEvents;
 
     int frameCount = 0;
 

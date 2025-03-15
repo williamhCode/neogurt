@@ -106,80 +106,49 @@ FontFamily::FromGuifont(std::string guifont, float linespace, float dpiScale) {
 bool FontFamily::TryChangeDpiScale(float dpiScale) {
   if (DefaultFont().dpiScale == dpiScale) return false;
 
-  std::vector<FontSet> newFonts;
-  for (auto& fontSet : fonts) {
-    FontSet& newFontSet = newFonts.emplace_back();
-    auto makeFontHandle = [&](const FontHandle& fontHandle) -> FontHandle {
-      // check if the normal font can be reused
-      if (newFontSet.normal && fontHandle->path == newFontSet.normal->path) {
-        return newFontSet.normal;
-      }
-      return std::make_shared<Font>(
-        fontHandle->path, fontHandle->height, fontHandle->width, fontHandle->linespace,
-        dpiScale
-      );
-    };
-
-    newFontSet.normal = makeFontHandle(fontSet.normal);
-    newFontSet.bold = makeFontHandle(fontSet.bold);
-    newFontSet.italic = makeFontHandle(fontSet.italic);
-    newFontSet.boldItalic = makeFontHandle(fontSet.boldItalic);
-  }
-  fonts = std::move(newFonts);
-  shapeDrawing = ShapeDrawing(DefaultFont().charSize, dpiScale);
-  textureAtlas = TextureAtlas<false>(DefaultFont().charSize.y, dpiScale);
-  colorTextureAtlas = TextureAtlas<true>(DefaultFont().charSize.y, dpiScale);
+  UpdateFonts([&](const FontHandle& fontHandle) -> FontHandle{
+    return std::make_shared<Font>(
+      fontHandle->path, fontHandle->height, fontHandle->width, fontHandle->linespace, dpiScale
+    );
+  });
 
   return true;
 }
 
 void FontFamily::ChangeSize(float delta) {
-  std::vector<FontSet> newFonts;
-  for (auto& fontSet : fonts) {
-    FontSet& newFontSet = newFonts.emplace_back();
+  UpdateFonts([&](const FontHandle& fontHandle) -> FontHandle{
+    float newHeight = fontHandle->height + delta;
+    newHeight = ClampHeight(newHeight);
 
-    auto makeFontHandle = [&](const FontHandle& fontHandle) -> FontHandle {
-      // check if the normal font can be reused
-      if (newFontSet.normal && fontHandle->path == newFontSet.normal->path) {
-        return newFontSet.normal;
-      }
+    float widthHeightRatio = defaultWidth / defaultHeight;
+    float newWidth = newHeight * widthHeightRatio;
 
-      float newHeight = fontHandle->height + delta;
-      newHeight = ClampHeight(newHeight);
-
-      float widthHeightRatio = defaultWidth / defaultHeight;
-      float newWidth = newHeight * widthHeightRatio;
-
-      return std::make_shared<Font>(
-        fontHandle->path, newHeight, newWidth, fontHandle->linespace,
-        fontHandle->dpiScale
-      );
-    };
-
-    newFontSet.normal = makeFontHandle(fontSet.normal);
-    newFontSet.bold = makeFontHandle(fontSet.bold);
-    newFontSet.italic = makeFontHandle(fontSet.italic);
-    newFontSet.boldItalic = makeFontHandle(fontSet.boldItalic);
-  }
-  fonts = std::move(newFonts);
-  shapeDrawing = ShapeDrawing(DefaultFont().charSize, DefaultFont().dpiScale);
-  textureAtlas = TextureAtlas<false>(DefaultFont().charSize.y, DefaultFont().dpiScale);
-  colorTextureAtlas = TextureAtlas<true>(DefaultFont().charSize.y, DefaultFont().dpiScale);
+    return std::make_shared<Font>(
+      fontHandle->path, newHeight, newWidth, fontHandle->linespace, fontHandle->dpiScale
+    );
+  });
 }
 
 void FontFamily::ResetSize() {
+  UpdateFonts([&](const FontHandle& fontHandle) -> FontHandle {
+    return std::make_shared<Font>(
+      fontHandle->path, defaultHeight, defaultWidth, fontHandle->linespace,
+      fontHandle->dpiScale
+    );
+  });
+}
+
+void FontFamily::UpdateFonts(std::function<FontHandle(const FontHandle&)> createFont) {
   std::vector<FontSet> newFonts;
-  for (auto& fontSet : fonts) {
+  for (const auto& fontSet : fonts) {
     FontSet& newFontSet = newFonts.emplace_back();
+
     auto makeFontHandle = [&](const FontHandle& fontHandle) -> FontHandle {
       // check if the normal font can be reused
       if (newFontSet.normal && fontHandle->path == newFontSet.normal->path) {
         return newFontSet.normal;
       }
-      return std::make_shared<Font>(
-        fontHandle->path, defaultHeight, defaultWidth, fontHandle->linespace,
-        fontHandle->dpiScale
-      );
+      return createFont(fontHandle);
     };
 
     newFontSet.normal = makeFontHandle(fontSet.normal);
@@ -187,6 +156,7 @@ void FontFamily::ResetSize() {
     newFontSet.italic = makeFontHandle(fontSet.italic);
     newFontSet.boldItalic = makeFontHandle(fontSet.boldItalic);
   }
+
   fonts = std::move(newFonts);
   shapeDrawing = ShapeDrawing(DefaultFont().charSize, DefaultFont().dpiScale);
   textureAtlas = TextureAtlas<false>(DefaultFont().charSize.y, DefaultFont().dpiScale);

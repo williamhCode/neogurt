@@ -12,7 +12,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
   // slang stuff ---------------
   SlangContext slang(fs::path(resourcesDir) / "shaders");
 
-  auto LoadShaderModule = [&](
+  auto loadShaderModule = [&](
     const std::string& moduleName,
     const std::vector<slang::PreprocessorMacroDesc>& macros = {}
   ) {
@@ -36,7 +36,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
   });
 
   // shapes pipeline ---------------------------------------------
-  ShaderModule shapesShader = LoadShaderModule("shapes");
+  ShaderModule shapesShader = loadShaderModule("shapes");
 
   shapesRPL = ctx.MakeRenderPipeline({
     .vs = shapesShader,
@@ -63,7 +63,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
   });
 
   // rect pipeline -------------------------------------------
-  ShaderModule rectShader = LoadShaderModule("rect");
+  ShaderModule rectShader = loadShaderModule("rect");
 
   rectRPL = ctx.MakeRenderPipeline({
     .vs = rectShader,
@@ -82,7 +82,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
   });
 
   // text pipeline -------------------------------------------
-  ShaderModule textShader = LoadShaderModule("text");
+  ShaderModule textShader = loadShaderModule("text");
 
   textureSizeBGL = ctx.MakeBindGroupLayout({
     {0, ShaderStage::Vertex, BufferBindingType::Uniform},
@@ -113,7 +113,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
   textRPL = ctx.MakeRenderPipeline(textRPLDesc);
 
   // emoji pipeline
-  ShaderModule emojiShader = LoadShaderModule("text", {{"EMOJI"}});
+  ShaderModule emojiShader = loadShaderModule("text", {{"EMOJI"}});
 
   textRPLDesc.vs = emojiShader;
   textRPLDesc.fs = emojiShader;
@@ -121,7 +121,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
   emojiRPL = ctx.MakeRenderPipeline(textRPLDesc);
 
   // mask pipeline -------------------------------------------
-  ShaderModule textMaskShader = LoadShaderModule("text_mask");
+  ShaderModule textMaskShader = loadShaderModule("text_mask");
 
   utils::RenderPipelineDescriptor textMaskRPLDesc{
     .vs = textMaskShader,
@@ -144,7 +144,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
   textMaskRPL = ctx.MakeRenderPipeline(textMaskRPLDesc);
 
   // emoji mask pipeline
-  ShaderModule emojiMaskShader = LoadShaderModule("text_mask", {{"EMOJI"}});
+  ShaderModule emojiMaskShader = loadShaderModule("text_mask", {{"EMOJI"}});
 
   textMaskRPLDesc.vs = emojiMaskShader;
   textMaskRPLDesc.fs = emojiMaskShader;
@@ -152,7 +152,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
   emojiMaskRPL = ctx.MakeRenderPipeline(textMaskRPLDesc);
 
   // texture pipeline ------------------------------------------------
-  ShaderModule textureShader = LoadShaderModule("texture");
+  ShaderModule textureShader = loadShaderModule("texture");
 
   utils::VertexBufferLayout textureQuadVBL{
     .arrayStride = sizeof(TextureQuadVertex),
@@ -215,7 +215,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
   });
 
   // final texture pipeline -------------------------------------
-  ShaderModule textureFinalShader = LoadShaderModule("texture", {{"FINAL"}});
+  ShaderModule textureFinalShader = loadShaderModule("texture", {{"FINAL"}});
 
   textureFinalRPL = ctx.MakeRenderPipeline({
     .vs = textureFinalShader,
@@ -226,7 +226,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
   });
 
   // cursor pipeline ------------------------------------------------
-  ShaderModule cursorShader = LoadShaderModule("cursor");
+  ShaderModule cursorShader = loadShaderModule("cursor");
 
   utils::VertexBufferLayout cursorQuadVBL{
     sizeof(CursorQuadVertex),
@@ -252,7 +252,7 @@ Pipeline::Pipeline(const WGPUContext& ctx) {
   cursorRPL = ctx.MakeRenderPipeline(cursorRPLDesc);
 
   // curosr emoji
-  ShaderModule cursorEmojiShader = LoadShaderModule("cursor", {{"EMOJI"}});
+  ShaderModule cursorEmojiShader = loadShaderModule("cursor", {{"EMOJI"}});
 
   cursorRPLDesc.vs = cursorEmojiShader;
   cursorRPLDesc.fs = cursorEmojiShader;

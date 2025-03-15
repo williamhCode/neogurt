@@ -2,7 +2,7 @@
 #include "utils/tsqueue.hpp"
 #include <cassert>
 
-static TSQueue<std::function<void()>> taskQueue;
+static TsQueue<std::function<void()>> taskQueue;
 
 void DeferToMainThread(std::function<void()>&& task) {
   taskQueue.Push(std::move(task));
@@ -20,7 +20,7 @@ void ProcessNextMainThreadTask() {
   taskQueue.Pop();
 }
 
-static TSQueue<SessionHandle> sessionsQueue;
+static TsQueue<SessionHandle> sessionsQueue;
 
 void PushSessionToMainThread(SessionHandle session) {
   sessionsQueue.Push(std::move(session));

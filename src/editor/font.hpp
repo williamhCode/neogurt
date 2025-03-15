@@ -38,4 +38,7 @@ struct FontFamily {
 
   const Font& DefaultFont() const;
   const GlyphInfo& GetGlyphInfo(char32_t charcode, bool bold, bool italic);
+
+private:
+  void UpdateFonts(std::function<FontHandle(const FontHandle&)> createFont);
 };

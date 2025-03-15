@@ -4,7 +4,6 @@
 
 #include "boost/asio/io_context.hpp"
 #include "boost/asio/ip/tcp.hpp"
-#include "boost/asio/awaitable.hpp"
 #include "boost/process/async_pipe.hpp"
 #include "boost/process/child.hpp"
 
@@ -79,8 +78,8 @@ private:
   std::mutex responsesMutex;
 
   // shared requests between all neovim clients
-  static inline TSQueue<Request> requests;
-  TSQueue<Notification> notifications;
+  static inline TsQueue<Request> requests;
+  TsQueue<Notification> notifications;
 
 public:
   Client() = default;
@@ -109,7 +108,7 @@ public:
 private:
   msgpack::unpacker unpacker;
   static constexpr std::size_t readSize = 1024 << 10;
-  TSQueue<msgpack::sbuffer> msgsOut;
+  TsQueue<msgpack::sbuffer> msgsOut;
   std::atomic_uint32_t currId = 0;
 
   uint32_t Msgid();
