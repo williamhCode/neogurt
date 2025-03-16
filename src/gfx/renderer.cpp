@@ -375,6 +375,7 @@ void Renderer::RenderToWindow(
 void Renderer::RenderCursorMask(
   const Win& win, Cursor& cursor, FontFamily& fontFamily, HlTable& hlTable
 ) {
+  if (!win.grid.ValidCoords(cursor.row, cursor.col)) return;
   auto& cell = win.grid.lines[cursor.row][cursor.col];
 
   if (!cell.text.empty() && cell.text != " ") {

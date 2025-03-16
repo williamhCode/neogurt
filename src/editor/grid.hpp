@@ -19,6 +19,10 @@ struct Grid {
   Lines lines;
 
   bool dirty;
+
+  bool ValidCoords(int row, int col) const {
+    return row >= 0 && row < height && col >= 0 && col < width;
+  }
 };
 
 struct GridManager {

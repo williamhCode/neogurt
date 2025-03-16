@@ -56,7 +56,7 @@ bool Client::ConnectStdio(
   flags.emplace_back("-c");
 
   process = bp::child(
-    shell, flags, command,
+    shell, flags, "exec " + command,
     bp::start_dir = dir,
     bp::std_out > *readPipe,
     bp::std_in < *writePipe

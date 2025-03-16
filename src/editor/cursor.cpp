@@ -71,8 +71,11 @@ void Cursor::SetBlinkState(BlinkState state) {
 }
 
 bool Cursor::SetDestPos(const Win* currWin, const SizeHandler& sizes) {
-  if (cursorMode == nullptr) return false;
-  if (currWin == nullptr) return false;
+  bool invalid =
+    (cursorMode == nullptr) ||
+    (currWin == nullptr) ||
+    (!currWin->grid.ValidCoords(row, col));
+  if (invalid) return false;
 
   const auto& winTex = currWin->sRenderTexture;
   auto scrollOffset = winTex.scrolling
