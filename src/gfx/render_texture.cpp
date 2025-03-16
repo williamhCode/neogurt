@@ -267,6 +267,7 @@ void ScrollableRenderTexture::AddOrRemoveTextures() {
 void ScrollableRenderTexture::SetTexturePositions() {
   for (size_t i = 0; i < renderTextures.size(); i++) {
     auto& texture = *renderTextures[i];
+    // round for pixel perfect rendering
     float yposTop = RoundToPixel(-(baseOffset + scrollCurr) + (i * textureHeight));
     float yposBottom = RoundToPixel(yposTop + textureHeight);
 

@@ -210,7 +210,7 @@ if (CMAKE_BUILD_TYPE MATCHES RelWithDebInfo)
     set(APPS "\${CMAKE_INSTALL_PREFIX}/Neogurt.app")
     set(DIRS
       ${CMAKE_BINARY_DIR}/_deps/dawn-src/lib  # libwebgpu_dawn.dylib
-      ${PROJECT_SOURCE_DIR}/deps/webgpu_tools/deps/slang-2025.6.1/lib # libslang.dylib
+      ${CMAKE_BINARY_DIR}/_deps/slang-src/lib  # libslang.dylib
       $ENV{LLVM_PATH}/lib/c++
       $ENV{LLVM_PATH}/lib/unwind
     )
@@ -231,11 +231,11 @@ if (CMAKE_BUILD_TYPE MATCHES RelWithDebInfo)
 endif()
 
 # test targets
-add_executable(slang-test
-  test/slang-test.cpp
-)
+# add_executable(slang-test
+#   test/slang-test.cpp
+# )
 
-target_link_libraries(slang-test PRIVATE 
-  webgpu_tools
-)
+# target_link_libraries(slang-test PRIVATE 
+#   webgpu_tools
+# )
 
