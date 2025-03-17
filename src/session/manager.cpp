@@ -44,7 +44,7 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
   auto& ime = session->ime;
 
   // Nvim ------------------------------------------------------
-  if (!nvim.ConnectStdio(appOptions.interactiveShell, opts.dir)) {
+  if (!nvim.ConnectStdio(appOptions.interactive, opts.dir)) {
     throw std::runtime_error("Failed to connect to nvim");
   }
   nvim.GuiSetup(appOptions.multigrid);

@@ -67,9 +67,9 @@ int main(int argc, char** argv) {
     // init variables ---------------------
     sdl::Window window({1200, 800}, "Neogurt", appOptions);
     Renderer renderer;
-
     SizeHandler sizes{};
     SessionManager sessionManager(SpawnMode::Child, appOptions, window, sizes, renderer);
+
     sessionManager.SessionNew();
     Session* session = sessionManager.CurrSession().get();
     SessionOptions* options = &session->options;

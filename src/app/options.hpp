@@ -2,8 +2,8 @@
 #include <expected>
 
 struct AppOptions {
+  bool interactive = true;
   bool multigrid = true;
-  bool interactiveShell = true;
 
   bool vsync = true;
   bool highDpi = true;

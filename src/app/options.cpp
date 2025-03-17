@@ -2,18 +2,38 @@
 #include "boost/program_options.hpp"
 #include <iostream>
 
+namespace po = boost::program_options;
+
+static std::string CamelToSnake(std::string_view s) {
+  std::string result;
+  for (char c : s) {
+    if (isupper(c)) {
+      result.push_back('_');
+      result.push_back(tolower(c));
+    } else {
+      result.push_back(c);
+    }
+  }
+  return result;
+}
+
 std::expected<AppOptions, int> AppOptions::LoadFromCommandLine(int argc, char** argv) {
   AppOptions options{};
 
-  namespace po = boost::program_options;
+  #define DEFAULT_VAL(name) po::value<decltype(options.name)>()->default_value(options.name)
 
   // command-line options
   po::options_description desc("Options");
   desc.add_options()
     ("help,h", "Show help message")
     ("version,V", "Show version")
-    ("multigrid", po::value<bool>()->default_value(options.multigrid), "Use multigrid")
-    ("interactiveShell,i", po::value<bool>()->default_value(options.interactiveShell), "Spawn neovim in an interactive shell")
+
+    ("interactive,i", DEFAULT_VAL(interactive), "Use interactive shell")
+    ("multigrid", DEFAULT_VAL(multigrid), "Use multigrid")
+    ("vsync", DEFAULT_VAL(vsync), "Use vsync")
+    ("high_dpi", DEFAULT_VAL(highDpi), "Use high dpi")
+    ("borderless", DEFAULT_VAL(borderless), "Use borderless window")
+    ("blur", DEFAULT_VAL(blur), "Set window blur level")
   ;
 
   po::variables_map vm;
@@ -31,12 +51,20 @@ std::expected<AppOptions, int> AppOptions::LoadFromCommandLine(int argc, char** 
       std::cout << "Neogurt " VERSION "\n";
       return std::unexpected(0);
     }
-    if (vm.count("multigrid")) {
-      options.multigrid = vm["multigrid"].as<bool>();
+
+    #define LOAD(name) {                                                               \
+      auto snake = CamelToSnake(#name);                                                \
+      if (vm.count(snake)) {                                                           \
+        options.name = vm[snake].as<decltype(options.name)>();                         \
+      }                                                                                \
     }
-    if (vm.count("interactiveShell")) {
-      options.interactiveShell = vm["interactiveShell"].as<bool>();
-    }
+
+    LOAD(interactive);
+    LOAD(multigrid);
+    LOAD(vsync);
+    LOAD(highDpi);
+    LOAD(borderless);
+    LOAD(blur);
 
   } catch (const po::error& ex) {
     std::cerr << "Error: " << ex.what() << "\n";
