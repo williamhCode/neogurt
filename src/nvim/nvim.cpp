@@ -2,7 +2,6 @@
 #include "msgpack_rpc/client.hpp"
 #include <fstream>
 #include <future>
-#include "app/options.hpp"
 #include "utils/async.hpp"
 #include "utils/logger.hpp"
 #include "app/path.hpp"
@@ -43,7 +42,7 @@ std::future<bool> Nvim::ConnectTcp(std::string_view host, uint16_t port) {
   co_return true;
 }
 
-void Nvim::GuiSetup() {
+void Nvim::GuiSetup(bool multigrid) {
   std::stringstream buffer;
   std::string luaInitPath = resourcesDir + "/lua/init.lua";
   std::ifstream stream(luaInitPath);
@@ -71,7 +70,7 @@ void Nvim::GuiSetup() {
     {
       {"rgb", true},
       {"ext_linegrid", true},
-      {"ext_multigrid", Options::multigrid},
+      {"ext_multigrid", multigrid},
     }
   ).get();
 }

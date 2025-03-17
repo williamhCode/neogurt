@@ -2,7 +2,7 @@
 
 #include "SDL3/SDL_events.h"
 
-#include "app/options.hpp"
+#include "session/options.hpp"
 #include "nvim/nvim.hpp"
 #include "editor/window.hpp"
 
@@ -11,7 +11,8 @@
 struct InputHandler {
   WinManager* winManager;
   Nvim* nvim;
-  Options options;
+  SessionOptions options;
+  bool multigrid;
 
   // ime
   std::string editingText;

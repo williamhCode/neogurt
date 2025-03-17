@@ -4,6 +4,7 @@
 #include "app/input.hpp"
 #include "nvim/nvim.hpp"
 #include "editor/state.hpp"
+#include "session/options.hpp"
 
 struct Session {
   int id;
@@ -12,7 +13,7 @@ struct Session {
 
   // session data ----------------------
   Nvim nvim;
-  Options options;
+  SessionOptions options;
   EditorState editorState;
   InputHandler input;
   ImeHandler ime;

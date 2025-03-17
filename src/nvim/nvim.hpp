@@ -17,7 +17,7 @@ struct Nvim {
 
   bool ConnectStdio(bool interactive, const std::string& dir = {});
   std::future<bool> ConnectTcp(std::string_view host, uint16_t port);
-  void GuiSetup();
+  void GuiSetup(bool multigrid);
   bool IsConnected();
 
   using Variant = msgpack::type::variant;

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "app/options.hpp"
 #include "session/state.hpp"
 #include "app/sdl_window.hpp"
 #include "gfx/renderer.hpp"
@@ -36,6 +37,7 @@ struct SessionManager {
 private:
   SpawnMode mode;
 
+  const AppOptions& appOptions;
   sdl::Window& window;
   SizeHandler& sizes;
   Renderer& renderer;
@@ -52,6 +54,7 @@ private:
 public:
   SessionManager(
     SpawnMode mode,
+    const AppOptions& appOptions,
     sdl::Window& window,
     SizeHandler& sizes,
     Renderer& renderer

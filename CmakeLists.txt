@@ -95,6 +95,7 @@ set(APP_SRC
   nvim/msgpack_rpc/client.cpp
 
   session/manager.cpp
+  session/options.cpp
 
   utils/unicode.cpp
   utils/clock.cpp

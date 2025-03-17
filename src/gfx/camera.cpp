@@ -6,10 +6,8 @@
 
 using namespace wgpu;
 
-Ortho2D::Ortho2D(glm::vec2 size) {
-  auto view = glm::ortho<float>(0, size.x, size.y, 0, -1, 1);
-  viewProjBuffer = ctx.CreateUniformBuffer(sizeof(glm::mat4), &view);
-
+Ortho2D::Ortho2D() {
+  viewProjBuffer = ctx.CreateUniformBuffer(sizeof(glm::mat4));
   viewProjBG = ctx.MakeBindGroup(
     ctx.pipeline.viewProjBGL,
     {
@@ -18,11 +16,15 @@ Ortho2D::Ortho2D(glm::vec2 size) {
   );
 }
 
+Ortho2D::Ortho2D(glm::vec2 size) : Ortho2D() {
+  Resize(size);
+}
+
 void Ortho2D::Resize(glm::vec2 size, glm::vec2 pos) {
   float left = pos.x;
   float right = pos.x + size.x;
   float top = pos.y;
   float bottom = pos.y + size.y;
-  auto view = glm::ortho<float>(left, right, bottom, top, -1, 1);
+  glm::mat4 view = glm::ortho<float>(left, right, bottom, top, -1, 1);
   ctx.queue.WriteBuffer(viewProjBuffer, 0, &view, sizeof(glm::mat4));
 }

@@ -212,7 +212,7 @@ void InputHandler::HandleMouseButtonAndMotion(int state, glm::vec2 mousePos) {
   } else {
     info = winManager->GetMouseInfo(*currGrid, mousePos);
   }
-  if (!Options::multigrid) info.grid = 0;
+  if (!multigrid) info.grid = 0;
 
   // LOG_INFO(
   //   "buttonStr {}, actionStr {}, modStr {}, info.grid {}, info.row {}, info.col {}",
@@ -236,7 +236,7 @@ void InputHandler::HandleMouseWheel(const SDL_MouseWheelEvent& event) {
   } else {
     info = winManager->GetMouseInfo(*currGrid, mousePos);
   }
-  if (!Options::multigrid) info.grid = 0;
+  if (multigrid) info.grid = 0;
 
   double scrollUnit = 1 / options.scrollSpeed;
 

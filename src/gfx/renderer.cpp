@@ -17,7 +17,7 @@
 
 using namespace wgpu;
 
-Renderer::Renderer(const SizeHandler& sizes) {
+Renderer::Renderer() {
   timestamp = TimestampHelper(2, false);
 
   // color stuff
@@ -28,13 +28,6 @@ Renderer::Renderer(const SizeHandler& sizes) {
       {0, defaultBgLinearBuffer},
     }
   );
-
-  // shared
-  camera = Ortho2D(sizes.size);
-
-  CurrFinalRenderTexture() =
-    RenderTexture(sizes.uiSize, sizes.dpiScale, TextureFormat::RGBA8UnormSrgb);
-  CurrFinalRenderTexture().UpdatePos(sizes.offset);
 
   // rect
   rectRPD = utils::RenderPassDescriptor({
@@ -69,10 +62,6 @@ Renderer::Renderer(const SizeHandler& sizes) {
   });
 
   // windows
-  auto stencilTextureView =
-    ctx.CreateRenderTexture({sizes.uiFbSize, TextureFormat::Stencil8})
-    .CreateView();
-
   windowsRPD = utils::RenderPassDescriptor(
     {
       RenderPassColorAttachment{
@@ -82,7 +71,6 @@ Renderer::Renderer(const SizeHandler& sizes) {
       },
     },
     RenderPassDepthStencilAttachment{
-      .view = stencilTextureView,
       .stencilLoadOp = LoadOp::Undefined,
       .stencilStoreOp = StoreOp::Store,
       .stencilClearValue = 0,

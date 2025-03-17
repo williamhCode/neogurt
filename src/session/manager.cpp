@@ -3,6 +3,7 @@
 #include "app/task_helper.hpp"
 #include "app/window_funcs.h"
 #include "editor/highlight.hpp"
+#include "utils/async.hpp"
 #include "utils/color.hpp"
 #include "utils/logger.hpp"
 #include <algorithm>
@@ -14,14 +15,18 @@
 #include "glm/gtx/string_cast.hpp"
 
 SessionManager::SessionManager(
-  SpawnMode _mode, sdl::Window& _window, SizeHandler& _sizes, Renderer& _renderer
+  SpawnMode _mode,
+  const AppOptions& _appOptions,
+  sdl::Window& _window,
+  SizeHandler& _sizes,
+  Renderer& _renderer
 )
-    : mode(_mode), window(_window), sizes(_sizes), renderer(_renderer) {
+    : mode(_mode), appOptions(_appOptions), window(_window), sizes(_sizes),
+      renderer(_renderer) {
 }
 
 int SessionManager::SessionNew(const SessionNewOpts& opts) {
   using namespace std::chrono_literals;
-  bool first = sessions.empty();
 
   int id = currId++;
   auto name = opts.name.empty() ? std::format("session {}", id) : opts.name;
@@ -39,71 +44,47 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
   auto& ime = session->ime;
 
   // Nvim ------------------------------------------------------
-  if (!nvim.ConnectStdio(Options::interactiveShell, opts.dir)) {
+  if (!nvim.ConnectStdio(appOptions.interactiveShell, opts.dir)) {
     throw std::runtime_error("Failed to connect to nvim");
   }
-  nvim.GuiSetup();
+  nvim.GuiSetup(appOptions.multigrid);
 
   // Options ---------------------------------------------------
-  // request all things here
-  auto optionsFut = Options::Load(nvim, first);
-  auto guifontFut = nvim.GetOptionValue("guifont", {});
-  auto linespaceFut = nvim.GetOptionValue("linespace", {});
+  auto optionsFut = GetAll(
+    SessionOptions::Load(nvim),
+    nvim.GetOptionValue("guifont", {}),
+    nvim.GetOptionValue("linespace", {}),
 
-  bool timeout = false;
-  // TODO: make this non-blocking
-  if (optionsFut.wait_for(1s) == std::future_status::ready) {
-    options = optionsFut.get();
-  } else {
-    LOG_WARN("Failed to load options (timeout)");
-    timeout = true;
-  }
+    nvim.GetHl(0, {{"name", "NeogurtImeNormal"}, {"link", false}}),
+    nvim.GetHl(0, {{"name", "NeogurtImeSelected"}, {"link", false}})
+  );
 
   std::string guifont;
-  if (!timeout) {
-    try {
-      guifont = guifontFut.get()->as<std::string>();
-    } catch (const msgpack::type_error& e) {
-      // NOTE: neovim should cover this but just in case
-      LOG_WARN("Failed to load guifont option: {}", e.what());
-    }
-  } else {
-    LOG_WARN("Failed to load guifont option (timeout)");
-  }
-
   int linespace = 0;
-  if (!timeout) {
-    try {
-      linespace = linespaceFut.get()->convert();
-    } catch (const msgpack::type_error& e) {
-      // NOTE: neovim should cover this but just in case
-      LOG_WARN("Failed to load linespace option: {}", e.what());
-      linespace = 0;
-    }
+  if (optionsFut.wait_for(1s) == std::future_status::ready) {
+    msgpack::object_handle guifontObj, linespaceObj;
+    msgpack::object_handle imeNormalHlObj, imeSelectedHlObj;
+    std::tie(options, guifontObj, linespaceObj, imeNormalHlObj, imeSelectedHlObj) = optionsFut.get();
+
+    guifont = guifontObj->as<std::string>();
+    linespace = linespaceObj->convert();
+
+    ImeHandler::imeNormalHlId = -1;
+    ImeHandler::imeSelectedHlId = -2;
+    editorState.hlTable[ImeHandler::imeNormalHlId] = Highlight::FromDesc(imeNormalHlObj->convert());
+    editorState.hlTable[ImeHandler::imeSelectedHlId] = Highlight::FromDesc(imeSelectedHlObj->convert());
   } else {
-    LOG_WARN("Failed to load linespace option (timeout)");
-    linespace = 0;
+    LOG_WARN("Failed to load options (timeout)");
   }
 
-  static float titlebarHeight = 0;
-  if (first) {
-    window = sdl::Window({1200, 800}, "Neogurt");
-    // run in main thread only, so first
-    titlebarHeight = GetTitlebarHeight(window.Get());
-  }
-  if (Options::borderless) {
-    options.marginTop += titlebarHeight;
+  if (appOptions.borderless) {
+    options.marginTop += window.titlebarHeight;
   }
 
   // EditorState ---------------------------------------------------
   editorState.winManager.gridManager = &editorState.gridManager;
 
-  HlTableInit(editorState.hlTable, options);
-  auto imeNormalHlFut = nvim.GetHl(0, {{"name", "NeogurtImeNormal"}, {"link", false}});
-  auto imeSelectedHlFut = nvim.GetHl(0, {{"name", "NeogurtImeSelected"}, {"link", false}});
-  editorState.hlTable[ImeHandler::imeNormalHlId] = Highlight::FromDesc(imeNormalHlFut.get()->convert());
-  editorState.hlTable[ImeHandler::imeSelectedHlId] = Highlight::FromDesc(imeSelectedHlFut.get()->convert());
-  // LOG("ime hl: {}", ToString(imeHl.get()));
+  SetDefaultHl(editorState.hlTable, options);
 
   editorState.fontFamily =
     FontFamily::FromGuifont(guifont, linespace, window.dpiScale)
@@ -118,19 +99,12 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
   input.winManager = &editorState.winManager;
   input.nvim = &nvim;
   input.options = options;
+  input.multigrid = appOptions.multigrid;
 
   // ImeHandler ---------------------------------------------------
   ime.editorState = &editorState;
 
   // others -----------------------------------------------------
-  if (first) {
-    sizes.UpdateSizes(
-      window.size, window.dpiScale, session->editorState.fontFamily.DefaultFont().charSize,
-      session->options
-    );
-    renderer = Renderer(sizes);
-  }
-
   sessionsOrder.push_back(&session);
 
   if (opts.switchTo) {

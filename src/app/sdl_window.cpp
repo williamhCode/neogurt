@@ -2,7 +2,6 @@
 
 #include "SDL3/SDL_video.h"
 #include "SDL3/SDL_hints.h"
-#include "app/options.hpp"
 #include "app/window_funcs.h"
 #include "gfx/instance.hpp"
 #include "utils/logger.hpp"
@@ -17,11 +16,11 @@ namespace sdl {
 
 using namespace wgpu;
 
-Window::Window(glm::uvec2 _size, const std::string& title)
+Window::Window(glm::uvec2 _size, const std::string& title, const AppOptions& options)
     : size(_size) {
   // window ---------------------------------
   int flags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_TRANSPARENT;
-  if (Options::highDpi) flags |= SDL_WINDOW_HIGH_PIXEL_DENSITY;
+  if (options.highDpi) flags |= SDL_WINDOW_HIGH_PIXEL_DENSITY;
   // if (winOpts.borderless) flags |= SDL_WINDOW_BORDERLESS;
 
   window = SDL_WindowPtr(SDL_CreateWindow(title.c_str(), size.x, size.y, flags));
@@ -33,13 +32,14 @@ Window::Window(glm::uvec2 _size, const std::string& title)
 
   SDL_SetWindowMinimumSize(Get(), 200, 100);
 
-  if (Options::blur > 0) {
-    SetSDLWindowBlur(Get(), Options::blur);
+  if (options.blur > 0) {
+    SetSDLWindowBlur(Get(), options.blur);
   }
 
-  if (Options::borderless) {
+  if (options.borderless) {
     SetTransparentTitlebar(Get());
   }
+  titlebarHeight = GetTitlebarHeight(Get());
 
   EnableScrollMomentum();
 
@@ -47,12 +47,8 @@ Window::Window(glm::uvec2 _size, const std::string& title)
   dpiScale = SDL_GetWindowPixelDensity(Get());
   fbSize = size * (uint)dpiScale;
 
-  // auto displayId = SDL_GetPrimaryDisplay();
-  // contentScale = SDL_GetDisplayContentScale(displayId);
-  // LOG_INFO("contentScale: {}", contentScale);
-
   // webgpu ------------------------------------
-  vsync = Options::vsync;
+  vsync = options.vsync;
   auto presentMode = vsync ? PresentMode::Mailbox : PresentMode::Immediate;
   ctx = WGPUContext(Get(), fbSize, presentMode);
   // LOG_INFO("WGPUContext created with size: {}, {}", fbSize.x, fbSize.y);

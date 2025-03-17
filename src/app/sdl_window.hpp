@@ -1,5 +1,6 @@
 #pragma once
 
+#include "app/options.hpp"
 #include "glm/ext/vector_uint2.hpp"
 #include <memory>
 
@@ -21,8 +22,9 @@ struct Window {
   glm::uvec2 fbSize;
   float dpiScale;
 
-  Window() = default;
-  Window(glm::uvec2 size, const std::string& title);
+  float titlebarHeight;
+
+  Window(glm::uvec2 size, const std::string& title, const AppOptions& options);
 
   SDL_Window* Get();
 };

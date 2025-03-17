@@ -1,5 +1,6 @@
 #pragma once
 
+#include "utils/templates.hpp"
 #include <coroutine>
 #include <exception>
 #include <future>
@@ -94,17 +95,13 @@ inline auto operator co_await(std::future<T> future) noexcept
 
 // wait for all futures to complete in parallel
 template <typename... Futures>
-auto WhenAll(Futures&&... futures) -> std::future<std::tuple<std::decay_t<Futures>...>> {
-  return std::async(
-    std::launch::async,
-    [futures = std::make_tuple(std::forward<Futures>(futures)...)]() mutable {
-      std::apply([](auto&&... futures) { (futures.wait(), ...); }, futures);
-      return std::move(futures);
-    }
-  );
+inline void WaitAll(std::tuple<Futures...> futures) {
+  return std::async(std::launch::async, [futures = std::move(futures)]() mutable {
+    std::apply([](auto&&... futures) { (futures.wait(), ...); }, futures);
+  });
 }
 
-auto FutureGet(auto&& future) {
+static auto FutureGet(auto&& future) {
   if constexpr (std::is_same_v<decltype(future.get()), void>) {
     return std::monostate{};
   } else {
@@ -115,7 +112,7 @@ auto FutureGet(auto&& future) {
 // returns all future results when all futures are ready in parallel
 // returns std::monoate if value type is void
 template <typename... Futures>
-auto GetAll(Futures&&... futures) -> std::future<std::tuple<decltype(FutureGet(futures))...>> {
+inline auto GetAll(Futures&&... futures) {
   return std::async(
     std::launch::async,
     [futures = std::make_tuple(std::forward<Futures>(futures)...)]() mutable {
@@ -128,3 +125,18 @@ auto GetAll(Futures&&... futures) -> std::future<std::tuple<decltype(FutureGet(f
     }
   );
 }
+
+// template <typename T>
+// concept Duration = is_instance_of_v<T, std::chrono::duration>;
+
+// template <typename... Futures>
+// inline auto WaitForAll(const Duration auto& duration, Futures... futures) {
+//   return std::async(
+//     std::launch::async,
+//     [futures = std::make_tuple(std::forward<Futures>(futures)...), duration]() mutable {
+//       return std::apply(
+//         [&duration](auto&&... futures) { return (futures.wait_for(duration), ...); }, futures
+//       );
+//     }
+//   );
+// }

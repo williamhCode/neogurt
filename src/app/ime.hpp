@@ -9,8 +9,8 @@ struct ImeHandler {
 
   static constexpr int imeGrid = -1;
 
-  static constexpr int imeNormalHlId = -1;
-  static constexpr int imeSelectedHlId = -2;
+  inline static int imeNormalHlId = 0;
+  inline static int imeSelectedHlId = 0;
 
   std::atomic_bool active = false;
 

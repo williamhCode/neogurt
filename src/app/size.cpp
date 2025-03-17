@@ -1,9 +1,8 @@
 #include "./size.hpp"
 #include "glm/common.hpp"
-#include "app/options.hpp"
 
 void SizeHandler::UpdateSizes(
-  glm::vec2 _size, float _dpiScale, glm::vec2 _charSize, const Options& options
+  glm::vec2 _size, float _dpiScale, glm::vec2 _charSize, const SessionOptions& options
 ) {
   size = _size;
   dpiScale = _dpiScale;

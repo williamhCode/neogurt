@@ -9,6 +9,7 @@
 #include "app/sdl_event.hpp"
 #include "app/options.hpp"
 #include "app/task_helper.hpp"
+#include "app/window_funcs.h"
 #include "editor/grid.hpp"
 #include "editor/highlight.hpp"
 #include "editor/state.hpp"
@@ -20,6 +21,7 @@
 #include "nvim/events/ui.hpp"
 #include "nvim/events/user.hpp"
 #include "session/manager.hpp"
+#include "session/options.hpp"
 #include "utils/clock.hpp"
 #include "utils/logger.hpp"
 #include "utils/timer.hpp"
@@ -43,9 +45,9 @@ WGPUContext ctx;
 int main(int argc, char** argv) {
   // std::locale::global(std::locale("en_US.UTF-8"));
 
-  if (auto exit = Options::LoadFromCommandLine(argc, argv)) {
-    return *exit;
-  }
+  auto optionsResult = AppOptions::LoadFromCommandLine(argc, argv);
+  if (!optionsResult) return optionsResult.error(); // return exit code
+  AppOptions appOptions = *optionsResult;
 
   SetupPaths();
 
@@ -63,15 +65,14 @@ int main(int argc, char** argv) {
 
   try {
     // init variables ---------------------
-    sdl::Window window;
-    SizeHandler sizes{};
-
+    sdl::Window window({1200, 800}, "Neogurt", appOptions);
     Renderer renderer;
 
-    SessionManager sessionManager(SpawnMode::Child, window, sizes, renderer);
+    SizeHandler sizes{};
+    SessionManager sessionManager(SpawnMode::Child, appOptions, window, sizes, renderer);
     sessionManager.SessionNew();
     Session* session = sessionManager.CurrSession().get();
-    Options* options = &session->options;
+    SessionOptions* options = &session->options;
     Nvim* nvim = &session->nvim;
     EditorState* editorState = &session->editorState;
 

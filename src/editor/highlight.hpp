@@ -1,7 +1,7 @@
 #pragma once
 
 #include "glm/ext/vector_float4.hpp"
-#include "app/options.hpp"
+#include "session/options.hpp"
 #include <optional>
 #include <unordered_map>
 #include <string>
@@ -33,7 +33,7 @@ struct Highlight {
 
 using HlTable = std::unordered_map<int, Highlight>;
 
-void HlTableInit(HlTable& table, const Options& options);
+void SetDefaultHl(HlTable& table, const SessionOptions& options);
 
 glm::vec4 GetDefaultBackground(const HlTable& table);
 glm::vec4 GetForeground(const HlTable& table, const Highlight& hl);

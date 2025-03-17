@@ -53,7 +53,7 @@ Highlight Highlight::FromDesc(const std::map<std::string, msgpack::type::variant
   return hl;
 }
 
-void HlTableInit(HlTable& table, const Options& options) {
+void SetDefaultHl(HlTable& table, const SessionOptions& options) {
   auto& hl = table[0];
   hl.foreground = {0, 0, 0, 1};
   hl.background = {0, 0, 0, 1};

@@ -2,17 +2,12 @@
 #include "gfx/render_texture.hpp"
 #include "glm/ext/vector_uint2.hpp"
 #include "utils/region.hpp"
+#include "utils/templates.hpp"
 #include "webgpu/webgpu_cpp.h"
 #include <cstdint>
 #include <vector>
 #include <mdspan>
 #include <print>
-
-template<class T, template<class...> class U>
-inline constexpr bool is_instance_of_v = std::false_type{};
-
-template<template<class...> class U, class... Vs>
-inline constexpr bool is_instance_of_v<U<Vs...>,U> = std::true_type{};
 
 template <typename T>
 concept MdSpan2D = is_instance_of_v<T, std::mdspan> && T::extents_type::rank() == 2;

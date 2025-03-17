@@ -70,8 +70,7 @@ struct Renderer {
   QuadRenderData<CursorQuadVertex> cursorData;
   wgpu::utils::RenderPassDescriptor cursorRPD;
 
-  Renderer() = default;
-  Renderer(const SizeHandler& sizes);
+  Renderer();
 
   void Resize(const SizeHandler& sizes);
   void SetColors(const glm::vec4& color, float gamma);
