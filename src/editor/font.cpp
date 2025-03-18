@@ -13,12 +13,13 @@ static auto SplitStr(std::string_view str, char delim) {
          std::views::transform([](auto&& r) { return std::string_view(r); });
 }
 
-FontFamily FontFamily::Default(float linespace, float dpiScale) {
-  return FromGuifont("SF Mono:h15", linespace, dpiScale).value();
+std::expected<FontFamily, std::string>
+FontFamily::Default(int linespace, float dpiScale) {
+  return FromGuifont("SF Mono:h15", linespace, dpiScale);
 }
 
 std::expected<FontFamily, std::string>
-FontFamily::FromGuifont(std::string guifont, float linespace, float dpiScale) {
+FontFamily::FromGuifont(std::string guifont, int linespace, float dpiScale) {
   if (guifont.empty()) {
     return std::unexpected("Empty guifont");
   }
@@ -55,6 +56,9 @@ FontFamily::FromGuifont(std::string guifont, float linespace, float dpiScale) {
 
   try {
     FontFamily fontFamily{
+      .linespace = linespace,
+      .topLinespace = RoundToPixel(linespace / 2.0, dpiScale),
+      .dpiScale = dpiScale,
       .fonts = SplitStr(fontsStr, ',') | std::views::transform([&](auto&& fontName) {
         FontSet fontSet;
         auto makeFontHandle = [&](bool bold, bool italic) {
@@ -66,7 +70,6 @@ FontFamily::FromGuifont(std::string guifont, float linespace, float dpiScale) {
               .bold = bold,
               .italic = italic,
             },
-            linespace,
             dpiScale
           )
           .value(); // allow exception to propagate
@@ -90,7 +93,7 @@ FontFamily::FromGuifont(std::string guifont, float linespace, float dpiScale) {
         return fontSet;
       }) |
       std::ranges::to<std::vector>(),
-      .shapeDrawing{fontFamily.DefaultFont().charSize, dpiScale},
+      .shapeDrawing{fontFamily.GetCharSize(), dpiScale},
       .textureAtlas{fontFamily.DefaultFont().charSize.y, dpiScale},
       .colorTextureAtlas{fontFamily.DefaultFont().charSize.y, dpiScale},
       .defaultHeight = height,
@@ -103,12 +106,12 @@ FontFamily::FromGuifont(std::string guifont, float linespace, float dpiScale) {
   }
 }
 
-bool FontFamily::TryChangeDpiScale(float dpiScale) {
-  if (DefaultFont().dpiScale == dpiScale) return false;
+bool FontFamily::TryChangeDpiScale(float _dpiScale) {
+  if (dpiScale == _dpiScale) return false;
 
-  UpdateFonts([&](const FontHandle& fontHandle) -> FontHandle{
+  UpdateFonts([&](const FontHandle& fontHandle) -> FontHandle {
     return std::make_shared<Font>(
-      fontHandle->path, fontHandle->height, fontHandle->width, fontHandle->linespace, dpiScale
+      fontHandle->path, fontHandle->height, fontHandle->width, dpiScale
     );
   });
 
@@ -123,17 +126,14 @@ void FontFamily::ChangeSize(float delta) {
     float widthHeightRatio = defaultWidth / defaultHeight;
     float newWidth = newHeight * widthHeightRatio;
 
-    return std::make_shared<Font>(
-      fontHandle->path, newHeight, newWidth, fontHandle->linespace, fontHandle->dpiScale
-    );
+    return std::make_shared<Font>(fontHandle->path, newHeight, newWidth, dpiScale);
   });
 }
 
 void FontFamily::ResetSize() {
   UpdateFonts([&](const FontHandle& fontHandle) -> FontHandle {
     return std::make_shared<Font>(
-      fontHandle->path, defaultHeight, defaultWidth, fontHandle->linespace,
-      fontHandle->dpiScale
+      fontHandle->path, defaultHeight, defaultWidth, dpiScale
     );
   });
 }
@@ -158,13 +158,15 @@ void FontFamily::UpdateFonts(std::function<FontHandle(const FontHandle&)> create
   }
 
   fonts = std::move(newFonts);
-  shapeDrawing = ShapeDrawing(DefaultFont().charSize, DefaultFont().dpiScale);
-  textureAtlas = TextureAtlas<false>(DefaultFont().charSize.y, DefaultFont().dpiScale);
-  colorTextureAtlas = TextureAtlas<true>(DefaultFont().charSize.y, DefaultFont().dpiScale);
+  shapeDrawing = ShapeDrawing(GetCharSize(), dpiScale);
+  textureAtlas = TextureAtlas<false>(DefaultFont().charSize.y, dpiScale);
+  colorTextureAtlas = TextureAtlas<true>(DefaultFont().charSize.y, dpiScale);
 }
 
-const Font& FontFamily::DefaultFont() const {
-  return *fonts.front().normal;
+void FontFamily::UpdateLinespace(int _linespace) {
+  linespace = _linespace;
+  RoundToPixel(linespace / 2.0, dpiScale);
+  shapeDrawing = ShapeDrawing(GetCharSize(), dpiScale);
 }
 
 const GlyphInfo&

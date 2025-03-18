@@ -1,6 +1,7 @@
 #include "./render_texture.hpp"
 
 #include "utils/logger.hpp"
+#include "utils/round.hpp"
 #include "webgpu_utils/to_ptr.hpp"
 #include "gfx/instance.hpp"
 #include "glm/common.hpp"
@@ -91,13 +92,6 @@ ScrollableRenderTexture::ScrollableRenderTexture(
   clearData.CreateBuffers(1);
 }
 
-// round to prevent floating point errors from accumulating
-// also to make sure rendering is pixel perfect
-// round to a factor of 1 / dpiScale
-float ScrollableRenderTexture::RoundToPixel(float value) const {
-  return glm::round(value * dpiScale) / dpiScale;
-}
-
 void ScrollableRenderTexture::UpdatePos(glm::vec2 pos) {
   posOffset = pos;
   SetTexturePositions();
@@ -135,7 +129,7 @@ void ScrollableRenderTexture::UpdateScrolling(float dt) {
 
   if (scrollElapsed >= scrollTime) {
     baseOffset += scrollDist;
-    baseOffset = RoundToPixel(baseOffset);
+    baseOffset = RoundToPixel(baseOffset, dpiScale);
 
     scrolling = false;
     scrollDist = 0;
@@ -268,8 +262,8 @@ void ScrollableRenderTexture::SetTexturePositions() {
   for (size_t i = 0; i < renderTextures.size(); i++) {
     auto& texture = *renderTextures[i];
     // round for pixel perfect rendering
-    float yposTop = RoundToPixel(-(baseOffset + scrollCurr) + (i * textureHeight));
-    float yposBottom = RoundToPixel(yposTop + textureHeight);
+    float yposTop = RoundToPixel(-(baseOffset + scrollCurr) + (i * textureHeight), dpiScale);
+    float yposBottom = RoundToPixel(yposTop + textureHeight, dpiScale);
 
     if (yposBottom <= 0 || yposTop >= size.y) {
       texture.disabled = true;
@@ -312,7 +306,7 @@ void ScrollableRenderTexture::SetTextureCameraPositions() {
 std::vector<RenderInfo> ScrollableRenderTexture::GetRenderInfos(int maxRows) const {
   // top of viewport after scrolling
   float newBaseOffset = baseOffset + scrollDist;
-  newBaseOffset = RoundToPixel(newBaseOffset);
+  newBaseOffset = RoundToPixel(newBaseOffset, dpiScale);
 
   int topOffset = newBaseOffset / charSize.y;
   int bottomOffset = (newBaseOffset + size.y) / charSize.y;

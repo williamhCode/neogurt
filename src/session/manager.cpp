@@ -1,10 +1,8 @@
 #include "./manager.hpp"
+#include "SDL3/SDL_hints.h"
 #include "app/input.hpp"
 #include "app/task_helper.hpp"
-#include "app/window_funcs.h"
 #include "editor/highlight.hpp"
-#include "utils/async.hpp"
-#include "utils/color.hpp"
 #include "utils/logger.hpp"
 #include <algorithm>
 #include <format>
@@ -23,6 +21,78 @@ SessionManager::SessionManager(
 )
     : mode(_mode), appOptions(_appOptions), window(_window), sizes(_sizes),
       renderer(_renderer) {
+}
+
+void SessionManager::OptionSet(const std::map<std::string_view, msgpack::object>& optionTable) {
+  SessionHandle& session = CurrSession();
+  SessionOptions& options = session->options;
+
+  bool updateSizes = false;
+  bool setOpacity = false;
+
+  for (const auto& [key, value] : optionTable) {
+    auto convertOption = [&]<typename T>(T& option) {
+      try {
+        option = value.as<T>();
+      } catch (const msgpack::type_error& e) {
+        throw std::runtime_error(
+          std::format("failed to convert option '{}', bad type", key)
+        );
+      }
+    };
+
+    if (key == "margin_top") {
+      convertOption(options.marginTop);
+      updateSizes = true;
+
+    } else if (key == "margin_bottom") {
+      convertOption(options.marginBottom);
+      updateSizes = true;
+
+    } else if (key == "margin_left") {
+      convertOption(options.marginLeft);
+      updateSizes = true;
+
+    } else if (key == "margin_right") {
+      convertOption(options.marginRight);
+      updateSizes = true;
+
+    } else if (key == "macos_option_is_meta") {
+      convertOption(options.macosOptionIsMeta);
+      SDL_SetHint(SDL_HINT_MAC_OPTION_AS_ALT, options.macosOptionIsMeta.c_str());
+      session->input.macosOptionIsMeta = ParseMacosOptionIsMeta(options.macosOptionIsMeta);
+
+    } else if (key == "cursor_idle_time") {
+      convertOption(options.cursorIdleTime);
+
+    } else if (key == "scroll_speed") {
+      convertOption(options.scrollSpeed);
+      session->input.scrollSpeed = options.scrollSpeed;
+
+    } else if (key == "bg_color") {
+      convertOption(options.bgColor);
+      setOpacity = true;
+
+    } else if (key == "opacity") {
+      convertOption(options.opacity);
+      setOpacity = true;
+
+    } else if (key == "fps") {
+      convertOption(options.fps);
+
+    } else {
+      LOG_WARN("Unknown option: {}", key);
+    }
+  }
+
+  if (updateSizes) {
+    UpdateSessionSizes(session);
+  }
+
+  if (setOpacity) {
+    session->editorState.hlManager.SetOpacity(options.opacity, options.bgColor);
+    UpdateSessionSizes(session);
+  }
 }
 
 int SessionManager::SessionNew(const SessionNewOpts& opts) {
@@ -50,56 +120,44 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
   nvim.GuiSetup(appOptions.multigrid);
 
   // Options ---------------------------------------------------
-  auto optionsFut = GetAll(
-    SessionOptions::Load(nvim),
-    nvim.GetOptionValue("guifont", {}),
-    nvim.GetOptionValue("linespace", {}),
+  // auto optionsFut = GetAll(
+  //   SessionOptions::Load(nvim),
+  //   nvim.GetHl(0, {{"name", "NeogurtImeNormal"}, {"link", false}}),
+  //   nvim.GetHl(0, {{"name", "NeogurtImeSelected"}, {"link", false}})
+  // );
 
-    nvim.GetHl(0, {{"name", "NeogurtImeNormal"}, {"link", false}}),
-    nvim.GetHl(0, {{"name", "NeogurtImeSelected"}, {"link", false}})
-  );
+  // if (optionsFut.wait_for(1s) == std::future_status::ready) {
+  //   msgpack::object_handle imeNormalHlObj, imeSelectedHlObj;
+  //   std::tie(options, imeNormalHlObj, imeSelectedHlObj) = optionsFut.get();
 
-  std::string guifont;
-  int linespace = 0;
-  if (optionsFut.wait_for(1s) == std::future_status::ready) {
-    msgpack::object_handle guifontObj, linespaceObj;
-    msgpack::object_handle imeNormalHlObj, imeSelectedHlObj;
-    std::tie(options, guifontObj, linespaceObj, imeNormalHlObj, imeSelectedHlObj) = optionsFut.get();
+  //   ImeHandler::imeNormalHlId = -1;
+  //   ImeHandler::imeSelectedHlId = -2;
+  //   editorState.hlTable[ImeHandler::imeNormalHlId] = Highlight::FromDesc(imeNormalHlObj->convert());
+  //   editorState.hlTable[ImeHandler::imeSelectedHlId] = Highlight::FromDesc(imeSelectedHlObj->convert());
+  // } else {
+  //   LOG_WARN("Failed to load options (timeout)");
+  // }
 
-    guifont = guifontObj->as<std::string>();
-    linespace = linespaceObj->convert();
-
-    ImeHandler::imeNormalHlId = -1;
-    ImeHandler::imeSelectedHlId = -2;
-    editorState.hlTable[ImeHandler::imeNormalHlId] = Highlight::FromDesc(imeNormalHlObj->convert());
-    editorState.hlTable[ImeHandler::imeSelectedHlId] = Highlight::FromDesc(imeSelectedHlObj->convert());
-  } else {
-    LOG_WARN("Failed to load options (timeout)");
-  }
-
-  if (appOptions.borderless) {
-    options.marginTop += window.titlebarHeight;
-  }
+  // if (appOptions.borderless) {
+  //   options.marginTop += window.titlebarHeight;
+  // }
 
   // EditorState ---------------------------------------------------
   editorState.winManager.gridManager = &editorState.gridManager;
 
-  SetDefaultHl(editorState.hlTable, options);
+  editorState.hlManager.SetOpacity(options.opacity, options.bgColor);
 
-  editorState.fontFamily =
-    FontFamily::FromGuifont(guifont, linespace, window.dpiScale)
-      .or_else([&](const std::string& error) -> std::expected<FontFamily, std::string> {
-        LOG_WARN("Failed to load font family: {}", error);
-        LOG_WARN("Using default font family");
-        return FontFamily::Default(linespace, window.dpiScale);
-      })
-      .value();
+  editorState.fontFamily = FontFamily::Default(0, window.dpiScale).value();
 
   // InputHandler ---------------------------------------------------
   input.winManager = &editorState.winManager;
   input.nvim = &nvim;
-  input.options = options;
+
   input.multigrid = appOptions.multigrid;
+  input.marginTop = options.marginTop;
+  SDL_SetHint(SDL_HINT_MAC_OPTION_AS_ALT, options.macosOptionIsMeta.c_str());
+  input.macosOptionIsMeta = ParseMacosOptionIsMeta(options.macosOptionIsMeta);
+  input.scrollSpeed = options.scrollSpeed;
 
   // ImeHandler ---------------------------------------------------
   ime.editorState = &editorState;
@@ -210,7 +268,7 @@ std::vector<SessionListEntry> SessionManager::SessionList(const SessionListOpts&
   return entries;
 }
 
-bool SessionManager::ShouldQuit() {
+std::optional<SessionHandle> SessionManager::GetCurrentSession() {
   int prevId = CurrSession()->id;
 
   // remove disconnected sessions
@@ -224,7 +282,7 @@ bool SessionManager::ShouldQuit() {
   // check if no sessions left
   auto& currSession = CurrSession();
   if (currSession == nullptr) {
-    return true;
+    return {};
   }
 
   // switch to most recent session if current session was removed
@@ -232,7 +290,7 @@ bool SessionManager::ShouldQuit() {
     SessionSwitchInternal(currSession);
   }
 
-  return false;
+  return currSession;
 }
 
 void SessionManager::FontSizeChange(float delta, bool all) {
@@ -264,11 +322,25 @@ void SessionManager::FontSizeReset(bool all) {
     }
 
   } else {
-    if (auto session = CurrSession()) {
+    if (auto& session = CurrSession()) {
       session->editorState.fontFamily.ResetSize();
       UpdateSessionSizes(session);
     }
   }
+}
+
+void SessionManager::UpdateSessionSizes(SessionHandle& session) {
+  session->editorState.fontFamily.TryChangeDpiScale(window.dpiScale);
+  sizes.UpdateSizes(
+    window.size, window.dpiScale, session->editorState.fontFamily.GetCharSize(),
+    session->options
+  );
+  renderer.Resize(sizes);
+  session->editorState.winManager.sizes = sizes;
+  session->editorState.cursor.Resize(sizes.charSize, sizes.dpiScale);
+  // force to make nvim update all windows even if uiSize is the same
+  session->nvim.UiTryResize(sizes.uiWidth + 1, sizes.uiHeight);
+  session->nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight);
 }
 
 void SessionManager::SessionSwitchInternal(SessionHandle& session) {
@@ -280,18 +352,6 @@ void SessionManager::SessionSwitchInternal(SessionHandle& session) {
   PushSessionToMainThread(session);
 
   session->reattached = true;
-}
-
-void SessionManager::UpdateSessionSizes(SessionHandle& session) {
-  session->editorState.fontFamily.TryChangeDpiScale(window.dpiScale);
-  sizes.UpdateSizes(
-    window.size, window.dpiScale,
-    session->editorState.fontFamily.DefaultFont().charSize, session->options
-  );
-  renderer.Resize(sizes);
-  session->editorState.winManager.sizes = sizes;
-  session->editorState.cursor.Resize(sizes.charSize, sizes.dpiScale);
-  session->nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight);
 }
 
 // void SessionManager::LoadSessions(std::string_view filename) {

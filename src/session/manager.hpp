@@ -43,10 +43,10 @@ private:
   Renderer& renderer;
 
   int currId = 1;
+  SessionHandle nullSession{nullptr};
   // sessions are only owned by sessions map and main thread
   // others should hold pointer/reference to sessions in the sessions map
   std::map<int, SessionHandle> sessions;
-  SessionHandle nullSession{nullptr};
 
   // front to back = recency
   std::deque<SessionHandle*> sessionsOrder;
@@ -65,6 +65,8 @@ public:
     return it == sessionsOrder.end() ? nullSession : **it;
   }
 
+  void OptionSet(const std::map<std::string_view, msgpack::object>& optionTable);
+
   int SessionNew(const SessionNewOpts& opts = {});      // returns session id (0 if failed)
   bool SessionKill(int id = 0);                         // returns success
   int SessionRestart(int id = 0, bool currDir = false); // returns session id (0 if failed)
@@ -72,16 +74,16 @@ public:
   bool SessionPrev();                                   // returns success
   SessionListEntry SessionInfo(int id = 0);             // returns {} if failed
   std::vector<SessionListEntry> SessionList(const SessionListOpts& opts = {});
-  // returns true if all sessions are closed
-  bool ShouldQuit();
+  std::optional<SessionHandle> GetCurrentSession(); // returns nullopt if should quit
 
   void FontSizeChange(float delta, bool all = false);
   void FontSizeReset(bool all = false);
 
+  void UpdateSessionSizes(SessionHandle& session);
+
 private:
   // all session switching leads to this function
   void SessionSwitchInternal(SessionHandle& session);
-  void UpdateSessionSizes(SessionHandle& session);
 
   // void LoadSessions(std::string_view filename);
   // void SaveSessions(std::string_view filename);

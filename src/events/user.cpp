@@ -15,7 +15,12 @@ void ProcessUserEvents(rpc::Client& client, SessionManager& sessionManager) {
 
       try {
         auto [cmd, opts] = request.params.as<event::NeogurtCmd>();
-        if (cmd == "session_new") {
+
+        if (cmd == "option_set") {
+          sessionManager.OptionSet(opts);
+          request.SetValue(nil_t());
+
+        } else if (cmd == "session_new") {
           int id = sessionManager.SessionNew({
             .name = opts.at("name").convert(),
             .dir = opts.at("dir").convert(),

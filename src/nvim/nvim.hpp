@@ -1,6 +1,6 @@
 #pragma once
 
-#include "nvim/events/ui.hpp"
+#include "events/ui_parse.hpp"
 #include <future>
 #include <memory>
 #include <string_view>

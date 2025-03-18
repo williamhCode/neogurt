@@ -5,7 +5,7 @@
 #include "utils/region.hpp"
 #include "gfx/render_texture.hpp"
 #include "webgpu/webgpu_cpp.h"
-#include "nvim/events/ui.hpp"
+#include "events/ui_parse.hpp"
 
 enum class CursorShape {
   Block,

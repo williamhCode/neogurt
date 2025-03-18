@@ -68,12 +68,15 @@ set(APP_SRC
   app/path.cpp
   app/task_helper.cpp
 
-  editor/state.cpp
   editor/cursor.cpp
   editor/grid.cpp
   editor/window.cpp
   editor/highlight.cpp
   editor/font.cpp
+
+  events/ui_parse.cpp
+  events/ui_process.cpp
+  events/user.cpp
 
   gfx/context.cpp
   gfx/pipeline.cpp
@@ -89,13 +92,10 @@ set(APP_SRC
   gfx/font_rendering/texture_atlas.cpp
 
   nvim/nvim.cpp
-  nvim/event.cpp
-  nvim/events/ui.cpp
-  nvim/events/user.cpp
   nvim/msgpack_rpc/client.cpp
 
   session/manager.cpp
-  session/options.cpp
+  # session/options.cpp
 
   utils/unicode.cpp
   utils/clock.cpp

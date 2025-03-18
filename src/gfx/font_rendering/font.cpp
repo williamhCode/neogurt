@@ -52,24 +52,22 @@ void FtDone() {
 }
 
 std::expected<Font, std::string>
-Font::FromName(const FontDescriptorWithName& desc, float linespace, float dpiScale) {
+Font::FromName(const FontDescriptorWithName& desc, float dpiScale) {
   auto fontPath = GetFontPathFromName(desc);
   if (fontPath.empty()) {
     return std::unexpected("Failed to find font for: " + desc.name);
   }
   try {
-    return Font(fontPath, desc.height, desc.width, linespace, dpiScale);
+    return Font(fontPath, desc.height, desc.width, dpiScale);
   } catch (const std::runtime_error& e) {
     return std::unexpected(e.what());
   }
 }
 
-
 Font::Font(
-  std::string _path, float _height, float _width, float _linespace, float _dpiScale
+  std::string _path, float _height, float _width, float _dpiScale
 )
-    : path(std::move(_path)), height(_height), width(_width), linespace(_linespace),
-      dpiScale(_dpiScale) {
+    : path(std::move(_path)), height(_height), width(_width), dpiScale(_dpiScale) {
   if (face = CreateFace(library, path.c_str(), 0); face == nullptr) {
     throw std::runtime_error("Failed to create FT_Face for: " + path);
   }
@@ -80,12 +78,6 @@ Font::Font(
 
   int trueWidth = width * dpiScale;
   width = trueWidth / dpiScale; // round down to nearest trueWidth
-
-  auto roundPixel = [this](float val) -> float {
-    return int(val * dpiScale) / dpiScale;
-  };
-  linespace = roundPixel(linespace);
-  float topLinespace = roundPixel(linespace / 2);
 
   emojiRatio = 1;
   // check has color (color bitmap images)
@@ -115,25 +107,10 @@ Font::Font(
     // }
   }
 
-  // auto IsColorEmojiFont = [&] {
-  //   static const uint32_t tag = FT_MAKE_TAG('C', 'B', 'L', 'C');
-  //   unsigned long length = 0;
-  //   FT_Load_Sfnt_Table(face.get(), tag, 0, nullptr, &length);
-  //   if (length) {
-  //     LOG_INFO("Color bitmap font: {}", path);
-  //     return true;
-  //   }
-  //   return false;
-  // };
-  // IsColorEmojiFont();
-
   FT_Set_Pixel_Sizes(face.get(), trueWidth, trueHeight);
   charSize.x = (face->size->metrics.max_advance >> 6) / dpiScale;
   charSize.y = (face->size->metrics.height >> 6) / dpiScale;
   ascender = (face->size->metrics.ascender >> 6) / dpiScale;
-
-  charSize.y += linespace;
-  ascender += topLinespace;
 
   float y_scale = face->size->metrics.y_scale;
   underlinePosition = (FT_MulFix(face->underline_position, y_scale) >> 6) / dpiScale;

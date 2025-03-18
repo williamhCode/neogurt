@@ -1,6 +1,6 @@
 #include "./ime.hpp"
 
-#include "nvim/events/ui.hpp"
+#include "events/ui_parse.hpp"
 #include "utils/logger.hpp"
 #include "utils/unicode.hpp"
 #include "SDL3/SDL_stdinc.h"

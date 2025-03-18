@@ -9,6 +9,20 @@ local utils = require("utils")
 
 -- if value is a type name, the option is required
 local cmds_table = {
+  -- sets neogurt options
+  option_set = {
+    margin_top = "number",
+    margin_bottom = "number",
+    margin_left = "number",
+    margin_right = "number",
+    macos_option_is_meta = "string",
+    cursor_idle_time = "number",
+    scroll_speed = "number",
+    bg_color = "number",
+    opacity = "number",
+    fps = "number",
+  },
+
   -- returns session id
   session_new = {
     name = "",
@@ -94,7 +108,10 @@ vim.g.neogurt_cmd = function(cmd, opts)
   end
   -- merge + check required options and option types
   opts = opts or {}
-  local opts = utils.merge_opts(default_opts, opts)
+  -- option_set is a special case (more like a map of values)
+  if (cmd ~= "option_set") then
+    opts = utils.merge_opts(default_opts, opts)
+  end
   if opts == nil then return end
 
   -- convert positional keys to named keys (arg1, arg1...)

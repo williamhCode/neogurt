@@ -1,7 +1,7 @@
 #pragma once
 
 #include "utils/ring_buffer.hpp"
-#include "nvim/events/ui.hpp"
+#include "events/ui_parse.hpp"
 
 struct Win; // forward decl
 

@@ -1,12 +1,11 @@
 #pragma once
 
+#include "events/ui_parse.hpp"
 #include "glm/ext/vector_float4.hpp"
-#include "session/options.hpp"
 #include <optional>
 #include <unordered_map>
 #include <string>
 #include <map>
-#include "msgpack/adaptor/boost/msgpack_variant.hpp"
 
 enum class UnderlineType : uint32_t {
   Underline,
@@ -28,14 +27,21 @@ struct Highlight {
   float bgAlpha = 1; // 0 - 1
   std::string url;
 
-  static Highlight FromDesc(const std::map<std::string, msgpack::type::variant>& hlDesc);
+  static Highlight FromDesc(const event::HlAttrMap& hlDesc);
 };
 
-using HlTable = std::unordered_map<int, Highlight>;
+struct HlManager {
+  std::unordered_map<int, Highlight> hlTable;
+  glm::vec4 defaultBg;
 
-void SetDefaultHl(HlTable& table, const SessionOptions& options);
+  HlManager();
+  void DefaultColorsSet(const event::DefaultColorsSet& e);
+  void HlAttrDefine(const event::HlAttrDefine& e);
 
-glm::vec4 GetDefaultBackground(const HlTable& table);
-glm::vec4 GetForeground(const HlTable& table, const Highlight& hl);
-glm::vec4 GetBackground(const HlTable& table, const Highlight& hl);
-glm::vec4 GetSpecial(const HlTable& table, const Highlight& hl);
+  void SetOpacity(float opacity, int bgColor);
+
+  glm::vec4 GetDefaultBackground();
+  glm::vec4 GetForeground(const Highlight& hl);
+  glm::vec4 GetBackground(const Highlight& hl);
+  glm::vec4 GetSpecial(const Highlight& hl);
+};

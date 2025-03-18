@@ -139,7 +139,7 @@ void Renderer::Begin() {
 }
 
 void Renderer::RenderToWindow(
-  Win& win, FontFamily& fontFamily, HlTable& hlTable
+  Win& win, FontFamily& fontFamily, HlManager& hlManager
 ) {
   // if for whatever reason (prob nvim events buggy, events not sent or offsync)
   // the grid is not the same size as the window
@@ -172,8 +172,12 @@ void Renderer::RenderToWindow(
   shapeData.ResetCounts();
 
   glm::vec2 textOffset(0, 0);
-  const auto& defaultFont = fontFamily.DefaultFont();
-  auto defaultBg = GetDefaultBackground(hlTable);
+  const auto defaultBg = hlManager.GetDefaultBackground();
+  const glm::vec2 charSize = fontFamily.GetCharSize();
+  const float ascender = fontFamily.GetAscender();
+  const float underlineThickness = fontFamily.DefaultFont().underlineThickness;
+  const float underlinePosition = fontFamily.DefaultFont().underlinePosition;
+  const float dpiScale = fontFamily.dpiScale;
 
   for (size_t row = 0; row < rows; row++) {
     auto& line = win.grid.lines[row];
@@ -186,11 +190,11 @@ void Renderer::RenderToWindow(
 
     for (size_t col = 0; col < cols; col++) {
       auto& cell = line[col];
-      const Highlight& hl = hlTable[cell.hlId];
-      auto hlBg = GetBackground(hlTable, hl);
+      const Highlight& hl = hlManager.hlTable[cell.hlId];
+      auto hlBg = hlManager.GetBackground(hl);
       // don't render background if same as default background
       if (hlBg != defaultBg) {
-        auto rectPositions = MakeRegion({0, 0}, defaultFont.charSize);
+        auto rectPositions = MakeRegion({0, 0}, charSize);
 
         auto& quad = rectData.NextQuad();
         for (size_t i = 0; i < 4; i++) {
@@ -205,7 +209,7 @@ void Renderer::RenderToWindow(
 
         glm::vec2 textQuadPos{
           textOffset.x,
-          textOffset.y + (glyphInfo.useAscender ? defaultFont.ascender : 0)
+          textOffset.y + (glyphInfo.useAscender ? ascender : 0)
         };
 
         glm::vec4 foreground{};
@@ -213,7 +217,7 @@ void Renderer::RenderToWindow(
         if (glyphInfo.isEmoji) {
           quadData = &emojiData;
         } else {
-          foreground = GetForeground(hlTable, hl);
+          foreground = hlManager.GetForeground(hl);
           quadData = &textData;
         }
 
@@ -236,36 +240,31 @@ void Renderer::RenderToWindow(
         } else if (underlineType == UnderlineType::Underdotted) {
           thicknessScale = 1.5f;
         }
-        float thickness = defaultFont.underlineThickness * thicknessScale;
+        float thickness = underlineThickness * thicknessScale;
         // make sure underdouble is at least 4 physical pixels high
         if (underlineType == UnderlineType::Underdouble) {
-          thickness = std::max(thickness, 4.0f / defaultFont.dpiScale);
+          thickness = std::max(thickness, 4.0f / dpiScale);
         }
 
         Rect quadRect{
           .pos = {
             textOffset.x,
-            textOffset.y + defaultFont.ascender - defaultFont.underlinePosition -
-              (thickness / 2),
+            textOffset.y + ascender - underlinePosition - (thickness / 2),
           },
-          .size = {
-            defaultFont.charSize.x,
-            thickness,
-          },
+          .size = {charSize.x, thickness},
         };
-        quadRect.RoundToPixel(defaultFont.dpiScale);
+        quadRect.RoundToPixel(dpiScale);
 
-        auto underlineColor = GetSpecial(hlTable, hl);
+        auto underlineColor = hlManager.GetForeground(hl);
         AddShapeQuad(
-          shapeData, quadRect, underlineColor,
-          std::to_underlying(underlineType)
+          shapeData, quadRect, underlineColor, std::to_underlying(underlineType)
         );
       }
 
-      textOffset.x += defaultFont.charSize.x;
+      textOffset.x += charSize.x;
     }
 
-    textOffset.y += defaultFont.charSize.y;
+    textOffset.y += charSize.y;
   }
 
   rectIntervals.push_back(rectData.quadCount);
@@ -361,19 +360,19 @@ void Renderer::RenderToWindow(
 }
 
 void Renderer::RenderCursorMask(
-  const Win& win, Cursor& cursor, FontFamily& fontFamily, HlTable& hlTable
+  const Win& win, Cursor& cursor, FontFamily& fontFamily, HlManager& hlManager
 ) {
   if (!win.grid.ValidCoords(cursor.row, cursor.col)) return;
   auto& cell = win.grid.lines[cursor.row][cursor.col];
 
   if (!cell.text.empty() && cell.text != " ") {
     char32_t charcode = Utf8ToChar32(cell.text);
-    const auto& hl = hlTable[cell.hlId];
+    const auto& hl = hlManager.hlTable[cell.hlId];
     const auto& glyphInfo = fontFamily.GetGlyphInfo(charcode, hl.bold, hl.italic);
     cursor.onEmoji = glyphInfo.isEmoji;
 
     glm::vec2 textQuadPos{
-      0, glyphInfo.useAscender ? fontFamily.DefaultFont().ascender : 0
+      0, glyphInfo.useAscender ? fontFamily.GetAscender() : 0
     };
 
     textMaskData.ResetCounts();
@@ -489,11 +488,11 @@ void Renderer::RenderFinalTexture() {
   finalRPD.cColorAttachments[0].view = {};
 }
 
-void Renderer::RenderCursor(const Cursor& cursor, HlTable& hlTable) {
+void Renderer::RenderCursor(const Cursor& cursor, HlManager& hlManager) {
   auto attrId = cursor.cursorMode->attrId;
-  const auto& hl = hlTable[attrId];
-  auto foreground = GetForeground(hlTable, hl);
-  auto background = GetBackground(hlTable, hl);
+  const auto& hl = hlManager.hlTable[attrId];
+  auto foreground = hlManager.GetForeground(hl);
+  auto background = hlManager.GetBackground(hl);
   if (attrId == 0) std::swap(foreground, background);
 
   cursorData.ResetCounts();

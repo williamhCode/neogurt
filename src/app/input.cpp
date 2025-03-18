@@ -53,13 +53,13 @@ void InputHandler::HandleKeyboard(const SDL_KeyboardEvent& event) {
     auto modstate = mod;
     bool sendMeta = false;
 
-    if (options.macosOptionIsMeta == "only_left" && (mod & SDL_KMOD_LALT)) {
+    if (macosOptionIsMeta == MacosOptionIsMeta::OnlyLeft && (mod & SDL_KMOD_LALT)) {
       modstate &= ~SDL_KMOD_LALT;
       sendMeta = true;
-    } else if (options.macosOptionIsMeta == "only_right" && (mod & SDL_KMOD_RALT)) {
+    } else if (macosOptionIsMeta == MacosOptionIsMeta::OnlyRight && (mod & SDL_KMOD_RALT)) {
       modstate &= ~SDL_KMOD_RALT;
       sendMeta = true;
-    } else if (options.macosOptionIsMeta == "both" && (mod & SDL_KMOD_ALT)) {
+    } else if (macosOptionIsMeta == MacosOptionIsMeta::Both && (mod & SDL_KMOD_ALT)) {
       modstate &= ~SDL_KMOD_ALT;
       sendMeta = true;
     }
@@ -148,7 +148,7 @@ void InputHandler::HandleTextInput(const SDL_TextInputEvent& event) {
 
 void InputHandler::HandleMouseButton(const SDL_MouseButtonEvent& event) {
   if (event.down) {
-    if (event.y < options.marginTop) return;
+    if (event.y < marginTop) return;
 
     mouseButton = event.button;
     HandleMouseButtonAndMotion(event.down, {event.x, event.y});
@@ -238,7 +238,7 @@ void InputHandler::HandleMouseWheel(const SDL_MouseWheelEvent& event) {
   }
   if (multigrid) info.grid = 0;
 
-  double scrollUnit = 1 / options.scrollSpeed;
+  double scrollUnit = 1 / scrollSpeed;
 
   double yDelta = event.y;
   double xDelta = event.x;

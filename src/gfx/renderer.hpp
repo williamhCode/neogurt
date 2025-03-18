@@ -77,12 +77,12 @@ struct Renderer {
 
   void GetNextTexture();
   void Begin();
-  void RenderToWindow(Win& win, FontFamily& fontFamily, HlTable& hlTable);
+  void RenderToWindow(Win& win, FontFamily& fontFamily, HlManager& hlManager);
   void RenderCursorMask(
-    const Win& win, Cursor& cursor, FontFamily& fontFamily, HlTable& hlTable
+    const Win& win, Cursor& cursor, FontFamily& fontFamily, HlManager& hlManager
   );
   void RenderWindows(const Win* msgWin, std::span<const Win*> windows, std::span<const Win*> floatWindows);
   void RenderFinalTexture();
-  void RenderCursor(const Cursor& cursor, HlTable& hlTable);
+  void RenderCursor(const Cursor& cursor, HlManager& hlManager);
   void End();
 };

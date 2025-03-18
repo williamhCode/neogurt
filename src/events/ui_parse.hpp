@@ -47,9 +47,9 @@ struct DefaultColorsSet {
   uint32_t ctermBg;
   MSGPACK_DEFINE(rgbFg, rgbBg, rgbSp, ctermFg, ctermBg);
 };
+using HlAttrMap = std::map<std::string, msgpack::type::variant>;
 struct HlAttrDefine {
   int id;
-  using HlAttrMap = std::map<std::string, msgpack::type::variant>;
   HlAttrMap rgbAttrs;
   HlAttrMap ctermAttrs;
   std::vector<HlAttrMap> info;
@@ -223,4 +223,4 @@ struct UiEvents {
   }
 };
 
-void ParseUiEvents(const msgpack::object& params, UiEvents& uiEvents);
+void ParseUiEvents(rpc::Client& client, UiEvents& uiEvents);

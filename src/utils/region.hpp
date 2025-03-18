@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include "utils/round.hpp"
 #include "glm/common.hpp"
 #include "glm/ext/vector_float2.hpp"
 
@@ -40,14 +41,11 @@ struct Rect {
   }
 
   // rounds rect to nearest pixel
-  void RoundToPixel(float dpi) {
-    auto roundPixel = [dpi](float val) -> float {
-      return glm::round(val * dpi) / dpi;
-    };
-    pos.x = roundPixel(pos.x);
-    pos.y = roundPixel(pos.y);
-    size.x = roundPixel(size.x);
-    size.y = roundPixel(size.y);
+  void RoundToPixel(float dpiScale) {
+    pos.x = ::RoundToPixel(pos.x, dpiScale);
+    pos.y = ::RoundToPixel(pos.y, dpiScale);
+    size.x = ::RoundToPixel(size.x, dpiScale);
+    size.y = ::RoundToPixel(size.y, dpiScale);
   }
 };
 

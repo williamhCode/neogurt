@@ -37,6 +37,7 @@ glm::vec4 ToGlmColor(const wgpu::Color& color) {
   };
 }
 
+// alpha is always 1 (only converts rgb portion)
 glm::vec4 IntToColor(uint32_t color) {
   return {
     ((color >> 16) & 0xff) / 255.0f,

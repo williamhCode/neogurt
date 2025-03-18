@@ -9,7 +9,6 @@
 #include "app/sdl_event.hpp"
 #include "app/options.hpp"
 #include "app/task_helper.hpp"
-#include "app/window_funcs.h"
 #include "editor/grid.hpp"
 #include "editor/highlight.hpp"
 #include "editor/state.hpp"
@@ -17,9 +16,9 @@
 #include "gfx/renderer.hpp"
 #include "glm/ext/vector_float2.hpp"
 #include "glm/gtx/string_cast.hpp"
-#include "nvim/event.hpp"
-#include "nvim/events/ui.hpp"
-#include "nvim/events/user.hpp"
+#include "events/ui_parse.hpp"
+#include "events/ui_process.hpp"
+#include "events/user.hpp"
 #include "session/manager.hpp"
 #include "session/options.hpp"
 #include "utils/clock.hpp"
@@ -71,7 +70,7 @@ int main(int argc, char** argv) {
     SessionManager sessionManager(SpawnMode::Child, appOptions, window, sizes, renderer);
 
     sessionManager.SessionNew();
-    Session* session = sessionManager.CurrSession().get();
+    SessionHandle session = sessionManager.CurrSession();
     SessionOptions* options = &session->options;
     Nvim* nvim = &session->nvim;
     EditorState* editorState = &session->editorState;
@@ -106,6 +105,21 @@ int main(int argc, char** argv) {
       // main loop
       while (!exitWindow && !stopToken.stop_requested()) {
 
+        // session handling ------------------------------------------
+        if (auto sessionHandle = sessionManager.GetCurrentSession()) {
+          session = *sessionHandle;
+          options = &session->options;
+          nvim = &session->nvim;
+          editorState = &session->editorState;
+        } else {
+          // quit if no sessions left
+          SDL_Event quitEvent;
+          SDL_zero(quitEvent);
+          quitEvent.type = SDL_EVENT_QUIT;
+          SDL_PushEvent(&quitEvent);
+          break;
+        }
+
         // resize handling -------------------------------------------
         while (!resizeEvents.Empty()) {
           if (resizeEvents.Size() == 1) { // only process last event
@@ -123,8 +137,8 @@ int main(int argc, char** argv) {
 
             auto uiFbSize = sizes.uiFbSize;
             sizes.UpdateSizes(
-              window.size, window.dpiScale,
-              editorState->fontFamily.DefaultFont().charSize, *options
+              window.size, window.dpiScale, editorState->fontFamily.GetCharSize(),
+              *options
             );
             editorState->winManager.sizes = sizes;
 
@@ -202,31 +216,45 @@ int main(int argc, char** argv) {
         LOG_DISABLE();
         ProcessUserEvents(*nvim->client, sessionManager);
 
-        // process_events
-        ParseNotifications(*nvim->client, nvim->uiEvents);
+        ParseUiEvents(*nvim->client, nvim->uiEvents);
         if (nvim->uiEvents.numFlushes) {
           IdleReset();
         }
 
-        ParseEditorState(nvim->uiEvents, session->editorState);
+        ProcessUiEvents(nvim->uiEvents, session->editorState);
         LOG_ENABLE();
 
-        if (sessionManager.ShouldQuit()) {
-          SDL_Event quitEvent;
-          SDL_zero(quitEvent);
-          quitEvent.type = SDL_EVENT_QUIT;
-          SDL_PushEvent(&quitEvent);
-          break;
-        };
-        session = sessionManager.CurrSession().get();
-        options = &session->options;
-        nvim = &session->nvim;
-        editorState = &session->editorState;
-
         // update --------------------------------------------
+        // ui options
+        auto& uiOptions = editorState->uiOptions;
+        auto& fontFamily = editorState->fontFamily;
+
+        if (uiOptions.guifont.has_value()) {
+          auto guifont = *uiOptions.guifont;
+          auto linespace =
+            uiOptions.linespace.value_or(editorState->fontFamily.linespace);
+
+          fontFamily =
+            FontFamily::FromGuifont(guifont, linespace, window.dpiScale)
+              .or_else([&](const std::string& error) {
+                return FontFamily::Default(linespace, window.dpiScale);
+              })
+              .value();
+          sessionManager.UpdateSessionSizes(session);
+          uiOptions.guifont.reset();
+          uiOptions.linespace.reset();
+
+        } else if (uiOptions.linespace.has_value()) {
+          fontFamily.UpdateLinespace(*uiOptions.linespace);
+          sessionManager.UpdateSessionSizes(session);
+          uiOptions.linespace.reset();
+        }
+
+        // window
         editorState->winManager.UpdateRenderData();
         editorState->winManager.UpdateScrolling(dt);
 
+        // mouse
         const auto* currWin = editorState->winManager.GetWin(editorState->cursor.grid);
         if (editorState->cursor.SetDestPos(currWin, sizes)) {
           const auto& cursorPos = editorState->cursor.destPos;
@@ -251,13 +279,13 @@ int main(int argc, char** argv) {
         // render ----------------------------------------------
         renderer.Begin();
 
-        auto color = GetDefaultBackground(editorState->hlTable);
-        renderer.SetColors(color, options->gamma);
+        auto color = editorState->hlManager.GetDefaultBackground();
+        renderer.SetColors(color, appOptions.gamma);
 
         bool renderWindows = true;
         for (auto& [id, win] : editorState->winManager.windows) {
           if (win.grid.dirty && !win.hidden) {
-            renderer.RenderToWindow(win, editorState->fontFamily, editorState->hlTable);
+            renderer.RenderToWindow(win, editorState->fontFamily, editorState->hlManager);
             win.grid.dirty = false;
             renderWindows = true;
           }
@@ -265,7 +293,7 @@ int main(int argc, char** argv) {
 
         if (currWin != nullptr && editorState->cursor.dirty) {
           renderer.RenderCursorMask(
-            *currWin, editorState->cursor, editorState->fontFamily, editorState->hlTable
+            *currWin, editorState->cursor, editorState->fontFamily, editorState->hlManager
           );
           editorState->cursor.dirty = false;
         }
@@ -305,7 +333,7 @@ int main(int argc, char** argv) {
         renderer.RenderFinalTexture();
 
         if (editorState->cursor.ShouldRender()) {
-          renderer.RenderCursor(editorState->cursor, editorState->hlTable);
+          renderer.RenderCursor(editorState->cursor, editorState->hlManager);
         }
 
         renderer.End();

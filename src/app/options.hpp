@@ -9,6 +9,7 @@ struct AppOptions {
   bool highDpi = true;
   bool borderless = false;
   int blur = 0;
+  float gamma = 1.7;
 
   static std::expected<AppOptions, int> LoadFromCommandLine(int argc, char** argv);
 };

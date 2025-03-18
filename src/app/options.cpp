@@ -34,6 +34,7 @@ std::expected<AppOptions, int> AppOptions::LoadFromCommandLine(int argc, char** 
     ("high_dpi", DEFAULT_VAL(highDpi), "Use high dpi")
     ("borderless", DEFAULT_VAL(borderless), "Use borderless window")
     ("blur", DEFAULT_VAL(blur), "Set window blur level")
+    ("gamma", DEFAULT_VAL(gamma), "Set gamma value")
   ;
 
   po::variables_map vm;
@@ -65,6 +66,7 @@ std::expected<AppOptions, int> AppOptions::LoadFromCommandLine(int argc, char** 
     LOAD(highDpi);
     LOAD(borderless);
     LOAD(blur);
+    LOAD(gamma);
 
   } catch (const po::error& ex) {
     std::cerr << "Error: " << ex.what() << "\n";

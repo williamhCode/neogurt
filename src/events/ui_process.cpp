@@ -1,4 +1,4 @@
-#include "./state.hpp"
+#include "./ui_process.hpp"
 #include "glm/gtx/string_cast.hpp"
 #include "utils/color.hpp"
 #include "utils/logger.hpp"
@@ -41,7 +41,7 @@ static const auto winTypes = vIndicesSet<
 
 // clang-format off
 // i hate clang format on std::visit(overloaded{})
-void ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
+void ProcessUiEvents(UiEvents& uiEvents, EditorState& editorState) {
   for (int i = 0; i < uiEvents.numFlushes; i++) {
     if (uiEvents.queue.empty()) {
       LOG_ERR("ParseEditorState - events queue empty");
@@ -98,23 +98,14 @@ void ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
         },
         [&](OptionSet& e) {
           auto& opts = editorState.uiOptions;
-          if (e.name == "emoji") {
-            opts.emoji = e.value.as_bool();
-          } else if (e.name == "guifont") {
+          if (e.name == "guifont") {
             opts.guifont = e.value.as_string();
-          } else if (e.name == "guifontwide") {
-            opts.guifontwide = e.value.as_string();
           } else if (e.name == "linespace") {
             opts.linespace = VariantAsInt(e.value);
-          } else if (e.name == "mousefocus") {
-            opts.mousefocus = e.value.as_bool();
           } else if (e.name == "mousehide") {
             opts.mousehide = e.value.as_bool();
-          } else if (e.name == "mousemoveevent") {
-            opts.mousemoveevent = e.value.as_bool();
-          } else {
-            // LOG_WARN("unhandled option_set: {}", e.name);
           }
+          
         },
         [&](Chdir& e) {
           LOG("chdir: {}", e.dir);
@@ -140,57 +131,11 @@ void ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
         },
         [&](DefaultColorsSet& e) {
           // LOG("default_colors_set");
-          auto& hl = editorState.hlTable[0];
-          hl.foreground = IntToColor(e.rgbFg);
-          // bgAlpha != 1 means neogurt opacity < 1
-          // so don't set
-          if (hl.bgAlpha == 1) {
-            hl.background = IntToColor(e.rgbBg);
-          }
-          hl.special = IntToColor(e.rgbSp);
+          editorState.hlManager.DefaultColorsSet(e);
         },
         [&](HlAttrDefine& e) {
           // LOG("hl_attr_define");
-          auto& hl = editorState.hlTable[e.id];
-          for (auto& [key, value] : e.rgbAttrs) {
-            if (key == "foreground") {
-              hl.foreground = IntToColor(VariantAsInt(value));
-            } else if (key == "background") {
-              hl.background = IntToColor(VariantAsInt(value));
-            } else if (key == "special") {
-              hl.special = IntToColor(VariantAsInt(value));
-            } else if (key == "reverse") {
-              hl.reverse = value.as_bool();
-            } else if (key == "italic") {
-              hl.italic = value.as_bool();
-            } else if (key == "bold") {
-              hl.bold = value.as_bool();
-            } else if (key == "strikethrough") {
-              hl.strikethrough = value.as_bool();
-            } else if (key == "underline") {
-              hl.underline = UnderlineType::Underline;
-            } else if (key == "undercurl") {
-              hl.underline = UnderlineType::Undercurl;
-            } else if (key == "underdouble") {
-              hl.underline = UnderlineType::Underdouble;
-            } else if (key == "underdotted") {
-              hl.underline = UnderlineType::Underdotted;
-            } else if (key == "underdashed") {
-              hl.underline = UnderlineType::Underdashed;
-            } else if (key == "blend") {
-              hl.bgAlpha = 1 - (VariantAsInt(value) / 100.0f);
-            } else if (key == "url") {
-              // TODO: make urls clickable
-              hl.url = value.as_string();
-            } else if (key == "nocombine") {
-              // NOTE: ignore for now
-            } else {
-              LOG_INFO("unknown hl attr key: {}, type: {}", key, boost::core::demangled_name(value.type()));
-            }
-          }
-          if (hl.background) {
-            hl.background->a = hl.bgAlpha;
-          }
+          editorState.hlManager.HlAttrDefine(e);
         },
         [&](HlGroupSet& e) {
           // not needed to render grids, but used for rendering
@@ -256,12 +201,12 @@ void ParseEditorState(UiEvents& uiEvents, EditorState& editorState) {
 
                 // LOG_INFO("WinPos {} {} {}", e.grid, e.width, e.height);
                 // if no corresponding GridResize was sent, defer event
-                auto it = editorState.gridManager.grids.find(e.grid);
-                if (it == editorState.gridManager.grids.end()) {
-                  LOG_WARN("WinPos: grid {} not found", e.grid);
-                  uiEvents.queue[0].emplace_front(e);
-                  return;
-                }
+                // auto it = editorState.gridManager.grids.find(e.grid);
+                // if (it == editorState.gridManager.grids.end()) {
+                //   LOG_WARN("WinPos: grid {} not found", e.grid);
+                //   // uiEvents.queue[0].emplace_front(e);
+                //   return;
+                // }
 
                 editorState.winManager.Pos(e);
 

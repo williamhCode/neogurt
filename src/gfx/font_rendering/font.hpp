@@ -25,11 +25,10 @@ struct Font {
   float height;     // font size
   float width;
   float emojiRatio;
-  float linespace;
   float dpiScale;
 
-  glm::vec2 charSize;
-  float ascender;
+  glm::vec2 charSize; // doesn't take in account linespace
+  float ascender; // doesn't take in account linespace
   float underlinePosition;
   float underlineThickness;
 
@@ -38,12 +37,12 @@ struct Font {
   GlyphInfoMap glyphInfoMap;
 
   static std::expected<Font, std::string>
-  FromName(const FontDescriptorWithName& desc, float linespace, float dpiScale);
+  FromName(const FontDescriptorWithName& desc, float dpiScale);
 
   // static std::expected<Font, std::string>
   // UseEmoji(const FontDescriptorWithName& desc, float linespace, float dpiScale);
 
-  Font(std::string path, float height, float width, float linespace, float dpiScale);
+  Font(std::string path, float height, float width, float dpiScale);
 
   // returns nullptr when charcode is not found.
   // updates glyphInfoMap when charcode not in map.

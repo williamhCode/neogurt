@@ -1,6 +1,7 @@
 #include "./highlight.hpp"
 #include "utils/color.hpp"
 #include "utils/logger.hpp"
+#include "glm/gtx/string_cast.hpp"
 
 static int VariantAsInt(const msgpack::type::variant& v) {
   if (v.is_uint64_t()) return v.as_uint64_t();
@@ -9,15 +10,15 @@ static int VariantAsInt(const msgpack::type::variant& v) {
   return 0;
 }
 
-Highlight Highlight::FromDesc(const std::map<std::string, msgpack::type::variant>& hlDesc) {
+Highlight Highlight::FromDesc(const event::HlAttrMap& hlDesc) {
   Highlight hl{};
 
   for (const auto& [key, value] : hlDesc) {
-    if (key == "fg") {
+    if (key == "foreground" || key == "fg") {
       hl.foreground = IntToColor(VariantAsInt(value));
-    } else if (key == "bg") {
+    } else if (key == "background" || key == "bg") {
       hl.background = IntToColor(VariantAsInt(value));
-    } else if (key == "sp") {
+    } else if (key == "special" || key == "sp") {
       hl.special = IntToColor(VariantAsInt(value));
     } else if (key == "reverse") {
       hl.reverse = value.as_bool();
@@ -53,38 +54,62 @@ Highlight Highlight::FromDesc(const std::map<std::string, msgpack::type::variant
   return hl;
 }
 
-void SetDefaultHl(HlTable& table, const SessionOptions& options) {
-  auto& hl = table[0];
+HlManager::HlManager() {
+  auto& hl = hlTable[0];
   hl.foreground = {0, 0, 0, 1};
   hl.background = {0, 0, 0, 1};
   hl.special = {0, 0, 0, 1};
+  defaultBg = {0, 0, 0, 1};
+}
 
-  if (options.opacity < 1) {
-    hl.background = IntToColor(options.bgColor);
-    hl.background->a = options.opacity;
-    hl.bgAlpha = options.opacity;
+void HlManager::DefaultColorsSet(const event::DefaultColorsSet& e) {
+  auto& hl = hlTable[0];
+  hl.foreground = IntToColor(e.rgbFg);
+  // if bgAlpha is 1, use default background
+  // else save it for later
+  if (hl.bgAlpha >= 1) {
+    hl.background = IntToColor(e.rgbBg);
+  } else {
+    defaultBg = IntToColor(e.rgbBg);
+  }
+  hl.special = IntToColor(e.rgbSp);
+}
+
+void HlManager::HlAttrDefine(const event::HlAttrDefine& e) {
+  hlTable[e.id] = Highlight::FromDesc(e.rgbAttrs);
+}
+
+void HlManager::SetOpacity(float opacity, int bgColor) {
+  auto& hl = hlTable[0];
+  if (opacity >= 1) {
+    hl.background = defaultBg;
+    hl.bgAlpha = 1;
+  } else {
+    hl.background = IntToColor(bgColor);
+    hl.bgAlpha = std::clamp(opacity, 0.0f, 1.0f);
+    hl.background->a = hl.bgAlpha;
   }
 }
 
-glm::vec4 GetDefaultBackground(const HlTable& table) {
-  return table.at(0).background.value();
+glm::vec4 HlManager::GetDefaultBackground() {
+  return hlTable.at(0).background.value();
 }
 
-glm::vec4 GetForeground(const HlTable& table, const Highlight& hl) {
+glm::vec4 HlManager::GetForeground(const Highlight& hl) {
   if (hl.reverse) {
-    return hl.background.value_or(table.at(0).background.value());
+    return hl.background.value_or(hlTable.at(0).background.value());
   }
-  return hl.foreground.value_or(table.at(0).foreground.value());
+  return hl.foreground.value_or(hlTable.at(0).foreground.value());
 }
 
-glm::vec4 GetBackground(const HlTable& table, const Highlight& hl) {
+glm::vec4 HlManager::GetBackground(const Highlight& hl) {
   if (hl.reverse) {
-    return hl.foreground.value_or(table.at(0).foreground.value());
+    return hl.foreground.value_or(hlTable.at(0).foreground.value());
   }
-  return hl.background.value_or(table.at(0).background.value());
+  return hl.background.value_or(hlTable.at(0).background.value());
 }
 
-glm::vec4 GetSpecial(const HlTable& table, const Highlight& hl) {
+glm::vec4 HlManager::GetSpecial(const Highlight& hl) {
   // use foreground if no special
-  return hl.special.value_or(GetForeground(table, hl));
+  return hl.special.value_or(GetForeground(hl));
 }

@@ -19,6 +19,10 @@ struct FontSet {
 
 // list of fonts: primary font and fallback fonts
 struct FontFamily {
+  int linespace;
+  float topLinespace;
+  float dpiScale;
+
   std::vector<FontSet> fonts;
   ShapeDrawing shapeDrawing;
 
@@ -28,17 +32,35 @@ struct FontFamily {
   float defaultHeight;
   float defaultWidth;
 
-  static FontFamily Default(float linespace, float dpiScale);
+  static std::expected<FontFamily, std::string> Default(int linespace, float dpiScale);
   static std::expected<FontFamily, std::string>
-  FromGuifont(std::string guifont, float linespace, float dpiScale);
+  FromGuifont(std::string guifont, int linespace, float dpiScale);
 
   bool TryChangeDpiScale(float dpiScale); // returns true if changed
   void ChangeSize(float delta);
   void ResetSize();
+  void UpdateLinespace(int linespace);
 
   const Font& DefaultFont() const;
+  glm::vec2 GetCharSize() const;
+  float GetAscender() const;
+
   const GlyphInfo& GetGlyphInfo(char32_t charcode, bool bold, bool italic);
 
 private:
   void UpdateFonts(std::function<FontHandle(const FontHandle&)> createFont);
 };
+
+inline const Font& FontFamily::DefaultFont() const {
+  return *fonts.front().normal;
+}
+
+// takes in account linespace
+inline glm::vec2 FontFamily::GetCharSize() const {
+  return {DefaultFont().charSize.x, DefaultFont().charSize.y + linespace};
+}
+
+// takes in account linespace
+inline float FontFamily::GetAscender() const {
+  return DefaultFont().ascender + topLinespace;
+}

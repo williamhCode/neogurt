@@ -2,17 +2,34 @@
 
 #include "SDL3/SDL_events.h"
 
-#include "session/options.hpp"
 #include "nvim/nvim.hpp"
 #include "editor/window.hpp"
 
 #include <optional>
+#include <atomic>
+
+enum class MacosOptionIsMeta {
+  None,
+  OnlyLeft,
+  OnlyRight,
+  Both,
+};
+
+inline MacosOptionIsMeta ParseMacosOptionIsMeta(const std::string& str) {
+  if (str == "only_left") return MacosOptionIsMeta::OnlyLeft;
+  if (str == "only_right") return MacosOptionIsMeta::OnlyRight;
+  if (str == "both") return MacosOptionIsMeta::Both;
+  return MacosOptionIsMeta::None;
+}
 
 struct InputHandler {
   WinManager* winManager;
   Nvim* nvim;
-  SessionOptions options;
-  bool multigrid;
+
+  std::atomic_bool multigrid;
+  std::atomic_int marginTop;
+  std::atomic<MacosOptionIsMeta> macosOptionIsMeta;
+  std::atomic<float> scrollSpeed;
 
   // ime
   std::string editingText;

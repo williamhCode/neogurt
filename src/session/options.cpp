@@ -4,7 +4,6 @@
 #include "utils/async.hpp"
 #include "boost/core/demangle.hpp"
 #include "SDL3/SDL_hints.h"
-#include <iostream>
 #include <future>
 
 static std::string CamelToSnake(std::string_view s) {
@@ -65,7 +64,6 @@ std::future<SessionOptions> SessionOptions::Load(Nvim& nvim) {
 
   LOAD(bgColor);
   LOAD(opacity);
-  LOAD(gamma);
 
   LOAD(fps);
 

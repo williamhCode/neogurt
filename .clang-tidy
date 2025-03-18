@@ -27,6 +27,7 @@ Checks: '
   modernize-*,
   -modernize-use-trailing-return-type,
   -modernize-use-using,
+  -modernize-use-nodiscard,
   -modernize-use-designated-initializers,
   -modernize-avoid-c-arrays,
 

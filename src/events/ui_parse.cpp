@@ -1,4 +1,4 @@
-#include "./ui.hpp"
+#include "./ui_parse.hpp"
 #include "utils/logger.hpp"
 #include <unordered_map>
 #include <span>
@@ -155,7 +155,7 @@ static const std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
 };
 // clang-format on
 
-void ParseUiEvents(const msgpack::object& params, UiEvents& uiEvents) {
+static void ParseNotification(const msgpack::object& params, UiEvents& uiEvents) {
   std::span<const msgpack::object> events = params.via.array;
 
   for (const msgpack::object& eventObj : events) {
@@ -176,6 +176,19 @@ void ParseUiEvents(const msgpack::object& params, UiEvents& uiEvents) {
       } catch (const msgpack::type_error& e) {
         LOG_ERR("ParseUiEvents: {}", e.what());
       }
+    }
+  }
+}
+
+void ParseUiEvents(rpc::Client& client, UiEvents& uiEvents) {
+  // keep track of ui flushes
+  uiEvents.numFlushes = 0;
+
+  while (client.HasNotification()) {
+    auto notification = client.PopNotification();
+
+    if (notification.method == "redraw") {
+      ParseNotification(notification.params, uiEvents);
     }
   }
 }
