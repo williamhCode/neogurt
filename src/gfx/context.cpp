@@ -6,9 +6,7 @@
 
 using namespace wgpu;
 
-WGPUContext::WGPUContext(SDL_Window* window, glm::uvec2 _size, PresentMode _presentMode)
-    : size(_size), presentMode(_presentMode) {
-
+WGPUContext::WGPUContext(SDL_Window* window, glm::uvec2 size, bool vsync) {
   // instance -----------------------------
   std::vector<std::string> enabledToggles = {
     "enable_immediate_error_handling", "allow_unsafe_apis"
@@ -99,34 +97,20 @@ WGPUContext::WGPUContext(SDL_Window* window, glm::uvec2 _size, PresentMode _pres
   queue = device.GetQueue();
 
   // surface --------------------------------
-  surfaceFormat = TextureFormat::BGRA8Unorm;
+  Resize(size, vsync);
 
-  // apple doesn't support unpremultiplied alpha
-  alphaMode = CompositeAlphaMode::Premultiplied;
-
-  SurfaceConfiguration surfaceConfig{
-    .device = device,
-    .format = surfaceFormat,
-    .alphaMode = alphaMode,
-    .width = size.x,
-    .height = size.y,
-    .presentMode = presentMode,
-  };
-  surface.Configure(&surfaceConfig);
-
+  // pipeline --------------------------------
   pipeline = Pipeline(*this);
 }
 
-void WGPUContext::Resize(glm::uvec2 _size) {
-  size = _size;
-
+void WGPUContext::Resize(glm::uvec2 size, bool vsync) {
   SurfaceConfiguration surfaceConfig{
     .device = device,
-    .format = surfaceFormat,
-    .alphaMode = alphaMode,
+    .format = TextureFormat::BGRA8Unorm,
+    .alphaMode = CompositeAlphaMode::Premultiplied,
     .width = size.x,
     .height = size.y,
-    .presentMode = presentMode,
+    .presentMode = vsync ? PresentMode::Fifo : PresentMode::Immediate,
   };
   surface.Configure(&surfaceConfig);
 }

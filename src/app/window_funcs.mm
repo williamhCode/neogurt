@@ -60,15 +60,22 @@ void EnableScrollMomentum() {
     setBool: YES forKey: @"AppleMomentumScrollSupported"];
 }
 
-void SetTransparentTitlebar(SDL_Window* sdlWindow) {
+// call in main thread only
+void SetTitlebarStyle(SDL_Window* sdlWindow, bool transparent) {
   NSWindow* window = GetNSWindow(sdlWindow);
 
-  window.styleMask |= NSWindowStyleMaskFullSizeContentView;
-  window.titleVisibility = NSWindowTitleHidden;
-  window.titlebarAppearsTransparent = true;
+  if (transparent) {
+    window.styleMask |= NSWindowStyleMaskFullSizeContentView;
+    window.titleVisibility = NSWindowTitleHidden;
+    window.titlebarAppearsTransparent = true;
+  } else {
+    window.styleMask &= ~NSWindowStyleMaskFullSizeContentView;
+    window.titleVisibility = NSWindowTitleVisible;
+    window.titlebarAppearsTransparent = false;
+  }
 }
 
-// run in main thread
+// call in main thread only
 float GetTitlebarHeight(SDL_Window* sdlWindow) {
   NSWindow* window = GetNSWindow(sdlWindow);
   NSRect fullFrame = [window frame];

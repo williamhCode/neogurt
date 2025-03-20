@@ -4,7 +4,7 @@
 
 static TsQueue<std::function<void()>> taskQueue;
 
-void DeferToMainThread(std::function<void()>&& task) {
+void ExecuteOnMainThread(std::function<void()>&& task) {
   taskQueue.Push(std::move(task));
 
   SDL_Event event;

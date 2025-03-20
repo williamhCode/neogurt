@@ -13,7 +13,7 @@ struct Session {
 
   // session data ----------------------
   Nvim nvim;
-  SessionOptions options;
+  SessionOptions sessionOpts;
   EditorState editorState;
   InputHandler input;
   ImeHandler ime;

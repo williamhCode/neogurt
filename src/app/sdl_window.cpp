@@ -5,6 +5,7 @@
 #include "app/window_funcs.h"
 #include "gfx/instance.hpp"
 #include "utils/logger.hpp"
+#include <algorithm>
 #include <stdexcept>
 #include <format>
 
@@ -16,12 +17,11 @@ namespace sdl {
 
 using namespace wgpu;
 
-Window::Window(glm::uvec2 _size, const std::string& title, const AppOptions& options)
+Window::Window(glm::uvec2 _size, const std::string& title, const GlobalOptions& options)
     : size(_size) {
   // window ---------------------------------
-  int flags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_TRANSPARENT;
-  if (options.highDpi) flags |= SDL_WINDOW_HIGH_PIXEL_DENSITY;
-  // if (winOpts.borderless) flags |= SDL_WINDOW_BORDERLESS;
+  int flags =
+    SDL_WINDOW_RESIZABLE | SDL_WINDOW_TRANSPARENT | SDL_WINDOW_HIGH_PIXEL_DENSITY;
 
   window = SDL_WindowPtr(SDL_CreateWindow(title.c_str(), size.x, size.y, flags));
   if (window == nullptr) {
@@ -32,13 +32,10 @@ Window::Window(glm::uvec2 _size, const std::string& title, const AppOptions& opt
 
   SDL_SetWindowMinimumSize(Get(), 200, 100);
 
-  if (options.blur > 0) {
-    SetSDLWindowBlur(Get(), options.blur);
-  }
+  int blur = std::max(options.blur, 0);
+  SetSDLWindowBlur(Get(), blur);
 
-  if (options.borderless) {
-    SetTransparentTitlebar(Get());
-  }
+  SetTitlebarStyle(Get(), options.borderless);
   titlebarHeight = GetTitlebarHeight(Get());
 
   EnableScrollMomentum();
@@ -48,9 +45,7 @@ Window::Window(glm::uvec2 _size, const std::string& title, const AppOptions& opt
   fbSize = size * (uint)dpiScale;
 
   // webgpu ------------------------------------
-  vsync = options.vsync;
-  auto presentMode = vsync ? PresentMode::Mailbox : PresentMode::Immediate;
-  ctx = WGPUContext(Get(), fbSize, presentMode);
+  ctx = WGPUContext(Get(), fbSize, options.vsync);
   // LOG_INFO("WGPUContext created with size: {}, {}", fbSize.x, fbSize.y);
 }
 

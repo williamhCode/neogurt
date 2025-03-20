@@ -11,7 +11,7 @@ void ProcessUserEvents(rpc::Client& client, SessionManager& sessionManager) {
     auto request = client.PopRequest();
 
     if (request.method == "neogurt_cmd") {
-      LOG("neogurt_cmd: {}", ToString(request.params));
+      // LOG_INFO("neogurt_cmd: {}", ToString(request.params));
 
       try {
         auto [cmd, opts] = request.params.as<event::NeogurtCmd>();

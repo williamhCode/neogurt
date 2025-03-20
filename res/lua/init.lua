@@ -11,6 +11,12 @@ local utils = require("utils")
 local cmds_table = {
   -- sets neogurt options
   option_set = {
+    vsync = "boolean",
+    high_dpi = "boolean",
+    borderless = "boolean",
+    blur = "number",
+    gamma = "number",
+
     margin_top = "number",
     margin_bottom = "number",
     margin_left = "number",

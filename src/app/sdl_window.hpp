@@ -1,6 +1,6 @@
 #pragma once
 
-#include "app/options.hpp"
+#include "session/options.hpp"
 #include "glm/ext/vector_uint2.hpp"
 #include <memory>
 
@@ -24,7 +24,7 @@ struct Window {
 
   float titlebarHeight;
 
-  Window(glm::uvec2 size, const std::string& title, const AppOptions& options);
+  Window(glm::uvec2 size, const std::string& title, const GlobalOptions& options);
 
   SDL_Window* Get();
 };

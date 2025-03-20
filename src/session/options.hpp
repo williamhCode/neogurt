@@ -1,6 +1,18 @@
 #pragma once
 #include <string>
 
+// global options (shared across all sessions)
+struct GlobalOptions {
+  bool borderless = false;
+
+  int blur = 0;
+  float gamma = 1.7;
+
+  bool vsync = true;
+  float fps = 60;
+};
+
+// session specific options
 struct SessionOptions {
   int marginTop = 0;
   int marginBottom = 0;
@@ -13,7 +25,5 @@ struct SessionOptions {
 
   uint32_t bgColor = 0x000000;
   float opacity = 1;
-
-  float fps = 60;
 };
 

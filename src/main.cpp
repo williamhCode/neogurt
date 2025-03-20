@@ -44,9 +44,9 @@ WGPUContext ctx;
 int main(int argc, char** argv) {
   // std::locale::global(std::locale("en_US.UTF-8"));
 
-  auto optionsResult = AppOptions::LoadFromCommandLine(argc, argv);
+  auto optionsResult = StartupOptions::LoadFromCommandLine(argc, argv);
   if (!optionsResult) return optionsResult.error(); // return exit code
-  AppOptions appOptions = *optionsResult;
+  StartupOptions startupOpts = *optionsResult;
 
   SetupPaths();
 
@@ -64,14 +64,17 @@ int main(int argc, char** argv) {
 
   try {
     // init variables ---------------------
-    sdl::Window window({1200, 800}, "Neogurt", appOptions);
+    GlobalOptions globalOpts;
+    sdl::Window window({1200, 800}, "Neogurt", globalOpts);
     Renderer renderer;
     SizeHandler sizes{};
-    SessionManager sessionManager(SpawnMode::Child, appOptions, window, sizes, renderer);
+    SessionManager sessionManager(
+      SpawnMode::Child, startupOpts, globalOpts, window, sizes, renderer
+    );
 
     sessionManager.SessionNew();
     SessionHandle session = sessionManager.CurrSession();
-    SessionOptions* options = &session->options;
+    SessionOptions* options = &session->sessionOpts;
     Nvim* nvim = &session->nvim;
     EditorState* editorState = &session->editorState;
 
@@ -108,7 +111,7 @@ int main(int argc, char** argv) {
         // session handling ------------------------------------------
         if (auto sessionHandle = sessionManager.GetCurrentSession()) {
           session = *sessionHandle;
-          options = &session->options;
+          options = &session->sessionOpts;
           nvim = &session->nvim;
           editorState = &session->editorState;
         } else {
@@ -146,7 +149,7 @@ int main(int argc, char** argv) {
               editorState->cursor.Resize(sizes.charSize, sizes.dpiScale);
             }
 
-            ctx.Resize(sizes.fbSize);
+            ctx.Resize(sizes.fbSize, globalOpts.vsync);
 
             if (uiFbSize == sizes.uiFbSize) {
               renderer.camera.Resize(sizes.size);
@@ -158,26 +161,6 @@ int main(int argc, char** argv) {
           }
           resizeEvents.Pop();
         }
-
-        // timing -------------------------------------------
-        // this blocks until next frame if vsync is on
-        renderer.GetNextTexture();
-
-        float targetFps = window.vsync ? 200 : options->fps;
-        if (idle) {
-          targetFps = windowOccluded ? 10 : 60;
-        }
-        float dt = clock.Tick(targetFps);
-
-        // frameCount++;
-        // if (frameCount % 60 == 0) {
-        //   frameCount = 0;
-        //   auto fps = clock.GetFps();
-        //   auto fpsStr = std::format("fps: {:.2f}", fps);
-        //   std::print("\rfps: {:.2f}", fps);
-        // }
-
-        // timer1.Start();
 
         // sdl events -----------------------------------------
         while (!sdlEvents.Empty()) {
@@ -212,10 +195,30 @@ int main(int argc, char** argv) {
           sdlEvents.Pop();
         }
 
-        // nvim events  -------------------------------------------
-        LOG_DISABLE();
+        // user events -------------------------------------------
         ProcessUserEvents(*nvim->client, sessionManager);
 
+        // timing (run before nvim ui-events to minimize latency) --------
+        renderer.GetNextTexture(); // blocks until next frame if vsync is on
+
+        float targetFps = window.vsync ? 200 : globalOpts.fps;
+        if (idle) {
+          targetFps = windowOccluded ? 10 : 60;
+        }
+        float dt = clock.Tick(targetFps);
+
+        // frameCount++;
+        // if (frameCount % 60 == 0) {
+        //   frameCount = 0;
+        //   auto fps = clock.GetFps();
+        //   auto fpsStr = std::format("fps: {:.2f}", fps);
+        //   std::print("\rfps: {:.2f}", fps);
+        // }
+
+        // timer1.Start();
+
+        // nvim events  -------------------------------------------
+        LOG_DISABLE();
         ParseUiEvents(*nvim->client, nvim->uiEvents);
         if (nvim->uiEvents.numFlushes) {
           IdleReset();
@@ -280,7 +283,7 @@ int main(int argc, char** argv) {
         renderer.Begin();
 
         auto color = editorState->hlManager.GetDefaultBackground();
-        renderer.SetColors(color, appOptions.gamma);
+        renderer.SetColors(color, globalOpts.gamma);
 
         bool renderWindows = true;
         for (auto& [id, win] : editorState->winManager.windows) {

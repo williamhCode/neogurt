@@ -15,16 +15,9 @@ struct WGPUContext : wgpu::utils::DeviceWrapper {
 
   wgpu::Limits limits;
 
-  // surface config stuff
-  glm::uvec2 size;
-  wgpu::TextureFormat surfaceFormat;
-  wgpu::CompositeAlphaMode alphaMode;
-  wgpu::PresentMode presentMode;
-
   Pipeline pipeline;
 
   WGPUContext() = default;
-  WGPUContext(SDL_Window* window, glm::uvec2 size, wgpu::PresentMode presentMode);
-  void Init();
-  void Resize(glm::uvec2 size);
+  WGPUContext(SDL_Window* window, glm::uvec2 size, bool vsync);
+  void Resize(glm::uvec2 size, bool vsync);
 };

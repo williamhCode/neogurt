@@ -2,6 +2,7 @@
 #include "SDL3/SDL_hints.h"
 #include "app/input.hpp"
 #include "app/task_helper.hpp"
+#include "app/window_funcs.h"
 #include "editor/highlight.hpp"
 #include "utils/logger.hpp"
 #include <algorithm>
@@ -14,26 +15,31 @@
 
 SessionManager::SessionManager(
   SpawnMode _mode,
-  const AppOptions& _appOptions,
+  const StartupOptions& _startupOpts,
+  GlobalOptions& _globalOpts,
   sdl::Window& _window,
   SizeHandler& _sizes,
   Renderer& _renderer
 )
-    : mode(_mode), appOptions(_appOptions), window(_window), sizes(_sizes),
-      renderer(_renderer) {
+    : mode(_mode), startupOpts(_startupOpts), globalOpts(_globalOpts), window(_window),
+      sizes(_sizes), renderer(_renderer) {
 }
 
 void SessionManager::OptionSet(const std::map<std::string_view, msgpack::object>& optionTable) {
   SessionHandle& session = CurrSession();
-  SessionOptions& options = session->options;
+  SessionOptions& sessionOpts = session->sessionOpts;
 
-  bool updateSizes = false;
   bool setOpacity = false;
+  bool updateSizes = false;
+  bool resizeCtx = false;
 
   for (const auto& [key, value] : optionTable) {
-    auto convertOption = [&]<typename T>(T& option) {
+    // returns true if option changed
+    auto convertOption = [&]<typename T>(T& option) -> bool {
       try {
+        T optionOld = option;
         option = value.as<T>();
+        return option != optionOld;
       } catch (const msgpack::type_error& e) {
         throw std::runtime_error(
           std::format("failed to convert option '{}', bad type", key)
@@ -41,57 +47,92 @@ void SessionManager::OptionSet(const std::map<std::string_view, msgpack::object>
       }
     };
 
-    if (key == "margin_top") {
-      convertOption(options.marginTop);
-      updateSizes = true;
+    if (key == "borderless") {
+      if (convertOption(globalOpts.borderless)) {
+        ExecuteOnMainThread([win = window.Get(), borderless = globalOpts.borderless] {
+          SetTitlebarStyle(win, borderless);
+        });
+      }
 
-    } else if (key == "margin_bottom") {
-      convertOption(options.marginBottom);
-      updateSizes = true;
+    } else if (key == "blur") {
+      if (convertOption(globalOpts.blur)) {
+        int blur = std::max(globalOpts.blur, 0);
+        SetSDLWindowBlur(window.Get(), blur);
+      }
 
-    } else if (key == "margin_left") {
-      convertOption(options.marginLeft);
-      updateSizes = true;
+    } else if (key == "gamma") {
+      convertOption(globalOpts.gamma);
 
-    } else if (key == "margin_right") {
-      convertOption(options.marginRight);
-      updateSizes = true;
-
-    } else if (key == "macos_option_is_meta") {
-      convertOption(options.macosOptionIsMeta);
-      SDL_SetHint(SDL_HINT_MAC_OPTION_AS_ALT, options.macosOptionIsMeta.c_str());
-      session->input.macosOptionIsMeta = ParseMacosOptionIsMeta(options.macosOptionIsMeta);
-
-    } else if (key == "cursor_idle_time") {
-      convertOption(options.cursorIdleTime);
-
-    } else if (key == "scroll_speed") {
-      convertOption(options.scrollSpeed);
-      session->input.scrollSpeed = options.scrollSpeed;
-
-    } else if (key == "bg_color") {
-      convertOption(options.bgColor);
-      setOpacity = true;
-
-    } else if (key == "opacity") {
-      convertOption(options.opacity);
-      setOpacity = true;
+    } else if (key == "vsync") {
+      if (convertOption(globalOpts.vsync)) {
+        resizeCtx = true;
+      }
 
     } else if (key == "fps") {
-      convertOption(options.fps);
+      convertOption(globalOpts.fps);
+
+    } else if (key == "margin_top") {
+      if (convertOption(sessionOpts.marginTop)) {
+        updateSizes = true;
+      }
+
+    } else if (key == "margin_bottom") {
+      if (convertOption(sessionOpts.marginBottom)) {
+        updateSizes = true;
+      }
+
+    } else if (key == "margin_left") {
+      if (convertOption(sessionOpts.marginLeft)) {
+        updateSizes = true;
+      }
+
+    } else if (key == "margin_right") {
+      if (convertOption(sessionOpts.marginRight)) {
+        updateSizes = true;
+      }
+
+    } else if (key == "macos_option_is_meta") {
+      if (convertOption(sessionOpts.macosOptionIsMeta)) {
+        SDL_SetHint(SDL_HINT_MAC_OPTION_AS_ALT, sessionOpts.macosOptionIsMeta.c_str());
+        session->input.macosOptionIsMeta = ParseMacosOptionIsMeta(sessionOpts.macosOptionIsMeta);
+      }
+
+    } else if (key == "cursor_idle_time") {
+      convertOption(sessionOpts.cursorIdleTime);
+
+    } else if (key == "scroll_speed") {
+      if (convertOption(sessionOpts.scrollSpeed)) {
+        session->input.scrollSpeed = sessionOpts.scrollSpeed;
+      }
+
+    } else if (key == "bg_color") {
+      if (convertOption(sessionOpts.bgColor)) {
+        setOpacity = true;
+        updateSizes = true;
+      }
+
+    } else if (key == "opacity") {
+      if (convertOption(sessionOpts.opacity)) {
+        setOpacity = true;
+        updateSizes = true;
+      }
 
     } else {
       LOG_WARN("Unknown option: {}", key);
     }
   }
 
+  if (setOpacity) {
+    session->editorState.hlManager.SetOpacity(sessionOpts.opacity, sessionOpts.bgColor);
+  }
+
   if (updateSizes) {
     UpdateSessionSizes(session);
   }
 
-  if (setOpacity) {
-    session->editorState.hlManager.SetOpacity(options.opacity, options.bgColor);
-    UpdateSessionSizes(session);
+  // resize ctx after sizes are updated
+  if (resizeCtx) {
+    ctx.Resize(sizes.fbSize, globalOpts.vsync);
   }
 }
 
@@ -107,17 +148,17 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
   }
 
   auto& session = it->second;
-  auto& options = session->options;
+  auto& sessionOpts = session->sessionOpts;
   auto& nvim = session->nvim;
   auto& editorState = session->editorState;
   auto& input = session->input;
   auto& ime = session->ime;
 
   // Nvim ------------------------------------------------------
-  if (!nvim.ConnectStdio(appOptions.interactive, opts.dir)) {
+  if (!nvim.ConnectStdio(startupOpts.interactive, opts.dir)) {
     throw std::runtime_error("Failed to connect to nvim");
   }
-  nvim.GuiSetup(appOptions.multigrid);
+  nvim.GuiSetup(startupOpts.multigrid);
 
   // Options ---------------------------------------------------
   // auto optionsFut = GetAll(
@@ -138,14 +179,14 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
   //   LOG_WARN("Failed to load options (timeout)");
   // }
 
-  // if (appOptions.borderless) {
+  // if (startupOpts.borderless) {
   //   options.marginTop += window.titlebarHeight;
   // }
 
   // EditorState ---------------------------------------------------
   editorState.winManager.gridManager = &editorState.gridManager;
 
-  editorState.hlManager.SetOpacity(options.opacity, options.bgColor);
+  editorState.hlManager.SetOpacity(sessionOpts.opacity, sessionOpts.bgColor);
 
   editorState.fontFamily = FontFamily::Default(0, window.dpiScale).value();
 
@@ -153,11 +194,11 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
   input.winManager = &editorState.winManager;
   input.nvim = &nvim;
 
-  input.multigrid = appOptions.multigrid;
-  input.marginTop = options.marginTop;
-  SDL_SetHint(SDL_HINT_MAC_OPTION_AS_ALT, options.macosOptionIsMeta.c_str());
-  input.macosOptionIsMeta = ParseMacosOptionIsMeta(options.macosOptionIsMeta);
-  input.scrollSpeed = options.scrollSpeed;
+  input.multigrid = startupOpts.multigrid;
+  input.marginTop = sessionOpts.marginTop;
+  SDL_SetHint(SDL_HINT_MAC_OPTION_AS_ALT, sessionOpts.macosOptionIsMeta.c_str());
+  input.macosOptionIsMeta = ParseMacosOptionIsMeta(sessionOpts.macosOptionIsMeta);
+  input.scrollSpeed = sessionOpts.scrollSpeed;
 
   // ImeHandler ---------------------------------------------------
   ime.editorState = &editorState;
@@ -333,7 +374,7 @@ void SessionManager::UpdateSessionSizes(SessionHandle& session) {
   session->editorState.fontFamily.TryChangeDpiScale(window.dpiScale);
   sizes.UpdateSizes(
     window.size, window.dpiScale, session->editorState.fontFamily.GetCharSize(),
-    session->options
+    session->sessionOpts
   );
   renderer.Resize(sizes);
   session->editorState.winManager.sizes = sizes;
@@ -345,13 +386,14 @@ void SessionManager::UpdateSessionSizes(SessionHandle& session) {
 
 void SessionManager::SessionSwitchInternal(SessionHandle& session) {
   UpdateSessionSizes(session);
-  DeferToMainThread([winPtr = window.Get(),
-                     title = std::format("Neogurt - {}", session->name)] {
-    SDL_SetWindowTitle(winPtr, title.c_str());
+  ExecuteOnMainThread([win = window.Get(),
+                       title = std::format("Neogurt - {}", session->name)] {
+    SDL_SetWindowTitle(win, title.c_str());
   });
-  PushSessionToMainThread(session);
-
+  SDL_SetHint(SDL_HINT_MAC_OPTION_AS_ALT, session->sessionOpts.macosOptionIsMeta.c_str());
   session->reattached = true;
+
+  PushSessionToMainThread(session);
 }
 
 // void SessionManager::LoadSessions(std::string_view filename) {

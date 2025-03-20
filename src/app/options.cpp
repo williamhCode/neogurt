@@ -17,8 +17,8 @@ static std::string CamelToSnake(std::string_view s) {
   return result;
 }
 
-std::expected<AppOptions, int> AppOptions::LoadFromCommandLine(int argc, char** argv) {
-  AppOptions options{};
+std::expected<StartupOptions, int> StartupOptions::LoadFromCommandLine(int argc, char** argv) {
+  StartupOptions options{};
 
   #define DEFAULT_VAL(name) po::value<decltype(options.name)>()->default_value(options.name)
 
@@ -30,11 +30,6 @@ std::expected<AppOptions, int> AppOptions::LoadFromCommandLine(int argc, char** 
 
     ("interactive,i", DEFAULT_VAL(interactive), "Use interactive shell")
     ("multigrid", DEFAULT_VAL(multigrid), "Use multigrid")
-    ("vsync", DEFAULT_VAL(vsync), "Use vsync")
-    ("high_dpi", DEFAULT_VAL(highDpi), "Use high dpi")
-    ("borderless", DEFAULT_VAL(borderless), "Use borderless window")
-    ("blur", DEFAULT_VAL(blur), "Set window blur level")
-    ("gamma", DEFAULT_VAL(gamma), "Set gamma value")
   ;
 
   po::variables_map vm;
@@ -59,14 +54,8 @@ std::expected<AppOptions, int> AppOptions::LoadFromCommandLine(int argc, char** 
         options.name = vm[snake].as<decltype(options.name)>();                         \
       }                                                                                \
     }
-
     LOAD(interactive);
     LOAD(multigrid);
-    LOAD(vsync);
-    LOAD(highDpi);
-    LOAD(borderless);
-    LOAD(blur);
-    LOAD(gamma);
 
   } catch (const po::error& ex) {
     std::cerr << "Error: " << ex.what() << "\n";
