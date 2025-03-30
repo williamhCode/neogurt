@@ -25,6 +25,10 @@ void ProcessUserEvents(SessionManager& sessionManager) {
         try {
           auto [cmd, opts] = request.params.as<event::NeogurtCmd>();
 
+          auto convertId = [&](int id) {
+            return id == 0 ? session->id : id;
+          };
+
           if (cmd == "option_set") {
             sessionManager.OptionSet(session, opts);
             request.SetValue(nil_t());
@@ -38,13 +42,13 @@ void ProcessUserEvents(SessionManager& sessionManager) {
             request.SetValue(id);
 
           } else if (cmd == "session_kill") {
-            bool success = sessionManager.SessionKill(opts.at("id").convert());
+            bool success =
+              sessionManager.SessionKill(convertId(opts.at("id").convert()));
             request.SetValue(success);
 
           } else if (cmd == "session_restart") {
             int id = sessionManager.SessionRestart(
-              opts.at("id").convert(),
-              opts.at("curr_dir").convert()
+              convertId(opts.at("id").convert()), opts.at("curr_dir").convert()
             );
             if (id == 0) {
               request.SetValue(nil_t());
@@ -53,7 +57,8 @@ void ProcessUserEvents(SessionManager& sessionManager) {
             }
 
           } else if (cmd == "session_switch") {
-            bool success = sessionManager.SessionSwitch(opts.at("id").convert());
+            bool success =
+              sessionManager.SessionSwitch(convertId(opts.at("id").convert()));
             request.SetValue(success);
 
           } else if (cmd == "session_prev") {
@@ -61,7 +66,7 @@ void ProcessUserEvents(SessionManager& sessionManager) {
             request.SetValue(success);
 
           } else if (cmd == "session_info") {
-            auto info = sessionManager.SessionInfo(opts.at("id").convert());
+            auto info = sessionManager.SessionInfo(convertId(opts.at("id").convert()));
             if (info.id == 0) {
               request.SetValue(nil_t());
             } else {
@@ -76,14 +81,13 @@ void ProcessUserEvents(SessionManager& sessionManager) {
             request.SetValue(list);
 
           } else if (cmd == "font_size_change") {
-            float delta = opts.at("arg1").convert();
-            bool all = opts.at("all").convert();
-            sessionManager.FontSizeChange(delta, all);
+            sessionManager.FontSizeChange(
+              opts.at("arg1").convert(), opts.at("all").convert()
+            );
             request.SetValue(nil_t());
 
           } else if (cmd == "font_size_reset") {
-            bool all = opts.at("all").convert();
-            sessionManager.FontSizeReset(all);
+            sessionManager.FontSizeReset(opts.at("all").convert());
             request.SetValue(nil_t());
 
           } else {

@@ -226,8 +226,6 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
 }
 
 bool SessionManager::SessionKill(int id) {
-  if (id == 0) id = CurrSession()->id;
-
   auto it = sessions.find(id);
   if (it == sessions.end()) {
     return false;
@@ -239,8 +237,6 @@ bool SessionManager::SessionKill(int id) {
 }
 
 int SessionManager::SessionRestart(int id, bool currDir) {
-  if (id == 0) id = CurrSession()->id;
-
   auto it = sessions.find(id);
   if (it == sessions.end()) {
     return false;
@@ -282,8 +278,6 @@ bool SessionManager::SessionPrev() {
 }
 
 SessionListEntry SessionManager::SessionInfo(int id) {
-  if (id == 0) id = CurrSession()->id;
-
   auto it = sessions.find(id);
   if (it == sessions.end()) {
     return {};

@@ -29,40 +29,36 @@ Below are the all of the default options:
 ```lua
 -- check if nvim is launched by neogurt
 if vim.g.neogurt then
-  vim.g.neogurt_opts = {
-    -- these options are per application
-    vsync = true,
-    high_dpi = true,
-    borderless = false,
+  vim.g.neogurt_cmd("option_set", {
+    -- global options
+    titlebar = "default", -- "default", "transparent", "none"
+    show_title = true,
     blur = 0,
+    gamma = 1.7,
+    vsync = true,
+    fps = 60,
 
-    -- rest of the options are per session
+    -- session specific options
     margin_top = 0,
     margin_bottom = 0,
     margin_left = 0,
     margin_right = 0,
 
-    mac_opt_is_meta = true,
+    macos_option_is_meta = "none", -- "none", "only_left", "only_right", "both"
     cursor_idle_time = 10,
     scroll_speed = 1,
 
-    bg_color = 0x000000,  -- bg color used if opacity < 1.0
-    opacity = 1.0,
-
-    gamma = 1.7,
-
-    fps = 60,
-  }
+    bg_color = 0x000000, -- used when opacity < 1
+    opacity = 1,
+  })
 
   vim.o.guifont = "SF Mono:h15"
   vim.o.linespace = 0
-end
 
--- highlights set by Neogurt
--- ime highlight
-vim.api.nvim_set_hl(0, "NeogurtImeNormal", { link = "Normal" })
--- ime highlight for selected text
-vim.api.nvim_set_hl(0, "NeogurtImeSelected", { link = "Underlined" })
+  -- ime highlights set by Neogurt
+  vim.api.nvim_set_hl(0, "NeogurtImeNormal", { link = "Normal" })
+  vim.api.nvim_set_hl(0, "NeogurtImeSelected", { link = "Underlined" })
+end
 ```
 
 ### Commands/API
@@ -97,10 +93,15 @@ Note that:
 - `arg = "lua_type"` are required named arguments  
 - `[i] = value` are optional positional arguments  
 - `[i] = "lua_type"` are required positional arguments  
-- `id = 0` is the current session, just like vim buffers
+- `id = 0` is the current session id, just like vim buffers
 
 ```lua
 local cmds_table = {
+  -- sets neogurt options
+  -- default argument values are specified above
+  -- you can call this anytime, and the options will be updated dynamically
+  option_set = {},
+
   -- returns session id
   session_new = {
     name = "",
@@ -118,7 +119,7 @@ local cmds_table = {
   },
   -- returns success (bool)
   session_switch = {
-    id = "number",
+    id = "number"
   },
   -- switch to previous session
   -- returns success (bool)
@@ -172,8 +173,11 @@ if vim.g.neogurt then
   map(mode, "<D-r>", "<cmd>Neogurt session_select sort=time<cr>")
   map(mode, "<D-R>", "<cmd>Neogurt session_restart<cr>")
 
-  -- sessionizer
+  -- sessionizer (create or select session)
   local choose_session = function(startup)
+    local curr_id = vim.g.neogurt_cmd("session_info").id
+    local session_list = vim.g.neogurt_cmd("session_list", { sort = "time" })
+
     local cmd = [[
     echo "$({
       echo ~/;
@@ -181,29 +185,44 @@ if vim.g.neogurt then
       echo ~/.config/nvim; 
       echo ~/Documents/Notes;
       echo ~/Documents/Work/Resume stuff;
-      find ~/Documents/Coding -mindepth 2 -maxdepth 2 -type d; 
+      find ~/Documents/Coding -mindepth 2 -maxdepth 2 -type d | sort -r;
     })"
     ]]
     local output = vim.fn.system(cmd)
 
-    local dirs = {}
     for dir in string.gmatch(output, "([^\n]+)") do
-      table.insert(dirs, dir)
+      table.insert(session_list, { dir = dir })
     end
 
-    vim.ui.select(dirs, {
-      prompt = "Choose a directory:",
+    vim.ui.select(session_list, {
+      prompt = "Sessions",
+      format_item = function(session)
+        if session.id ~= nil then
+          if session.id == curr_id then
+            return "* " .. session.name
+          else
+            return "- " .. session.name
+          end
+        else
+          return session.dir
+        end
+      end
     }, function(choice)
       if choice == nil then return end
-      local dir = choice
-      local fmod = vim.fn.fnamemodify
-      local name = fmod(fmod(dir, ":h"), ":t") .. "/" .. fmod(dir, ":t")
-      if startup then
-        local currId = vim.g.neogurt_cmd("session_info").id
-        vim.g.neogurt_cmd("session_new", { dir = dir, name = name })
-        vim.g.neogurt_cmd("session_kill", { id = currId })
+
+      if choice.id ~= nil then
+        vim.g.neogurt_cmd("session_switch", { id = choice.id })
       else
-        vim.g.neogurt_cmd("session_new", { dir = dir, name = name })
+        local fmod = vim.fn.fnamemodify
+        local dir = fmod(choice.dir, ":p")
+        local name = fmod(dir, ":h:h:t") .. "/" .. fmod(dir, ":h:t")
+
+        if startup then
+          vim.g.neogurt_cmd("session_new", { dir = dir, name = name })
+          vim.g.neogurt_cmd("session_kill")
+        else
+          vim.g.neogurt_cmd("session_new", { dir = dir, name = name })
+        end
       end
     end)
   end

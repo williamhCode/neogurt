@@ -72,12 +72,12 @@ public:
 
   void OptionSet(SessionHandle& session, const event::OptionTable& optionTable);
 
-  int SessionNew(const SessionNewOpts& opts = {});      // returns session id (0 if failed)
-  bool SessionKill(int id = 0);                         // returns success
-  int SessionRestart(int id = 0, bool currDir = false); // returns session id (0 if failed)
-  bool SessionSwitch(int id);                           // returns success
-  bool SessionPrev();                                   // returns success
-  SessionListEntry SessionInfo(int id = 0);             // returns {} if failed
+  int SessionNew(const SessionNewOpts& opts = {});  // returns session id (raise error if failed)
+  bool SessionKill(int id);                         // returns success
+  int SessionRestart(int id, bool currDir = false); // returns session id (0 if failed)
+  bool SessionSwitch(int id);                       // returns success
+  bool SessionPrev();                               // returns success
+  SessionListEntry SessionInfo(int id);             // returns {} if failed
   std::vector<SessionListEntry> SessionList(const SessionListOpts& opts = {});
   std::optional<SessionHandle> GetCurrentSession(); // returns nullopt if should quit
 

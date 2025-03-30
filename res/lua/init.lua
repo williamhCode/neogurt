@@ -48,7 +48,7 @@ local cmds_table = {
   },
   -- returns success (bool)
   session_switch = {
-    id = "number",
+    id = "number"
   },
   -- switch to previous session
   -- returns success (bool)
@@ -75,7 +75,7 @@ local cmds_table = {
   },
   font_size_reset = {
     all = false,  -- change in all sessions
-  },
+  }
 }
 
 vim.api.nvim_create_user_command("Neogurt", function(cmd_opts)
