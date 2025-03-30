@@ -17,7 +17,7 @@ namespace sdl {
 
 using namespace wgpu;
 
-Window::Window(glm::uvec2 _size, const std::string& title, const GlobalOptions& options)
+Window::Window(glm::uvec2 _size, const std::string& title, const GlobalOptions& globalOpts)
     : size(_size) {
   // window ---------------------------------
   int flags =
@@ -32,20 +32,17 @@ Window::Window(glm::uvec2 _size, const std::string& title, const GlobalOptions& 
 
   SDL_SetWindowMinimumSize(Get(), 200, 100);
 
-  int blur = std::max(options.blur, 0);
+  int blur = std::max(globalOpts.blur, 0);
   SetSDLWindowBlur(Get(), blur);
 
-  SetTitlebarStyle(Get(), options.borderless);
   titlebarHeight = GetTitlebarHeight(Get());
-
-  EnableScrollMomentum();
 
   // sizing ---------------------------------
   dpiScale = SDL_GetWindowPixelDensity(Get());
   fbSize = size * (uint)dpiScale;
 
   // webgpu ------------------------------------
-  ctx = WGPUContext(Get(), fbSize, options.vsync);
+  ctx = WGPUContext(Get(), fbSize, globalOpts.vsync, globalOpts.gamma);
   // LOG_INFO("WGPUContext created with size: {}, {}", fbSize.x, fbSize.y);
 }
 

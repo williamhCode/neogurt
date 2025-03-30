@@ -3,11 +3,10 @@
 
 // global options (shared across all sessions)
 struct GlobalOptions {
-  bool borderless = false;
-
+  bool showTitle = true;
+  std::string titlebar = "default"; // "default", "transparent", "none"
   int blur = 0;
   float gamma = 1.7;
-
   bool vsync = true;
   float fps = 60;
 };
@@ -19,7 +18,7 @@ struct SessionOptions {
   int marginLeft = 0;
   int marginRight = 0;
 
-  std::string macosOptionIsMeta = "none";
+  std::string macosOptionIsMeta = "none"; // "none", "only_left", "only_right", "both"
   float cursorIdleTime = 10;
   float scrollSpeed = 1;
 

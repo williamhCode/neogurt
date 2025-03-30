@@ -55,23 +55,39 @@ void SetSDLWindowBlur(SDL_Window* sdlWindow, int blurRadius) {
 #endif
 }
 
-void EnableScrollMomentum() {
-  [[NSUserDefaults standardUserDefaults]
-    setBool: YES forKey: @"AppleMomentumScrollSupported"];
+// call in main thread only
+void ShowTitle(SDL_Window* sdlWindow, bool show) {
+  NSWindow* window = GetNSWindow(sdlWindow);
+  if (show) {
+    window.titleVisibility = NSWindowTitleVisible;
+  } else {
+    window.titleVisibility = NSWindowTitleHidden;
+  }
 }
 
-// call in main thread only
-void SetTitlebarStyle(SDL_Window* sdlWindow, bool transparent) {
+void SetTitlebarStyle(SDL_Window* sdlWindow, std::string_view titlebar) {
   NSWindow* window = GetNSWindow(sdlWindow);
 
-  if (transparent) {
+  if (titlebar == "transparent") {
     window.styleMask |= NSWindowStyleMaskFullSizeContentView;
-    window.titleVisibility = NSWindowTitleHidden;
     window.titlebarAppearsTransparent = true;
+    [[window standardWindowButton:NSWindowCloseButton] setHidden:NO];
+    [[window standardWindowButton:NSWindowMiniaturizeButton] setHidden:NO];
+    [[window standardWindowButton:NSWindowZoomButton] setHidden:NO];
+
+  } else if (titlebar == "none") {
+    window.styleMask |= NSWindowStyleMaskFullSizeContentView;
+    window.titlebarAppearsTransparent = true;
+    [[window standardWindowButton:NSWindowCloseButton] setHidden:YES];
+    [[window standardWindowButton:NSWindowMiniaturizeButton] setHidden:YES];
+    [[window standardWindowButton:NSWindowZoomButton] setHidden:YES];
+
   } else {
     window.styleMask &= ~NSWindowStyleMaskFullSizeContentView;
-    window.titleVisibility = NSWindowTitleVisible;
     window.titlebarAppearsTransparent = false;
+    [[window standardWindowButton:NSWindowCloseButton] setHidden:NO];
+    [[window standardWindowButton:NSWindowMiniaturizeButton] setHidden:NO];
+    [[window standardWindowButton:NSWindowZoomButton] setHidden:NO];
   }
 }
 

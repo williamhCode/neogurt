@@ -65,13 +65,10 @@ HlManager::HlManager() {
 void HlManager::DefaultColorsSet(const event::DefaultColorsSet& e) {
   auto& hl = hlTable[0];
   hl.foreground = IntToColor(e.rgbFg);
-  // if bgAlpha is 1, use default background
-  // else save it for later
   if (hl.bgAlpha >= 1) {
     hl.background = IntToColor(e.rgbBg);
-  } else {
-    defaultBg = IntToColor(e.rgbBg);
   }
+  defaultBg = IntToColor(e.rgbBg);
   hl.special = IntToColor(e.rgbSp);
 }
 

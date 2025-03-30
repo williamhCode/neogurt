@@ -25,8 +25,10 @@ SessionManager::SessionManager(
       sizes(_sizes), renderer(_renderer) {
 }
 
-void SessionManager::OptionSet(const std::map<std::string_view, msgpack::object>& optionTable) {
-  SessionHandle& session = CurrSession();
+void SessionManager::OptionSet(
+  SessionHandle& session, const event::OptionTable& optionTable
+) {
+  bool isCurrent = session == CurrSession();
   SessionOptions& sessionOpts = session->sessionOpts;
 
   bool setOpacity = false;
@@ -47,10 +49,18 @@ void SessionManager::OptionSet(const std::map<std::string_view, msgpack::object>
       }
     };
 
-    if (key == "borderless") {
-      if (convertOption(globalOpts.borderless)) {
-        ExecuteOnMainThread([win = window.Get(), borderless = globalOpts.borderless] {
-          SetTitlebarStyle(win, borderless);
+    // global options -----------------------
+    if (key == "titlebar") {
+      if (convertOption(globalOpts.titlebar)) {
+        ExecuteOnMainThread([win = window.Get(), titlebar = globalOpts.titlebar] {
+          SetTitlebarStyle(win, titlebar);
+        });
+      }
+
+    } else if (key == "show_title") {
+      if (convertOption(globalOpts.showTitle)) {
+        ExecuteOnMainThread([win = window.Get(), showTitle = globalOpts.showTitle] {
+          ShowTitle(win, showTitle);
         });
       }
 
@@ -61,7 +71,10 @@ void SessionManager::OptionSet(const std::map<std::string_view, msgpack::object>
       }
 
     } else if (key == "gamma") {
-      convertOption(globalOpts.gamma);
+      if (convertOption(globalOpts.gamma)) {
+        ctx.pipeline = Pipeline(ctx, ctx.slang, globalOpts.gamma);
+        updateSizes = true;
+      }
 
     } else if (key == "vsync") {
       if (convertOption(globalOpts.vsync)) {
@@ -71,7 +84,10 @@ void SessionManager::OptionSet(const std::map<std::string_view, msgpack::object>
     } else if (key == "fps") {
       convertOption(globalOpts.fps);
 
-    } else if (key == "margin_top") {
+    }
+
+    // session specific options ----------------------------------
+    else if (key == "margin_top") {
       if (convertOption(sessionOpts.marginTop)) {
         updateSizes = true;
       }
@@ -93,7 +109,7 @@ void SessionManager::OptionSet(const std::map<std::string_view, msgpack::object>
 
     } else if (key == "macos_option_is_meta") {
       if (convertOption(sessionOpts.macosOptionIsMeta)) {
-        SDL_SetHint(SDL_HINT_MAC_OPTION_AS_ALT, sessionOpts.macosOptionIsMeta.c_str());
+        if (isCurrent) SDL_SetHint(SDL_HINT_MAC_OPTION_AS_ALT, sessionOpts.macosOptionIsMeta.c_str());
         session->input.macosOptionIsMeta = ParseMacosOptionIsMeta(sessionOpts.macosOptionIsMeta);
       }
 
@@ -126,7 +142,8 @@ void SessionManager::OptionSet(const std::map<std::string_view, msgpack::object>
     session->editorState.hlManager.SetOpacity(sessionOpts.opacity, sessionOpts.bgColor);
   }
 
-  if (updateSizes) {
+  // only do this if current session, cuz it's gna be updated anyway when switching sessions
+  if (isCurrent && updateSizes) {
     UpdateSessionSizes(session);
   }
 
@@ -179,10 +196,6 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
   //   LOG_WARN("Failed to load options (timeout)");
   // }
 
-  // if (startupOpts.borderless) {
-  //   options.marginTop += window.titlebarHeight;
-  // }
-
   // EditorState ---------------------------------------------------
   editorState.winManager.gridManager = &editorState.gridManager;
 
@@ -195,7 +208,6 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
   input.nvim = &nvim;
 
   input.multigrid = startupOpts.multigrid;
-  input.marginTop = sessionOpts.marginTop;
   SDL_SetHint(SDL_HINT_MAC_OPTION_AS_ALT, sessionOpts.macosOptionIsMeta.c_str());
   input.macosOptionIsMeta = ParseMacosOptionIsMeta(sessionOpts.macosOptionIsMeta);
   input.scrollSpeed = sessionOpts.scrollSpeed;

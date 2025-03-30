@@ -1,6 +1,6 @@
 #include "./ui_process.hpp"
 #include "glm/gtx/string_cast.hpp"
-#include "utils/color.hpp"
+#include "session/manager.hpp"
 #include "utils/logger.hpp"
 #include <deque>
 #include <utility>
@@ -41,7 +41,10 @@ static const auto winTypes = vIndicesSet<
 
 // clang-format off
 // i hate clang format on std::visit(overloaded{})
-void ProcessUiEvents(UiEvents& uiEvents, EditorState& editorState) {
+void ProcessUiEvents(SessionHandle& session) {
+  auto& editorState = session->editorState;
+  auto& uiEvents = session->uiEvents;
+
   for (int i = 0; i < uiEvents.numFlushes; i++) {
     if (uiEvents.queue.empty()) {
       LOG_ERR("ParseEditorState - events queue empty");

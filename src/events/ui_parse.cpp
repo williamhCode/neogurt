@@ -1,5 +1,6 @@
 #include "./ui_parse.hpp"
 #include "utils/logger.hpp"
+#include "session/manager.hpp"
 #include <unordered_map>
 #include <span>
 
@@ -180,7 +181,10 @@ static void ParseNotification(const msgpack::object& params, UiEvents& uiEvents)
   }
 }
 
-void ParseUiEvents(rpc::Client& client, UiEvents& uiEvents) {
+void ParseUiEvents(SessionHandle& session) {
+  auto& uiEvents = session->uiEvents;
+  auto& client = *session->nvim.client;
+
   // keep track of ui flushes
   uiEvents.numFlushes = 0;
 

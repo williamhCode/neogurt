@@ -27,7 +27,6 @@ struct InputHandler {
   Nvim* nvim;
 
   std::atomic_bool multigrid;
-  std::atomic_int marginTop;
   std::atomic<MacosOptionIsMeta> macosOptionIsMeta;
   std::atomic<float> scrollSpeed;
 

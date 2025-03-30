@@ -1,4 +1,5 @@
 #include "./context.hpp"
+#include "app/path.hpp"
 #include "utils/logger.hpp"
 #include "webgpu_utils/init.hpp"
 #include "sdl3webgpu.hpp"
@@ -6,7 +7,7 @@
 
 using namespace wgpu;
 
-WGPUContext::WGPUContext(SDL_Window* window, glm::uvec2 size, bool vsync) {
+WGPUContext::WGPUContext(SDL_Window* window, glm::uvec2 size, bool vsync, float gamma) {
   // instance -----------------------------
   std::vector<std::string> enabledToggles = {
     "enable_immediate_error_handling", "allow_unsafe_apis"
@@ -100,7 +101,8 @@ WGPUContext::WGPUContext(SDL_Window* window, glm::uvec2 size, bool vsync) {
   Resize(size, vsync);
 
   // pipeline --------------------------------
-  pipeline = Pipeline(*this);
+  slang = SlangContext(fs::path(resourcesDir) / "shaders");
+  pipeline = Pipeline(*this, slang, gamma);
 }
 
 void WGPUContext::Resize(glm::uvec2 size, bool vsync) {

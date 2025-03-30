@@ -30,6 +30,7 @@
 #include <memory>
 #include <print>
 #include <span>
+#include <thread>
 #include <vector>
 #include <atomic>
 #include <ranges>
@@ -45,18 +46,20 @@ int main(int argc, char** argv) {
   // std::locale::global(std::locale("en_US.UTF-8"));
 
   auto optionsResult = StartupOptions::LoadFromCommandLine(argc, argv);
-  if (!optionsResult) return optionsResult.error(); // return exit code
+  if (!optionsResult) return optionsResult.error();
   StartupOptions startupOpts = *optionsResult;
 
   SetupPaths();
 
+  // SDL ------------------------------------------------
   SDL_SetHint(SDL_HINT_IME_IMPLEMENTED_UI, "composition");
-
+  SDL_SetHint(SDL_HINT_MAC_SCROLL_MOMENTUM, "1");
   if (!SDL_Init(SDL_INIT_VIDEO)) {
     LOG_ERR("Unable to initialize SDL: {}", SDL_GetError());
     return 1;
   }
 
+  // Freetype -------------------------------------------
   if (int error = FtInit()) {
     LOG_ERR("Unable to initialize freetype: {}", FT_Error_String(error));
     return 1;
@@ -77,8 +80,6 @@ int main(int argc, char** argv) {
     SessionOptions* options = &session->sessionOpts;
     Nvim* nvim = &session->nvim;
     EditorState* editorState = &session->editorState;
-
-    nvim->ExecLua("vim.g.neogurt_startup()", {});
 
     // main loop -----------------------------------
     std::atomic_bool exitWindow = false;
@@ -103,7 +104,7 @@ int main(int argc, char** argv) {
       };
 
       Clock clock;
-      // Timer timer1(1);
+      // Timer timer1(20);
 
       // main loop
       while (!exitWindow && !stopToken.stop_requested()) {
@@ -196,7 +197,22 @@ int main(int argc, char** argv) {
         }
 
         // user events -------------------------------------------
-        ProcessUserEvents(*nvim->client, sessionManager);
+        ProcessUserEvents(sessionManager);
+
+        // process nvim events for all sessions except current
+        // do this before getting next texture to minimize cpu time
+        LOG_DISABLE();
+        for (auto& [id, _session] : sessionManager.Sessions()) {
+          if (_session != session) {
+            ParseUiEvents(_session);
+          }
+        }
+        for (auto& [id, _session] : sessionManager.Sessions()) {
+          if (_session != session) {
+            ProcessUiEvents(_session);
+          }
+        }
+        LOG_ENABLE();
 
         // timing (run before nvim ui-events to minimize latency) --------
         renderer.GetNextTexture(); // blocks until next frame if vsync is on
@@ -219,12 +235,12 @@ int main(int argc, char** argv) {
 
         // nvim events  -------------------------------------------
         LOG_DISABLE();
-        ParseUiEvents(*nvim->client, nvim->uiEvents);
-        if (nvim->uiEvents.numFlushes) {
+        ParseUiEvents(session);
+        if (session->uiEvents.numFlushes) {
           IdleReset();
         }
 
-        ProcessUiEvents(nvim->uiEvents, session->editorState);
+        ProcessUiEvents(session);
         LOG_ENABLE();
 
         // update --------------------------------------------

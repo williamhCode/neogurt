@@ -148,8 +148,6 @@ void InputHandler::HandleTextInput(const SDL_TextInputEvent& event) {
 
 void InputHandler::HandleMouseButton(const SDL_MouseButtonEvent& event) {
   if (event.down) {
-    if (event.y < marginTop) return;
-
     mouseButton = event.button;
     HandleMouseButtonAndMotion(event.down, {event.x, event.y});
 
@@ -236,7 +234,7 @@ void InputHandler::HandleMouseWheel(const SDL_MouseWheelEvent& event) {
   } else {
     info = winManager->GetMouseInfo(*currGrid, mousePos);
   }
-  if (multigrid) info.grid = 0;
+  if (!multigrid) info.grid = 0;
 
   double scrollUnit = 1 / scrollSpeed;
 

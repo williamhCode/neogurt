@@ -109,9 +109,7 @@ void Renderer::Resize(const SizeHandler& sizes) {
   windowsRPD.cDepthStencilAttachmentInfo.view = stencilTextureView;
 }
 
-void Renderer::SetColors(const glm::vec4& color, float _gamma) {
-  gamma = _gamma;
-
+void Renderer::SetColors(const glm::vec4& color, float gamma) {
   clearColor = ToWGPUColor(color);
   linearClearColor = ToWGPUColor(ToLinear(color, gamma));
   premultClearColor = ToWGPUColor(

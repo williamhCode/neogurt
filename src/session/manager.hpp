@@ -1,6 +1,7 @@
 #pragma once
 
 #include "app/options.hpp"
+#include "events/user.hpp"
 #include "session/options.hpp"
 #include "session/state.hpp"
 #include "app/sdl_window.hpp"
@@ -63,12 +64,13 @@ public:
     Renderer& renderer
   );
 
+  auto& Sessions() { return sessions; }
   SessionHandle& CurrSession() {
     auto it = sessionsOrder.begin();
     return it == sessionsOrder.end() ? nullSession : **it;
   }
 
-  void OptionSet(const std::map<std::string_view, msgpack::object>& optionTable);
+  void OptionSet(SessionHandle& session, const event::OptionTable& optionTable);
 
   int SessionNew(const SessionNewOpts& opts = {});      // returns session id (0 if failed)
   bool SessionKill(int id = 0);                         // returns success

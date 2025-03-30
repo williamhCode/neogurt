@@ -223,4 +223,8 @@ struct UiEvents {
   }
 };
 
-void ParseUiEvents(rpc::Client& client, UiEvents& uiEvents);
+// foward decl
+struct Session;
+using SessionHandle = std::shared_ptr<Session>;
+
+void ParseUiEvents(SessionHandle& session);

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "slang_utils/context.hpp"
 #include "webgpu/webgpu_cpp.h"
 #include "glm/ext/vector_float2.hpp"
 #include "glm/ext/vector_float4.hpp"
@@ -67,5 +68,5 @@ struct Pipeline {
   wgpu::RenderPipeline cursorEmojiRPL;
 
   Pipeline() = default;
-  Pipeline(const WGPUContext& ctx);
+  Pipeline(const WGPUContext& ctx, SlangContext& slang, float gamma);
 };

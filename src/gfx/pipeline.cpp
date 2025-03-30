@@ -1,29 +1,26 @@
 #include "./pipeline.hpp"
-#include "slang_utils/context.hpp"
 #include "utils/logger.hpp"
 #include "webgpu_utils/blend.hpp"
 #include "gfx/context.hpp"
 #include "app/path.hpp"
+#include <string>
 #include <vector>
 
 using namespace wgpu;
 
-Pipeline::Pipeline(const WGPUContext& ctx) {
+Pipeline::Pipeline(const WGPUContext& ctx, SlangContext& slang, float gamma) {
   // slang stuff ---------------
-  SlangContext slang(fs::path(resourcesDir) / "shaders");
-
   auto loadShaderModule = [&](
     const std::string& moduleName,
     const std::vector<slang::PreprocessorMacroDesc>& macros = {}
   ) {
     auto source = slang.GetModuleSource(moduleName, macros);
-    // LOG_INFO("source: {}", source);
     return ctx.LoadShaderModuleSource(source);
   };
 
   // compile utils
-  // TODO: change gamma based on config options
-  slang.CompileModuleObject("utils", {{"GAMMA", "1.7"}});
+  slang.ClearModuleFiles();
+  slang.CompileModuleObject("utils", {{"GAMMA", std::to_string(gamma).c_str()}});
 
   // shared ------------------------------------------------
   viewProjBGL = ctx.MakeBindGroupLayout({

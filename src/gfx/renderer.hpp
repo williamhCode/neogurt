@@ -22,8 +22,6 @@ struct Renderer {
   wgpu::Color linearClearColor{};
   wgpu::Color premultClearColor{};
 
-  float gamma{};
-
   glm::vec4 defaultBgLinear{};
   wgpu::Buffer defaultBgLinearBuffer;
   wgpu::BindGroup defaultBgLinearBG;

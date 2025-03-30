@@ -77,8 +77,7 @@ private:
   std::unordered_map<u_int32_t, std::promise<msgpack::object_handle>> responses;
   std::mutex responsesMutex;
 
-  // shared requests between all neovim clients
-  static inline TsQueue<Request> requests;
+  TsQueue<Request> requests;
   TsQueue<Notification> notifications;
 
 public:

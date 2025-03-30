@@ -1,9 +1,11 @@
--- vim.api.nvim_command("autocmd VimEnter * call rpcrequest(1, 'vimenter')")
--- vim.api.nvim_command("autocmd UIEnter * call rpcrequest(1, 'uienter')")
-
 vim.g.neogurt = true
-vim.g.neogurt_opts = {}
 vim.g.neogurt_startup = function() end
+
+vim.api.nvim_create_autocmd("UiEnter", {
+  callback = function()
+    vim.rpcrequest(1, "ui_enter")
+  end
+})
 
 local utils = require("utils")
 
@@ -11,11 +13,12 @@ local utils = require("utils")
 local cmds_table = {
   -- sets neogurt options
   option_set = {
-    vsync = "boolean",
-    high_dpi = "boolean",
-    borderless = "boolean",
+    show_title = "boolean",
+    titlebar = "string",
     blur = "number",
     gamma = "number",
+    vsync = "boolean",
+    fps = "number",
 
     margin_top = "number",
     margin_bottom = "number",
@@ -26,7 +29,6 @@ local cmds_table = {
     scroll_speed = "number",
     bg_color = "number",
     opacity = "number",
-    fps = "number",
   },
 
   -- returns session id
@@ -120,8 +122,7 @@ vim.g.neogurt_cmd = function(cmd, opts)
   end
   if opts == nil then return end
 
-  -- convert positional keys to named keys (arg1, arg1...)
-  -- cuz rpc can't mix table and array
+  -- convert positional keys to named keys (arg1, arg2...)
   opts = utils.convert_positional_keys(opts)
 
   if cmd == "session_new" then

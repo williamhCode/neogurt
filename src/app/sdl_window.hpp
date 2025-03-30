@@ -22,9 +22,9 @@ struct Window {
   glm::uvec2 fbSize;
   float dpiScale;
 
-  float titlebarHeight;
+  int titlebarHeight;
 
-  Window(glm::uvec2 size, const std::string& title, const GlobalOptions& options);
+  Window(glm::uvec2 size, const std::string& title, const GlobalOptions& globalOpts);
 
   SDL_Window* Get();
 };
