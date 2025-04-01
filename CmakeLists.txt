@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.5...3.28)
 
-set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum OS X deployment version")
-
+# Project Setup ------------------------------------
 project(
   Neogurt
   VERSION 0.1.5
@@ -9,30 +8,28 @@ project(
   LANGUAGES C CXX
 )
 
-if (DEV_BUILD)
+if(DEV_BUILD)
   execute_process(
     COMMAND git rev-parse --short HEAD
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
     OUTPUT_VARIABLE GIT_COMMIT_HASH
     OUTPUT_STRIP_TRAILING_WHITESPACE
   )
 
   set(PROJECT_VERSION_SUFFIX "dev")
-  set(PROJECT_VERSION_COMMIT ${GIT_COMMIT_HASH})
+  set(PROJECT_VERSION_COMMIT "${GIT_COMMIT_HASH}")
   set(PROJECT_VERSION "${PROJECT_VERSION}-${PROJECT_VERSION_SUFFIX}-${PROJECT_VERSION_COMMIT}")
 endif()
 
 # fix https://gitlab.kitware.com/cmake/cmake/-/issues/24104
-enable_language(OBJC) 
+enable_language(OBJC)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)  # clangd
 
-# deps ---------------------------
+# Dependencies  -------------------------------------------------
 set(Boost_USE_STATIC_LIBS ON)
-# set(Boost_USE_DEBUG_LIBS OFF)
 find_package(Boost 1.86.0 REQUIRED COMPONENTS
   locale
   process
@@ -54,7 +51,7 @@ set(UTFCPP_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/deps/utfcpp/source)
 set(BLEND2D_NO_JIT OFF)
 add_subdirectory(deps/blend2d EXCLUDE_FROM_ALL)
 
-# neogurt target -------------------------
+# Target Configuration --------------------------------------------
 set(APP_SRC
 	main.cpp
 
@@ -118,19 +115,27 @@ target_compile_definitions(neogurt PRIVATE
 )
 
 target_include_directories(neogurt PRIVATE 
-  ${PROJECT_SOURCE_DIR}/src
-  ${UTFCPP_INCLUDE_DIR}
+  "${PROJECT_SOURCE_DIR}/src"
+  "${UTFCPP_INCLUDE_DIR}"
   ${FREETYPE_INCLUDE_DIRS}
 )
 
 # custom LLVM path in github actions, else use brew
-if (NOT DEFINED ENV{LLVM_PATH})
-  execute_process(COMMAND brew --prefix llvm OUTPUT_VARIABLE LLVM_PATH OUTPUT_STRIP_TRAILING_WHITESPACE)
-  set(ENV{LLVM_PATH} ${LLVM_PATH})
+if(NOT DEFINED ENV{LLVM_PATH})
+  execute_process(
+    COMMAND brew --prefix llvm
+    OUTPUT_VARIABLE LLVM_PATH
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  set(ENV{LLVM_PATH} "${LLVM_PATH}")
 endif()
 
 # https://github.com/Homebrew/homebrew-core/issues/67427
-execute_process(COMMAND brew --prefix icu4c OUTPUT_VARIABLE ICU_PATH OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process(
+  COMMAND brew --prefix icu4c
+  OUTPUT_VARIABLE ICU_PATH
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
 target_link_directories(neogurt PRIVATE
   "${ICU_PATH}/lib"
 )
@@ -146,7 +151,9 @@ target_link_libraries(neogurt PRIVATE
 
   # https://github.com/llvm/llvm-project/issues/77653
   # stack unwinding breaking and linking breaks without this
-  "-L$ENV{LLVM_PATH}/lib/c++ -L$ENV{LLVM_PATH}/lib/unwind -lunwind"
+  "-L$ENV{LLVM_PATH}/lib/c++" 
+  "-L$ENV{LLVM_PATH}/lib/unwind"
+  "-lunwind"
 )
 
 target_compile_options(neogurt PRIVATE
@@ -159,10 +166,10 @@ target_compile_options(neogurt PRIVATE
   # jthread clang
   -fexperimental-library
   -Wno-error=narrowing
-  --embed-dir=${PROJECT_SOURCE_DIR}/res
+  "--embed-dir=${PROJECT_SOURCE_DIR}/res"
 )
 
-if (XCODE)
+if(XCODE)
   target_compile_definitions(neogurt PRIVATE
     XCODE=1
   )
@@ -177,23 +184,25 @@ if (XCODE)
   set(CMAKE_XCODE_ATTRIBUTE_COMPILER_INDEX_STORE_ENABLE "No")
 endif()
 
-# app generation
-if (CMAKE_BUILD_TYPE MATCHES RelWithDebInfo)
-  set(RESOURCE_DIR ${PROJECT_SOURCE_DIR}/res)
+# App generation -----------------------------------------------
+if(CMAKE_BUILD_TYPE MATCHES RelWithDebInfo)
+  set(RESOURCE_DIR "${PROJECT_SOURCE_DIR}/res")
   file(GLOB_RECURSE RESOURCE_FILES
     "${RESOURCE_DIR}/shaders/*"
     "${RESOURCE_DIR}/lua/*"
   )
-  target_sources(neogurt PRIVATE
-    ${RESOURCE_FILES}
-  )
+  target_sources(neogurt PRIVATE "${RESOURCE_FILES}")
 
-  if (APPLE)
-    # NOTE: rerun make build-setup when adding resource files
+  if(APPLE)
+    # Create .app bundle --------------------------------------------
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum OS X deployment version")
+
+    # ensure relative paths of files in res/ are maintained in app bundle
+    # NOTE: rerun build-setup when adding resource files
     foreach (FILE ${RESOURCE_FILES})
-      file(RELATIVE_PATH FILE_REL_PATH "${RESOURCE_DIR}" ${FILE})
-      get_filename_component(FILE_REL_DIR ${FILE_REL_PATH} DIRECTORY)
-      set_source_files_properties(${FILE} PROPERTIES
+      file(RELATIVE_PATH FILE_REL_PATH "${RESOURCE_DIR}" "${FILE}")
+      get_filename_component(FILE_REL_DIR "${FILE_REL_PATH}" DIRECTORY)
+      set_source_files_properties("${FILE}" PROPERTIES
         MACOSX_PACKAGE_LOCATION "Resources/${FILE_REL_DIR}"
       )
     endforeach()
@@ -203,39 +212,30 @@ if (CMAKE_BUILD_TYPE MATCHES RelWithDebInfo)
       MACOSX_BUNDLE_INFO_PLIST "${RESOURCE_DIR}/Info.plist.in"
     )
 
+    # Fixup Bundle -------------------------------------------------
+    # install the macos bundle (.app) to CMAKE_INSTALL_PREFIX
     install(TARGETS neogurt
-      BUNDLE DESTINATION . COMPONENT Runtime
+      BUNDLE DESTINATION .
     )
 
-    set(APPS "\${CMAKE_INSTALL_PREFIX}/Neogurt.app")
+    set(APP "\${CMAKE_INSTALL_PREFIX}/Neogurt.app")
+    # dynamic lib paths for fixup_bundle (for those not in rpath)
     set(DIRS
-      ${CMAKE_BINARY_DIR}/_deps/dawn-src/lib  # libwebgpu_dawn.dylib
-      ${CMAKE_BINARY_DIR}/_deps/slang-src/lib  # libslang.dylib
-      $ENV{LLVM_PATH}/lib/c++
-      $ENV{LLVM_PATH}/lib/unwind
+      "${CMAKE_BINARY_DIR}/_deps/dawn-src/lib"  # libwebgpu_dawn.dylib
+      "${CMAKE_BINARY_DIR}/_deps/slang-src/lib"  # libslang.dylib
+      "$ENV{LLVM_PATH}/lib/c++"
+      "$ENV{LLVM_PATH}/lib/unwind"
     )
 
     install(CODE "
       include(BundleUtilities)
-      fixup_bundle(\"${APPS}\" \"\" \"${DIRS}\")
+      fixup_bundle(\"${APP}\" \"\" \"${DIRS}\")
+      execute_process(COMMAND codesign --force --deep --sign - \"${APP}\")
     ")
 
-    install(CODE "
-      execute_process(COMMAND codesign --force --deep --sign - \"${APPS}\")
-    ")
-
+    # Package into .dmg ------------------------------------------
     set(CPACK_GENERATOR DragNDrop)
     set(CPACK_PACKAGE_FILE_NAME "Neogurt-${PROJECT_VERSION}-${CMAKE_HOST_SYSTEM_PROCESSOR}")
     include(CPack)
   endif()
 endif()
-
-# test targets
-# add_executable(slang-test
-#   test/slang-test.cpp
-# )
-
-# target_link_libraries(slang-test PRIVATE 
-#   webgpu_tools
-# )
-
