@@ -45,6 +45,8 @@ struct Cursor {
   int row;
   int col;
 
+  bool cursorStop;
+
   event::GridCursorGoto cursorGoto;
 
   glm::vec2 prevScrollOffset;
@@ -72,7 +74,8 @@ struct Cursor {
 
   void Resize(glm::vec2 size, float dpi);
   void Goto(const event::GridCursorGoto& e);
-  void SetMode(int modeIdx);
+  void ModeInfoSet(const event::ModeInfoSet& e);
+  void SetMode(const event::ModeChange& e);
 
   void ImeGoto(const event::GridCursorGoto& e);
   void ImeClear();

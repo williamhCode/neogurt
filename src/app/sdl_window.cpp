@@ -35,7 +35,8 @@ Window::Window(glm::uvec2 _size, const std::string& title, const GlobalOptions& 
   int blur = std::max(globalOpts.blur, 0);
   SetSDLWindowBlur(Get(), blur);
 
-  titlebarHeight = GetTitlebarHeight(Get());
+  realTitlebarHeight = GetTitlebarHeight(Get());
+  titlebarHeight = 0;
 
   // sizing ---------------------------------
   dpiScale = SDL_GetWindowPixelDensity(Get());

@@ -193,6 +193,8 @@ void ParseUiEvents(SessionHandle& session) {
 
     if (notification.method == "redraw") {
       ParseNotification(notification.params, uiEvents);
+    } else if (notification.method == "insert_char_pre") {
+
     }
   }
 }

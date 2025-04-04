@@ -26,9 +26,10 @@ struct InputHandler {
   WinManager* winManager;
   Nvim* nvim;
 
-  std::atomic_bool multigrid;
-  std::atomic<MacosOptionIsMeta> macosOptionIsMeta;
-  std::atomic<float> scrollSpeed;
+  inline static bool multigrid;
+  inline static std::atomic<MacosOptionIsMeta> macosOptionIsMeta;
+  inline static std::atomic<float> scrollSpeed;
+  inline static std::atomic_int titlebarHeight;
 
   // ime
   std::string editingText;

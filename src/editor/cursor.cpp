@@ -38,9 +38,47 @@ void Cursor::Goto(const event::GridCursorGoto& e) {
   cursorGoto = e;
 }
 
-void Cursor::SetMode(int modeIdx) {
-  assert(modeIdx >= 0 && modeIdx < ssize(cursorModes));
-  cursorMode = &cursorModes[modeIdx];
+static int VariantAsInt(const msgpack::type::variant& v) {
+  if (v.is_uint64_t()) return v.as_uint64_t();
+  if (v.is_int64_t()) return v.as_int64_t();
+  LOG_ERR("VariantAsInt: variant is not convertible to int");
+  return 0;
+}
+
+void Cursor::ModeInfoSet(const event::ModeInfoSet& e) {
+  for (const auto& elem : e.modeInfo) {
+    auto& modeInfo = cursorModes.emplace_back();
+    for (const auto& [key, value] : elem) {
+      if (key == "cursor_shape") {
+        auto shape = value.as_string();
+        if (shape == "block") {
+          modeInfo.cursorShape = CursorShape::Block;
+        } else if (shape == "horizontal") {
+          modeInfo.cursorShape = CursorShape::Horizontal;
+        } else if (shape == "vertical") {
+          modeInfo.cursorShape = CursorShape::Vertical;
+        } else {
+          LOG_WARN("unknown cursor shape: {}", shape);
+        }
+      } else if (key == "cell_percentage") {
+        modeInfo.cellPercentage = VariantAsInt(value);
+      } else if (key == "blinkwait") {
+        modeInfo.blinkwait = VariantAsInt(value);
+      } else if (key == "blinkon") {
+        modeInfo.blinkon = VariantAsInt(value);
+      } else if (key == "blinkoff") {
+        modeInfo.blinkoff = VariantAsInt(value);
+      } else if (key == "attr_id") {
+        modeInfo.attrId = VariantAsInt(value);
+      }
+    }
+  }
+}
+
+void Cursor::SetMode(const event::ModeChange& e) {
+  if (e.modeIdx < 0 || e.modeIdx >= ssize(cursorModes)) return;
+
+  cursorMode = &cursorModes[e.modeIdx];
 
   if (blink) {
     blinkState = BlinkState::Wait;
@@ -72,9 +110,7 @@ void Cursor::SetBlinkState(BlinkState state) {
 
 bool Cursor::SetDestPos(const Win* currWin, const SizeHandler& sizes) {
   bool invalid =
-    (cursorMode == nullptr) ||
-    (currWin == nullptr) ||
-    (!currWin->grid.ValidCoords(row, col));
+    cursorMode == nullptr || currWin == nullptr || !currWin->grid.ValidCoords(row, col);
   if (invalid) return false;
 
   const auto& winTex = currWin->sRenderTexture;
@@ -199,5 +235,5 @@ void Cursor::Update(float dt) {
 
 bool Cursor::ShouldRender() {
   return cursorMode != nullptr && cursorMode->cursorShape != CursorShape::None &&
-         blinkState != BlinkState::Off;
+         blinkState != BlinkState::Off && !cursorStop;
 }

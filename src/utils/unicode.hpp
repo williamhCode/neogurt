@@ -23,4 +23,3 @@ struct GraphemeInfo {
 // };
 
 std::vector<GraphemeInfo> SplitByGraphemes(const std::string& text);
-

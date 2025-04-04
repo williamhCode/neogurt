@@ -30,7 +30,7 @@ Below are the all of the default options:
 -- check if nvim is launched by neogurt
 if vim.g.neogurt then
   vim.g.neogurt_cmd("option_set", {
-    -- global options
+    -- global options (shared across all sessions)
     titlebar = "default", -- "default", "transparent", "none"
     show_title = true,
     blur = 0,
@@ -38,7 +38,6 @@ if vim.g.neogurt then
     vsync = true,
     fps = 60,
 
-    -- session specific options
     margin_top = 0,
     margin_bottom = 0,
     margin_left = 0,
@@ -48,6 +47,7 @@ if vim.g.neogurt then
     cursor_idle_time = 10,
     scroll_speed = 1,
 
+    -- session specific options
     bg_color = 0x000000, -- used when opacity < 1
     opacity = 1,
   })

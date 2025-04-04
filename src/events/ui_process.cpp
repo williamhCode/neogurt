@@ -71,33 +71,7 @@ void ProcessUiEvents(SessionHandle& session) {
           // LOG("set_icon");
         },
         [&](ModeInfoSet& e) {
-          for (auto& elem : e.modeInfo) {
-            auto& modeInfo = editorState.cursor.cursorModes.emplace_back();
-            for (auto& [key, value] : elem) {
-              if (key == "cursor_shape") {
-                auto shape = value.as_string();
-                if (shape == "block") {
-                  modeInfo.cursorShape = CursorShape::Block;
-                } else if (shape == "horizontal") {
-                  modeInfo.cursorShape = CursorShape::Horizontal;
-                } else if (shape == "vertical") {
-                  modeInfo.cursorShape = CursorShape::Vertical;
-                } else {
-                  LOG_WARN("unknown cursor shape: {}", shape);
-                }
-              } else if (key == "cell_percentage") {
-                modeInfo.cellPercentage = VariantAsInt(value);
-              } else if (key == "blinkwait") {
-                modeInfo.blinkwait = VariantAsInt(value);
-              } else if (key == "blinkon") {
-                modeInfo.blinkon = VariantAsInt(value);
-              } else if (key == "blinkoff") {
-                modeInfo.blinkoff = VariantAsInt(value);
-              } else if (key == "attr_id") {
-                modeInfo.attrId = VariantAsInt(value);
-              }
-            }
-          }
+          editorState.cursor.ModeInfoSet(e);
         },
         [&](OptionSet& e) {
           auto& opts = editorState.uiOptions;
@@ -108,14 +82,13 @@ void ProcessUiEvents(SessionHandle& session) {
           } else if (e.name == "mousehide") {
             opts.mousehide = e.value.as_bool();
           }
-          
         },
         [&](Chdir& e) {
           LOG("chdir: {}", e.dir);
           editorState.currDir = e.dir;
         },
         [&](ModeChange& e) {
-          editorState.cursor.SetMode(e.modeIdx);
+          editorState.cursor.SetMode(e);
         },
         [&](MouseOn&) {
           // LOG("mouse_on");
@@ -124,10 +97,11 @@ void ProcessUiEvents(SessionHandle& session) {
           // LOG("mouse_off");
         },
         [&](BusyStart&) {
-          // LOG("busy_start");
+          LOG_INFO("busy_start");
+          editorState.cursor.cursorStop = true;
         },
         [&](BusyStop&) {
-          // LOG("busy_stop");
+          editorState.cursor.cursorStop = false;
         },
         [&](UpdateMenu&) {
           // LOG("update_menu");
@@ -176,6 +150,7 @@ void ProcessUiEvents(SessionHandle& session) {
               },
               [&](GridLine& e) {
                 editorState.gridManager.Line(e);
+                // update cursor mask
                 if (e.grid == editorState.cursor.grid) {
                   editorState.cursor.dirty = true;
                 }

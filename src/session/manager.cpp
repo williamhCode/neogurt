@@ -55,6 +55,14 @@ void SessionManager::OptionSet(
         ExecuteOnMainThread([win = window.Get(), titlebar = globalOpts.titlebar] {
           SetTitlebarStyle(win, titlebar);
         });
+
+        if (globalOpts.titlebar == "transparent") {
+          window.titlebarHeight = window.realTitlebarHeight;
+        } else {
+          window.titlebarHeight = 0;
+        }
+        InputHandler::titlebarHeight = window.titlebarHeight;
+        updateSizes = true;
       }
 
     } else if (key == "show_title") {
@@ -84,44 +92,43 @@ void SessionManager::OptionSet(
     } else if (key == "fps") {
       convertOption(globalOpts.fps);
 
-    }
-
-    // session specific options ----------------------------------
-    else if (key == "margin_top") {
-      if (convertOption(sessionOpts.marginTop)) {
+    } else if (key == "margin_top") {
+      if (convertOption(globalOpts.marginTop)) {
         updateSizes = true;
       }
 
     } else if (key == "margin_bottom") {
-      if (convertOption(sessionOpts.marginBottom)) {
+      if (convertOption(globalOpts.marginBottom)) {
         updateSizes = true;
       }
 
     } else if (key == "margin_left") {
-      if (convertOption(sessionOpts.marginLeft)) {
+      if (convertOption(globalOpts.marginLeft)) {
         updateSizes = true;
       }
 
     } else if (key == "margin_right") {
-      if (convertOption(sessionOpts.marginRight)) {
+      if (convertOption(globalOpts.marginRight)) {
         updateSizes = true;
       }
 
     } else if (key == "macos_option_is_meta") {
-      if (convertOption(sessionOpts.macosOptionIsMeta)) {
-        if (isCurrent) SDL_SetHint(SDL_HINT_MAC_OPTION_AS_ALT, sessionOpts.macosOptionIsMeta.c_str());
-        session->input.macosOptionIsMeta = ParseMacosOptionIsMeta(sessionOpts.macosOptionIsMeta);
+      if (convertOption(globalOpts.macosOptionIsMeta)) {
+        SDL_SetHint(SDL_HINT_MAC_OPTION_AS_ALT, globalOpts.macosOptionIsMeta.c_str());
+        InputHandler::macosOptionIsMeta = ParseMacosOptionIsMeta(globalOpts.macosOptionIsMeta);
       }
 
     } else if (key == "cursor_idle_time") {
-      convertOption(sessionOpts.cursorIdleTime);
+      convertOption(globalOpts.cursorIdleTime);
 
     } else if (key == "scroll_speed") {
-      if (convertOption(sessionOpts.scrollSpeed)) {
-        session->input.scrollSpeed = sessionOpts.scrollSpeed;
+      if (convertOption(globalOpts.scrollSpeed)) {
+        InputHandler::scrollSpeed = globalOpts.scrollSpeed;
       }
+    }
 
-    } else if (key == "bg_color") {
+    // session specific options ----------------------------------
+    else if (key == "bg_color") {
       if (convertOption(sessionOpts.bgColor)) {
         setOpacity = true;
         updateSizes = true;
@@ -207,10 +214,15 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
   input.winManager = &editorState.winManager;
   input.nvim = &nvim;
 
-  input.multigrid = startupOpts.multigrid;
-  SDL_SetHint(SDL_HINT_MAC_OPTION_AS_ALT, sessionOpts.macosOptionIsMeta.c_str());
-  input.macosOptionIsMeta = ParseMacosOptionIsMeta(sessionOpts.macosOptionIsMeta);
-  input.scrollSpeed = sessionOpts.scrollSpeed;
+  static bool first = true;
+  if (first) {
+    InputHandler::multigrid = startupOpts.multigrid;
+    SDL_SetHint(SDL_HINT_MAC_OPTION_AS_ALT, globalOpts.macosOptionIsMeta.c_str());
+    InputHandler::macosOptionIsMeta = ParseMacosOptionIsMeta(globalOpts.macosOptionIsMeta);
+    InputHandler::scrollSpeed = globalOpts.scrollSpeed;
+    InputHandler::titlebarHeight = window.titlebarHeight;
+    first = false;
+  }
 
   // ImeHandler ---------------------------------------------------
   ime.editorState = &editorState;
@@ -378,10 +390,7 @@ void SessionManager::FontSizeReset(bool all) {
 
 void SessionManager::UpdateSessionSizes(SessionHandle& session) {
   session->editorState.fontFamily.TryChangeDpiScale(window.dpiScale);
-  sizes.UpdateSizes(
-    window.size, window.dpiScale, session->editorState.fontFamily.GetCharSize(),
-    session->sessionOpts
-  );
+  sizes.UpdateSizes(window, session->editorState.fontFamily.GetCharSize(), globalOpts);
   renderer.Resize(sizes);
   session->editorState.winManager.sizes = sizes;
   session->editorState.cursor.Resize(sizes.charSize, sizes.dpiScale);
@@ -396,7 +405,6 @@ void SessionManager::SessionSwitchInternal(SessionHandle& session) {
                        title = std::format("Neogurt - {}", session->name)] {
     SDL_SetWindowTitle(win, title.c_str());
   });
-  SDL_SetHint(SDL_HINT_MAC_OPTION_AS_ALT, session->sessionOpts.macosOptionIsMeta.c_str());
   session->reattached = true;
 
   PushSessionToMainThread(session);

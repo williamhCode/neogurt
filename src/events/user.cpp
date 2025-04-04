@@ -7,7 +7,7 @@ void ProcessUserEvents(SessionManager& sessionManager) {
   using msgpack::type::nil_t;
 
   for (auto& [_, session] : sessionManager.Sessions()) {
-    Nvim& nvim = session->nvim;
+    auto& nvim = session->nvim;
     auto& client = *session->nvim.client;
 
     while (client.HasRequest()) {

@@ -1,11 +1,17 @@
 vim.g.neogurt = true
 vim.g.neogurt_startup = function() end
 
-vim.api.nvim_create_autocmd("UiEnter", {
+local autocmd = vim.api.nvim_create_autocmd
+autocmd("UiEnter", {
   callback = function()
     vim.rpcrequest(1, "ui_enter")
   end
 })
+-- autocmd("InsertCharPre", {
+--   callback = function()
+--     vim.rpcnotify(1, "insert_char_pre")
+--   end
+-- })
 
 local utils = require("utils")
 
@@ -15,6 +21,7 @@ local cmds_table = {
   option_set = {
     show_title = "boolean",
     titlebar = "string",
+
     blur = "number",
     gamma = "number",
     vsync = "boolean",
@@ -24,9 +31,11 @@ local cmds_table = {
     margin_bottom = "number",
     margin_left = "number",
     margin_right = "number",
+
     macos_option_is_meta = "string",
     cursor_idle_time = "number",
     scroll_speed = "number",
+
     bg_color = "number",
     opacity = "number",
   },

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "app/sdl_window.hpp"
 #include "glm/ext/vector_float2.hpp"
 #include "session/options.hpp"
 
@@ -17,5 +18,7 @@ struct SizeHandler {
   glm::vec2 offset;
   glm::vec2 fbOffset;
 
-  void UpdateSizes(glm::vec2 size, float dpiScale, glm::vec2 charSize, const SessionOptions& options);
+  void UpdateSizes(
+    const sdl::Window& window, glm::vec2 charSize, const GlobalOptions& globalOpts
+  );
 };

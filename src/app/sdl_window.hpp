@@ -22,6 +22,7 @@ struct Window {
   glm::uvec2 fbSize;
   float dpiScale;
 
+  int realTitlebarHeight;
   int titlebarHeight;
 
   Window(glm::uvec2 size, const std::string& title, const GlobalOptions& globalOpts);

@@ -148,6 +148,8 @@ void InputHandler::HandleTextInput(const SDL_TextInputEvent& event) {
 
 void InputHandler::HandleMouseButton(const SDL_MouseButtonEvent& event) {
   if (event.down) {
+    if (event.y < titlebarHeight) return;
+
     mouseButton = event.button;
     HandleMouseButtonAndMotion(event.down, {event.x, event.y});
 

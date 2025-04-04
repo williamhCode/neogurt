@@ -141,8 +141,7 @@ int main(int argc, char** argv) {
 
             auto uiFbSize = sizes.uiFbSize;
             sizes.UpdateSizes(
-              window.size, window.dpiScale, editorState->fontFamily.GetCharSize(),
-              *options
+              window, editorState->fontFamily.GetCharSize(), globalOpts
             );
             editorState->winManager.sizes = sizes;
 
@@ -245,28 +244,30 @@ int main(int argc, char** argv) {
 
         // update --------------------------------------------
         // ui options
-        auto& uiOptions = editorState->uiOptions;
-        auto& fontFamily = editorState->fontFamily;
+        {
+          auto& uiOptions = editorState->uiOptions;
+          auto& fontFamily = editorState->fontFamily;
 
-        if (uiOptions.guifont.has_value()) {
-          auto guifont = *uiOptions.guifont;
-          auto linespace =
-            uiOptions.linespace.value_or(editorState->fontFamily.linespace);
+          if (uiOptions.guifont.has_value()) {
+            auto guifont = *uiOptions.guifont;
+            auto linespace =
+              uiOptions.linespace.value_or(editorState->fontFamily.linespace);
 
-          fontFamily =
-            FontFamily::FromGuifont(guifont, linespace, window.dpiScale)
-              .or_else([&](const std::string& error) {
-                return FontFamily::Default(linespace, window.dpiScale);
-              })
-              .value();
-          sessionManager.UpdateSessionSizes(session);
-          uiOptions.guifont.reset();
-          uiOptions.linespace.reset();
+            fontFamily =
+              FontFamily::FromGuifont(guifont, linespace, window.dpiScale)
+                .or_else([&](const std::string& error) {
+                  return FontFamily::Default(linespace, window.dpiScale);
+                })
+                .value();
+            sessionManager.UpdateSessionSizes(session);
+            uiOptions.guifont.reset();
+            uiOptions.linespace.reset();
 
-        } else if (uiOptions.linespace.has_value()) {
-          fontFamily.UpdateLinespace(*uiOptions.linespace);
-          sessionManager.UpdateSessionSizes(session);
-          uiOptions.linespace.reset();
+          } else if (uiOptions.linespace.has_value()) {
+            fontFamily.UpdateLinespace(*uiOptions.linespace);
+            sessionManager.UpdateSessionSizes(session);
+            uiOptions.linespace.reset();
+          }
         }
 
         // window
@@ -286,7 +287,7 @@ int main(int argc, char** argv) {
         // check idle -----------------------------------
         if (idle) continue;
         idleElasped += dt;
-        if (idleElasped >= options->cursorIdleTime || windowOccluded) {
+        if (idleElasped >= globalOpts.cursorIdleTime || windowOccluded) {
           idle = true;
           editorState->cursor.SetBlinkState(BlinkState::On);
         }
@@ -443,6 +444,7 @@ int main(int argc, char** argv) {
           if (currSession) currSession->input.HandleMouseButton(event.button);
           break;
         case SDL_EVENT_MOUSE_MOTION:
+          SDL_ShowCursor();
           if (currSession) currSession->input.HandleMouseMotion(event.motion);
           break;
         case SDL_EVENT_MOUSE_WHEEL:
