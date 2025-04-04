@@ -86,6 +86,8 @@ struct ScrollableRenderTexture {
 
   QuadRenderData<RectQuadVertex> clearData;
 
+  mutable bool first = true; // make sure render all to all texture when first created
+
   ScrollableRenderTexture() = default;
   ScrollableRenderTexture(
     glm::vec2 size, float dpiScale, glm::vec2 charSize, int maxTexPerPage = 2

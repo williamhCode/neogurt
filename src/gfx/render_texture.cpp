@@ -261,9 +261,8 @@ void ScrollableRenderTexture::AddOrRemoveTextures() {
 void ScrollableRenderTexture::SetTexturePositions() {
   for (size_t i = 0; i < renderTextures.size(); i++) {
     auto& texture = *renderTextures[i];
-    // round for pixel perfect rendering
-    float yposTop = RoundToPixel(-(baseOffset + scrollCurr) + (i * textureHeight), dpiScale);
-    float yposBottom = RoundToPixel(yposTop + textureHeight, dpiScale);
+    float yposTop = -(baseOffset + scrollCurr) + (i * textureHeight);
+    float yposBottom = yposTop + textureHeight;
 
     if (yposBottom <= 0 || yposTop >= size.y) {
       texture.disabled = true;
@@ -322,11 +321,20 @@ std::vector<RenderInfo> ScrollableRenderTexture::GetRenderInfos(int maxRows) con
     int top = i * rowsPerTexture;
     int bottom = (i + 1) * rowsPerTexture;
 
-    if (bottom <= innerTopOffset) continue;
-    if (top >= innerBottomOffset) break;
+    bool outOfBounds = (bottom <= innerTopOffset || top >= innerBottomOffset);
+    if (outOfBounds) {
+      if (first) {
+        renderInfos.emplace_back(RenderInfo{
+          .texture = renderTextures[i].get(),
+          .range = {0, 0},
+        });
+      }
+      continue;
+    }
 
     int start = glm::max(top - topOffset, margins.top);
     int end = glm::min(bottom - topOffset, totalRows - margins.bottom);
+
     start = glm::min(start, maxRows);
     end = glm::min(end, maxRows);
 
@@ -334,6 +342,8 @@ std::vector<RenderInfo> ScrollableRenderTexture::GetRenderInfos(int maxRows) con
       .texture = renderTextures[i].get(),
       .range = {start, end},
     });
+
+    if (first) continue;
 
     if (top < innerTopOffset && scrollDist > 0) {
       renderInfo.clearRegion = Rect{
@@ -369,6 +379,8 @@ std::vector<RenderInfo> ScrollableRenderTexture::GetRenderInfos(int maxRows) con
       .range = {totalRows - margins.bottom, totalRows},
     });
   }
+
+  first = false;
 
   return renderInfos;
 }

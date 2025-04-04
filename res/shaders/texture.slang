@@ -33,8 +33,6 @@ float4 fs_main(float2 uv) {
 #ifdef FINAL
   color = Premult(color);
   color = ToSrgb(color);
-#else 
-  color = select(color.a == 0.0, defaultBgLinear, color);
 #endif
 
   return color;

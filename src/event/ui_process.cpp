@@ -95,7 +95,6 @@ void ProcessUiEvents(SessionHandle& session) {
           // LOG("mouse_off");
         },
         [&](BusyStart&) {
-          LOG_INFO("busy_start");
           editorState.cursor.cursorStop = true;
         },
         [&](BusyStop&) {
