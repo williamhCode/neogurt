@@ -253,7 +253,7 @@ void Renderer::RenderToWindow(
         };
         quadRect.RoundToPixel(dpiScale);
 
-        auto underlineColor = hlManager.GetForeground(hl);
+        auto underlineColor = hlManager.GetSpecial(hl);
         AddShapeQuad(
           shapeData, quadRect, underlineColor, std::to_underlying(underlineType)
         );

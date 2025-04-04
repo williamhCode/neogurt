@@ -1,5 +1,8 @@
 #pragma once
 
+#include "./message_internal.hpp"
+#include "./message.hpp"
+
 #include "msgpack.hpp"
 
 #include "boost/asio/io_context.hpp"
@@ -8,7 +11,6 @@
 #include "boost/process/child.hpp"
 
 #include "msgpack/v3/object_decl.hpp"
-#include "nvim/msgpack_rpc/messages.hpp"
 #include "utils/tsqueue.hpp"
 
 #include <atomic>
@@ -18,38 +20,12 @@
 #include <future>
 #include <thread>
 #include <expected>
+#include <variant>
 
 namespace rpc {
 
 namespace bp = boost::process;
 namespace asio = boost::asio;
-
-struct Notification {
-  std::string_view method;
-  msgpack::object params;
-  msgpack::unique_ptr<msgpack::zone> _zone; // holds the lifetime of the data
-};
-
-using RequestValue = std::expected<msgpack::object_handle, msgpack::object_handle>;
-
-struct Request {
-  std::string_view method;
-  msgpack::object params;
-  msgpack::unique_ptr<msgpack::zone> _zone; // holds the lifetime of the data
-  std::promise<RequestValue> promise;
-
-  void SetValue(auto&& value) {
-    auto zone = std::make_unique<msgpack::zone>();
-    msgpack::object obj(value, *zone);
-    promise.set_value(msgpack::object_handle(obj, std::move(zone)));
-  }
-
-  void SetError(auto&& error) {
-    auto zone = std::make_unique<msgpack::zone>();
-    msgpack::object obj(error, *zone);
-    promise.set_value(std::unexpected(msgpack::object_handle(obj, std::move(zone))));
-  }
-};
 
 enum class ClientType {
   Unknown,
@@ -77,8 +53,9 @@ private:
   std::unordered_map<u_int32_t, std::promise<msgpack::object_handle>> responses;
   std::mutex responsesMutex;
 
-  TsQueue<Request> requests;
-  TsQueue<Notification> notifications;
+  // TsQueue<Request> requests;
+  // TsQueue<Notification> notifications;
+  TsQueue<Message> messages;
 
 public:
   Client() = default;
@@ -98,11 +75,9 @@ public:
   std::future<msgpack::object_handle> Call(std::string_view func_name, auto... args);
   void Send(std::string_view func_name, auto... args);
 
-  Request PopRequest();
-  bool HasRequest();
-
-  Notification PopNotification();
-  bool HasNotification();
+  bool HasMessage() { return !messages.Empty(); }
+  Message& FrontMessage() { return messages.Front(); }
+  void PopMessage() { messages.Pop(); }
 
 private:
   msgpack::unpacker unpacker;

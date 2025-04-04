@@ -1,7 +1,6 @@
 #pragma once
 
 #include "msgpack.hpp"
-#include "nvim/msgpack_rpc/client.hpp"
 
 namespace event {
 
@@ -223,8 +222,4 @@ struct UiEvents {
   }
 };
 
-// foward decl
-struct Session;
-using SessionHandle = std::shared_ptr<Session>;
-
-void ParseUiEvents(SessionHandle& session);
+void ParseUiRedraw(const msgpack::object& params, UiEvents& events);

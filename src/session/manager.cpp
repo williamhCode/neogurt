@@ -5,6 +5,7 @@
 #include "app/window_funcs.h"
 #include "editor/highlight.hpp"
 #include "utils/logger.hpp"
+#include "nvim/msgpack_rpc/client.hpp"
 #include <algorithm>
 #include <format>
 #include <stdexcept>
@@ -183,25 +184,6 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
     throw std::runtime_error("Failed to connect to nvim");
   }
   nvim.GuiSetup(startupOpts.multigrid);
-
-  // Options ---------------------------------------------------
-  // auto optionsFut = GetAll(
-  //   SessionOptions::Load(nvim),
-  //   nvim.GetHl(0, {{"name", "NeogurtImeNormal"}, {"link", false}}),
-  //   nvim.GetHl(0, {{"name", "NeogurtImeSelected"}, {"link", false}})
-  // );
-
-  // if (optionsFut.wait_for(1s) == std::future_status::ready) {
-  //   msgpack::object_handle imeNormalHlObj, imeSelectedHlObj;
-  //   std::tie(options, imeNormalHlObj, imeSelectedHlObj) = optionsFut.get();
-
-  //   ImeHandler::imeNormalHlId = -1;
-  //   ImeHandler::imeSelectedHlId = -2;
-  //   editorState.hlTable[ImeHandler::imeNormalHlId] = Highlight::FromDesc(imeNormalHlObj->convert());
-  //   editorState.hlTable[ImeHandler::imeSelectedHlId] = Highlight::FromDesc(imeSelectedHlObj->convert());
-  // } else {
-  //   LOG_WARN("Failed to load options (timeout)");
-  // }
 
   // EditorState ---------------------------------------------------
   editorState.winManager.gridManager = &editorState.gridManager;

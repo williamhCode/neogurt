@@ -1,7 +1,7 @@
 #pragma once
 
 #include "app/options.hpp"
-#include "events/user.hpp"
+#include "event/neogurt_cmd.hpp"
 #include "session/options.hpp"
 #include "session/state.hpp"
 #include "app/sdl_window.hpp"

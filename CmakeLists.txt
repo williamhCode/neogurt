@@ -71,9 +71,10 @@ set(APP_SRC
   editor/highlight.cpp
   editor/font.cpp
 
-  events/ui_parse.cpp
-  events/ui_process.cpp
-  events/user.cpp
+  event/manager.cpp
+  event/ui_parse.cpp
+  event/ui_process.cpp
+  event/neogurt_cmd.cpp
 
   gfx/context.cpp
   gfx/pipeline.cpp

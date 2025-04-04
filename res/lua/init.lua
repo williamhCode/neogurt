@@ -7,6 +7,11 @@ autocmd("UiEnter", {
     vim.rpcrequest(1, "ui_enter")
   end
 })
+autocmd("ColorScheme", {
+  callback = function()
+    vim.rpcnotify(1, "color_scheme")
+  end
+})
 -- autocmd("InsertCharPre", {
 --   callback = function()
 --     vim.rpcnotify(1, "insert_char_pre")

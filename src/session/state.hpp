@@ -2,7 +2,7 @@
 
 #include "app/ime.hpp"
 #include "app/input.hpp"
-#include "events/ui_parse.hpp"
+#include "event/ui_parse.hpp"
 #include "nvim/nvim.hpp"
 #include "editor/state.hpp"
 #include "session/options.hpp"

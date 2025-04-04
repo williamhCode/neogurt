@@ -1,10 +1,8 @@
 #include "./ime.hpp"
 
-#include "events/ui_parse.hpp"
-#include "utils/logger.hpp"
+#include "event/ui_parse.hpp"
 #include "utils/unicode.hpp"
 #include "SDL3/SDL_stdinc.h"
-#include <algorithm>
 #include <ranges>
 
 void ImeHandler::Clear() {
@@ -16,7 +14,6 @@ void ImeHandler::HandleTextEditing(SDL_TextEditingEvent& event) {
   text = event.text;
   start = event.start;
   length = event.length;
-  LOG_INFO("text: {}, start: {}, length: {}", text, start, length);
   Update();
   SDL_free((char*)event.text);
 }

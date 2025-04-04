@@ -3,7 +3,6 @@
 #include "boost/process/io.hpp"
 #include "boost/process/start_dir.hpp"
 #include "boost/process/search_path.hpp"
-#include "messages.hpp"
 #include "msgpack/v3/object_fwd_decl.hpp"
 #include "utils/logger.hpp"
 
@@ -108,26 +107,6 @@ bool Client::IsConnected() {
   return !exit;
 }
 
-Request Client::PopRequest() {
-  auto req = std::move(requests.Front());
-  requests.Pop();
-  return req;
-}
-
-bool Client::HasRequest() {
-  return !requests.Empty();
-}
-
-Notification Client::PopNotification() {
-  auto msg = std::move(notifications.Front());
-  notifications.Pop();
-  return msg;
-}
-
-bool Client::HasNotification() {
-  return !notifications.Empty();
-}
-
 uint32_t Client::Msgid() {
   return currId++;
 }
@@ -174,7 +153,7 @@ void Client::DoRead() {
         std::promise<RequestValue> promise;
         auto future = promise.get_future();
 
-        requests.Push(Request{
+        messages.Push(Request{
           .method = request.method,
           .params = request.params,
           ._zone = std::move(handle.zone()),
@@ -227,7 +206,7 @@ void Client::DoRead() {
 
       } else if (type == MessageType::Notification) {
         NotificationIn notification(obj.convert());
-        notifications.Push(Notification{
+        messages.Push(Notification{
           .method = notification.method,
           .params = notification.params,
           ._zone = std::move(handle.zone()),

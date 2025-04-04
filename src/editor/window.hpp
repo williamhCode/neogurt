@@ -9,6 +9,7 @@
 #include "app/size.hpp"
 
 #include "glm/ext/vector_float2.hpp"
+#include <mutex>
 #include <unordered_map>
 #include <optional>
 #include <deque>

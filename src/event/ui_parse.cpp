@@ -156,7 +156,7 @@ static const std::unordered_map<std::string_view, UiEventFunc> uiEventFuncs = {
 };
 // clang-format on
 
-static void ParseNotification(const msgpack::object& params, UiEvents& uiEvents) {
+void ParseUiRedraw(const msgpack::object& params, UiEvents& uiEvents) {
   std::span<const msgpack::object> events = params.via.array;
 
   for (const msgpack::object& eventObj : events) {
@@ -177,24 +177,6 @@ static void ParseNotification(const msgpack::object& params, UiEvents& uiEvents)
       } catch (const msgpack::type_error& e) {
         LOG_ERR("ParseUiEvents: {}", e.what());
       }
-    }
-  }
-}
-
-void ParseUiEvents(SessionHandle& session) {
-  auto& uiEvents = session->uiEvents;
-  auto& client = *session->nvim.client;
-
-  // keep track of ui flushes
-  uiEvents.numFlushes = 0;
-
-  while (client.HasNotification()) {
-    auto notification = client.PopNotification();
-
-    if (notification.method == "redraw") {
-      ParseNotification(notification.params, uiEvents);
-    } else if (notification.method == "insert_char_pre") {
-
     }
   }
 }

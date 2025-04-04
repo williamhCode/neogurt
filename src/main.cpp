@@ -12,18 +12,20 @@
 #include "editor/grid.hpp"
 #include "editor/highlight.hpp"
 #include "editor/state.hpp"
+#include "event/manager.hpp"
 #include "gfx/instance.hpp"
 #include "gfx/renderer.hpp"
 #include "glm/ext/vector_float2.hpp"
 #include "glm/gtx/string_cast.hpp"
-#include "events/ui_parse.hpp"
-#include "events/ui_process.hpp"
-#include "events/user.hpp"
+#include "event/ui_parse.hpp"
+#include "event/ui_process.hpp"
+#include "event/neogurt_cmd.hpp"
 #include "session/manager.hpp"
 #include "session/options.hpp"
 #include "utils/clock.hpp"
 #include "utils/logger.hpp"
 #include "utils/timer.hpp"
+#include "utils/tsqueue.hpp"
 
 #include <boost/core/typeinfo.hpp>
 #include <algorithm>
@@ -74,6 +76,7 @@ int main(int argc, char** argv) {
     SessionManager sessionManager(
       SpawnMode::Child, startupOpts, globalOpts, window, sizes, renderer
     );
+    EventManager eventManager{sessionManager};
 
     sessionManager.SessionNew();
     SessionHandle session = sessionManager.CurrSession();
@@ -110,11 +113,13 @@ int main(int argc, char** argv) {
       while (!exitWindow && !stopToken.stop_requested()) {
 
         // session handling ------------------------------------------
-        if (auto sessionHandle = sessionManager.GetCurrentSession()) {
-          session = *sessionHandle;
-          options = &session->sessionOpts;
-          nvim = &session->nvim;
-          editorState = &session->editorState;
+        if (auto sessionOptional = sessionManager.GetCurrentSession()) {
+          if (session != *sessionOptional) {
+            session = *sessionOptional;
+            options = &session->sessionOpts;
+            nvim = &session->nvim;
+            editorState = &session->editorState;
+          }
         } else {
           // quit if no sessions left
           SDL_Event quitEvent;
@@ -196,18 +201,12 @@ int main(int argc, char** argv) {
         }
 
         // user events -------------------------------------------
-        ProcessUserEvents(sessionManager);
-
         // process nvim events for all sessions except current
         // do this before getting next texture to minimize cpu time
         LOG_DISABLE();
         for (auto& [id, _session] : sessionManager.Sessions()) {
           if (_session != session) {
-            ParseUiEvents(_session);
-          }
-        }
-        for (auto& [id, _session] : sessionManager.Sessions()) {
-          if (_session != session) {
+            eventManager.ProcessSessionEvents(_session);
             ProcessUiEvents(_session);
           }
         }
@@ -234,8 +233,8 @@ int main(int argc, char** argv) {
 
         // nvim events  -------------------------------------------
         LOG_DISABLE();
-        ParseUiEvents(session);
-        if (session->uiEvents.numFlushes) {
+        eventManager.ProcessSessionEvents(session);
+        if (session->uiEvents.numFlushes > 0) {
           IdleReset();
         }
 

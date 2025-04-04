@@ -1,6 +1,6 @@
 #pragma once
 
-#include "events/ui_parse.hpp"
+#include "event/ui_parse.hpp"
 #include "glm/ext/vector_float4.hpp"
 #include <optional>
 #include <unordered_map>
@@ -28,6 +28,20 @@ struct Highlight {
   std::string url;
 
   static Highlight FromDesc(const event::HlAttrMap& hlDesc);
+};
+#include "glm/gtx/string_cast.hpp"
+template <>
+struct std::formatter<Highlight> {
+  constexpr auto parse(auto& ctx) {
+    return ctx.begin();
+  }
+  auto format(const Highlight& col, auto& ctx) const {
+    return std::format_to(
+      ctx.out(), "(fg: {}, bg: {}, sp: {})", glm::to_string(col.foreground.value_or(glm::vec4(0))),
+      glm::to_string(col.background.value_or(glm::vec4(0))),
+      glm::to_string(col.special.value_or(glm::vec4(0)))
+    );
+  }
 };
 
 struct HlManager {
