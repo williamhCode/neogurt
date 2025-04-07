@@ -1,4 +1,6 @@
 cmake_minimum_required(VERSION 3.5...3.28)
+# set before project
+set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum OS X deployment version")
 
 # Project Setup ------------------------------------
 project(
@@ -196,8 +198,6 @@ if(CMAKE_BUILD_TYPE MATCHES RelWithDebInfo)
 
   if(APPLE)
     # Create .app bundle --------------------------------------------
-    set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum OS X deployment version")
-
     # ensure relative paths of files in res/ are maintained in app bundle
     # NOTE: rerun build-setup when adding resource files
     foreach (FILE ${RESOURCE_FILES})

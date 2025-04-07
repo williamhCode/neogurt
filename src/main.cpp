@@ -19,7 +19,6 @@
 #include "glm/gtx/string_cast.hpp"
 #include "event/ui_parse.hpp"
 #include "event/ui_process.hpp"
-#include "event/neogurt_cmd.hpp"
 #include "session/manager.hpp"
 #include "session/options.hpp"
 #include "utils/clock.hpp"
