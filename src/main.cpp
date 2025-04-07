@@ -106,6 +106,7 @@ int main(int argc, char** argv) {
       };
 
       Clock clock;
+      StableClock stableClock;
       // Timer timer1(20);
 
       // main loop
@@ -214,7 +215,11 @@ int main(int argc, char** argv) {
         // timing (run before nvim ui-events to minimize latency) --------
         renderer.GetNextTexture(); // blocks until next frame if vsync is on
 
-        float targetFps = window.vsync ? 200 : globalOpts.fps;
+        // SDL_DisplayID displayID = SDL_GetDisplayForWindow(window.Get());
+        // const SDL_DisplayMode* currentMode = SDL_GetCurrentDisplayMode(displayID);
+        // float displayFps = currentMode->refresh_rate == 0 ? 60 : currentMode->refresh_rate;
+
+        float targetFps = window.vsync ? 0 : globalOpts.fps;
         if (idle) {
           targetFps = windowOccluded ? 10 : 60;
         }
@@ -270,7 +275,9 @@ int main(int argc, char** argv) {
 
         // window
         editorState->winManager.UpdateRenderData();
-        editorState->winManager.UpdateScrolling(dt);
+        // stable clock for animations
+        auto steps = stableClock.Tick();
+        editorState->winManager.UpdateScrolling(steps);
 
         // mouse
         const auto* currWin = editorState->winManager.GetWin(editorState->cursor.grid);

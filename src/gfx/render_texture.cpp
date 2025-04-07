@@ -8,6 +8,7 @@
 #include "utils/line.hpp"
 #include "utils/easing_funcs.hpp"
 #include <memory>
+#include <numeric>
 
 using namespace wgpu;
 
@@ -90,6 +91,8 @@ ScrollableRenderTexture::ScrollableRenderTexture(
   }
 
   clearData.CreateBuffers(1);
+
+  spring = {.zeta = 1.0, .omega = 20};
 }
 
 void ScrollableRenderTexture::UpdatePos(glm::vec2 pos) {
@@ -124,7 +127,31 @@ void ScrollableRenderTexture::UpdateViewport(float newScrollDist) {
   SetTextureCameraPositions();
 }
 
-void ScrollableRenderTexture::UpdateScrolling(float dt) {
+// void ScrollableRenderTexture::UpdateScrolling(std::span<float> steps) {
+//   for (float dt : steps) {
+//     scrollCurr += spring.Update(scrollCurr, scrollDist, dt);
+//     
+//     if (spring.AtRest(10) && std::abs(scrollCurr - scrollDist) < 0.1) {
+//       spring.Reset();
+
+//       baseOffset += scrollDist;
+//       baseOffset = RoundToPixel(baseOffset, dpiScale);
+
+//       scrolling = false;
+//       scrollDist = 0;
+//       scrollCurr = 0;
+
+//       SetTextureCameraPositions();
+
+//       break;
+//     }
+//   }
+
+//   SetTexturePositions();
+// }
+
+void ScrollableRenderTexture::UpdateScrolling(std::span<float> steps) {
+  float dt = std::accumulate(steps.begin(), steps.end(), 0.0f);
   scrollElapsed += dt;
 
   if (scrollElapsed >= scrollTime) {

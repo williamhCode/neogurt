@@ -18,15 +18,16 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [macos-latest, macos-13]
+        # os: [macos-latest, macos-13]
+        os: [macos-latest]
         include:
           - os: macos-latest
             os-name: macos
             arch: arm64
 
-          - os: macos-13
-            os-name: macos
-            arch: x86
+          # - os: macos-13
+          #   os-name: macos
+          #   arch: x86
 
     runs-on: ${{ matrix.os }}
 
@@ -68,12 +69,21 @@ jobs:
       run: |
         cd build/release
         echo "ARTIFACT_NAME=$(ls Neogurt*.dmg)" >> $GITHUB_ENV
+        dsymutil neogurt.app/Contents/MacOS/neogurt
+        mv neogurt.app/Contents/MacOS/neogurt.dSYM ./
+        tar -czf neogurt.dSYM.tar.gz neogurt.dSYM
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
         name: Neogurt-${{ matrix.arch }}
         path: build/release/${{ env.ARTIFACT_NAME }}
+
+    - name: Upload dSYM artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Neogurt-dSYM-${{ matrix.arch }}
+        path: build/release/neogurt.dSYM.tar.gz
 
   create-release:
     if: ${{ github.event.inputs.nightly == 'true' }}
@@ -94,7 +104,9 @@ jobs:
         gh release delete nightly --yes || true
         git push origin :nightly || true
 
-        gh release create nightly artifacts/**/* \
+        ls -al artifacts/
+
+        gh release create nightly artifacts/*/* \
           --title "Neogurt dev build" \
           --notes "Dev build for commit ${{ github.sha }}" \
           --prerelease

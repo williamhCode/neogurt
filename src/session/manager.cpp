@@ -75,8 +75,9 @@ void SessionManager::OptionSet(
 
     } else if (key == "blur") {
       if (convertOption(globalOpts.blur)) {
-        int blur = std::max(globalOpts.blur, 0);
-        SetSDLWindowBlur(window.Get(), blur);
+        ExecuteOnMainThread([win = window.Get(), blur = std::max(globalOpts.blur, 0)] {
+          SetSDLWindowBlur(win, blur);
+        });
       }
 
     } else if (key == "gamma") {

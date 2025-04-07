@@ -39,3 +39,26 @@ double Clock::GetFps() {
   return durations.size() / sumSecs;
 }
 
+// -------------------------------------------------------------------
+StableClock::StableClock() {
+  prevTime = steady_clock::now();
+}
+
+std::vector<float> StableClock::Tick() {
+  std::vector<float> steps;
+
+  auto now = steady_clock::now();
+  duration<double> dt = now - prevTime;
+  prevTime = now;
+
+  int numSteps = std::ceil(dt.count() / maxStepDt);
+  float stepTime = dt.count() / numSteps;
+
+  // advance time by number of fixed steps
+  steps.reserve(numSteps);
+  for (int i = 0; i < numSteps; ++i) {
+    steps.push_back(stepTime);
+  }
+
+  return steps;
+}

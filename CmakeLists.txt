@@ -232,6 +232,21 @@ if(CMAKE_BUILD_TYPE MATCHES RelWithDebInfo)
       include(BundleUtilities)
       fixup_bundle(\"${APP}\" \"\" \"${DIRS}\")
       execute_process(COMMAND codesign --force --deep --sign - \"${APP}\")
+
+      # message(\"Generating dSYM for Neogurt...\")
+      # execute_process(COMMAND dsymutil \"${APP}/Contents/MacOS/neogurt\" 
+      #                 OUTPUT_VARIABLE DSYM_OUTPUT
+      #                 ERROR_VARIABLE DSYM_ERROR
+      #                 RESULT_VARIABLE DSYM_RESULT)
+
+      # if(DSYM_RESULT)
+      #   message(WARNING \"dsymutil failed: \${DSYM_ERROR}\")
+      # else()
+      #   file(INSTALL DESTINATION \"\${CMAKE_INSTALL_PREFIX}\"
+      #       TYPE DIRECTORY FILES \"${CMAKE_BINARY_DIR}/neogurt.dSYM\")
+      #   message(\"dSYM bundle copied to \${CMAKE_INSTALL_PREFIX}/neogurt.dSYM\")
+      # endif()
+
     ")
 
     # Package into .dmg ------------------------------------------

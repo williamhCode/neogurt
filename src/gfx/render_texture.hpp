@@ -2,6 +2,7 @@
 
 #include "utils/margins.hpp"
 #include "utils/region.hpp"
+#include "utils/spring.hpp"
 #include "webgpu/webgpu_cpp.h"
 #include "gfx/camera.hpp"
 #include "gfx/quad.hpp"
@@ -9,6 +10,7 @@
 #include <memory>
 #include <optional>
 #include <deque>
+#include <span>
 
 // convenience wrapper over wgpu::Texture
 struct RenderTexture {
@@ -78,11 +80,15 @@ struct ScrollableRenderTexture {
   RenderTextureHandle renderTextureBuffer; // save one for buffer
   float baseOffset = 0; // offset representing top of viewport (prescroll)
 
+  // normal scroll
   bool scrolling = false;
   float scrollDist = 0; // baseOffset + scrollDist = new baseOffset
   float scrollCurr = 0; // 0 <= scrollCurr <= scrollDist
   float scrollElapsed = 0;
   float scrollTime = 0.25; // transition time
+
+  // PD scroll
+  Spring spring;
 
   QuadRenderData<RectQuadVertex> clearData;
 
@@ -95,7 +101,7 @@ struct ScrollableRenderTexture {
 
   void UpdatePos(glm::vec2 pos);
   void UpdateViewport(float newScrollDist = 0);
-  void UpdateScrolling(float dt);
+  void UpdateScrolling(std::span<float> steps);
   void UpdateMargins(const Margins& margins);
 
   void AddOrRemoveTextures();

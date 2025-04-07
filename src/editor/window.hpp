@@ -88,7 +88,7 @@ private:
 
 public:
   void UpdateRenderData(); // updates all windows rendering data
-  void UpdateScrolling(float dt);
+  void UpdateScrolling(std::span<float> steps);
 
   void Pos(const event::WinPos& e);
   void SyncResize(int grid);

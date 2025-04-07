@@ -20,3 +20,13 @@ public:
   double Tick(double fps = 0);
   double GetFps();
 };
+
+class StableClock {
+public:
+  StableClock();
+  std::vector<float> Tick();
+
+private:
+  static constexpr double maxStepDt = 1.0 / 120;
+  std::chrono::steady_clock::time_point prevTime;
+};

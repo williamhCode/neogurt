@@ -70,11 +70,11 @@ void WinManager::UpdateRenderData() {
   }
 }
 
-void WinManager::UpdateScrolling(float dt) {
+void WinManager::UpdateScrolling(std::span<float> steps) {
   std::lock_guard lock(windowsMutex);
   for (auto& [id, win] : windows) {
     if (win.sRenderTexture.scrolling) {
-      win.sRenderTexture.UpdateScrolling(dt);
+      win.sRenderTexture.UpdateScrolling(steps);
       dirty = true;
     }
   }
