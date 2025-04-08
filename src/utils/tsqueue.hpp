@@ -37,18 +37,11 @@ public:
     queue.pop();
   }
 
-  void Push(const T& item) {
+  template <typename U>
+  void Push(U&& item) {
     {
       std::scoped_lock lock(mutex);
-      queue.push(item);
-    }
-    cv.notify_all();
-  }
-
-  void Push(T&& item) {
-    {
-      std::scoped_lock lock(mutex);
-      queue.push(std::move(item));
+      queue.push(std::forward<U>(item));
     }
     cv.notify_all();
   }

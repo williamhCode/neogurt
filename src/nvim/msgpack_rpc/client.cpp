@@ -12,9 +12,9 @@ Client::~Client() {
   Disconnect();
 
   if (clientType == ClientType::Stdio) {
+    readPipe->cancel();
+    writePipe->cancel();
     if (process.running()) process.terminate();
-    readPipe->close();
-    writePipe->close();
 
   } else if (clientType == ClientType::Tcp) {
     if (socket->is_open()) socket->close();

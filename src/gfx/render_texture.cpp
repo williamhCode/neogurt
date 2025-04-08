@@ -163,7 +163,6 @@ void ScrollableRenderTexture::UpdateScrolling(std::span<float> steps) {
     scrollCurr = 0;
     scrollElapsed = 0;
 
-    // AddOrRemoveTextures();
     SetTextureCameraPositions();
 
   } else {
