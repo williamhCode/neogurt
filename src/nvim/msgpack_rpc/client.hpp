@@ -3,6 +3,7 @@
 #include "./message_internal.hpp"
 #include "./message.hpp"
 
+#include <type_traits>
 #include "msgpack.hpp"
 
 #include "boost/asio/io_context.hpp"

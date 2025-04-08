@@ -1,5 +1,6 @@
 #pragma once
 
+#include <type_traits>
 #include "msgpack.hpp"
 #include "nvim/msgpack_rpc/message.hpp"
 #include "session/forward.hpp"
