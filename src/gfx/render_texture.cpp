@@ -242,7 +242,7 @@ void ScrollableRenderTexture::AddOrRemoveTextures() {
   }
   renderTextures.erase(renderTextures.end() - numRemoved, renderTextures.end());
 
-  auto createHandle = [&removed, this]() {
+  auto createTexture = [&removed, this]() {
     if (!removed.empty()) {
       auto handle = std::move(removed.back());
       removed.pop_back();
@@ -262,7 +262,7 @@ void ScrollableRenderTexture::AddOrRemoveTextures() {
     if (!region.Intersects({currPos, textureHeight})) {
       break;
     }
-    renderTextures.push_front(createHandle());
+    renderTextures.push_front(createTexture());
     numAdded++;
   }
   region.pos += textureHeight * numAdded;
@@ -273,7 +273,7 @@ void ScrollableRenderTexture::AddOrRemoveTextures() {
     if (!region.Intersects({currPos, textureHeight})) {
       break;
     }
-    renderTextures.push_back(createHandle());
+    renderTextures.push_back(createTexture());
   }
 
   baseOffset = region.pos - posChange;
@@ -349,6 +349,7 @@ std::vector<RenderInfo> ScrollableRenderTexture::GetRenderInfos(int maxRows) con
 
     bool outOfBounds = (bottom <= innerTopOffset || top >= innerBottomOffset);
     if (outOfBounds) {
+      // if first, we need to make sure whole texture cleared
       if (first) {
         renderInfos.emplace_back(RenderInfo{
           .texture = renderTextures[i].get(),
@@ -369,6 +370,7 @@ std::vector<RenderInfo> ScrollableRenderTexture::GetRenderInfos(int maxRows) con
       .range = {start, end},
     });
 
+    // dont needa clear parts of a texture if first (cuz we just clear everything)
     if (first) continue;
 
     if (top < innerTopOffset && scrollDist > 0) {

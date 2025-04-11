@@ -33,7 +33,7 @@ void PushSessionToMainThread(SessionHandle session) {
 
 SessionHandle PopSessionFromMainThread() {
   assert(!sessionsQueue.Empty());
-  auto& session = sessionsQueue.Front();
+  SessionHandle session = std::move(sessionsQueue.Front());
   sessionsQueue.Pop();
   return session;
 }

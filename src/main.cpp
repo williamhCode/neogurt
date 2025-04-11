@@ -219,7 +219,7 @@ int main(int argc, char** argv) {
         // const SDL_DisplayMode* currentMode = SDL_GetCurrentDisplayMode(displayID);
         // float displayFps = currentMode->refresh_rate == 0 ? 60 : currentMode->refresh_rate;
 
-        float targetFps = window.vsync ? 0 : globalOpts.fps;
+        float targetFps = globalOpts.vsync ? 0 : globalOpts.fps;
         if (idle) {
           targetFps = windowOccluded ? 10 : 60;
         }

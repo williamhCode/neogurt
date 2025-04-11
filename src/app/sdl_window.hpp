@@ -17,7 +17,6 @@ using SDL_WindowPtr = std::unique_ptr<SDL_Window, SDL_WindowDeleter>;
 struct Window {
   SDL_WindowPtr window;
 
-  bool vsync;
   glm::uvec2 size;
   glm::uvec2 fbSize;
   float dpiScale;
