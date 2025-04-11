@@ -9,7 +9,7 @@
 namespace rpc {
 
 Client::~Client() {
-  Disconnect();
+  TryDisconnect();
 
   if (clientType == ClientType::Stdio) {
     readPipe->close();
@@ -96,10 +96,9 @@ bool Client::ConnectTcp(std::string_view host, uint16_t port) {
   return true;
 }
 
-void Client::Disconnect() {
-  if (!exit) {
-    msgsOut.Exit();
-    exit = true;
+void Client::TryDisconnect() {
+  if (!exit.exchange(true)) {
+    msgsOutCv.notify_one();
   }
 }
 
@@ -129,7 +128,7 @@ void Client::DoRead() {
     if (ec) {
       if (ec == asio::error::eof) {
         LOG_INFO("Client::DoRead: Connection closed");
-        Disconnect();
+        TryDisconnect();
         return;
       } 
       LOG_ERR("Client::DoRead: Error - {}", ec.message());
@@ -149,36 +148,37 @@ void Client::DoRead() {
       int type = obj.via.array.ptr[0].convert();
       if (type == MessageType::Request) {
         RequestIn request(obj.convert());
+        {
+          auto msgsAccess = messages.lock();
+          auto& message = msgsAccess->emplace(Request{
+            .method = request.method,
+            .params = request.params,
+            ._zone = std::move(handle.zone()),
+            .promise{},
+          });
+          auto& promise = std::get<Request>(message).promise;
 
-        std::promise<RequestValue> promise;
-        auto future = promise.get_future();
+          std::thread([weak_self = weak_from_this(), msgid = request.msgid,
+                       future = promise.get_future()] mutable {
+            ResponseOut msg;
 
-        messages.Push(Request{
-          .method = request.method,
-          .params = request.params,
-          ._zone = std::move(handle.zone()),
-          .promise = std::move(promise),
-        });
+            auto result = future.get();
+            if (result) {
+              msg.msgid = msgid;
+              msg.result = (*result).get();
+            } else {
+              msg.msgid = msgid;
+              msg.error = result.error().get();
+            }
 
-        std::thread([weak_self = weak_from_this(), msgid = request.msgid, future = std::move(future)] mutable {
-          ResponseOut msg;
+            msgpack::sbuffer buffer;
+            msgpack::pack(buffer, msg);
 
-          auto result = future.get();
-          if (result) {
-            msg.msgid = msgid;
-            msg.result = (*result).get();
-          } else {
-            msg.msgid = msgid;
-            msg.error = result.error().get();
-          }
-
-          msgpack::sbuffer buffer;
-          msgpack::pack(buffer, msg);
-
-          if (auto self = weak_self.lock()) {
-            self->Write(std::move(buffer));
-          }
-        }).detach();
+            if (auto self = weak_self.lock()) {
+              self->Write(std::move(buffer));
+            }
+          }).detach();
+        }
 
       } else if (type == MessageType::Response) {
         ResponseIn response(obj.convert());
@@ -206,7 +206,7 @@ void Client::DoRead() {
 
       } else if (type == MessageType::Notification) {
         NotificationIn notification(obj.convert());
-        messages.Push(Notification{
+        messages.lock()->emplace(Notification{
           .method = notification.method,
           .params = notification.params,
           ._zone = std::move(handle.zone()),
@@ -224,13 +224,21 @@ void Client::DoRead() {
 }
 
 void Client::Write(msgpack::sbuffer&& buffer) {
-  msgsOut.Push(std::move(buffer));
+  msgsOut.lock()->push(std::move(buffer));
+  msgsOutCv.notify_one();
 }
 
 void Client::DoWrite() {
-  while (IsConnected() && msgsOut.Wait()) {
+  while (true) {
+    {
+      auto access = msgsOut.lock();
+      msgsOutCv.wait(access.get_lock(), [&] {
+        return !access->empty() || exit;
+      });
+    }
+    if (!IsConnected()) break;
 
-    auto& msgBuffer = msgsOut.Front();
+    auto& msgBuffer = msgsOut.lock()->front();
     auto buffer = asio::buffer(msgBuffer.data(), msgBuffer.size());
 
     boost::system::error_code ec;
@@ -245,7 +253,7 @@ void Client::DoWrite() {
       LOG_ERR("Client::DoWrite: {}", ec.message());
     }
 
-    msgsOut.Pop();
+    msgsOut.lock()->pop();
   }
 }
 

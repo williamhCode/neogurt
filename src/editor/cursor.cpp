@@ -47,34 +47,36 @@ static int VariantAsInt(const msgpack::type::variant& v) {
 }
 
 void Cursor::ModeInfoSet(const event::ModeInfoSet& e) {
-  cursorModes = e.modeInfo | std::views::transform([](auto& modeMap) {
-    CursorMode mode{};
-    for (const auto& [key, value] : modeMap) {
-      if (key == "cursor_shape") {
-        auto shape = value.as_string();
-        if (shape == "block") {
-          mode.cursorShape = CursorShape::Block;
-        } else if (shape == "horizontal") {
-          mode.cursorShape = CursorShape::Horizontal;
-        } else if (shape == "vertical") {
-          mode.cursorShape = CursorShape::Vertical;
-        } else {
-          LOG_WARN("unknown cursor shape: {}", shape);
+  cursorModes = e.modeInfo |
+    std::views::transform([](const event::ModePropertyMap& modeMap) {
+      CursorMode mode{};
+      for (const auto& [key, value] : modeMap) {
+        if (key == "cursor_shape") {
+          auto shape = value.as_string();
+          if (shape == "block") {
+            mode.cursorShape = CursorShape::Block;
+          } else if (shape == "horizontal") {
+            mode.cursorShape = CursorShape::Horizontal;
+          } else if (shape == "vertical") {
+            mode.cursorShape = CursorShape::Vertical;
+          } else {
+            LOG_WARN("unknown cursor shape: {}", shape);
+          }
+        } else if (key == "cell_percentage") {
+          mode.cellPercentage = VariantAsInt(value);
+        } else if (key == "blinkwait") {
+          mode.blinkwait = VariantAsInt(value);
+        } else if (key == "blinkon") {
+          mode.blinkon = VariantAsInt(value);
+        } else if (key == "blinkoff") {
+          mode.blinkoff = VariantAsInt(value);
+        } else if (key == "attr_id") {
+          mode.attrId = VariantAsInt(value);
         }
-      } else if (key == "cell_percentage") {
-        mode.cellPercentage = VariantAsInt(value);
-      } else if (key == "blinkwait") {
-        mode.blinkwait = VariantAsInt(value);
-      } else if (key == "blinkon") {
-        mode.blinkon = VariantAsInt(value);
-      } else if (key == "blinkoff") {
-        mode.blinkoff = VariantAsInt(value);
-      } else if (key == "attr_id") {
-        mode.attrId = VariantAsInt(value);
       }
-    }
-    return mode;
-  }) | std::ranges::to<std::vector>();
+      return mode;
+    }) |
+    std::ranges::to<std::vector>();
 }
 
 void Cursor::SetMode(const event::ModeChange& e) {

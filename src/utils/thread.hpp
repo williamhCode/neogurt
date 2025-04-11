@@ -1,41 +1,35 @@
 #pragma once
+
 #include <mutex>
-#include <shared_mutex>
+#include <utility>
 
-template <
-  class T,
-  class M = std::mutex,
-  template <class...> class WL = std::unique_lock,
-  template <class...> class RL = std::unique_lock>
-struct MutexGuarded {
-  MutexGuarded() = default;
-  
-  MutexGuarded(T in) : t(std::move(in)) {
-  }
+template <typename T>
+class Synchronized {
+public:
+  template <typename... Args>
+  explicit Synchronized(Args&&... args)
+      : value_(std::forward<Args>(args)...) {}
 
-  auto read(auto f) const {
-    auto l = lock();
-    return f(t);
-  }
+  // Access wrapper that locks and unlocks
+  class Access {
+  public:
+    Access(T& value, std::mutex& mtx)
+        : lock_(mtx), value_(value) {}
 
-  auto write(auto f) {
-    auto l = lock();
-    return f(t);
-  }
+    T& operator*() { return value_; }
+    T* operator->() { return &value_; }
+
+    auto& get_lock() { return lock_; }
+
+  private:
+    std::unique_lock<std::mutex> lock_;
+    T& value_;
+  };
+
+  Access lock() { return Access(value_, mtx_); }
 
 private:
-  mutable M m;
-  T t;
-
-  auto lock() const {
-    return RL<M>(m);
-  }
-
-  auto lock() {
-    return WL<M>(m);
-  }
+  T value_;
+  mutable std::mutex mtx_;
 };
 
-template <class T>
-using SharedGuarded =
-  MutexGuarded<T, std::shared_mutex, std::shared_lock, std::unique_lock>;

@@ -227,7 +227,7 @@ bool SessionManager::SessionKill(int id) {
   }
   auto& session = *it->second;
 
-  session.nvim.client->Disconnect();
+  session.nvim.client->TryDisconnect();
   return true;
 }
 
@@ -238,7 +238,7 @@ int SessionManager::SessionRestart(int id, bool currDir) {
   }
   auto& session = it->second;
 
-  session->nvim.client->Disconnect();
+  session->nvim.client->TryDisconnect();
 
   auto dir = currDir ? session->editorState.currDir : session->dir;
   int newId = SessionNew({session->name, dir});

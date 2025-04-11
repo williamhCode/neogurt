@@ -13,9 +13,9 @@ struct SetIcon {
   std::string icon;
   MSGPACK_DEFINE(icon);
 };
+using ModePropertyMap = std::map<std::string, msgpack::type::variant>;
 struct ModeInfoSet {
   bool enabled; // cursor style enabled
-  using ModePropertyMap = std::map<std::string, msgpack::type::variant>;
   std::vector<ModePropertyMap> modeInfo;
   MSGPACK_DEFINE(enabled, modeInfo);
 };

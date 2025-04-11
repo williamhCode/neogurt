@@ -12,7 +12,7 @@
 #include "boost/process/child.hpp"
 
 #include "msgpack/v3/object_decl.hpp"
-#include "utils/tsqueue.hpp"
+#include "utils/thread.hpp"
 
 #include <atomic>
 #include <memory>
@@ -21,7 +21,7 @@
 #include <future>
 #include <thread>
 #include <expected>
-#include <variant>
+#include <queue>
 
 namespace rpc {
 
@@ -54,9 +54,7 @@ private:
   std::unordered_map<u_int32_t, std::promise<msgpack::object_handle>> responses;
   std::mutex responsesMutex;
 
-  // TsQueue<Request> requests;
-  // TsQueue<Notification> notifications;
-  TsQueue<Message> messages;
+  Synchronized<std::queue<Message>> messages;
 
 public:
   Client() = default;
@@ -70,20 +68,21 @@ public:
   bool ConnectTcp(std::string_view host, uint16_t port);
 
   // public functions below are thread-safe
-  void Disconnect();
+  void TryDisconnect();
   bool IsConnected();
 
   std::future<msgpack::object_handle> Call(std::string_view func_name, auto... args);
   void Send(std::string_view func_name, auto... args);
 
-  bool HasMessage() { return !messages.Empty(); }
-  Message& FrontMessage() { return messages.Front(); }
-  void PopMessage() { messages.Pop(); }
+  bool HasMessage() { return !messages.lock()->empty(); }
+  Message& FrontMessage() { return messages.lock()->front(); }
+  void PopMessage() { messages.lock()->pop(); }
 
 private:
   msgpack::unpacker unpacker;
   static constexpr std::size_t readSize = 1024 << 10;
-  TsQueue<msgpack::sbuffer> msgsOut;
+  Synchronized<std::queue<msgpack::sbuffer>> msgsOut;
+  std::condition_variable msgsOutCv;
   std::atomic_uint32_t currId = 0;
 
   uint32_t Msgid();

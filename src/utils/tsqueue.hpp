@@ -46,6 +46,16 @@ public:
     cv.notify_all();
   }
 
+  // implement emplace
+  template <typename... Args>
+  decltype(auto) Emplace(Args&&... args) {
+    {
+      std::scoped_lock lock(mutex);
+      queue.emplace(std::forward<Args>(args)...);
+    }
+    cv.notify_all();
+  }
+
   bool Empty() {
     std::scoped_lock lock(mutex);
     return queue.empty();
