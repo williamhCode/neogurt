@@ -5,6 +5,7 @@
 #include "utils/easing_funcs.hpp"
 #include "utils/logger.hpp"
 #include "utils/region.hpp"
+#include <ranges>
 
 using namespace wgpu;
 
@@ -46,33 +47,34 @@ static int VariantAsInt(const msgpack::type::variant& v) {
 }
 
 void Cursor::ModeInfoSet(const event::ModeInfoSet& e) {
-  for (const auto& elem : e.modeInfo) {
-    auto& modeInfo = cursorModes.emplace_back();
-    for (const auto& [key, value] : elem) {
+  cursorModes = e.modeInfo | std::views::transform([](auto& modeMap) {
+    CursorMode mode{};
+    for (const auto& [key, value] : modeMap) {
       if (key == "cursor_shape") {
         auto shape = value.as_string();
         if (shape == "block") {
-          modeInfo.cursorShape = CursorShape::Block;
+          mode.cursorShape = CursorShape::Block;
         } else if (shape == "horizontal") {
-          modeInfo.cursorShape = CursorShape::Horizontal;
+          mode.cursorShape = CursorShape::Horizontal;
         } else if (shape == "vertical") {
-          modeInfo.cursorShape = CursorShape::Vertical;
+          mode.cursorShape = CursorShape::Vertical;
         } else {
           LOG_WARN("unknown cursor shape: {}", shape);
         }
       } else if (key == "cell_percentage") {
-        modeInfo.cellPercentage = VariantAsInt(value);
+        mode.cellPercentage = VariantAsInt(value);
       } else if (key == "blinkwait") {
-        modeInfo.blinkwait = VariantAsInt(value);
+        mode.blinkwait = VariantAsInt(value);
       } else if (key == "blinkon") {
-        modeInfo.blinkon = VariantAsInt(value);
+        mode.blinkon = VariantAsInt(value);
       } else if (key == "blinkoff") {
-        modeInfo.blinkoff = VariantAsInt(value);
+        mode.blinkoff = VariantAsInt(value);
       } else if (key == "attr_id") {
-        modeInfo.attrId = VariantAsInt(value);
+        mode.attrId = VariantAsInt(value);
       }
     }
-  }
+    return mode;
+  }) | std::ranges::to<std::vector>();
 }
 
 void Cursor::SetMode(const event::ModeChange& e) {

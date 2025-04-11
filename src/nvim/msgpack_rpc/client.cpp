@@ -12,8 +12,8 @@ Client::~Client() {
   Disconnect();
 
   if (clientType == ClientType::Stdio) {
-    readPipe->cancel();
-    writePipe->cancel();
+    readPipe->close();
+    writePipe->close();
     if (process.running()) process.terminate();
 
   } else if (clientType == ClientType::Tcp) {
@@ -128,7 +128,7 @@ void Client::DoRead() {
 
     if (ec) {
       if (ec == asio::error::eof) {
-        LOG_INFO("Client::DoRead: The server closed the connection");
+        LOG_INFO("Client::DoRead: Connection closed");
         Disconnect();
         return;
       } 
