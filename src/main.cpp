@@ -23,8 +23,8 @@
 #include "session/options.hpp"
 #include "utils/clock.hpp"
 #include "utils/logger.hpp"
+#include "utils/thread.hpp"
 #include "utils/timer.hpp"
-#include "utils/tsqueue.hpp"
 
 #include <boost/core/typeinfo.hpp>
 #include <algorithm>
@@ -35,8 +35,8 @@
 #include <vector>
 #include <atomic>
 #include <ranges>
+#include <queue>
 #include <chrono>
-#include <locale>
 
 using namespace wgpu;
 using namespace std::chrono;
@@ -89,8 +89,8 @@ int main(int argc, char** argv) {
       std::optional<SDL_Event> windowResized;
       SDL_Event windowPixelSizeChanged;
     };
-    TsQueue<ResizeEvents> resizeEvents;
-    TsQueue<SDL_Event> sdlEvents;
+    Sync<std::queue<ResizeEvents>> resizeEvents;
+    Sync<std::queue<SDL_Event>> sdlEvents;
 
     int frameCount = 0;
 
@@ -130,9 +130,9 @@ int main(int argc, char** argv) {
         }
 
         // resize handling -------------------------------------------
-        while (!resizeEvents.Empty()) {
-          if (resizeEvents.Size() == 1) { // only process last event
-            const auto& resizeEvent = resizeEvents.Front();
+        while (!resizeEvents.lock()->empty()) {
+          if (resizeEvents.lock()->size() == 1) { // only process last event
+            const auto& resizeEvent = resizeEvents.lock()->front();
 
             if (const auto& event = resizeEvent.windowResized) {
               window.size = {event->window.data1, event->window.data2};
@@ -164,12 +164,12 @@ int main(int argc, char** argv) {
               nvim->UiTryResize(sizes.uiWidth, sizes.uiHeight);
             }
           }
-          resizeEvents.Pop();
+          resizeEvents.lock()->pop();
         }
 
         // sdl events -----------------------------------------
-        while (!sdlEvents.Empty()) {
-          auto& event = sdlEvents.Front();
+        while (!sdlEvents.lock()->empty()) {
+          auto& event = sdlEvents.lock()->front();
 
           switch (event.type) {
             case SDL_EVENT_TEXT_EDITING:
@@ -197,7 +197,7 @@ int main(int argc, char** argv) {
               windowOccluded = true;
               break;
           }
-          sdlEvents.Pop();
+          sdlEvents.lock()->pop();
         }
 
         // user events -------------------------------------------
@@ -386,7 +386,7 @@ int main(int argc, char** argv) {
           break;
         case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: {
           currResizeEvents.windowPixelSizeChanged = event;
-          resizeEvents.Push(currResizeEvents);
+          resizeEvents.lock()->push(currResizeEvents);
           currResizeEvents = {};
           break;
         }
@@ -436,7 +436,7 @@ int main(int argc, char** argv) {
             currSession->input.HandleTextEditing(event.edit);
             // copy event.edit.text
             event.edit.text = SDL_strdup(event.edit.text);
-            sdlEvents.Push(event);
+            sdlEvents.lock()->push(event);
           }
           break;
         case SDL_EVENT_TEXT_INPUT:
@@ -461,7 +461,7 @@ int main(int argc, char** argv) {
         case SDL_EVENT_WINDOW_FOCUS_LOST:
         case SDL_EVENT_WINDOW_EXPOSED:
         case SDL_EVENT_WINDOW_OCCLUDED:
-          sdlEvents.Push(event);
+          sdlEvents.lock()->push(event);
           break;
       }
 

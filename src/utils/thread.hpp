@@ -4,10 +4,10 @@
 #include <utility>
 
 template <typename T>
-class Synchronized {
+class Sync {
 public:
   template <typename... Args>
-  explicit Synchronized(Args&&... args)
+  explicit Sync(Args&&... args)
       : value_(std::forward<Args>(args)...) {}
 
   // Access wrapper that locks and unlocks

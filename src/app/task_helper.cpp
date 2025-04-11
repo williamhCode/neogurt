@@ -1,11 +1,12 @@
 #include "./task_helper.hpp"
-#include "utils/tsqueue.hpp"
+#include "utils/thread.hpp"
 #include <cassert>
+#include <queue>
 
-static TsQueue<std::function<void()>> taskQueue;
+static Sync<std::queue<std::function<void()>>> taskQueue;
 
 void ExecuteOnMainThread(std::function<void()>&& task) {
-  taskQueue.Push(std::move(task));
+  taskQueue.lock()->push(std::move(task));
 
   SDL_Event event;
   SDL_zero(event);
@@ -14,16 +15,16 @@ void ExecuteOnMainThread(std::function<void()>&& task) {
 }
 
 void ProcessNextMainThreadTask() {
-  assert(!taskQueue.Empty());
-  auto& task = taskQueue.Front();
+  assert(!taskQueue.lock()->empty());
+  auto& task = taskQueue.lock()->front();
   task();
-  taskQueue.Pop();
+  taskQueue.lock()->pop();
 }
 
-static TsQueue<SessionHandle> sessionsQueue;
+static Sync<std::queue<SessionHandle>> sessionsQueue;
 
 void PushSessionToMainThread(SessionHandle session) {
-  sessionsQueue.Push(std::move(session));
+  sessionsQueue.lock()->push(std::move(session));
 
   SDL_Event event;
   SDL_zero(event);
@@ -32,8 +33,12 @@ void PushSessionToMainThread(SessionHandle session) {
 }
 
 SessionHandle PopSessionFromMainThread() {
-  assert(!sessionsQueue.Empty());
-  SessionHandle session = std::move(sessionsQueue.Front());
-  sessionsQueue.Pop();
+  SessionHandle session;
+  {
+    auto access = sessionsQueue.lock();
+    assert(!access->empty());
+    session = std::move(access->front());
+    access->pop();
+  }
   return session;
 }

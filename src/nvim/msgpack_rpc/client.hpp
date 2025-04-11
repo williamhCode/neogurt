@@ -54,7 +54,7 @@ private:
   std::unordered_map<u_int32_t, std::promise<msgpack::object_handle>> responses;
   std::mutex responsesMutex;
 
-  Synchronized<std::queue<Message>> messages;
+  Sync<std::queue<Message>> messages;
 
 public:
   Client() = default;
@@ -81,7 +81,7 @@ public:
 private:
   msgpack::unpacker unpacker;
   static constexpr std::size_t readSize = 1024 << 10;
-  Synchronized<std::queue<msgpack::sbuffer>> msgsOut;
+  Sync<std::queue<msgpack::sbuffer>> msgsOut;
   std::condition_variable msgsOutCv;
   std::atomic_uint32_t currId = 0;
 
