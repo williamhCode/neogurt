@@ -6,6 +6,8 @@
 #include "gfx/render_texture.hpp"
 #include "webgpu/webgpu_cpp.h"
 #include "event/ui_parse.hpp"
+#include <vector>
+#include <optional>
 
 enum class CursorShape {
   Block,
@@ -55,7 +57,7 @@ struct Cursor {
   glm::vec2 maskPos; // cursor mask, actual position of cell
 
   std::vector<CursorMode> cursorModes;
-  CursorMode* cursorMode = nullptr;
+  std::optional<CursorMode> cursorMode;
 
   Region startCorners;
   Region destCorners;

@@ -34,8 +34,6 @@ void Cursor::Goto(const event::GridCursorGoto& e) {
   row = e.row;
   col = e.col;
 
-  // LOG_INFO("Cursor Goto: {}, {}, {}", grid, row, col);
-
   cursorGoto = e;
 }
 
@@ -82,7 +80,7 @@ void Cursor::ModeInfoSet(const event::ModeInfoSet& e) {
 void Cursor::SetMode(const event::ModeChange& e) {
   if (e.modeIdx < 0 || e.modeIdx >= ssize(cursorModes)) return;
 
-  cursorMode = &cursorModes[e.modeIdx];
+  cursorMode = cursorModes[e.modeIdx];
 
   if (blink) {
     blinkState = BlinkState::Wait;
@@ -91,7 +89,6 @@ void Cursor::SetMode(const event::ModeChange& e) {
   blink =
     cursorMode->blinkwait != 0 && cursorMode->blinkon != 0 && cursorMode->blinkoff != 0;
 }
-
 
 void Cursor::ImeGoto(const event::GridCursorGoto& e) {
   dirty = true;
@@ -114,7 +111,7 @@ void Cursor::SetBlinkState(BlinkState state) {
 
 bool Cursor::SetDestPos(const Win* currWin, const SizeHandler& sizes) {
   bool invalid =
-    cursorMode == nullptr || currWin == nullptr || !currWin->grid.ValidCoords(row, col);
+    cursorMode == std::nullopt || currWin == nullptr || !currWin->grid.ValidCoords(row, col);
   if (invalid) return false;
 
   const auto& winTex = currWin->sRenderTexture;
@@ -126,8 +123,7 @@ bool Cursor::SetDestPos(const Win* currWin, const SizeHandler& sizes) {
     // reset blink state if
     // - move to new window or row/col
     // - scrolling
-    blinkState = BlinkState::Wait;
-    blinkElasped = 0.0;
+    SetBlinkState(BlinkState::Wait);
     prevScrollOffset = scrollOffset;
   }
 
@@ -217,20 +213,17 @@ void Cursor::Update(float dt) {
     switch (blinkState) {
       case BlinkState::Wait:
         if (blinkElasped >= cursorMode->blinkwait) {
-          blinkState = BlinkState::On;
-          blinkElasped = 0.0;
+          SetBlinkState(BlinkState::On);
         }
         break;
       case BlinkState::On:
         if (blinkElasped >= cursorMode->blinkon) {
-          blinkState = BlinkState::Off;
-          blinkElasped = 0.0;
+          SetBlinkState(BlinkState::Off);
         }
         break;
       case BlinkState::Off:
         if (blinkElasped >= cursorMode->blinkoff) {
-          blinkState = BlinkState::On;
-          blinkElasped = 0.0;
+          SetBlinkState(BlinkState::On);
         }
         break;
     }
@@ -238,6 +231,6 @@ void Cursor::Update(float dt) {
 }
 
 bool Cursor::ShouldRender() {
-  return cursorMode != nullptr && cursorMode->cursorShape != CursorShape::None &&
+  return cursorMode != std::nullopt && cursorMode->cursorShape != CursorShape::None &&
          blinkState != BlinkState::Off && !cursorStop;
 }
