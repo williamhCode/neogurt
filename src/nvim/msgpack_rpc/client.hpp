@@ -8,8 +8,8 @@
 
 #include "boost/asio/io_context.hpp"
 #include "boost/asio/ip/tcp.hpp"
-#include "boost/process/async_pipe.hpp"
-#include "boost/process/child.hpp"
+#include "boost/process/v1/async_pipe.hpp"
+#include "boost/process/v1/child.hpp"
 
 #include "msgpack/v3/object_decl.hpp"
 #include "utils/thread.hpp"
@@ -25,7 +25,7 @@
 
 namespace rpc {
 
-namespace bp = boost::process;
+namespace bp = boost::process::v1;
 namespace asio = boost::asio;
 
 enum class ClientType {

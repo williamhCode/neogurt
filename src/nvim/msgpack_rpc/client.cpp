@@ -1,8 +1,9 @@
 #include "./client.hpp"
 #include "boost/asio/connect.hpp"
-#include "boost/process/io.hpp"
+#include "boost/process/v1/io.hpp"
+#include "boost/process/v1/start_dir.hpp"
 #include "boost/process/start_dir.hpp"
-#include "boost/process/search_path.hpp"
+#include "boost/process/v1/search_path.hpp"
 #include "msgpack/v3/object_fwd_decl.hpp"
 #include "utils/logger.hpp"
 
@@ -160,14 +161,12 @@ void Client::DoRead() {
 
           std::thread([weak_self = weak_from_this(), msgid = request.msgid,
                        future = promise.get_future()] mutable {
-            ResponseOut msg;
+            ResponseOut msg{.msgid = msgid};
 
-            auto result = future.get();
+            RequestValue result = future.get();
             if (result) {
-              msg.msgid = msgid;
               msg.result = (*result).get();
             } else {
-              msg.msgid = msgid;
               msg.error = result.error().get();
             }
 
