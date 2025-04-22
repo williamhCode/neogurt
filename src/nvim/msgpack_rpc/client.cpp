@@ -161,19 +161,19 @@ void Client::DoRead() {
 
           std::thread([weak_self = weak_from_this(), msgid = request.msgid,
                        future = promise.get_future()] mutable {
-            ResponseOut msg{.msgid = msgid};
-
-            RequestValue result = future.get();
-            if (result) {
-              msg.result = (*result).get();
-            } else {
-              msg.error = result.error().get();
-            }
-
-            msgpack::sbuffer buffer;
-            msgpack::pack(buffer, msg);
-
             if (auto self = weak_self.lock()) {
+              ResponseOut msg{.msgid = msgid};
+
+              RequestValue result = future.get();
+              if (result) {
+                msg.result = (*result).get();
+              } else {
+                msg.error = result.error().get();
+              }
+
+              msgpack::sbuffer buffer;
+              msgpack::pack(buffer, msg);
+
               self->Write(std::move(buffer));
             }
           }).detach();

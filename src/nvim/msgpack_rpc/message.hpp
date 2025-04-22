@@ -14,13 +14,13 @@ struct Request {
   msgpack::unique_ptr<msgpack::zone> _zone; // holds the lifetime of the data
   std::promise<RequestValue> promise;
 
-  void SetValue(auto&& value) {
+  void SetValue(const auto& value) {
     auto zone = std::make_unique<msgpack::zone>();
     msgpack::object obj(value, *zone);
     promise.set_value(msgpack::object_handle(obj, std::move(zone)));
   }
 
-  void SetError(auto&& error) {
+  void SetError(const auto& error) {
     auto zone = std::make_unique<msgpack::zone>();
     msgpack::object obj(error, *zone);
     promise.set_value(std::unexpected(msgpack::object_handle(obj, std::move(zone))));
