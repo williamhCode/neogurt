@@ -13,15 +13,15 @@ static auto SplitStr(std::string_view str, char delim) {
          std::views::transform([](auto&& r) { return std::string_view(r); });
 }
 
-std::expected<FontFamily, std::string>
+std::expected<FontFamily, std::runtime_error>
 FontFamily::Default(int linespace, float dpiScale) {
   return FromGuifont("SF Mono:h15", linespace, dpiScale);
 }
 
-std::expected<FontFamily, std::string>
+std::expected<FontFamily, std::runtime_error>
 FontFamily::FromGuifont(std::string guifont, int linespace, float dpiScale) {
   if (guifont.empty()) {
-    return std::unexpected("Empty guifont");
+    return std::unexpected(std::runtime_error("Empty guifont"));
   }
 
   std::ranges::replace(guifont, '_', ' ');
@@ -42,10 +42,14 @@ FontFamily::FromGuifont(std::string guifont, int linespace, float dpiScale) {
       using namespace boost::conversion;
       if (token.starts_with("h")) {
         if (!try_lexical_convert(token.substr(1), height))
-          return std::unexpected("Invalid guifont height: " + std::string(token));
+          return std::unexpected(
+            std::runtime_error("Invalid guifont height: " + std::string(token))
+          );
       } else if (token.starts_with("w")) {
         if (!try_lexical_convert(token.substr(1), width))
-          return std::unexpected("Invalid guifont width: " + std::string(token));
+          return std::unexpected(
+            std::runtime_error("Invalid guifont width: " + std::string(token))
+          );
       } else if (token == "b") {
         bold = true;
       } else if (token == "i") {
@@ -73,6 +77,7 @@ FontFamily::FromGuifont(std::string guifont, int linespace, float dpiScale) {
             dpiScale
           )
           .value(); // allow exception to propagate
+          // (yes we're using exceptions for control flow but this code doesn't needa run super fast)
 
           // reuse the existing FontHandle
           if (fontSet.normal && font.path == fontSet.normal->path) {
@@ -101,8 +106,8 @@ FontFamily::FromGuifont(std::string guifont, int linespace, float dpiScale) {
     };
     return fontFamily;
 
-  } catch (const std::bad_expected_access<std::string>& e) {
-    return std::unexpected(e.error());
+  } catch (std::bad_expected_access<std::runtime_error>& e) {
+    return std::unexpected(std::move(e.error()));
   }
 }
 

@@ -38,6 +38,9 @@ find_package(Boost 1.86.0 REQUIRED COMPONENTS
   program_options
 )
 
+# SDL, glm, stb, webgpu, slang
+set(SDL_SHARED OFF)
+set(SDL_STATIC ON)
 add_subdirectory(deps/webgpu_tools EXCLUDE_FROM_ALL)
 
 set(MSGPACK_USE_STATIC_BOOST ON)
@@ -47,14 +50,18 @@ set(FT_REQUIRE_PNG ON)
 set(FT_REQUIRE_HARFBUZZ ON)
 find_package(Freetype REQUIRED)
 
-set(UTFCPP_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/deps/utfcpp/source)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(HARFBUZZ REQUIRED harfbuzz)
+
+# set(UTFCPP_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/deps/utfcpp/source)
 
 # temp fix for https://github.com/blend2d/blend2d/issues/216
 set(BLEND2D_NO_JIT OFF)
+set(BLEND2D_STATIC_FLAG ON)
 add_subdirectory(deps/blend2d EXCLUDE_FROM_ALL)
 
 # Target Configuration --------------------------------------------
-set(APP_SRC
+set(NEOGURT_SRC
 	main.cpp
 
   app/sdl_window.cpp
@@ -102,9 +109,9 @@ set(APP_SRC
   utils/timer.cpp
   utils/color.cpp
 )
-list(TRANSFORM APP_SRC PREPEND "src/")
+list(TRANSFORM NEOGURT_SRC PREPEND "src/")
 
-add_executable(neogurt ${APP_SRC})
+add_executable(neogurt ${NEOGURT_SRC})
 
 target_compile_definitions(neogurt PRIVATE
   VERSION="${PROJECT_VERSION}"
@@ -119,8 +126,7 @@ target_compile_definitions(neogurt PRIVATE
 
 target_include_directories(neogurt PRIVATE 
   "${PROJECT_SOURCE_DIR}/src"
-  "${UTFCPP_INCLUDE_DIR}"
-  ${FREETYPE_INCLUDE_DIRS}
+  ${HARFBUZZ_INCLUDE_DIRS}
 )
 
 # custom LLVM path in github actions, else use brew
@@ -149,7 +155,8 @@ target_link_libraries(neogurt PRIVATE
   Boost::program_options
   webgpu_tools
   msgpack-cxx
-  ${FREETYPE_LIBRARIES}
+  Freetype::Freetype
+  ${HARFBUZZ_LINK_LIBRARIES}
   blend2d::blend2d
 
   # https://github.com/llvm/llvm-project/issues/77653
@@ -162,7 +169,6 @@ target_link_libraries(neogurt PRIVATE
 target_compile_options(neogurt PRIVATE
   -Wall -Wextra -Wshadow -pedantic 
   -Wno-missing-field-initializers
-  # -Wmissing-designated-field-initializers
   -Wno-deprecated-declarations
   -Wno-gnu-anonymous-struct
   -Wno-nested-anon-types
@@ -255,3 +261,32 @@ if(CMAKE_BUILD_TYPE MATCHES RelWithDebInfo)
     include(CPack)
   endif()
 endif()
+
+# tests ----------------------------
+add_executable(tests
+  test/harfbuzz-test.cpp
+  # test/freetype-test.cpp
+)
+target_include_directories(tests PRIVATE 
+  "${PROJECT_SOURCE_DIR}/test"
+  ${HARFBUZZ_INCLUDE_DIRS}
+)
+target_link_libraries(tests PRIVATE 
+  Freetype::Freetype
+  ${HARFBUZZ_LINK_LIBRARIES}
+
+  # https://github.com/llvm/llvm-project/issues/77653
+  # stack unwinding breaking and linking breaks without this
+  "-L$ENV{LLVM_PATH}/lib/c++" 
+  "-L$ENV{LLVM_PATH}/lib/unwind"
+  "-lunwind"
+)
+target_compile_options(tests PRIVATE
+  -Wall -Wextra -Wshadow -pedantic 
+  -Wno-missing-field-initializers
+  -Wno-deprecated-declarations
+  -Wno-gnu-anonymous-struct
+  -Wno-nested-anon-types
+  -fexperimental-library
+  -Wno-error=narrowing
+)

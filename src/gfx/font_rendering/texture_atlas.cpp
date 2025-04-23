@@ -36,7 +36,7 @@ TextureAtlas<IsColor>::TextureAtlas(float _height, float _dpiScale)
 template <bool IsColor>
 void TextureAtlas<IsColor>::Resize() {
   int heightIncrease = trueHeight * 3;
-  int newBufferHeight = bufferSize.y + heightIncrease;
+  uint newBufferHeight = bufferSize.y + heightIncrease;
   if (newBufferHeight > ctx.limits.maxTextureDimension2D) {
     // TODO: implement LRU cache
     throw std::runtime_error("TextureAtlas: Texture size limit reached");

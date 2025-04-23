@@ -258,7 +258,7 @@ int main(int argc, char** argv) {
 
             fontFamily =
               FontFamily::FromGuifont(guifont, linespace, window.dpiScale)
-                .or_else([&](const std::string& error) {
+                .or_else([&](const std::runtime_error& _) {
                   return FontFamily::Default(linespace, window.dpiScale);
                 })
                 .value();

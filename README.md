@@ -244,15 +244,22 @@ git submodule update  # if submodules become out of sync
 ```
 
 - Install the latest version of LLVM Clang
-- Install Boost
-- Change $(TYPE) for debug/release (see makefile)
 - Default generator is ninja
+
+- Dependencies
+  - Boost
+  - Freetype
+  - Harfbuzz
+  - Others are bundled
 
 Example on macOS:
 ```sh
 brew install llvm
-brew install boost
 brew install ninja
+
+brew install boost
+brew install freetype
+brew install harfbuzz
 ```
 
 Building:

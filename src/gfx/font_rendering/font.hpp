@@ -6,6 +6,7 @@
 #include <expected>
 
 #include <ft2build.h>
+#include <stdexcept>
 #include FT_FREETYPE_H
 
 int FtInit();
@@ -36,7 +37,7 @@ struct Font {
   using GlyphInfoMap = std::unordered_map<FT_UInt, GlyphInfo>;
   GlyphInfoMap glyphInfoMap;
 
-  static std::expected<Font, std::string>
+  static std::expected<Font, std::runtime_error>
   FromName(const FontDescriptorWithName& desc, float dpiScale);
 
   // static std::expected<Font, std::string>

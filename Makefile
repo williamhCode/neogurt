@@ -1,56 +1,48 @@
 .PHONY: build
 
-TYPE = debug
-# TYPE = release
+# flags
+REL ?= 0
+TEST ?= 0
 
+# variables
+IS_DEBUG = $(filter 0,$(REL))
+
+TYPE = $(if $(IS_DEBUG),debug,release)
+BUILD_TYPE = $(if $(IS_DEBUG),Debug,RelWithDebInfo)
+
+ifeq ($(TEST),1)
+BUILD_DIR = build/tests/$(TYPE)
+TARGET = tests
+else
+BUILD_DIR = build/$(TYPE)
+TARGET = neogurt
+endif
+
+# targets
 build:
-	cmake --build build/$(TYPE) --target neogurt
-	cp build/$(TYPE)/compile_commands.json .
-	if [ "$(TYPE)" = "release" ]; then \
-		cp build/release/neogurt.app/Contents/Macos/neogurt build/release; \
+	cmake --build $(BUILD_DIR) --target $(TARGET)
+ifeq ($(TEST),0)
+	cp $(BUILD_DIR)/compile_commands.json .
+	if [ "$(REL)" = "1" ]; then \
+		cp build/release/neogurt.app/Contents/MacOS/neogurt build/release; \
 	fi
+endif
 
-build-setup: build-setup-debug build-setup-release
-
-build-setup-debug:
-	cmake . -B build/debug \
-		-D CMAKE_BUILD_TYPE=Debug \
+build-setup:
+	cmake . -B $(BUILD_DIR) \
+		-D CMAKE_BUILD_TYPE=$(BUILD_TYPE) \
 		-G Ninja \
 		-D CMAKE_C_COMPILER=clang \
 		-D CMAKE_CXX_COMPILER=clang++ \
 		-D CMAKE_C_COMPILER_LAUNCHER=ccache \
 		-D CMAKE_CXX_COMPILER_LAUNCHER=ccache \
-		-D CMAKE_COLOR_DIAGNOSTICS=ON \
-		-D SDL_SHARED=ON
-
-build-setup-release:
-	cmake . -B build/release \
-		-D CMAKE_BUILD_TYPE=RelWithDebInfo \
-		-G Ninja \
-		-D CMAKE_C_COMPILER=clang \
-		-D CMAKE_CXX_COMPILER=clang++ \
-		-D CMAKE_C_COMPILER_LAUNCHER=ccache \
-		-D CMAKE_CXX_COMPILER_LAUNCHER=ccache \
-		-D CMAKE_COLOR_DIAGNOSTICS=ON \
-		-D SDL_SHARED=OFF \
-		-D SDL_STATIC=ON \
-		-D BLEND2D_STATIC=ON
-
-xcode-setup:
-	cmake . -B xcode -GXcode
+		-D CMAKE_COLOR_DIAGNOSTICS=ON
 
 run:
-	build/$(TYPE)/neogurt
+	$(BUILD_DIR)/$(TARGET)
 
 package:
 	cmake --build build/release --target package
 
-build-slang-test:
-	cmake --build build/$(TYPE) --target slang-test
-	cp build/$(TYPE)/slang-test ./test
-
-# shaders:
-# 	deps/webgpu_tools/deps/slang-2025.6.1/bin/slangc res/shaders/utils.slang -o \
-# 	res/shaders/utils.slang-module -DGAMMA=1.7
-
-
+xcode-setup:
+	cmake . -B xcode -GXcode

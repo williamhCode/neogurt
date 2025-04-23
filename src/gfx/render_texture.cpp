@@ -127,56 +127,56 @@ void ScrollableRenderTexture::UpdateViewport(float newScrollDist) {
   SetTextureCameraPositions();
 }
 
-// void ScrollableRenderTexture::UpdateScrolling(std::span<float> steps) {
-//   for (float dt : steps) {
-//     scrollCurr += spring.Update(scrollCurr, scrollDist, dt);
-//     
-//     if (spring.AtRest(10) && std::abs(scrollCurr - scrollDist) < 0.1) {
-//       spring.Reset();
-
-//       baseOffset += scrollDist;
-//       baseOffset = RoundToPixel(baseOffset, dpiScale);
-
-//       scrolling = false;
-//       scrollDist = 0;
-//       scrollCurr = 0;
-
-//       SetTextureCameraPositions();
-
-//       break;
-//     }
-//   }
-
-//   SetTexturePositions();
-// }
-
 void ScrollableRenderTexture::UpdateScrolling(std::span<float> steps) {
-  float dt = std::accumulate(steps.begin(), steps.end(), 0.0f);
-  scrollElapsed += dt;
+  for (float dt : steps) {
+    scrollCurr += spring.Update(scrollCurr, scrollDist, dt);
+    
+    if (spring.AtRest(10) && std::abs(scrollCurr - scrollDist) < 0.1) {
+      spring.Reset();
 
-  if (scrollElapsed >= scrollTime) {
-    baseOffset += scrollDist;
-    baseOffset = RoundToPixel(baseOffset, dpiScale);
+      baseOffset += scrollDist;
+      baseOffset = RoundToPixel(baseOffset, dpiScale);
 
-    scrolling = false;
-    scrollDist = 0;
-    scrollCurr = 0;
-    scrollElapsed = 0;
+      scrolling = false;
+      scrollDist = 0;
+      scrollCurr = 0;
 
-    SetTextureCameraPositions();
+      SetTextureCameraPositions();
 
-  } else {
-    float t = scrollElapsed / scrollTime;
-    // float y = glm::pow(t, 1 / 2.0f);
-    // float y = EaseOutSine(t);
-    // float y = EaseOutElastic(t);
-    float y = EaseOutQuad(t);
-
-    scrollCurr = glm::sign(scrollDist) * glm::mix(0.0f, glm::abs(scrollDist), y);
+      break;
+    }
   }
 
   SetTexturePositions();
 }
+
+// void ScrollableRenderTexture::UpdateScrolling(std::span<float> steps) {
+//   float dt = std::accumulate(steps.begin(), steps.end(), 0.0f);
+//   scrollElapsed += dt;
+
+//   if (scrollElapsed >= scrollTime) {
+//     baseOffset += scrollDist;
+//     baseOffset = RoundToPixel(baseOffset, dpiScale);
+
+//     scrolling = false;
+//     scrollDist = 0;
+//     scrollCurr = 0;
+//     scrollElapsed = 0;
+
+//     SetTextureCameraPositions();
+
+//   } else {
+//     float t = scrollElapsed / scrollTime;
+//     // float y = glm::pow(t, 1 / 2.0f);
+//     // float y = EaseOutSine(t);
+//     // float y = EaseOutElastic(t);
+//     float y = EaseOutQuad(t);
+
+//     scrollCurr = glm::sign(scrollDist) * glm::mix(0.0f, glm::abs(scrollDist), y);
+//   }
+
+//   SetTexturePositions();
+// }
 
 void ScrollableRenderTexture::UpdateMargins(const Margins& _margins) {
   margins = _margins;

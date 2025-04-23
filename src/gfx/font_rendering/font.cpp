@@ -10,7 +10,8 @@
 #include "freetype/ftmodapi.h"
 #include "freetype/tttables.h"
 
-// #include <harfbuzz/hb.h>
+// #include <harfbuzz/hb-cplusplus.hh>
+#include <harfbuzz/hb.h>
 // #include <harfbuzz/hb-ft.h>
 
 using namespace wgpu;
@@ -51,16 +52,16 @@ void FtDone() {
   FT_Done_FreeType(library);
 }
 
-std::expected<Font, std::string>
+std::expected<Font, std::runtime_error>
 Font::FromName(const FontDescriptorWithName& desc, float dpiScale) {
   auto fontPath = GetFontPathFromName(desc);
   if (fontPath.empty()) {
-    return std::unexpected("Failed to find font for: " + desc.name);
+    return std::unexpected(std::runtime_error("Failed to find font for: " + desc.name));
   }
   try {
     return Font(fontPath, desc.height, desc.width, dpiScale);
-  } catch (const std::runtime_error& e) {
-    return std::unexpected(e.what());
+  } catch (std::runtime_error& e) {
+    return std::unexpected(std::move(e));
   }
 }
 

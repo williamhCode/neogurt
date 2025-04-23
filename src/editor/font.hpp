@@ -4,6 +4,7 @@
 #include "gfx/font_rendering/font.hpp"
 #include "gfx/font_rendering/shape_drawing.hpp"
 
+#include <stdexcept>
 #include <vector>
 #include <expected>
 
@@ -32,8 +33,9 @@ struct FontFamily {
   float defaultHeight;
   float defaultWidth;
 
-  static std::expected<FontFamily, std::string> Default(int linespace, float dpiScale);
-  static std::expected<FontFamily, std::string>
+  static std::expected<FontFamily, std::runtime_error>
+  Default(int linespace, float dpiScale);
+  static std::expected<FontFamily, std::runtime_error>
   FromGuifont(std::string guifont, int linespace, float dpiScale);
 
   bool TryChangeDpiScale(float dpiScale); // returns true if changed
