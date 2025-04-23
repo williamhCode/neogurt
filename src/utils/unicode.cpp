@@ -20,15 +20,30 @@ char32_t Utf8ToChar32(const std::string& utf8String) {
   using namespace boost::locale::utf;
   auto it = utf8String.begin();
   auto codepoint = utf_traits<char>::decode(it, utf8String.end());
-  if (codepoint == incomplete) {
-    LOG_ERR("Utf8ToChar32 - incomplete string: {}", utf8String);
-    codepoint = 0;
-  }
-  if (codepoint == illegal) {
-    LOG_ERR("Utf8ToChar32 - illegal string: {}", utf8String);
-    codepoint = 0;
+  if (codepoint == incomplete || codepoint == illegal) {
+    LOG_ERR("Utf8ToUtf32 - bad string: {}", utf8String);
   }
   return codepoint;
+}
+
+std::u32string Utf8ToUtf32(const std::string& utf8String) {
+  return boost::locale::conv::utf_to_utf<char32_t>(utf8String);
+}
+
+bool HasMultipleCodes(const std::string& utf8String) {
+  using namespace boost::locale::utf;
+  int num = 0;
+  auto it = utf8String.begin();
+  while (it != utf8String.end()) {
+    auto codepoint = utf_traits<char>::decode(it, utf8String.end());
+    if (codepoint == incomplete || codepoint == illegal) {
+      LOG_ERR("Utf8ToUtf32 - bad string: {}", utf8String);
+      break;
+    }
+    num++;
+    if (num >= 2) return true;
+  }
+  return false;
 }
 
 // copied from here

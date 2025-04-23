@@ -31,7 +31,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)  # clangd
 
 # Dependencies  -------------------------------------------------
-set(Boost_USE_STATIC_LIBS ON)
+# set(Boost_USE_STATIC_LIBS ON)
 find_package(Boost 1.86.0 REQUIRED COMPONENTS
   locale
   process
@@ -43,21 +43,27 @@ set(SDL_SHARED OFF)
 set(SDL_STATIC ON)
 add_subdirectory(deps/webgpu_tools EXCLUDE_FROM_ALL)
 
+# msgpack
 set(MSGPACK_USE_STATIC_BOOST ON)
 add_subdirectory(deps/msgpack EXCLUDE_FROM_ALL)
 
+# freetype
 set(FT_REQUIRE_PNG ON)
 set(FT_REQUIRE_HARFBUZZ ON)
 find_package(Freetype REQUIRED)
 
+# harfbuzz
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(HARFBUZZ REQUIRED harfbuzz)
+add_library(HarfBuzz INTERFACE)
+target_include_directories(HarfBuzz INTERFACE ${HARFBUZZ_INCLUDE_DIRS})
+target_link_libraries(HarfBuzz INTERFACE ${HARFBUZZ_LINK_LIBRARIES})
 
 # set(UTFCPP_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/deps/utfcpp/source)
 
 # temp fix for https://github.com/blend2d/blend2d/issues/216
 set(BLEND2D_NO_JIT OFF)
-set(BLEND2D_STATIC_FLAG ON)
+set(BLEND2D_STATIC ON)
 add_subdirectory(deps/blend2d EXCLUDE_FROM_ALL)
 
 # Target Configuration --------------------------------------------
@@ -126,7 +132,6 @@ target_compile_definitions(neogurt PRIVATE
 
 target_include_directories(neogurt PRIVATE 
   "${PROJECT_SOURCE_DIR}/src"
-  ${HARFBUZZ_INCLUDE_DIRS}
 )
 
 # custom LLVM path in github actions, else use brew
@@ -148,7 +153,6 @@ execute_process(
 target_link_directories(neogurt PRIVATE
   "${ICU_PATH}/lib"
 )
-
 target_link_libraries(neogurt PRIVATE 
   Boost::locale
   Boost::process
@@ -156,7 +160,7 @@ target_link_libraries(neogurt PRIVATE
   webgpu_tools
   msgpack-cxx
   Freetype::Freetype
-  ${HARFBUZZ_LINK_LIBRARIES}
+  HarfBuzz
   blend2d::blend2d
 
   # https://github.com/llvm/llvm-project/issues/77653
@@ -266,14 +270,21 @@ endif()
 add_executable(tests
   test/harfbuzz-test.cpp
   # test/freetype-test.cpp
+
+  src/utils/unicode.cpp
+  src/utils/logger.cpp
 )
 target_include_directories(tests PRIVATE 
   "${PROJECT_SOURCE_DIR}/test"
-  ${HARFBUZZ_INCLUDE_DIRS}
+  "${PROJECT_SOURCE_DIR}/src"
+)
+target_link_directories(tests PRIVATE
+  "${ICU_PATH}/lib"
 )
 target_link_libraries(tests PRIVATE 
+  Boost::locale
   Freetype::Freetype
-  ${HARFBUZZ_LINK_LIBRARIES}
+  HarfBuzz
 
   # https://github.com/llvm/llvm-project/issues/77653
   # stack unwinding breaking and linking breaks without this
