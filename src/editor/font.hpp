@@ -5,6 +5,7 @@
 #include "gfx/font_rendering/shape_drawing.hpp"
 
 #include <stdexcept>
+#include <string>
 #include <vector>
 #include <expected>
 
@@ -47,7 +48,7 @@ struct FontFamily {
   glm::vec2 GetCharSize() const;
   float GetAscender() const;
 
-  const GlyphInfo& GetGlyphInfo(char32_t charcode, bool bold, bool italic);
+  const GlyphInfo& GetGlyphInfo(const std::string& text, bool bold, bool italic);
 
 private:
   void UpdateFonts(std::function<FontHandle(const FontHandle&)> createFont);

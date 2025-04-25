@@ -79,7 +79,7 @@ public:
   bool SessionPrev();                               // returns success
   SessionListEntry SessionInfo(int id);             // returns {} if failed
   std::vector<SessionListEntry> SessionList(const SessionListOpts& opts = {});
-  std::optional<SessionHandle> GetCurrentSession(); // returns nullopt if should quit
+  SessionHandle* GetCurrentSession(); // returns nullptr if should quit
 
   void FontSizeChange(float delta, bool all = false);
   void FontSizeReset(bool all = false);

@@ -1,6 +1,7 @@
 #include "shape_drawing.hpp"
 #include "utils/logger.hpp"
 #include "utils/timer.hpp"
+#include "utils/unicode.hpp"
 
 using namespace shape;
 
@@ -229,7 +230,8 @@ ShapeDrawing::ShapeDrawing(glm::vec2 charSize, float dpiScale) {
 }
 
 const GlyphInfo*
-ShapeDrawing::GetGlyphInfo(char32_t charcode, TextureAtlas<false>& textureAtlas) {
+ShapeDrawing::GetGlyphInfo(const std::string& text, TextureAtlas<false>& textureAtlas) {
+  char32_t charcode = Utf8ToChar32(text);
   bool isShape = (charcode >= 0x2500 && charcode <= 0x259F) ||
                  (charcode >= 0x2801 && charcode <= 0x28FF);
   if (!isShape) {

@@ -4,6 +4,7 @@
 #include "./shape_pen.hpp"
 #include "./texture_atlas.hpp"
 #include "glm/ext/vector_float2.hpp"
+#include <string>
 #include <mdspan>
 #include <unordered_map>
 
@@ -19,7 +20,7 @@ struct ShapeDrawing {
   ShapeDrawing(glm::vec2 charSize, float dpiScale);
 
   // returns nullptr if not implemented
-  const GlyphInfo* GetGlyphInfo(char32_t charcode, TextureAtlas<false>& textureAtlas);
+  const GlyphInfo* GetGlyphInfo(const std::string& text, TextureAtlas<false>& textureAtlas);
 
   // std::chrono::nanoseconds totalTime = std::chrono::nanoseconds(0);
 };

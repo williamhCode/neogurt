@@ -113,9 +113,9 @@ int main(int argc, char** argv) {
       while (!exitWindow && !stopToken.stop_requested()) {
 
         // session handling ------------------------------------------
-        if (auto sessionOptional = sessionManager.GetCurrentSession()) {
-          if (session != *sessionOptional) {
-            session = *sessionOptional;
+        if (auto* sessionPtr = sessionManager.GetCurrentSession()) {
+          if (session != *sessionPtr) {
+            session = *sessionPtr;
             options = &session->sessionOpts;
             nvim = &session->nvim;
             editorState = &session->editorState;

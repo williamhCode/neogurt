@@ -30,22 +30,6 @@ std::u32string Utf8ToUtf32(const std::string& utf8String) {
   return boost::locale::conv::utf_to_utf<char32_t>(utf8String);
 }
 
-bool HasMultipleCodes(const std::string& utf8String) {
-  using namespace boost::locale::utf;
-  int num = 0;
-  auto it = utf8String.begin();
-  while (it != utf8String.end()) {
-    auto codepoint = utf_traits<char>::decode(it, utf8String.end());
-    if (codepoint == incomplete || codepoint == illegal) {
-      LOG_ERR("Utf8ToUtf32 - bad string: {}", utf8String);
-      break;
-    }
-    num++;
-    if (num >= 2) return true;
-  }
-  return false;
-}
-
 // copied from here
 // https://github.com/tzlaine/text/blob/dd2959e7143fde3f62b24d87a6573b5b96b6ea46/include/boost/text/estimated_width.hpp
 static int GetDisplayWidth(uint32_t cp) {
@@ -67,6 +51,7 @@ static int GetDisplayWidth(uint32_t cp) {
 
 // Get display width of a grapheme
 static int GetGraphemeWidth(const std::string& grapheme) {
+  // basically just get the width of the first codepoint in the grapheme
   return GetDisplayWidth(Utf8ToChar32(grapheme));
 }
 

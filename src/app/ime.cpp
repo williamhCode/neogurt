@@ -42,7 +42,7 @@ void ImeHandler::Update() {
 
     auto cells =
       SplitByGraphemes(text) |
-      std::views::transform([&, this](GraphemeInfo& info) {
+      std::views::transform([&, this](const GraphemeInfo& info) {
         int hlId = imeNormalHlId;
         if (start != -1) {
           if (u32idx >= start && u32idx < end) {

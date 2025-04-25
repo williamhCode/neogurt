@@ -202,8 +202,7 @@ void Renderer::RenderToWindow(
       }
 
       if (!cell.text.empty() && cell.text != " ") {
-        char32_t charcode = Utf8ToChar32(cell.text);
-        const auto& glyphInfo = fontFamily.GetGlyphInfo(charcode, hl.bold, hl.italic);
+        const auto& glyphInfo = fontFamily.GetGlyphInfo(cell.text, hl.bold, hl.italic);
 
         glm::vec2 textQuadPos{
           textOffset.x,
@@ -364,9 +363,8 @@ void Renderer::RenderCursorMask(
   auto& cell = win.grid.lines[cursor.row][cursor.col];
 
   if (!cell.text.empty() && cell.text != " ") {
-    char32_t charcode = Utf8ToChar32(cell.text);
     const auto& hl = hlManager.hlTable[cell.hlId];
-    const auto& glyphInfo = fontFamily.GetGlyphInfo(charcode, hl.bold, hl.italic);
+    const auto& glyphInfo = fontFamily.GetGlyphInfo(cell.text, hl.bold, hl.italic);
     cursor.onEmoji = glyphInfo.isEmoji;
 
     glm::vec2 textQuadPos{

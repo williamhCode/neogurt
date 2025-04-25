@@ -4,10 +4,11 @@
 #include "./glyph_info.hpp"
 #include "./texture_atlas.hpp"
 #include <expected>
-
-#include <ft2build.h>
+#include <string>
 #include <stdexcept>
-#include FT_FREETYPE_H
+
+#include <hb-cplusplus.hh>
+#include <hb-ft.h>
 
 int FtInit();
 void FtDone();
@@ -21,6 +22,8 @@ using FT_FacePtr = std::unique_ptr<FT_FaceRec, FT_FaceDeleter>;
 
 struct Font {
   FT_FacePtr face;
+  hb::unique_ptr<hb_font_t> hbFont;
+  hb::unique_ptr<hb_buffer_t> hbBuffer;
 
   std::string path;
   float height;     // font size
@@ -34,7 +37,7 @@ struct Font {
   float underlineThickness;
 
   // index is FT glyph index, not charcode
-  using GlyphInfoMap = std::unordered_map<FT_UInt, GlyphInfo>;
+  using GlyphInfoMap = std::unordered_map<std::string, GlyphInfo>;
   GlyphInfoMap glyphInfoMap;
 
   static std::expected<Font, std::runtime_error>
@@ -48,7 +51,7 @@ struct Font {
   // returns nullptr when charcode is not found.
   // updates glyphInfoMap when charcode not in map.
   const GlyphInfo* GetGlyphInfo(
-    char32_t charcode,
+    const std::string& text,
     TextureAtlas<false>& textureAtlas,
     TextureAtlas<true>& colorTextureAtlas
   );

@@ -310,8 +310,8 @@ std::vector<SessionListEntry> SessionManager::SessionList(const SessionListOpts&
   return entries;
 }
 
-std::optional<SessionHandle> SessionManager::GetCurrentSession() {
-  int prevId = CurrSession()->id;
+SessionHandle* SessionManager::GetCurrentSession() {
+  int prevSessionId = CurrSession()->id;
 
   // remove disconnected sessions
   std::erase_if(sessionsOrder, [this](auto* sessionPtr) {
@@ -323,16 +323,16 @@ std::optional<SessionHandle> SessionManager::GetCurrentSession() {
 
   // check if no sessions left
   auto& currSession = CurrSession();
-  if (currSession == nullptr) {
-    return {};
+  if (!currSession) {
+    return nullptr;
   }
 
   // switch to most recent session if current session was removed
-  if (prevId != currSession->id) {
+  if (currSession->id != prevSessionId) {
     SessionSwitchInternal(currSession);
   }
 
-  return currSession;
+  return &currSession;
 }
 
 void SessionManager::FontSizeChange(float delta, bool all) {

@@ -8,11 +8,7 @@
 #include <span>
 
 #include "freetype/ftmodapi.h"
-#include "freetype/tttables.h"
-
-// #include <harfbuzz/hb-cplusplus.hh>
-#include <harfbuzz/hb.h>
-// #include <harfbuzz/hb-ft.h>
+#include "utils/unicode.hpp"
 
 using namespace wgpu;
 
@@ -72,6 +68,8 @@ Font::Font(
   if (face = CreateFace(library, path.c_str(), 0); face == nullptr) {
     throw std::runtime_error("Failed to create FT_Face for: " + path);
   }
+  hbFont = hb::unique_ptr(hb_ft_font_create(face.get(), nullptr));
+  hbBuffer = hb::unique_ptr(hb_buffer_create());
 
   // winding order is clockwise starting from top left
   int trueHeight = height * dpiScale;
@@ -127,20 +125,35 @@ Font::Font(
 }
 
 const GlyphInfo* Font::GetGlyphInfo(
-  char32_t charcode,
+  const std::string& text,
   TextureAtlas<false>& textureAtlas,
   TextureAtlas<true>& colorTextureAtlas
 ) {
-  auto glyphIndex = FT_Get_Char_Index(face.get(), charcode);
-
-  if (glyphIndex == 0) {
-    return nullptr;
-  }
-
-  auto it = glyphInfoMap.find(glyphIndex);
+  auto it = glyphInfoMap.find(text);
   if (it != glyphInfoMap.end()) {
     return &(it->second);
   }
+
+  uint32_t glyphIndex = 0;
+  std::u32string u32text = Utf8ToUtf32(text);
+
+  if (u32text.size() == 1) {
+    glyphIndex = FT_Get_Char_Index(face.get(), u32text[0]);
+
+  } else { // shape the text if not single unicode character (e.g. ZWJ emojis)
+    hb_buffer_reset(hbBuffer);
+    hb_buffer_add_utf8(hbBuffer, text.c_str(), -1, 0, -1);
+    hb_buffer_guess_segment_properties(hbBuffer);
+    hb_shape(hbFont, hbBuffer, nullptr, 0);
+
+    unsigned int len = hb_buffer_get_length(hbBuffer);
+    if (len > 0) {
+      hb_glyph_info_t* info = hb_buffer_get_glyph_infos(hbBuffer, nullptr);
+      glyphIndex = info[0].codepoint;
+    }
+  }
+
+  if (glyphIndex == 0) return nullptr;
 
   FT_Load_Glyph(face.get(), glyphIndex, FT_LOAD_COLOR);
   FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL);
@@ -183,6 +196,6 @@ const GlyphInfo* Font::GetGlyphInfo(
     glyphInfo.atlasRegion = textureAtlas.AddGlyph(view);
   }
 
-  auto pair = glyphInfoMap.emplace(glyphIndex, glyphInfo);
+  auto pair = glyphInfoMap.emplace(text, glyphInfo);
   return &(pair.first->second);
 }

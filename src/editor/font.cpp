@@ -8,7 +8,7 @@ static float ClampHeight(float height) {
   return std::clamp(height, 4.0f, 72.0f);
 }
 
-static auto SplitStr(std::string_view str, char delim) {
+static auto SplitStr(std::string_view str, std::string_view delim) {
   return std::views::split(str, delim) |
          std::views::transform([](auto&& r) { return std::string_view(r); });
 }
@@ -33,7 +33,7 @@ FontFamily::FromGuifont(std::string guifont, int linespace, float dpiScale) {
   bool bold = false;
   bool italic = false;
 
-  for (auto token : SplitStr(guifont, ':')) {
+  for (std::string_view token : SplitStr(guifont, ":")) {
     if (token.empty()) continue;
 
     if (fontsStr.empty()) {
@@ -63,41 +63,42 @@ FontFamily::FromGuifont(std::string guifont, int linespace, float dpiScale) {
       .linespace = linespace,
       .topLinespace = RoundToPixel(linespace / 2.0, dpiScale),
       .dpiScale = dpiScale,
-      .fonts = SplitStr(fontsStr, ',') | std::views::transform([&](auto&& fontName) {
-        FontSet fontSet;
-        auto makeFontHandle = [&](bool bold, bool italic) {
-          auto font = Font::FromName(
-            {
-              .name = std::string(fontName),
-              .height = ClampHeight(height),
-              .width = width,
-              .bold = bold,
-              .italic = italic,
-            },
-            dpiScale
-          )
-          .value(); // allow exception to propagate
-          // (yes we're using exceptions for control flow but this code doesn't needa run super fast)
+      .fonts =
+        SplitStr(fontsStr, ",") | std::views::transform([&](std::string_view fontName) {
+          FontSet fontSet;
+          auto makeFontHandle = [&](bool bold, bool italic) {
+            auto font = Font::FromName(
+              {
+                .name = std::string(fontName),
+                .height = ClampHeight(height),
+                .width = width,
+                .bold = bold,
+                .italic = italic,
+              },
+              dpiScale
+            )
+            .value(); // allow exception to propagate
+            // (yes we're using exceptions for control flow but this code doesn't needa run super fast)
 
-          // reuse the existing FontHandle
-          if (fontSet.normal && font.path == fontSet.normal->path) {
-            return fontSet.normal;
+            // reuse the existing FontHandle
+            if (fontSet.normal && font.path == fontSet.normal->path) {
+              return fontSet.normal;
+            }
+            // otherwise, create a new FontHandle
+            return std::make_shared<Font>(std::move(font));
+          };
+
+          fontSet.normal = makeFontHandle(bold, italic);
+
+          if (!(bold || italic)) {
+            fontSet.bold = makeFontHandle(true, false);
+            fontSet.italic = makeFontHandle(false, true);
+            fontSet.boldItalic = makeFontHandle(true, true);
           }
-          // otherwise, create a new FontHandle
-          return std::make_shared<Font>(std::move(font));
-        };
 
-        fontSet.normal = makeFontHandle(bold, italic);
-
-        if (!(bold || italic)) {
-          fontSet.bold = makeFontHandle(true, false);
-          fontSet.italic = makeFontHandle(false, true);
-          fontSet.boldItalic = makeFontHandle(true, true);
-        }
-
-        return fontSet;
-      }) |
-      std::ranges::to<std::vector>(),
+          return fontSet;
+        }) |
+        std::ranges::to<std::vector>(),
       .shapeDrawing{fontFamily.GetCharSize(), dpiScale},
       .textureAtlas{fontFamily.DefaultFont().charSize.y, dpiScale},
       .colorTextureAtlas{fontFamily.DefaultFont().charSize.y, dpiScale},
@@ -175,9 +176,9 @@ void FontFamily::UpdateLinespace(int _linespace) {
 }
 
 const GlyphInfo&
-FontFamily::GetGlyphInfo(char32_t charcode, bool bold, bool italic) {
+FontFamily::GetGlyphInfo(const std::string& text, bool bold, bool italic) {
   // shapes
-  if (const auto *glyphInfo = shapeDrawing.GetGlyphInfo(charcode, textureAtlas)) {
+  if (const auto *glyphInfo = shapeDrawing.GetGlyphInfo(text, textureAtlas)) {
     return *glyphInfo;
   }
 
@@ -196,7 +197,7 @@ FontFamily::GetGlyphInfo(char32_t charcode, bool bold, bool italic) {
     }();
 
     if (const auto* glyphInfo =
-          font->GetGlyphInfo(charcode, textureAtlas, colorTextureAtlas)) {
+          font->GetGlyphInfo(text, textureAtlas, colorTextureAtlas)) {
       return *glyphInfo;
     }
   }
@@ -204,7 +205,7 @@ FontFamily::GetGlyphInfo(char32_t charcode, bool bold, bool italic) {
   // TODO: draw a question mark symbol instead
   for (const auto& fontSet : fonts) {
     if (const auto* glyphInfo =
-          fontSet.normal->GetGlyphInfo(' ', textureAtlas, colorTextureAtlas)) {
+          fontSet.normal->GetGlyphInfo(" ", textureAtlas, colorTextureAtlas)) {
       return *glyphInfo;
     }
   }
