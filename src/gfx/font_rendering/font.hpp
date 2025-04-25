@@ -36,7 +36,6 @@ struct Font {
   float underlinePosition;
   float underlineThickness;
 
-  // index is FT glyph index, not charcode
   using GlyphInfoMap = std::unordered_map<std::string, GlyphInfo>;
   GlyphInfoMap glyphInfoMap;
 

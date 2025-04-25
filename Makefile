@@ -2,31 +2,23 @@
 
 # flags
 REL ?= 0
-TEST ?= 0
+TARGET ?= neogurt
 
 # variables
 IS_DEBUG = $(filter 0,$(REL))
 
-TYPE = $(if $(IS_DEBUG),debug,release)
 BUILD_TYPE = $(if $(IS_DEBUG),Debug,RelWithDebInfo)
 
-ifeq ($(TEST),1)
-BUILD_DIR = build/tests/$(TYPE)
-TARGET = tests
-else
+TYPE = $(if $(IS_DEBUG),debug,release)
 BUILD_DIR = build/$(TYPE)
-TARGET = neogurt
-endif
 
 # targets
 build:
 	cmake --build $(BUILD_DIR) --target $(TARGET)
-ifeq ($(TEST),0)
 	cp $(BUILD_DIR)/compile_commands.json .
 	if [ "$(REL)" = "1" ]; then \
 		cp build/release/neogurt.app/Contents/MacOS/neogurt build/release; \
 	fi
-endif
 
 build-setup:
 	cmake . -B $(BUILD_DIR) \

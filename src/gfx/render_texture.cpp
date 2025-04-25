@@ -92,7 +92,8 @@ ScrollableRenderTexture::ScrollableRenderTexture(
 
   clearData.CreateBuffers(1);
 
-  spring = {.zeta = 1.0, .omega = 20};
+  // spring = {.zeta = 1.0, .omega = 20};
+  spring = {.zeta = 1.0, .omega = 15};
 }
 
 void ScrollableRenderTexture::UpdatePos(glm::vec2 pos) {
