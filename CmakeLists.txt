@@ -275,4 +275,3 @@ target_link_libraries(freetype_test PRIVATE neogurt_core)
 
 add_executable(blend2d_test test/blend2d_test.cpp)
 target_link_libraries(blend2d_test PRIVATE neogurt_core)
-

@@ -2,9 +2,9 @@ vim.g.neogurt = true
 vim.g.neogurt_startup = function() end
 
 local autocmd = vim.api.nvim_create_autocmd
-autocmd("UiEnter", {
+autocmd("VimEnter", {
   callback = function()
-    vim.rpcrequest(1, "ui_enter")
+    vim.rpcnotify(1, "vim_enter")
   end
 })
 autocmd("ColorScheme", {

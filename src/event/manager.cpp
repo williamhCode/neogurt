@@ -5,13 +5,14 @@
 #include "nvim/msgpack_rpc/client.hpp"
 #include "utils/async.hpp"
 #include "utils/logger.hpp"
+#include <vector>
 
 static void SetImeHighlight(SessionHandle& session) {
-  auto imeHlsFut = GetAll(
-    session->nvim.GetHl(0, {{"name", "NeogurtImeNormal"}, {"link", false}}),
-    session->nvim.GetHl(0, {{"name", "NeogurtImeSelected"}, {"link", false}})
-  );
-  auto [imeNormalHlObj, imeSelectedHlObj] = imeHlsFut.get();
+  auto [imeNormalHlObj, imeSelectedHlObj] =
+    GetAll(
+      session->nvim.GetHl(0, {{"name", "NeogurtImeNormal"}, {"link", false}}),
+      session->nvim.GetHl(0, {{"name", "NeogurtImeSelected"}, {"link", false}})
+    ).get();
 
   ImeHandler::imeNormalHlId = -1;
   ImeHandler::imeSelectedHlId = -2;
@@ -35,18 +36,7 @@ void EventManager::ProcessSessionEvents(SessionHandle& session) {
         auto& request = *std::get_if<rpc::Request>(&message);
         using msgpack::type::nil_t;
 
-        if (request.method == "ui_enter") {
-          SetImeHighlight(session);
-
-          static bool startup = true;
-          if (startup) {
-            nvim.ExecLua("vim.g.neogurt_startup()", {});
-            startup = false;
-          }
-
-          request.SetValue(nil_t());
-
-        } else if (request.method == "neogurt_cmd") {
+        if (request.method == "neogurt_cmd") {
           ProcessNeogurtCmd(request, session, sessionManager);
 
         } else {
@@ -60,7 +50,16 @@ void EventManager::ProcessSessionEvents(SessionHandle& session) {
       case 1: { // Notification
         auto& notif = *std::get_if<rpc::Notification>(&message);
 
-        if (notif.method == "redraw") {
+        if (notif.method == "vim_enter") {
+          SetImeHighlight(session);
+
+          static bool startup = true;
+          if (startup) {
+            nvim.ExecLua("vim.g.neogurt_startup()", {});
+            startup = false;
+          }
+
+        } else if (notif.method == "redraw") {
           ParseUiRedraw(notif.params, session->uiEvents);
 
         } else if (notif.method == "color_scheme") {
