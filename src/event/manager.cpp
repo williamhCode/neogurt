@@ -84,7 +84,7 @@ void EventManager::SetImeHighlight(SessionHandle& session) {
       session->nvim.GetHl(0, {{"name", "NeogurtImeNormal"}, {"link", false}}),
       session->nvim.GetHl(0, {{"name", "NeogurtImeSelected"}, {"link", false}})
     ),
-    [](auto& result, std::weak_ptr<Session>& weakSession) {
+    [weakSession = std::weak_ptr(session)](auto& result) {
       if (auto session = weakSession.lock()) {
         auto& [imeNormalHlObj, imeSelectedHlObj] = result;
         ImeHandler::imeNormalHlId = -1;
@@ -94,7 +94,6 @@ void EventManager::SetImeHighlight(SessionHandle& session) {
         session->editorState.hlManager.hlTable[ImeHandler::imeSelectedHlId] =
           Highlight::FromDesc(imeSelectedHlObj->convert());
       }
-    },
-    std::weak_ptr<Session>(session)
+    }
   );
 }
