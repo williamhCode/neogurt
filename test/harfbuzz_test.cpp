@@ -22,18 +22,18 @@ int main() {
   }
   std::println();
 
-  hb::unique_ptr<hb_font_t> font(hb_ft_font_create(face, nullptr));
+  hb::unique_ptr<hb_font_t> hbFont(hb_ft_font_create(face, nullptr));
 
-  hb::unique_ptr<hb_buffer_t> buffer(hb_buffer_create());
-  hb_buffer_add_utf8(buffer, text.c_str(), -1, 0, -1);
-  hb_buffer_guess_segment_properties(buffer);
+  hb::unique_ptr<hb_buffer_t> hbBuffer(hb_buffer_create());
+  hb_buffer_add_utf8(hbBuffer, text.c_str(), -1, 0, -1);
+  hb_buffer_guess_segment_properties(hbBuffer);
 
-  hb_shape(font, buffer, nullptr, 0);
+  hb_shape(hbFont, hbBuffer, nullptr, 0);
 
   /* Get glyph information and positions out of the buffer. */
-  unsigned int len = hb_buffer_get_length(buffer);
-  hb_glyph_info_t* info = hb_buffer_get_glyph_infos(buffer, nullptr);
-  hb_glyph_position_t* pos = hb_buffer_get_glyph_positions(buffer, nullptr);
+  unsigned int len = hb_buffer_get_length(hbBuffer);
+  hb_glyph_info_t* info = hb_buffer_get_glyph_infos(hbBuffer, nullptr);
+  hb_glyph_position_t* pos = hb_buffer_get_glyph_positions(hbBuffer, nullptr);
 
   /* Print them out as is. */
   std::println("Raw buffer contents:");
@@ -46,7 +46,7 @@ int main() {
     double y_offset = pos[i].y_offset / 64.;
 
     char glyphname[64] = {};
-    hb_font_get_glyph_name(font, gid, glyphname, sizeof(glyphname));
+    hb_font_get_glyph_name(hbFont, gid, glyphname, sizeof(glyphname));
 
     std::println(
       "glyph='{}'\tcluster={}\tadvance=({:g},{:g})\toffset=({:g},{:g})", glyphname,
@@ -55,27 +55,15 @@ int main() {
     // std::println("gid: {} cluster: {}", info[i].codepoint, info[i].cluster);
   }
 
-  // std::println ("Converted to absolute positions:");
-  // /* And converted to absolute positions. */
-  // {
-  //   double current_x = 0;
-  //   double current_y = 0;
-  //   for (unsigned int i = 0; i < len; i++) {
-  //     hb_codepoint_t gid = info[i].codepoint;
-  //     unsigned int cluster = info[i].cluster;
-  //     double x_position = current_x + pos[i].x_offset / 64.;
-  //     double y_position = current_y + pos[i].y_offset / 64.;
+  uint32_t glyphIndex = info[0].codepoint;
 
-  //     char glyphname[64] = {};
-  //     hb_font_get_glyph_name(font, gid, glyphname, sizeof(glyphname));
+  FT_Load_Glyph(face, glyphIndex, FT_LOAD_COLOR);
+  FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL);
 
-  //     std::println(
-  //       "glyph='{}' cluster={}  position=({:g},{:g})", glyphname, cluster, x_position,
-  //       y_position
-  //     );
+  FT_GlyphSlot slot = face->glyph;
+  FT_Bitmap& bitmap = slot->bitmap;
 
-  //     current_x += pos[i].x_advance / 64.;
-  //     current_y += pos[i].y_advance / 64.;
-  //   }
-  // }
+  std::println("pixel_mode: {}", bitmap.pixel_mode);
+  std::println("bitmap.width, bitmap.rows: {}, {}", bitmap.width, bitmap.rows);
+
 }

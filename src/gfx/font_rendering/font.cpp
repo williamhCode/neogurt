@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <mdspan>
 #include <span>
+#include <tuple>
 
 #include "freetype/ftmodapi.h"
 #include "utils/unicode.hpp"
@@ -129,11 +130,18 @@ const GlyphInfo* Font::GetGlyphInfo(
   TextureAtlas<false>& textureAtlas,
   TextureAtlas<true>& colorTextureAtlas
 ) {
+  // look for cached glyphs
   auto it = glyphInfoMap.find(text);
   if (it != glyphInfoMap.end()) {
     return &(it->second);
   }
 
+  it = emojiGlyphInfoMap.find(text);
+  if (it != emojiGlyphInfoMap.end()) {
+    return &(it->second);
+  }
+
+  // load glyph
   uint32_t glyphIndex = 0;
   std::u32string u32text = Utf8ToUtf32(text);
 
@@ -146,7 +154,7 @@ const GlyphInfo* Font::GetGlyphInfo(
     hb_buffer_guess_segment_properties(hbBuffer);
     hb_shape(hbFont, hbBuffer, nullptr, 0);
 
-    unsigned int len = hb_buffer_get_length(hbBuffer);
+    uint len = hb_buffer_get_length(hbBuffer);
     if (len > 0) {
       hb_glyph_info_t* info = hb_buffer_get_glyph_infos(hbBuffer, nullptr);
       glyphIndex = info[0].codepoint;
@@ -174,10 +182,11 @@ const GlyphInfo* Font::GetGlyphInfo(
     ),
   };
 
-  // NOTE: assuming pitch is positive here, glyph will be flipped vertically if negative
-  // https://freetype.org/freetype2/docs/glyphs/glyphs-7.html
+  // emoji glyphs
   if (bitmap.pixel_mode == FT_PIXEL_MODE_BGRA) {
     std::extents shape{bitmap.rows, bitmap.width};
+    // NOTE: assuming pitch is positive here, glyph will be flipped vertically if negative
+    // https://freetype.org/freetype2/docs/glyphs/glyphs-7.html
     std::array strides{std::abs(bitmap.pitch) / sizeof(uint32_t), 1uz};
     auto view = std::mdspan(
       // should be safe since freetype treats bitmap.buffer as typeless
@@ -185,17 +194,27 @@ const GlyphInfo* Font::GetGlyphInfo(
       reinterpret_cast<uint32_t*>(bitmap.buffer),
       std::layout_stride::mapping{shape, strides}
     );
-    glyphInfo.atlasRegion = colorTextureAtlas.AddGlyph(view);
+    auto [region, wasReset] = colorTextureAtlas.AddGlyph(view);
+    glyphInfo.atlasRegion = region;
     glyphInfo.isEmoji = true;
 
-  } else {
+    if (wasReset) emojiGlyphInfoMap = {};
+
+    auto pair = emojiGlyphInfoMap.emplace(text, glyphInfo);
+    return &(pair.first->second);
+  }
+  // non-emoji glyphs
+  {
     std::extents shape{bitmap.rows, bitmap.width};
     std::array strides{std::abs(bitmap.pitch) / sizeof(uint8_t), 1uz};
     auto view = std::mdspan(bitmap.buffer, std::layout_stride::mapping{shape, strides});
 
-    glyphInfo.atlasRegion = textureAtlas.AddGlyph(view);
-  }
+    auto [region, wasReset] = textureAtlas.AddGlyph(view);
+    glyphInfo.atlasRegion = region;
 
-  auto pair = glyphInfoMap.emplace(text, glyphInfo);
-  return &(pair.first->second);
+    if (wasReset) glyphInfoMap = {};
+
+    auto pair = glyphInfoMap.emplace(text, glyphInfo);
+    return &(pair.first->second);
+  }
 }

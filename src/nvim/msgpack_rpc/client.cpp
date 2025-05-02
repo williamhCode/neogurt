@@ -47,9 +47,9 @@ bool Client::ConnectStdio(
   }
 
   std::vector<std::string> flags;
-  if (GetEnv("TERM").empty()) {
+  // if (GetEnv("TERM").empty()) {
     flags.emplace_back("-l");
-  }
+  // }
   if (interactive) {
     flags.emplace_back("-i");
   }
@@ -161,19 +161,24 @@ void Client::DoRead() {
 
           std::thread([weak_self = weak_from_this(), msgid = request.msgid,
                        future = promise.get_future()] mutable {
-            if (auto self = weak_self.lock()) {
-              ResponseOut msg{.msgid = msgid};
+            ResponseOut msg{.msgid = msgid};
 
+            try {
               RequestValue result = future.get();
               if (result) {
                 msg.result = (*result).get();
               } else {
                 msg.error = result.error().get();
               }
+            } catch (...) {
+              // Future broken (session destroyed), safe to ignore
+              return;
+            }
 
-              msgpack::sbuffer buffer;
-              msgpack::pack(buffer, msg);
+            msgpack::sbuffer buffer;
+            msgpack::pack(buffer, msg);
 
+            if (auto self = weak_self.lock()) {
               self->Write(std::move(buffer));
             }
           }).detach();

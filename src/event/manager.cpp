@@ -5,21 +5,20 @@
 #include "nvim/msgpack_rpc/client.hpp"
 #include "utils/async.hpp"
 #include "utils/logger.hpp"
+#include <memory>
+#include <thread>
 #include <vector>
 
-static void SetImeHighlight(SessionHandle& session) {
-  auto [imeNormalHlObj, imeSelectedHlObj] =
-    GetAll(
-      session->nvim.GetHl(0, {{"name", "NeogurtImeNormal"}, {"link", false}}),
-      session->nvim.GetHl(0, {{"name", "NeogurtImeSelected"}, {"link", false}})
-    ).get();
+EventManager::EventManager(SessionManager& _sessionManager)
+    : sessionManager(_sessionManager) {
+}
 
-  ImeHandler::imeNormalHlId = -1;
-  ImeHandler::imeSelectedHlId = -2;
-  session->editorState.hlManager.hlTable[ImeHandler::imeNormalHlId] =
-    Highlight::FromDesc(imeNormalHlObj->convert());
-  session->editorState.hlManager.hlTable[ImeHandler::imeSelectedHlId] =
-    Highlight::FromDesc(imeSelectedHlObj->convert());
+void EventManager::ExecuteTasks() {
+  while (!events.lock()->empty()) {
+    auto func = std::move(events.lock()->front());
+    func();
+    events.lock()->pop();
+  }
 }
 
 void EventManager::ProcessSessionEvents(SessionHandle& session) {
@@ -79,4 +78,23 @@ void EventManager::ProcessSessionEvents(SessionHandle& session) {
   }
 }
 
-
+void EventManager::SetImeHighlight(SessionHandle& session) {
+  DispatchWhenReady(
+    GetAll(
+      session->nvim.GetHl(0, {{"name", "NeogurtImeNormal"}, {"link", false}}),
+      session->nvim.GetHl(0, {{"name", "NeogurtImeSelected"}, {"link", false}})
+    ),
+    [](auto& result, std::weak_ptr<Session>& weakSession) {
+      if (auto session = weakSession.lock()) {
+        auto& [imeNormalHlObj, imeSelectedHlObj] = result;
+        ImeHandler::imeNormalHlId = -1;
+        ImeHandler::imeSelectedHlId = -2;
+        session->editorState.hlManager.hlTable[ImeHandler::imeNormalHlId] =
+          Highlight::FromDesc(imeNormalHlObj->convert());
+        session->editorState.hlManager.hlTable[ImeHandler::imeSelectedHlId] =
+          Highlight::FromDesc(imeSelectedHlObj->convert());
+      }
+    },
+    std::weak_ptr<Session>(session)
+  );
+}

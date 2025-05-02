@@ -17,7 +17,10 @@ concept MdSpan2D = is_instance_of_v<T, std::mdspan> && T::extents_type::rank() =
 template<bool IsColor>
 struct TextureAtlas {
   static constexpr int glyphsPerRow = 32;
+  static constexpr wgpu::TextureFormat textureFormat =
+    IsColor ? wgpu::TextureFormat::RGBA8Unorm : wgpu::TextureFormat::R8Unorm;
 
+  float glyphSize;
   float dpiScale;
   int trueHeight; // only used for approximate scale, no precision needed
   glm::vec2 textureSize; // virtual size of texture (used in shader)
@@ -50,18 +53,17 @@ struct TextureAtlas {
 
   // Adds data to texture atlas, and returns the region where the data was added.
   // Region coordinates is relative to textureSize.
+  // Also returns if texture atlas was reset.
+  std::tuple<Region, bool> AddGlyph(MdSpan2D auto glyphData);
 
-  Region AddGlyph(MdSpan2D auto glyphData);
-
-  // Resize cpu side data and sizes
-  void Resize();
+  // Resize cpu side data and sizes, and returns if atlas was reset
+  bool Resize();
   // Resize gpu side data and update bind group
   void Update();
 };
 
-
 template <bool IsColor>
-Region TextureAtlas<IsColor>::AddGlyph(MdSpan2D auto glyphData) {
+std::tuple<Region, bool> TextureAtlas<IsColor>::AddGlyph(MdSpan2D auto glyphData) {
   using ElementType = typename decltype(glyphData)::element_type;
 
   // check if current row is full
@@ -72,9 +74,10 @@ Region TextureAtlas<IsColor>::AddGlyph(MdSpan2D auto glyphData) {
     currMaxHeight = 0;
   }
 
+  bool wasReset = false;
   // if current row is full and there's not enough space
   if (currentPos.y + glyphData.extent(0) > bufferSize.y) {
-    Resize();
+    wasReset = Resize();
   }
 
   // fill data
@@ -118,5 +121,5 @@ Region TextureAtlas<IsColor>::AddGlyph(MdSpan2D auto glyphData) {
   currentPos.x += glyphData.extent(1);
   currMaxHeight = std::max((size_t)currMaxHeight, glyphData.extent(0));
 
-  return MakeRegion(regionPos, regionSize);
+  return {MakeRegion(regionPos, regionSize), wasReset};
 }

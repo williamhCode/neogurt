@@ -2,10 +2,10 @@
 
 #include "event/ui_parse.hpp"
 #include "glm/ext/vector_float4.hpp"
+#include "glm/gtx/string_cast.hpp"
 #include <optional>
 #include <unordered_map>
 #include <string>
-#include <map>
 
 enum class UnderlineType : uint32_t {
   Underline,
@@ -29,7 +29,6 @@ struct Highlight {
 
   static Highlight FromDesc(const event::HlAttrMap& hlDesc);
 };
-#include "glm/gtx/string_cast.hpp"
 template <>
 struct std::formatter<Highlight> {
   constexpr auto parse(auto& ctx) {

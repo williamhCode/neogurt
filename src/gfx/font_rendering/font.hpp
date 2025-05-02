@@ -38,6 +38,7 @@ struct Font {
 
   using GlyphInfoMap = std::unordered_map<std::string, GlyphInfo>;
   GlyphInfoMap glyphInfoMap;
+  GlyphInfoMap emojiGlyphInfoMap;
 
   static std::expected<Font, std::runtime_error>
   FromName(const FontDescriptorWithName& desc, float dpiScale);

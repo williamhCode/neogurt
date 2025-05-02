@@ -1,3 +1,5 @@
+// used for files that need SessionManager or SessionHandle
+// and prevent circular dependency
 #pragma once
 #include <memory>
 

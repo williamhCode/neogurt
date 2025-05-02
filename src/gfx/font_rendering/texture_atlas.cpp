@@ -1,11 +1,13 @@
 #include "./texture_atlas.hpp"
 #include "gfx/instance.hpp"
+#include "utils/logger.hpp"
+#include <utility>
 
 using namespace wgpu;
 
 template <bool IsColor>
-TextureAtlas<IsColor>::TextureAtlas(float _height, float _dpiScale)
-    : dpiScale(_dpiScale), trueHeight(_height * dpiScale) {
+TextureAtlas<IsColor>::TextureAtlas(float _glyphSize, float _dpiScale)
+    : glyphSize(_glyphSize), dpiScale(_dpiScale), trueHeight(glyphSize * dpiScale) {
 
   int initialHeight = trueHeight * 3;
   int initialWidth = trueHeight * glyphsPerRow;
@@ -26,23 +28,24 @@ TextureAtlas<IsColor>::TextureAtlas(float _height, float _dpiScale)
     }
   );
 
-  if constexpr (IsColor) {
-    renderTexture = RenderTexture(textureSize, dpiScale, TextureFormat::RGBA8Unorm);
-  } else {
-    renderTexture = RenderTexture(textureSize, dpiScale, TextureFormat::R8Unorm);
-  }
+  renderTexture = RenderTexture(textureSize, dpiScale, textureFormat);
 }
 
 template <bool IsColor>
-void TextureAtlas<IsColor>::Resize() {
+bool TextureAtlas<IsColor>::Resize() {
   int heightIncrease = trueHeight * 3;
   uint newBufferHeight = bufferSize.y + heightIncrease;
+
   if (newBufferHeight > ctx.limits.maxTextureDimension2D) {
-    // TODO: reset texture
-    throw std::runtime_error("TextureAtlas: Texture size limit reached");
-  } else {
-    bufferSize.y = newBufferHeight;
-  }
+    // reset this texture atlas if we exceed the max texture size
+    LOG_INFO("Previos texture atlas size: {}x{}", bufferSize.x, bufferSize.y);
+    *this = TextureAtlas(glyphSize, dpiScale);
+    LOG_INFO("Reset texture atlas to {}x{}", bufferSize.x, bufferSize.y);
+    return true;
+  } 
+
+  bufferSize.y = newBufferHeight;
+
   textureSize = glm::vec2(bufferSize) / dpiScale;
 
   dataRaw.resize(bufferSize.x * bufferSize.y);
@@ -50,6 +53,8 @@ void TextureAtlas<IsColor>::Resize() {
 
   resized = true;
   // LOG_INFO("Resized texture atlas to {}x{}", bufferSize.x, bufferSize.y);
+
+  return false;
 }
 
 template <bool IsColor>
@@ -69,11 +74,8 @@ void TextureAtlas<IsColor>::Update() {
       }
     );
 
-    if constexpr (IsColor) {
-      renderTexture = RenderTexture(textureSize, dpiScale, TextureFormat::RGBA8Unorm);
-    } else {
-      renderTexture = RenderTexture(textureSize, dpiScale, TextureFormat::R8Unorm);
-    }
+    renderTexture = RenderTexture(textureSize, dpiScale, textureFormat);
+
     resized = false;
   }
 

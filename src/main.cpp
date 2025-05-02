@@ -75,7 +75,7 @@ int main(int argc, char** argv) {
     SessionManager sessionManager(
       SpawnMode::Child, startupOpts, globalOpts, window, sizes, renderer
     );
-    EventManager eventManager{sessionManager};
+    EventManager eventManager(sessionManager);
 
     sessionManager.SessionNew();
     SessionHandle session = sessionManager.CurrSession();
@@ -244,6 +244,8 @@ int main(int argc, char** argv) {
 
         ProcessUiEvents(session);
         LOG_ENABLE();
+
+        eventManager.ExecuteTasks();
 
         // update --------------------------------------------
         // ui options

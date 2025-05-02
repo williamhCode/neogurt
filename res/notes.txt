@@ -1,1 +1,6 @@
 - Freetype only renders bitmap images by default, so limited emoji choices.
+- Freetype doesn't render flipped images yet, but next release will.
+  (https://gitlab.freedesktop.org/freetype/freetype/-/issues/1282)
+
+Working On
+- Reset texture atlas when too big
