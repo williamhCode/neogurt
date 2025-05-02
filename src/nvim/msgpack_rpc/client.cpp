@@ -6,6 +6,7 @@
 #include "boost/process/v1/search_path.hpp"
 #include "msgpack/v3/object_fwd_decl.hpp"
 #include "utils/logger.hpp"
+#include <unistd.h>
 
 namespace rpc {
 
@@ -47,9 +48,10 @@ bool Client::ConnectStdio(
   }
 
   std::vector<std::string> flags;
-  // if (GetEnv("TERM").empty()) {
+  bool isTty = isatty(STDIN_FILENO) || isatty(STDOUT_FILENO);
+  if (!isTty) {
     flags.emplace_back("-l");
-  // }
+  }
   if (interactive) {
     flags.emplace_back("-i");
   }
