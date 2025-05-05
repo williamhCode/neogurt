@@ -143,83 +143,90 @@ void Client::DoRead() {
     msgpack::object_handle handle;
     while (unpacker.next(handle)) {
       const auto& obj = handle.get();
-      if (obj.type != msgpack::type::ARRAY) {
-        LOG_ERR("Client::DoRead: Not an array");
+
+      if (obj.type != msgpack::type::ARRAY || obj.via.array.size < 3) {
         continue;
       }
 
-      int type = obj.via.array.ptr[0].convert();
-      if (type == MessageType::Request) {
-        RequestIn request(obj.convert());
-        {
-          auto msgsAccess = messages.lock();
-          auto& message = msgsAccess->emplace(Request{
-            .method = request.method,
-            .params = request.params,
-            ._zone = std::move(handle.zone()),
-            .promise{},
-          });
-          auto& promise = std::get<Request>(message).promise;
+      try {
+        int type = obj.via.array.ptr[0].convert();
 
-          std::thread([weak_self = weak_from_this(), msgid = request.msgid,
-                       future = promise.get_future()] mutable {
-            ResponseOut msg{.msgid = msgid};
+        if (type == MessageType::Request) {
+          RequestIn request(obj.convert());
+          {
+            auto msgsAccess = messages.lock();
+            auto& message = msgsAccess->emplace(Request{
+              .method = request.method,
+              .params = request.params,
+              ._zone = std::move(handle.zone()),
+              .promise{},
+            });
+            auto& promise = std::get<Request>(message).promise;
 
-            try {
-              RequestValue result = future.get();
-              if (result) {
-                msg.result = (*result).get();
-              } else {
-                msg.error = result.error().get();
+            std::thread([weak_self = weak_from_this(), msgid = request.msgid,
+                         future = promise.get_future()] mutable {
+              ResponseOut msg{.msgid = msgid};
+
+              try {
+                RequestValue result = future.get();
+                if (result) {
+                  msg.result = (*result).get();
+                } else {
+                  msg.error = result.error().get();
+                }
+              } catch (...) {
+                // Future broken (session destroyed), safe to ignore
+                return;
               }
-            } catch (...) {
-              // Future broken (session destroyed), safe to ignore
-              return;
-            }
 
-            msgpack::sbuffer buffer;
-            msgpack::pack(buffer, msg);
+              msgpack::sbuffer buffer;
+              msgpack::pack(buffer, msg);
 
-            if (auto self = weak_self.lock()) {
-              self->Write(std::move(buffer));
-            }
-          }).detach();
-        }
-
-      } else if (type == MessageType::Response) {
-        ResponseIn response(obj.convert());
-        {
-          std::scoped_lock lock(responsesMutex);
-
-          if (auto it = responses.find(response.msgid); it != responses.end()) {
-            auto& promise = it->second;
-            if (response.error.is_nil()) {
-              promise.set_value(
-                msgpack::object_handle(response.result, std::move(handle.zone()))
-              );
-            } else {
-              promise.set_exception(std::make_exception_ptr(std::runtime_error(
-                "rpc::Client response error: " +
-                response.error.via.array.ptr[1].as<std::string>()
-              )));
-            }
-            responses.erase(it);
-
-          } else {
-            LOG_ERR("Client::DoRead: Response not found for msgid: {}", response.msgid);
+              if (auto self = weak_self.lock()) {
+                self->Write(std::move(buffer));
+              }
+            }).detach();
           }
+
+        } else if (type == MessageType::Response) {
+          ResponseIn response(obj.convert());
+          {
+            std::scoped_lock lock(responsesMutex);
+
+            if (auto it = responses.find(response.msgid); it != responses.end()) {
+              auto& promise = it->second;
+              if (response.error.is_nil()) {
+                promise.set_value(
+                  msgpack::object_handle(response.result, std::move(handle.zone()))
+                );
+              } else {
+                promise.set_exception(std::make_exception_ptr(std::runtime_error(
+                  "rpc::Client response error: " + ToString(response.error)
+                )));
+              }
+              responses.erase(it);
+
+            } else {
+              LOG_ERR(
+                "Client::DoRead: Response not found for msgid: {}", response.msgid
+              );
+            }
+          }
+
+        } else if (type == MessageType::Notification) {
+          NotificationIn notification(obj.convert());
+          messages.lock()->emplace(Notification{
+            .method = notification.method,
+            .params = notification.params,
+            ._zone = std::move(handle.zone()),
+          });
+
+        } else {
+          LOG_WARN("Client::DoRead: Unknown type: {}", type);
         }
 
-      } else if (type == MessageType::Notification) {
-        NotificationIn notification(obj.convert());
-        messages.lock()->emplace(Notification{
-          .method = notification.method,
-          .params = notification.params,
-          ._zone = std::move(handle.zone()),
-        });
-
-      } else {
-        LOG_WARN("Client::DoRead: Unknown type: {}", type);
+      } catch (msgpack::type_error& e) {
+        LOG_ERR("Client::DoRead: msgpack::type_error - {}", e.what());
       }
     }
 
