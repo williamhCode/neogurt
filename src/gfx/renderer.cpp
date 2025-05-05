@@ -151,6 +151,7 @@ void Renderer::RenderToWindow(
     // );
   }
 
+textureReset:
   // keep track of quad index after each row
   size_t rows = std::min(win.grid.height, win.height);
   size_t cols = std::min(win.grid.width, win.width);
@@ -202,27 +203,39 @@ void Renderer::RenderToWindow(
       }
 
       if (!cell.text.empty() && cell.text != " ") {
-        const auto& glyphInfo = fontFamily.GetGlyphInfo(cell.text, hl.bold, hl.italic);
+        try {
+          const auto& glyphInfo =
+            fontFamily.GetGlyphInfo(cell.text, hl.bold, hl.italic);
 
-        glm::vec2 textQuadPos{
-          textOffset.x,
-          textOffset.y + (glyphInfo.useAscender ? ascender : 0)
-        };
+          glm::vec2 textQuadPos{
+            textOffset.x,
+            textOffset.y + (glyphInfo.useAscender ? ascender : 0),
+          };
 
-        glm::vec4 foreground{};
-        QuadRenderData<TextQuadVertex, true>* quadData;
-        if (glyphInfo.isEmoji) {
-          quadData = &emojiData;
-        } else {
-          foreground = hlManager.GetForeground(hl);
-          quadData = &textData;
-        }
+          glm::vec4 foreground{};
+          QuadRenderData<TextQuadVertex, true>* quadData;
+          if (glyphInfo.isEmoji) {
+            quadData = &emojiData;
+          } else {
+            foreground = hlManager.GetForeground(hl);
+            quadData = &textData;
+          }
 
-        auto& quad = quadData->NextQuad();
-        for (size_t i = 0; i < 4; i++) {
-          quad[i].position = textQuadPos + glyphInfo.localPoss[i];
-          quad[i].regionCoord = glyphInfo.atlasRegion[i];
-          quad[i].foreground = foreground;
+          auto& quad = quadData->NextQuad();
+          for (size_t i = 0; i < 4; i++) {
+            quad[i].position = textQuadPos + glyphInfo.localPoss[i];
+            quad[i].regionCoord = glyphInfo.atlasRegion[i];
+            quad[i].foreground = foreground;
+          }
+
+        } catch (const TextureResetError& e) {
+          // redo entire thing if texture reset
+          LOG_INFO(
+            "Texture reset, re-rendering font glyphs for window: {}",
+            win.id
+          );
+          // use goto cuz it makes the code cleaner
+          goto textureReset;
         }
       }
 

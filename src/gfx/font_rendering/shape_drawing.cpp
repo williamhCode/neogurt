@@ -261,15 +261,18 @@ ShapeDrawing::GetGlyphInfo(const std::string& text, TextureAtlas<false>& texture
     return nullptr;
   }
 
-  auto [region, atlasWasReset] = textureAtlas.AddGlyph(data);
+  auto regionResult = textureAtlas.AddGlyph(data);
 
-  if (atlasWasReset) glyphInfoMap = {};
+  if (!regionResult) {
+    glyphInfoMap = {};
+    throw regionResult.error();
+  }
 
   auto pair = glyphInfoMap.emplace(
     charcode,
     GlyphInfo{
       .localPoss = localPoss,
-      .atlasRegion = region,
+      .atlasRegion = *regionResult,
       .useAscender = false,
     }
   );

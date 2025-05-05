@@ -30,7 +30,9 @@ ParameterBlock<TextureInfo> texture;
 float4 fs_main(float2 uv) {
   float4 color = texture.Sample(uv);
 
-#ifdef FINAL
+#ifndef FINAL
+  color = select(color.a == 0.0, defaultBgLinear, color);
+#else
   color = Premult(color);
   color = ToSrgb(color);
 #endif

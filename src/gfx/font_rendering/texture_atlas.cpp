@@ -37,15 +37,13 @@ bool TextureAtlas<IsColor>::Resize() {
   uint newBufferHeight = bufferSize.y + heightIncrease;
   uint textureBytes = bufferSize.x * newBufferHeight * sizeof(Pixel);
 
+  // return true if texture atlas if we exceed the max texture size or taking too much memory
   if (newBufferHeight > ctx.limits.maxTextureDimension2D ||
       textureBytes > maxBytes) {
-    // reset this texture atlas if we exceed the max texture size
-    *this = TextureAtlas(glyphSize, dpiScale);
     return true;
   }
 
   bufferSize.y = newBufferHeight;
-
   textureSize = glm::vec2(bufferSize) / dpiScale;
 
   dataRaw.resize(bufferSize.x * bufferSize.y);

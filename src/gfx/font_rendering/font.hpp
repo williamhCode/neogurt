@@ -6,6 +6,7 @@
 #include <expected>
 #include <string>
 #include <stdexcept>
+#include <exception>
 
 #include <hb-cplusplus.hh>
 #include <hb-ft.h>
