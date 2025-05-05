@@ -36,7 +36,7 @@ if vim.g.neogurt then
     blur = 0,
     gamma = 1.7,
     vsync = true,
-    fps = 60, -- "if vsync if false"
+    fps = 60, -- used if vsync if false
 
     margin_top = 0,
     margin_bottom = 0,
