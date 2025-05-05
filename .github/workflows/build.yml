@@ -18,8 +18,7 @@ jobs:
   build:
     strategy:
       matrix:
-        # os: [macos-latest, macos-13]
-        os: [macos-latest]
+        os: [macos-latest, macos-13]
         include:
           - os: macos-latest
             os-name: macos
