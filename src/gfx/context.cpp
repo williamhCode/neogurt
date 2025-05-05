@@ -56,6 +56,7 @@ WGPUContext::WGPUContext(SDL_Window* window, glm::uvec2 size, bool vsync, float 
   //   LOG_INFO("feature: {}", magic_enum::enum_name(features[i]));
   // }
 
+  // set limits to supported to maximize texture and buffer size
   RequiredLimits requiredLimits{
     .limits = limits,
   };

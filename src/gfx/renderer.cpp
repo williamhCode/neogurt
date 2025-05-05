@@ -287,9 +287,9 @@ textureReset:
   emojiData.WriteBuffers();
   shapeData.WriteBuffers();
 
-  // gpu texture is reallocated if resized
-  // old gpu texture is not referenced by texture atlas anymore
-  // but still referenced by command encoder if used by other windows
+  // gpu texture is reallocated if resized.
+  // old gpu texture is not referenced by texture atlas anymore, but still
+  // referenced by command encoder if used by windows previously rendered to.
   fontFamily.textureAtlas.Update();
   fontFamily.colorTextureAtlas.Update();
 
@@ -407,9 +407,6 @@ void Renderer::RenderCursorMask(
     passEncoder.End();
 
   } else {
-    // TODO: for some reason this only clears half of the mask for
-    // certain font sizes
-
     // just clear the texture if there's nothing
     textMaskRPD.cColorAttachments[0].view = cursor.maskRenderTexture.textureView;
     RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textMaskRPD);
@@ -429,10 +426,21 @@ void Renderer::RenderWindows(
     resize = false;
   }
 
-  // - msg window covers normal + floating win
-  // - normal window covers normal win
-  // - ime window covers floating + msg win
-  // - floating window covers floating win
+  // windows are rendered front to back with stencil buffer a layer
+  // there are two layers, the normal layer and the floating layer
+
+  // this is the window ordering priority:
+  // - normal windows covers normal windows
+  // - floating window covers normal + floating windows
+  // - msg window covers normal + floating windows
+  // - ime window covers all windows
+
+  // we assign priority numbers to each type of window,
+  // and use CompareFunction::Greater for replacement
+  // - normal: 1
+  // - floating: 2
+  // - msg: 2
+  // - ime: 3
 
   windowsRPD.cColorAttachments[0].view = CurrFinalRenderTexture().textureView;
   windowsRPD.cColorAttachments[0].clearValue = linearClearColor;
@@ -445,13 +453,13 @@ void Renderer::RenderWindows(
     passEncoder.SetBindGroup(1, defaultBgLinearBG);
 
     if (msgWin) {
-      // writes for both floating and normal win
-      passEncoder.SetStencilReference(0b011);
+      // msg window
+      passEncoder.SetStencilReference(2);
       msgWin->sRenderTexture.Render(passEncoder, 2);
     }
 
-    // writes for normal win
-    passEncoder.SetStencilReference(0b001);
+    // normal window
+    passEncoder.SetStencilReference(1);
     for (const Win* win : windows) {
       win->sRenderTexture.Render(passEncoder, 2);
     }
@@ -468,12 +476,11 @@ void Renderer::RenderWindows(
     passEncoder.SetBindGroup(1, defaultBgLinearBG);
     for (const Win* win : floatWindows) {
       if (win->floatData->zindex == std::numeric_limits<int>::max()) {
-        // writes for only floating win (0b010),
-        // but reads 0b110 so not blocked by msg win
-        passEncoder.SetStencilReference(0b110);
+        // ime window
+        passEncoder.SetStencilReference(3);
       } else {
-        // writes for floating win
-        passEncoder.SetStencilReference(0b010);
+        // floating window
+        passEncoder.SetStencilReference(2);
       }
       win->sRenderTexture.Render(passEncoder, 2);
     }

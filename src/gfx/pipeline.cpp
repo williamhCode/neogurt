@@ -178,12 +178,10 @@ Pipeline::Pipeline(const WGPUContext& ctx, SlangContext& slang, float gamma) {
       .format = TextureFormat::Stencil8,
       // textures are clockwise, so backface
       .stencilBack{
-        .compare = CompareFunction::NotEqual,
+        .compare = CompareFunction::Greater,
         .failOp = StencilOperation::Keep,
         .passOp = StencilOperation::Replace,
       },
-      .stencilReadMask = 0b001,
-      .stencilWriteMask = 0b011,
     },
   });
 
@@ -202,12 +200,10 @@ Pipeline::Pipeline(const WGPUContext& ctx, SlangContext& slang, float gamma) {
       .format = TextureFormat::Stencil8,
       // textures are clockwise, so backface
       .stencilBack{
-        .compare = CompareFunction::NotEqual,
+        .compare = CompareFunction::Greater,
         .failOp = StencilOperation::Keep,
         .passOp = StencilOperation::Replace,
       },
-      .stencilReadMask = 0b110, 
-      .stencilWriteMask = 0b010,
     },
   });
 
