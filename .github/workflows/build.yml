@@ -25,9 +25,9 @@ jobs:
             os-name: macos
             arch: arm64
 
-          # - os: macos-13
-          #   os-name: macos
-          #   arch: x86
+          - os: macos-13
+            os-name: macos
+            arch: x86
 
     runs-on: ${{ matrix.os }}
 
@@ -68,22 +68,29 @@ jobs:
     - name: Prepare artifacts
       run: |
         cd build/release
-        echo "ARTIFACT_NAME=$(ls Neogurt*.dmg)" >> $GITHUB_ENV
+
+        DMG_NAME=$(ls Neogurt*.dmg)
+        BASENAME="${DMG_NAME%.dmg}"
+        DSYM_NAME="${BASENAME}.dSYM.tar.gz"
+
+        echo "DMG_NAME=$DMG_NAME" >> $GITHUB_ENV
+        echo "DSYM_NAME=$DSYM_NAME" >> $GITHUB_ENV
+
         dsymutil neogurt.app/Contents/MacOS/neogurt
         mv neogurt.app/Contents/MacOS/neogurt.dSYM ./
-        tar -czf neogurt.dSYM.tar.gz neogurt.dSYM
+        tar -czf "$DSYM_NAME" neogurt.dSYM
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
         name: Neogurt-${{ matrix.arch }}
-        path: build/release/${{ env.ARTIFACT_NAME }}
+        path: build/release/${{ env.DMG_NAME }}
 
     - name: Upload dSYM artifact
       uses: actions/upload-artifact@v4
       with:
         name: Neogurt-dSYM-${{ matrix.arch }}
-        path: build/release/neogurt.dSYM.tar.gz
+        path: build/release/${{ env.DSYM_NAME }}
 
   create-release:
     if: ${{ github.event.inputs.nightly == 'true' }}
