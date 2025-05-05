@@ -36,7 +36,7 @@ if vim.g.neogurt then
     blur = 0,
     gamma = 1.7,
     vsync = true,
-    fps = 60,
+    fps = 60, -- "if vsync if false"
 
     margin_top = 0,
     margin_bottom = 0,
@@ -238,7 +238,7 @@ end
 ```
 
 ## Build Instructions
-```
+```sh
 git clone https://github.com/williamhCode/neogurt.git --recurse-submodules
 git submodule update  # if submodules become out of sync
 ```
