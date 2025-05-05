@@ -261,9 +261,9 @@ ShapeDrawing::GetGlyphInfo(const std::string& text, TextureAtlas<false>& texture
     return nullptr;
   }
 
-  auto [region, wasReset] = textureAtlas.AddGlyph(data);
+  auto [region, atlasWasReset] = textureAtlas.AddGlyph(data);
 
-  if (wasReset) glyphInfoMap = {};
+  if (atlasWasReset) glyphInfoMap = {};
 
   auto pair = glyphInfoMap.emplace(
     charcode,

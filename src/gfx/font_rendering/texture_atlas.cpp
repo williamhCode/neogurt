@@ -9,8 +9,8 @@ template <bool IsColor>
 TextureAtlas<IsColor>::TextureAtlas(float _glyphSize, float _dpiScale)
     : glyphSize(_glyphSize), dpiScale(_dpiScale), trueHeight(glyphSize * dpiScale) {
 
-  int initialHeight = trueHeight * 3;
-  int initialWidth = trueHeight * glyphsPerRow;
+  uint initialHeight = trueHeight * 3;
+  uint initialWidth = trueHeight * glyphsPerRow;
   initialWidth = std::min<int>(initialWidth, ctx.limits.maxTextureDimension2D);
   bufferSize = {initialWidth, initialHeight};
   textureSize = glm::vec2(bufferSize) / dpiScale;
@@ -35,14 +35,14 @@ template <bool IsColor>
 bool TextureAtlas<IsColor>::Resize() {
   int heightIncrease = trueHeight * 3;
   uint newBufferHeight = bufferSize.y + heightIncrease;
+  uint textureBytes = bufferSize.x * newBufferHeight * sizeof(Pixel);
 
-  if (newBufferHeight > ctx.limits.maxTextureDimension2D) {
+  if (newBufferHeight > ctx.limits.maxTextureDimension2D ||
+      textureBytes > maxBytes) {
     // reset this texture atlas if we exceed the max texture size
-    LOG_INFO("Previos texture atlas size: {}x{}", bufferSize.x, bufferSize.y);
     *this = TextureAtlas(glyphSize, dpiScale);
-    LOG_INFO("Reset texture atlas to {}x{}", bufferSize.x, bufferSize.y);
     return true;
-  } 
+  }
 
   bufferSize.y = newBufferHeight;
 

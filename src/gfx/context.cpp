@@ -57,7 +57,7 @@ WGPUContext::WGPUContext(SDL_Window* window, glm::uvec2 size, bool vsync, float 
   // }
 
   RequiredLimits requiredLimits{
-    .limits = {.maxTextureDimension2D = limits.maxTextureDimension2D}
+    .limits = limits,
   };
 
   // SurfaceCapabilities surfaceCaps;

@@ -16,13 +16,14 @@ concept MdSpan2D = is_instance_of_v<T, std::mdspan> && T::extents_type::rank() =
 // width is constant, size expands vertically
 template<bool IsColor>
 struct TextureAtlas {
-  static constexpr int glyphsPerRow = 32;
+  static constexpr uint glyphsPerRow = 32;
   static constexpr wgpu::TextureFormat textureFormat =
     IsColor ? wgpu::TextureFormat::RGBA8Unorm : wgpu::TextureFormat::R8Unorm;
+  static constexpr uint maxBytes = 100 * 1024 * 1024; // 100 MB
 
   float glyphSize;
   float dpiScale;
-  int trueHeight; // only used for approximate scale, no precision needed
+  uint trueHeight; // only used for approximate scale, no precision needed
   glm::vec2 textureSize; // virtual size of texture (used in shader)
   glm::uvec2 bufferSize; // size of texture in texels
 
