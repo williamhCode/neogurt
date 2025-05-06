@@ -46,7 +46,7 @@ void EventManager::DispatchWhenReady(std::future<T> future, Func onReady) {
       });
 
     } catch (...) {
-      // Future broken (session destroyed), safe to ignore
+      // Future broken (session destroyed) or response error, safe to ignore
     }
   }).detach();
 }

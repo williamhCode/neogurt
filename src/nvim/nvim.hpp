@@ -24,6 +24,7 @@ struct Nvim {
   using MapRef = const std::map<std::string_view, VariantRef>&;
   using VectorRef = const std::vector<VariantRef>&;
 
+  // .get() on Response type may throw runtime_error if reponse has error
   using Response = std::future<msgpack::object_handle>;
 
   Response SetClientInfo(

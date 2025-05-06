@@ -31,7 +31,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)  # clangd
 
 # Dependencies  -------------------------------------------------
-# set(Boost_USE_STATIC_LIBS ON)
+# program_options exceptions dont get caught when using dynamic lib for some reason
+set(Boost_USE_STATIC_LIBS ON)
 find_package(Boost 1.86.0 REQUIRED COMPONENTS
   locale
   process
@@ -159,7 +160,8 @@ target_link_libraries(neogurt_core PUBLIC
   Freetype::Freetype
   HarfBuzz
   blend2d::blend2d
-
+)
+target_link_options(neogurt_core PUBLIC 
   # https://github.com/llvm/llvm-project/issues/77653
   # stack unwinding breaking and linking breaks without this
   "-L$ENV{LLVM_PATH}/lib/c++" 
