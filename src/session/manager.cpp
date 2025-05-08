@@ -371,6 +371,31 @@ void SessionManager::FontSizeReset(bool all) {
   }
 }
 
+void SessionManager::UpdateUiOptions(SessionHandle& session) {
+  auto& uiOptions = session->editorState.uiOptions;
+  auto& fontFamily = session->editorState.fontFamily;
+
+  if (uiOptions.guifont.has_value()) {
+    auto guifont = *uiOptions.guifont;
+    auto linespace = uiOptions.linespace.value_or(fontFamily.linespace);
+
+    fontFamily =
+      FontFamily::FromGuifont(guifont, linespace, window.dpiScale)
+        .or_else([&](const std::runtime_error& _) {
+          return FontFamily::Default(linespace, window.dpiScale);
+        })
+        .value();
+    UpdateSessionSizes(session);
+    uiOptions.guifont.reset();
+    uiOptions.linespace.reset();
+
+  } else if (uiOptions.linespace.has_value()) {
+    fontFamily.UpdateLinespace(*uiOptions.linespace);
+    UpdateSessionSizes(session);
+    uiOptions.linespace.reset();
+  }
+}
+
 void SessionManager::UpdateSessionSizes(SessionHandle& session) {
   session->editorState.fontFamily.TryChangeDpiScale(window.dpiScale);
   sizes.UpdateSizes(window, session->editorState.fontFamily.GetCharSize(), globalOpts);

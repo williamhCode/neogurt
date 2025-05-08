@@ -248,34 +248,9 @@ int main(int argc, char** argv) {
         eventManager.ExecuteTasks();
 
         // update --------------------------------------------
-        // ui options
-        {
-          auto& uiOptions = editorState->uiOptions;
-          auto& fontFamily = editorState->fontFamily;
+        sessionManager.UpdateUiOptions(session);
 
-          if (uiOptions.guifont.has_value()) {
-            auto guifont = *uiOptions.guifont;
-            auto linespace =
-              uiOptions.linespace.value_or(editorState->fontFamily.linespace);
-
-            fontFamily =
-              FontFamily::FromGuifont(guifont, linespace, window.dpiScale)
-                .or_else([&](const std::runtime_error& _) {
-                  return FontFamily::Default(linespace, window.dpiScale);
-                })
-                .value();
-            sessionManager.UpdateSessionSizes(session);
-            uiOptions.guifont.reset();
-            uiOptions.linespace.reset();
-
-          } else if (uiOptions.linespace.has_value()) {
-            fontFamily.UpdateLinespace(*uiOptions.linespace);
-            sessionManager.UpdateSessionSizes(session);
-            uiOptions.linespace.reset();
-          }
-        }
-
-        // window
+        // window resources
         editorState->winManager.UpdateRenderData();
         // stable clock for animations
         auto steps = stableClock.Tick();

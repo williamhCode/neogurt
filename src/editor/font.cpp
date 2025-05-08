@@ -170,8 +170,9 @@ void FontFamily::UpdateFonts(std::function<FontHandle(const FontHandle&)> create
 }
 
 void FontFamily::UpdateLinespace(int _linespace) {
+  // NOTE: updates to new box drawing chars, but old ones stay in the atlas
   linespace = _linespace;
-  RoundToPixel(linespace / 2.0, dpiScale);
+  topLinespace = RoundToPixel(linespace / 2.0, dpiScale);
   shapeDrawing = ShapeDrawing(GetCharSize(), dpiScale);
 }
 

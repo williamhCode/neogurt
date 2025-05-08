@@ -84,6 +84,8 @@ public:
   void FontSizeChange(float delta, bool all = false);
   void FontSizeReset(bool all = false);
 
+  void UpdateUiOptions(SessionHandle& session);
+
   void UpdateSessionSizes(SessionHandle& session);
 
 private:
