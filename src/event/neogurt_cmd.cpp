@@ -16,7 +16,7 @@ void ProcessNeogurtCmd(
 
     if (cmd == "option_set") {
       sessionManager.OptionSet(session, opts);
-      request.SetValue(nil_t());
+      request.SetResult(nil_t());
 
     } else if (cmd == "session_new") {
       int id = sessionManager.SessionNew({
@@ -24,36 +24,36 @@ void ProcessNeogurtCmd(
         .dir = opts.at("dir").convert(),
         .switchTo = opts.at("switch_to").convert(),
       });
-      request.SetValue(id);
+      request.SetResult(id);
 
     } else if (cmd == "session_kill") {
       bool success = sessionManager.SessionKill(convertId(opts.at("id").convert()));
-      request.SetValue(success);
+      request.SetResult(success);
 
     } else if (cmd == "session_restart") {
       int id = sessionManager.SessionRestart(
         convertId(opts.at("id").convert()), opts.at("curr_dir").convert()
       );
       if (id == 0) {
-        request.SetValue(nil_t());
+        request.SetResult(nil_t());
       } else {
-        request.SetValue(id);
+        request.SetResult(id);
       }
 
     } else if (cmd == "session_switch") {
       bool success = sessionManager.SessionSwitch(convertId(opts.at("id").convert()));
-      request.SetValue(success);
+      request.SetResult(success);
 
     } else if (cmd == "session_prev") {
       bool success = sessionManager.SessionPrev();
-      request.SetValue(success);
+      request.SetResult(success);
 
     } else if (cmd == "session_info") {
       auto info = sessionManager.SessionInfo(convertId(opts.at("id").convert()));
       if (info.id == 0) {
-        request.SetValue(nil_t());
+        request.SetResult(nil_t());
       } else {
-        request.SetValue(info);
+        request.SetResult(info);
       }
 
     } else if (cmd == "session_list") {
@@ -61,17 +61,17 @@ void ProcessNeogurtCmd(
         .sort = opts.at("sort").convert(),
         .reverse = opts.at("reverse").convert(),
       });
-      request.SetValue(list);
+      request.SetResult(list);
 
     } else if (cmd == "font_size_change") {
       sessionManager.FontSizeChange(
         opts.at("arg1").convert(), opts.at("all").convert()
       );
-      request.SetValue(nil_t());
+      request.SetResult(nil_t());
 
     } else if (cmd == "font_size_reset") {
       sessionManager.FontSizeReset(opts.at("all").convert());
-      request.SetValue(nil_t());
+      request.SetResult(nil_t());
 
     } else {
       request.SetError("Unknown command: " + std::string(cmd));

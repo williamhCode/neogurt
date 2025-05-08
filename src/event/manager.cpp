@@ -40,7 +40,7 @@ void EventManager::ProcessSessionEvents(SessionHandle& session) {
 
         } else {
           LOG_ERR("Unknown method: {}", request.method);
-          request.SetValue(nil_t());
+          request.SetResult(nil_t());
         }
 
         break;

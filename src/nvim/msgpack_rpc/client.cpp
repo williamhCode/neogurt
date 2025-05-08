@@ -165,25 +165,28 @@ void Client::DoRead() {
 
             std::thread([weak_self = weak_from_this(), msgid = request.msgid,
                          future = promise.get_future()] mutable {
-              ResponseOut msg{.msgid = msgid};
-
               try {
-                RequestValue result = future.get();
+                ResponseOut msg{.msgid = msgid};
+
+                // result holds memory zone, it should be in scope when 
+                // packing the response
+                RequestResult result = future.get();
                 if (result) {
                   msg.result = (*result).get();
                 } else {
                   msg.error = result.error().get();
                 }
+
+                msgpack::sbuffer buffer;
+                msgpack::pack(buffer, msg);
+
+                if (auto self = weak_self.lock()) {
+                  self->Write(std::move(buffer));
+                }
+
               } catch (...) {
                 // Future broken (session destroyed), safe to ignore
                 return;
-              }
-
-              msgpack::sbuffer buffer;
-              msgpack::pack(buffer, msg);
-
-              if (auto self = weak_self.lock()) {
-                self->Write(std::move(buffer));
               }
             }).detach();
           }
