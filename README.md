@@ -1,28 +1,30 @@
 # Neogurt
-Blazingly fast Neovim GUI written in C++23 and WebGPU.
+Neovim GUI Smooth like Yogurt!
+
+> [!NOTE]  
+> The software is still in pre-release, use at your own risk!
 
 <img width="840" alt="Neogurt screenshot" src="https://github.com/user-attachments/assets/6affed8f-88fe-4e4c-8698-9a543c0f9f57">
 
-## Features
-- Blazingly fast and energy efficient
-- Smooth scrolling and cursor out of the box
-- Session support, similar to tmux (not detachable yet, wip)
-- Supported on macOS, Windows and Linux WIP
+## About
+Neogurt is a fast and efficient Neovim GUI written in C++23 and WebGPU. It is currently
+supported only on macOS, support for other platforms are to be determined. Features
+include:
+- Smooth scrolling and smooth cursor out of the box.
+- Support for managing multiple neovim sessions.
+- Easy to use commands/API.
+- Accurate font rendering and color blending.
 
-Known issues: https://github.com/williamhCode/neogurt/issues/3 \
-Planned Features: https://github.com/williamhCode/neogurt/issues/2
+Planned Features: https://github.com/williamhCode/neogurt/issues/2 \
+Known issues: https://github.com/williamhCode/neogurt/issues/3
 
-## Getting Started
-
-### Installation
+## Installation
 Download the latest release at: \
 https://github.com/williamhCode/neogurt/releases/latest
 
 Or [build from source](https://github.com/williamhCode/neogurt?tab=readme-ov-file#build-instructions).
 
-The software is still pre-release, so expect often changes to the code and API.
-
-### Configuration
+## Configuration
 
 Below are the all of the default options:
 
@@ -52,6 +54,7 @@ if vim.g.neogurt then
     opacity = 1,
   })
 
+  -- options provided by neovim
   vim.o.guifont = "SF Mono:h15"
   vim.o.linespace = 0
 
@@ -61,7 +64,7 @@ if vim.g.neogurt then
 end
 ```
 
-### Commands/API
+## Commands/API
 
 Neogurt commands can be invoked in this format:
 ```vim
@@ -82,18 +85,18 @@ vim.g.neogurt_cmd = function(cmd, opts)
   ...
 end
 ```
-For example, let's do the same thing with the lua api:
+Let's do the same thing with the lua api:
 ```lua
 vim.g.neogurt_cmd("session_new", { name = "nvim config", dir = "~/.config/nvim" } )
 ```
 
-Shown below are the default value of all options. \
+Below are all the commands and their arguments \
 Note that:
-- `arg = value` are optional named arguments  
-- `arg = "lua_type"` are required named arguments  
-- `[i] = value` are optional positional arguments  
-- `[i] = "lua_type"` are required positional arguments  
-- `id = 0` is the current session id, just like vim buffers
+- `arg = value` are optional named arguments
+- `arg = "lua_type"` are required named arguments
+- `[i] = value` are optional positional arguments
+- `[i] = "lua_type"` are required positional arguments
+- `id = 0` is equivalent to the session id executing the command
 
 ```lua
 local cmds_table = {
@@ -150,7 +153,10 @@ local cmds_table = {
 }
 ```
 
-Lastly, you can also run some code after starting up the application with
+> [!Important]  
+> Aside from `option_set`, don't call any Neogurt commands directly during startup!
+
+Lastly, you can execute code after starting up the application for the first time with
 ```lua
 vim.g.neogurt_startup = function()
   ...
@@ -217,11 +223,9 @@ if vim.g.neogurt then
         local dir = fmod(choice.dir, ":p")
         local name = fmod(dir, ":h:h:t") .. "/" .. fmod(dir, ":h:t")
 
+        vim.g.neogurt_cmd("session_new", { dir = dir, name = name })
         if startup then
-          vim.g.neogurt_cmd("session_new", { dir = dir, name = name })
           vim.g.neogurt_cmd("session_kill")
-        else
-          vim.g.neogurt_cmd("session_new", { dir = dir, name = name })
         end
       end
     end)

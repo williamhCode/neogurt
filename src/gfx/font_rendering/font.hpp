@@ -6,7 +6,6 @@
 #include <expected>
 #include <string>
 #include <stdexcept>
-#include <exception>
 
 #include <hb-cplusplus.hh>
 #include <hb-ft.h>
@@ -43,9 +42,6 @@ struct Font {
 
   static std::expected<Font, std::runtime_error>
   FromName(const FontDescriptorWithName& desc, float dpiScale);
-
-  // static std::expected<Font, std::string>
-  // UseEmoji(const FontDescriptorWithName& desc, float linespace, float dpiScale);
 
   Font(std::string path, float height, float width, float dpiScale);
 

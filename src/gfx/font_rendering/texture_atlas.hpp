@@ -71,7 +71,8 @@ struct TextureAtlas {
 };
 
 template <bool IsColor>
-std::expected<Region, TextureResetError> TextureAtlas<IsColor>::AddGlyph(MdSpan2D auto glyphData) {
+std::expected<Region, TextureResetError>
+TextureAtlas<IsColor>::AddGlyph(MdSpan2D auto glyphData) {
   using ElementType = typename decltype(glyphData)::element_type;
 
   // check if current row is full

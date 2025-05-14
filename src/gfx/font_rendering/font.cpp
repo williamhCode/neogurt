@@ -6,7 +6,6 @@
 #include <cstdlib>
 #include <mdspan>
 #include <span>
-#include <tuple>
 
 #include "freetype/ftmodapi.h"
 #include "utils/unicode.hpp"

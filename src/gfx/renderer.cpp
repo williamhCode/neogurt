@@ -7,7 +7,6 @@
 #include "gfx/shapes.hpp"
 #include "utils/logger.hpp"
 #include "utils/region.hpp"
-#include "utils/unicode.hpp"
 #include "utils/color.hpp"
 #include <limits>
 #include <utility>
@@ -204,6 +203,7 @@ textureReset:
 
       if (!cell.text.empty() && cell.text != " ") {
         try {
+          // this may throw TextureResetError
           const auto& glyphInfo =
             fontFamily.GetGlyphInfo(cell.text, hl.bold, hl.italic);
 
@@ -229,11 +229,8 @@ textureReset:
           }
 
         } catch (const TextureResetError& e) {
-          // redo entire thing if texture reset
-          LOG_INFO(
-            "Texture reset, re-rendering font glyphs for window: {}",
-            win.id
-          );
+          // redo entire rendering of current window if texture reset
+          LOG_INFO("Texture reset, re-rendering font glyphs for window: {}", win.id);
           // use goto cuz it makes the code cleaner
           goto textureReset;
         }

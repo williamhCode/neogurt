@@ -1,5 +1,8 @@
 .PHONY: build
 
+REL=1
+# TARGET = msgpack_test
+
 # flags
 REL ?= 0
 TARGET ?= neogurt
