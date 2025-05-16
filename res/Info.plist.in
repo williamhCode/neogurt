@@ -42,7 +42,7 @@
 
   <!-- Icons -->
   <key>CFBundleIconFile</key>
-  <string></string>
+  <string>neogurt.icns</string>
 
   <key>NSHighResolutionCapable</key>
   <true/>

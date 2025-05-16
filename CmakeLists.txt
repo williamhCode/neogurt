@@ -206,6 +206,9 @@ if(CMAKE_BUILD_TYPE MATCHES RelWithDebInfo)
     "${RESOURCE_DIR}/shaders/*"
     "${RESOURCE_DIR}/lua/*"
   )
+  list(APPEND RESOURCE_FILES
+    "${RESOURCE_DIR}/neogurt.icns"
+  )
   target_sources(neogurt PRIVATE "${RESOURCE_FILES}")
 
   if(APPLE)
