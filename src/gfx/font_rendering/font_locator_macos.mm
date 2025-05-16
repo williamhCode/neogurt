@@ -1,4 +1,5 @@
 #include "./font_locator.hpp"
+#include "app/path.hpp"
 #include "utils/logger.hpp"
 #import <AppKit/NSFontDescriptor.h>
 #import <Foundation/Foundation.h>
@@ -35,6 +36,23 @@ static NSFontWeight NSFontWeightBolder(NSFontWeight weight) {
 // clang-format on
 
 std::string GetFontPathFromName(const FontDescriptorWithName& desc) {
+  // Register default fonts from resourcesDir/fonts
+  static bool fontsRegistered = false;
+  if (!fontsRegistered) {
+    NSString* fontsPath =
+      [NSString stringWithUTF8String:(resourcesDir / "fonts").c_str()];
+    NSArray* files =
+      [[NSFileManager defaultManager] contentsOfDirectoryAtPath:fontsPath error:nil];
+
+    for (NSString* file in files) {
+      NSString* fullPath = [fontsPath stringByAppendingPathComponent:file];
+      NSURL* fontURL = [NSURL fileURLWithPath:fullPath];
+      CTFontManagerRegisterFontsForURL((CFURLRef)fontURL, kCTFontManagerScopeProcess, nullptr);
+    }
+
+    fontsRegistered = true;
+  }
+
   NSString* ctName = @(desc.name.c_str());
   CTFontDescriptorRef ctDescriptor =
     CTFontDescriptorCreateWithNameAndSize((CFStringRef)ctName, 0);

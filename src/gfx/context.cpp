@@ -102,7 +102,7 @@ WGPUContext::WGPUContext(SDL_Window* window, glm::uvec2 size, bool vsync, float 
   Resize(size, vsync);
 
   // pipeline --------------------------------
-  slang = SlangContext(fs::path(resourcesDir) / "shaders");
+  slang = SlangContext(resourcesDir / "shaders");
   pipeline = Pipeline(*this, slang, gamma);
 }
 

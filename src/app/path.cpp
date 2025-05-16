@@ -33,7 +33,8 @@ void SetupPaths() {
 
   // logger stuff
   if (isAppBundle) {
-    std::string homeDir = std::getenv("HOME");
+    char* homeDirC = std::getenv("HOME");
+    std::string homeDir = homeDirC ? homeDirC : "";
     if (!homeDir.empty()) {
       fs::path logDir = fs::path(homeDir) / "Library" / "Logs" / "Neogurt";
 

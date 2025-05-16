@@ -191,7 +191,9 @@ int SessionManager::SessionNew(const SessionNewOpts& opts) {
 
   editorState.hlManager.SetOpacity(sessionOpts.opacity, sessionOpts.bgColor);
 
-  editorState.fontFamily = FontFamily::Default(0, window.dpiScale).value();
+  auto result = FontFamily::Default(0, window.dpiScale);
+  if (!result) throw result.error(); 
+  editorState.fontFamily = std::move(*result);
 
   // InputHandler ---------------------------------------------------
   input.winManager = &editorState.winManager;

@@ -44,12 +44,12 @@ std::future<bool> Nvim::ConnectTcp(std::string_view host, uint16_t port) {
 
 void Nvim::GuiSetup(bool multigrid) {
   std::stringstream buffer;
-  std::string luaInitPath = resourcesDir + "/lua/init.lua";
+  std::string luaInitPath = resourcesDir / "lua/init.lua";
   std::ifstream stream(luaInitPath);
   buffer << stream.rdbuf();
 
   GetAll(
-    Command("set runtimepath+=" + resourcesDir),
+    Command("set runtimepath+=" + resourcesDir.string()),
     ExecLua(buffer.str(), {}),
     Command("runtime! ginit.{vim,lua}"),
     SetClientInfo(

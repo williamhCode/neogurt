@@ -1,6 +1,6 @@
 #pragma once
-#include <string>
+#include <filesystem>
 
-inline std::string resourcesDir;
+inline std::filesystem::path resourcesDir;
 inline bool isAppBundle;
 void SetupPaths();
