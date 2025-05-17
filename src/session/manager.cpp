@@ -383,7 +383,14 @@ void SessionManager::UpdateUiOptions(SessionHandle& session) {
 
     fontFamily =
       FontFamily::FromGuifont(guifont, linespace, window.dpiScale)
-        .or_else([&](const std::runtime_error& _) {
+        .or_else([&](const std::runtime_error& error) {
+          if (!guifont.empty()) {
+            LOG_ERR(
+              "\n  Failed to load guifont ({})"
+              "\n  Reason ({})",
+              guifont, error.what()
+            );
+          }
           return FontFamily::Default(linespace, window.dpiScale);
         })
         .value();
