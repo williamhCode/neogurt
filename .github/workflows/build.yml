@@ -64,7 +64,7 @@ jobs:
     - name: Build and run tests
       run: |
         cmake --build build/release --target tests
-        ctest --test-dir build/release --output-on-failure
+        ctest --test-dir build/release --output-on-failure -V
 
     - name: Generate package
       run: make package

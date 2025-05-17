@@ -32,7 +32,7 @@ build-setup:
 
 run:
 ifeq ($(TARGET),tests)
-	ctest --test-dir $(BUILD_DIR) --output-on-failure
+	ctest --test-dir $(BUILD_DIR) --output-on-failure -V
 else
 	$(BUILD_DIR)/$(TARGET)
 endif

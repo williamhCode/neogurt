@@ -291,7 +291,7 @@ target_link_libraries(font_test PRIVATE neogurt_core)
 enable_testing()
 add_test(
   NAME Tests
-  COMMAND font_test
+  COMMAND font_test --log_level=message
 )
 
 add_custom_target(tests ALL
