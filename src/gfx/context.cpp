@@ -66,9 +66,10 @@ WGPUContext::WGPUContext(SDL_Window* window, glm::uvec2 size, bool vsync, float 
   // utils::PrintSurfaceCapabilities(surfaceCaps);
 
   // device -------------------------------------
-  std::vector<FeatureName> requiredFeatures{
-    FeatureName::TimestampQuery,
-  };
+  std::vector<FeatureName> requiredFeatures;
+  if (adapter.HasFeature(FeatureName::TimestampQuery)) {
+    requiredFeatures.push_back(FeatureName::TimestampQuery);
+  }
 
   DeviceDescriptor deviceDesc({
     .requiredFeatureCount = requiredFeatures.size(),
