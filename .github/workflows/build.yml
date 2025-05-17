@@ -61,6 +61,11 @@ jobs:
     - name: Build neogurt
       run: cmake --build build/release --target neogurt
 
+    - name: Build and run tests
+      run: |
+        cmake --build build/release --target tests
+        ctest --test-dir build/release --output-on-failure
+
     - name: Generate package
       run: make package
 

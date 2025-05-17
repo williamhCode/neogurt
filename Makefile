@@ -31,7 +31,11 @@ build-setup:
 		-D CMAKE_COLOR_DIAGNOSTICS=ON
 
 run:
+ifeq ($(TARGET),tests)
+	ctest --test-dir $(BUILD_DIR) --output-on-failure
+else
 	$(BUILD_DIR)/$(TARGET)
+endif
 
 package:
 	cmake --build build/release --target package

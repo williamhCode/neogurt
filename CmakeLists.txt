@@ -37,6 +37,7 @@ find_package(Boost 1.86.0 REQUIRED COMPONENTS
   locale
   process
   program_options
+  unit_test_framework
 )
 
 # SDL, glm, stb, webgpu, slang
@@ -273,6 +274,7 @@ if(CMAKE_BUILD_TYPE MATCHES RelWithDebInfo)
 endif()
 
 # tests ----------------------------
+# manual
 add_executable(harfbuzz_test test/harfbuzz_test.cpp)
 target_link_libraries(harfbuzz_test PRIVATE neogurt_core)
 
@@ -281,3 +283,18 @@ target_link_libraries(freetype_test PRIVATE neogurt_core)
 
 add_executable(blend2d_test test/blend2d_test.cpp)
 target_link_libraries(blend2d_test PRIVATE neogurt_core)
+
+# automated
+add_executable(font_test test/font_test.cpp)
+target_link_libraries(font_test PRIVATE neogurt_core)
+
+enable_testing()
+add_test(
+  NAME Tests
+  COMMAND font_test
+)
+
+add_custom_target(tests ALL
+  DEPENDS font_test
+  COMMENT "Build all test executables"
+)
