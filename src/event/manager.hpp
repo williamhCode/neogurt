@@ -41,7 +41,7 @@ void EventManager::DispatchWhenReady(std::future<T> future, Func onReady) {
       T result = future.get();
       auto resultPtr = std::make_shared<T>(std::move(result));
 
-      AddTask([onReady = std::move(onReady), resultPtr = std::move(resultPtr), this]() {
+      AddTask([onReady = std::move(onReady), resultPtr = std::move(resultPtr)]() {
         onReady(*resultPtr);
       });
 
