@@ -114,6 +114,7 @@ FontFamily::FromGuifont(std::string guifont, int linespace, float dpiScale) {
 
 bool FontFamily::TryChangeDpiScale(float _dpiScale) {
   if (dpiScale == _dpiScale) return false;
+  dpiScale = _dpiScale;
 
   UpdateFonts([&](const FontHandle& fontHandle) -> FontHandle {
     return std::make_shared<Font>(
