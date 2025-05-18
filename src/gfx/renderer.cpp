@@ -449,7 +449,7 @@ void Renderer::RenderWindows(
     passEncoder.SetBindGroup(0, CurrFinalRenderTexture().camera.viewProjBG);
     passEncoder.SetBindGroup(1, defaultBgLinearBG);
 
-    if (msgWin) {
+    if (msgWin != nullptr) {
       // msg window
       passEncoder.SetStencilReference(2);
       msgWin->sRenderTexture.Render(passEncoder, 2);

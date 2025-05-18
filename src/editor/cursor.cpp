@@ -9,11 +9,14 @@
 
 using namespace wgpu;
 
-void Cursor::Resize(glm::vec2 _size, float dpi) {
+void Cursor::TryResize(glm::vec2 _size, float _dpiScale) {
+  if (size == _size && dpiScale == _dpiScale) return;
   size = _size;
+  dpiScale = _dpiScale;
 
   // account for double width chars
-  maskRenderTexture = RenderTexture({size.x * 2, size.y}, dpi, TextureFormat::R8Unorm);
+  maskRenderTexture =
+    RenderTexture({size.x * 2, size.y}, dpiScale, TextureFormat::R8Unorm);
 
   maskPosBuffer = ctx.CreateUniformBuffer(sizeof(glm::vec2), &maskPos);
 

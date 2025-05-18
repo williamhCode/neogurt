@@ -41,6 +41,7 @@ enum class BlinkState { Wait, On, Off };
 
 struct Cursor {
   glm::vec2 size;
+  float dpiScale;
 
   bool dirty;
   int grid;
@@ -74,7 +75,7 @@ struct Cursor {
   wgpu::BindGroup maskPosBG;
   bool onEmoji;
 
-  void Resize(glm::vec2 size, float dpi);
+  void TryResize(glm::vec2 size, float dpiScale);
   void Goto(const event::GridCursorGoto& e);
   void ModeInfoSet(const event::ModeInfoSet& e);
   void SetMode(const event::ModeChange& e);

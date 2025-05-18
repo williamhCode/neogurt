@@ -15,7 +15,7 @@ using namespace wgpu;
 static FT_FacePtr
 CreateFace(FT_Library library, const char* filepath, FT_Long face_index) {
   FT_Face face;
-  if (FT_New_Face(library, filepath, face_index, &face)) {
+  if (FT_New_Face(library, filepath, face_index, &face) != 0) {
     return nullptr;
   }
   return FT_FacePtr(face);

@@ -236,7 +236,7 @@ bool SessionManager::SessionKill(int id) {
 int SessionManager::SessionRestart(int id, bool currDir) {
   auto it = sessions.find(id);
   if (it == sessions.end()) {
-    return false;
+    return 0;
   }
   auto& session = it->second;
 
@@ -406,24 +406,20 @@ void SessionManager::UpdateUiOptions(SessionHandle& session) {
 }
 
 void SessionManager::UpdateSessionSizes(SessionHandle& session) {
-  auto oldDpiScale = sizes.dpiScale;
-  auto oldCharSize = sizes.charSize;
   auto oldUiFbSize = sizes.uiFbSize;
 
   sizes.UpdateSizes(window, session->editorState.fontFamily.GetCharSize(), globalOpts);
 
-  session->editorState.fontFamily.TryChangeDpiScale(sizes.dpiScale);
   session->editorState.winManager.sizes = sizes;
-
-  if ((oldCharSize != sizes.charSize) || (oldDpiScale != sizes.dpiScale)) {
-    session->editorState.cursor.Resize(sizes.charSize, sizes.dpiScale);
-  }
+  session->editorState.cursor.TryResize(sizes.charSize, sizes.dpiScale);
+  session->editorState.fontFamily.TryChangeDpiScale(sizes.dpiScale);
 
   if (oldUiFbSize == sizes.uiFbSize) {
     renderer.camera.Resize(sizes.size);
   } else {
     renderer.Resize(sizes);
   }
+
   // make nvim update all windows even if uiSize is the same
   session->nvim.UiTryResize(sizes.uiWidth + 1, sizes.uiHeight);
   session->nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight);
