@@ -156,7 +156,7 @@ void SessionManager::OptionSet(
     UpdateSessionSizes(session);
   }
 
-  // resize ctx after sizes are updated
+  // change vsync
   if (resizeCtx) {
     ctx.Resize(sizes.fbSize, globalOpts.vsync);
   }
@@ -406,12 +406,25 @@ void SessionManager::UpdateUiOptions(SessionHandle& session) {
 }
 
 void SessionManager::UpdateSessionSizes(SessionHandle& session) {
-  session->editorState.fontFamily.TryChangeDpiScale(window.dpiScale);
+  auto oldDpiScale = sizes.dpiScale;
+  auto oldCharSize = sizes.charSize;
+  auto oldUiFbSize = sizes.uiFbSize;
+
   sizes.UpdateSizes(window, session->editorState.fontFamily.GetCharSize(), globalOpts);
-  renderer.Resize(sizes);
+
+  session->editorState.fontFamily.TryChangeDpiScale(sizes.dpiScale);
   session->editorState.winManager.sizes = sizes;
-  session->editorState.cursor.Resize(sizes.charSize, sizes.dpiScale);
-  // force to make nvim update all windows even if uiSize is the same
+
+  if ((oldCharSize != sizes.charSize) || (oldDpiScale != sizes.dpiScale)) {
+    session->editorState.cursor.Resize(sizes.charSize, sizes.dpiScale);
+  }
+
+  if (oldUiFbSize == sizes.uiFbSize) {
+    renderer.camera.Resize(sizes.size);
+  } else {
+    renderer.Resize(sizes);
+  }
+  // make nvim update all windows even if uiSize is the same
   session->nvim.UiTryResize(sizes.uiWidth + 1, sizes.uiHeight);
   session->nvim.UiTryResize(sizes.uiWidth, sizes.uiHeight);
 }

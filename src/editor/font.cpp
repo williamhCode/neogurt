@@ -112,8 +112,7 @@ FontFamily::FromGuifont(std::string guifont, int linespace, float dpiScale) {
   }
 }
 
-bool FontFamily::TryChangeDpiScale(float _dpiScale) {
-  if (dpiScale == _dpiScale) return false;
+void FontFamily::TryChangeDpiScale(float _dpiScale) {
   dpiScale = _dpiScale;
 
   UpdateFonts([&](const FontHandle& fontHandle) -> FontHandle {
@@ -121,8 +120,6 @@ bool FontFamily::TryChangeDpiScale(float _dpiScale) {
       fontHandle->path, fontHandle->height, fontHandle->width, dpiScale
     );
   });
-
-  return true;
 }
 
 void FontFamily::ChangeSize(float delta) {

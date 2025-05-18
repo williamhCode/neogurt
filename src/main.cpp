@@ -142,27 +142,8 @@ int main(int argc, char** argv) {
             window.fbSize = {event.window.data1, event.window.data2};
             window.dpiScale = (float)window.fbSize.x / window.size.x;
 
-            bool dpiChanged = editorState->fontFamily.TryChangeDpiScale(window.dpiScale);
-
-            auto uiFbSize = sizes.uiFbSize;
-            sizes.UpdateSizes(
-              window, editorState->fontFamily.GetCharSize(), globalOpts
-            );
-            editorState->winManager.sizes = sizes;
-
-            if (dpiChanged) {
-              editorState->cursor.Resize(sizes.charSize, sizes.dpiScale);
-            }
-
+            sessionManager.UpdateSessionSizes(session);
             ctx.Resize(sizes.fbSize, globalOpts.vsync);
-
-            if (uiFbSize == sizes.uiFbSize) {
-              renderer.camera.Resize(sizes.size);
-
-            } else {
-              renderer.Resize(sizes);
-              nvim->UiTryResize(sizes.uiWidth, sizes.uiHeight);
-            }
           }
           resizeEvents.lock()->pop();
         }

@@ -39,7 +39,7 @@ struct FontFamily {
   static std::expected<FontFamily, std::runtime_error>
   FromGuifont(std::string guifont, int linespace, float dpiScale);
 
-  bool TryChangeDpiScale(float dpiScale); // returns true if changed
+  void TryChangeDpiScale(float dpiScale);
   void ChangeSize(float delta);
   void ResetSize();
   void UpdateLinespace(int linespace);
