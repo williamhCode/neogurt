@@ -210,3 +210,31 @@ FontFamily::GetGlyphInfo(const std::string& text, bool bold, bool italic) {
   }
   throw std::runtime_error("Failed to get glyph for space character");
 }
+
+void FontFamily::ResetTextureAtlas(TextureResizeError error) {
+  switch (error) {
+    case TextureResizeError::Normal:
+      textureAtlas = TextureAtlas<false>(DefaultFont().charSize.y, dpiScale);
+      // reset all glyph info maps that use the normal texture atlas
+      for (auto& fontSet : fonts) {
+        fontSet.normal->glyphInfoMap = {};
+        fontSet.bold->glyphInfoMap = {};
+        fontSet.italic->glyphInfoMap = {};
+        fontSet.boldItalic->glyphInfoMap = {};
+      }
+      shapeDrawing.glyphInfoMap = {};
+      shapeDrawing.underlineGlyphInfoMap = {};
+      break;
+
+    case TextureResizeError::Colored:
+      colorTextureAtlas = TextureAtlas<true>(DefaultFont().charSize.y, dpiScale);
+      // reset all glyph info maps that use the colored texture atlas
+      for (auto& fontSet : fonts) {
+        fontSet.normal->emojiGlyphInfoMap = {};
+        fontSet.bold->emojiGlyphInfoMap = {};
+        fontSet.italic->emojiGlyphInfoMap = {};
+        fontSet.boldItalic->emojiGlyphInfoMap = {};
+      }
+      break;
+  }
+}

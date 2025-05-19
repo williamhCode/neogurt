@@ -1,6 +1,7 @@
 #pragma once
 
 #include "blend2d.h"
+#include "editor/highlight.hpp"
 #include "utils/region.hpp"
 #include <array>
 #include <variant>
@@ -80,6 +81,10 @@ struct Braille {
   char32_t charcode;
 };
 
+struct Underline {
+  UnderlineType underlineType;
+};
+
 using DrawDesc = std::variant<
   HLine,
   VLine,
@@ -96,7 +101,8 @@ using DrawDesc = std::variant<
   RightBlock,
   Shade,
   Quadrant,
-  Braille>;
+  Braille,
+  Underline>;
 
 struct Pen {
 private:
@@ -131,6 +137,8 @@ private:
   void DrawShade(const Shade& desc);
   void DrawQuadrant(const Quadrant& desc);
   void DrawBraille(const Braille& desc);
+
+  void DrawUnderline(const Underline& desc);
 
 public:
   using BufType = std::mdspan<uint32_t, std::dextents<size_t, 2>, std::layout_stride>;

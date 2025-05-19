@@ -5,7 +5,13 @@
 
 using namespace shape;
 
-static auto shapeDescMap = [] {
+ShapeDrawing::ShapeDrawing(glm::vec2 charSize, float dpiScale) {
+  int width = charSize.x * dpiScale;
+  int height = charSize.y * dpiScale;
+  pen = Pen(width, height, dpiScale);
+}
+
+static const auto shapeDescMap = [] {
   std::unordered_map<char32_t, DrawDesc> c{};
 
   using std::tuple;
@@ -223,12 +229,6 @@ static auto shapeDescMap = [] {
   return c;
 }();
 
-ShapeDrawing::ShapeDrawing(glm::vec2 charSize, float dpiScale) {
-  int width = charSize.x * dpiScale;
-  int height = charSize.y * dpiScale;
-  pen = Pen(width, height, dpiScale);
-}
-
 const GlyphInfo*
 ShapeDrawing::GetGlyphInfo(const std::string& text, TextureAtlas<false>& textureAtlas) {
   char32_t charcode = Utf8ToChar32(text);
@@ -250,29 +250,44 @@ ShapeDrawing::GetGlyphInfo(const std::string& text, TextureAtlas<false>& texture
     return nullptr;
   }
 
-  // using namespace std::chrono;
-  // auto start = TimeNow();
   auto [data, localPoss] = pen.Draw(shapeDescIt->second);
-  // auto end = TimeNow();
-  // totalTime += end - start;
-
   if (data.empty()) {
     LOG_ERR("BoxDrawing::GetGlyphInfo: empty data for charcode: 0x{:x}", (uint32_t)charcode);
     return nullptr;
-  }
-
-  auto regionResult = textureAtlas.AddGlyph(data);
-
-  if (!regionResult) {
-    glyphInfoMap = {};
-    throw regionResult.error();
   }
 
   auto pair = glyphInfoMap.emplace(
     charcode,
     GlyphInfo{
       .localPoss = localPoss,
-      .atlasRegion = *regionResult,
+      .atlasRegion = textureAtlas.AddGlyph(data),
+      .useAscender = false,
+    }
+  );
+
+  return &(pair.first->second);
+}
+
+const GlyphInfo* ShapeDrawing::GetGlyphInfo(
+  UnderlineType underlineType, TextureAtlas<false>& textureAtlas
+) {
+  // return cached
+  auto glyphIt = underlineGlyphInfoMap.find(underlineType);
+  if (glyphIt != underlineGlyphInfoMap.end()) {
+    return &(glyphIt->second);
+  }
+
+  auto [data, localPoss] = pen.Draw(Underline{underlineType});
+  if (data.empty()) {
+    LOG_ERR("BoxDrawing::GetGlyphInfo: empty data for underline ({})", (int)underlineType);
+    return nullptr;
+  }
+
+  auto pair = underlineGlyphInfoMap.emplace(
+    underlineType,
+    GlyphInfo{
+      .localPoss = localPoss,
+      .atlasRegion = textureAtlas.AddGlyph(data),
       .useAscender = false,
     }
   );

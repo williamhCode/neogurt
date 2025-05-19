@@ -32,15 +32,16 @@ TextureAtlas<IsColor>::TextureAtlas(float _glyphSize, float _dpiScale)
 }
 
 template <bool IsColor>
-bool TextureAtlas<IsColor>::Resize() {
+void TextureAtlas<IsColor>::Resize() {
   int heightIncrease = trueHeight * 3;
   uint newBufferHeight = bufferSize.y + heightIncrease;
   uint textureBytes = bufferSize.x * newBufferHeight * sizeof(Pixel);
 
   // return true if texture atlas if we exceed the max texture size or taking too much memory
-  if (newBufferHeight > ctx.limits.maxTextureDimension2D ||
-      textureBytes > maxBytes) {
-    return true;
+  if (newBufferHeight > ctx.limits.maxTextureDimension2D || textureBytes > maxBytes) {
+    throw TextureResizeError{
+      IsColor ? TextureResizeError::Colored : TextureResizeError::Normal
+    };
   }
 
   bufferSize.y = newBufferHeight;
@@ -51,8 +52,6 @@ bool TextureAtlas<IsColor>::Resize() {
 
   resized = true;
   // LOG_INFO("Resized texture atlas to {}x{}", bufferSize.x, bufferSize.y);
-
-  return false;
 }
 
 template <bool IsColor>

@@ -7,8 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Add icon to app
+
 ### Fixed
 - FontFamily::UpdateLinespace not setting topLinespace.
+- Bundle SF Mono (default font) so no crashing if system doesn't have SF Mono.
+- Fix dpiScale not updating for fonts
+- Proper TextureAtlas resizing (wasn't clearing all the glyph info maps before leading
+to rendering artifacts)
 
 ## [0.2.2] - 2025-05-08
 

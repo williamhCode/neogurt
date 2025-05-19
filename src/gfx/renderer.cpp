@@ -203,7 +203,7 @@ textureReset:
 
       if (!cell.text.empty() && cell.text != " ") {
         try {
-          // this may throw TextureResetError
+          // this may throw TextureResizeError
           const auto& glyphInfo =
             fontFamily.GetGlyphInfo(cell.text, hl.bold, hl.italic);
 
@@ -228,9 +228,12 @@ textureReset:
             quad[i].foreground = foreground;
           }
 
-        } catch (const TextureResetError& e) {
-          // redo entire rendering of current window if texture reset
+        } catch (TextureResizeError e) {
+          fontFamily.ResetTextureAtlas(e);
+
           LOG_INFO("Texture reset, re-rendering font glyphs for window: {}", win.id);
+
+          // redo entire rendering of current window if texture reset
           // use goto cuz it makes the code cleaner
           goto textureReset;
         }

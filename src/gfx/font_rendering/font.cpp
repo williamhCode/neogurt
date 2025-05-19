@@ -194,13 +194,7 @@ const GlyphInfo* Font::GetGlyphInfo(
       std::layout_stride::mapping{shape, strides}
     );
 
-    auto regionResult = colorTextureAtlas.AddGlyph(view);
-    if (!regionResult) {
-      emojiGlyphInfoMap = {};
-      throw regionResult.error();
-    }
-
-    glyphInfo.atlasRegion = *regionResult;
+    glyphInfo.atlasRegion = colorTextureAtlas.AddGlyph(view);
     glyphInfo.isEmoji = true;
 
     auto pair = emojiGlyphInfoMap.emplace(text, glyphInfo);
@@ -212,13 +206,7 @@ const GlyphInfo* Font::GetGlyphInfo(
     std::array strides{std::abs(bitmap.pitch) / sizeof(uint8_t), 1uz};
     auto view = std::mdspan(bitmap.buffer, std::layout_stride::mapping{shape, strides});
 
-    auto regionResult = textureAtlas.AddGlyph(view);
-    if (!regionResult) {
-      glyphInfoMap = {};
-      throw regionResult.error();
-    }
-
-    glyphInfo.atlasRegion = *regionResult;
+    glyphInfo.atlasRegion = textureAtlas.AddGlyph(view);
 
     auto pair = glyphInfoMap.emplace(text, glyphInfo);
     return &(pair.first->second);

@@ -50,6 +50,8 @@ struct FontFamily {
 
   const GlyphInfo& GetGlyphInfo(const std::string& text, bool bold, bool italic);
 
+  void ResetTextureAtlas(TextureResizeError error);
+
 private:
   void UpdateFonts(std::function<FontHandle(const FontHandle&)> createFont);
 };

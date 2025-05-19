@@ -13,10 +13,9 @@
 template <typename T>
 concept MdSpan2D = is_instance_of_v<T, std::mdspan> && T::extents_type::rank() == 2;
 
-class TextureResetError : public std::runtime_error {
-public:
-  TextureResetError() : std::runtime_error("Texture Atlas Reset") {
-  }
+enum class TextureResizeError {
+  Normal,
+  Colored,
 };
 
 // texture atlas for storing glyphs
@@ -61,18 +60,17 @@ struct TextureAtlas {
 
   // Adds data to texture atlas, and returns the region where the data was added.
   // Region coordinates is relative to textureSize.
-  // Also returns if texture atlas was reset.
-  std::expected<Region, TextureResetError> AddGlyph(MdSpan2D auto glyphData);
+  Region AddGlyph(MdSpan2D auto glyphData);
 
-  // Resize cpu side data and sizes, and returns true if reached maximum size
-  bool Resize();
+  // Resize cpu side data and sizes.
+  // Throws TextureResizeError if texture atlas is full.
+  void Resize();
   // Resize gpu side data and update bind group
   void Update();
 };
 
 template <bool IsColor>
-std::expected<Region, TextureResetError>
-TextureAtlas<IsColor>::AddGlyph(MdSpan2D auto glyphData) {
+Region TextureAtlas<IsColor>::AddGlyph(MdSpan2D auto glyphData) {
   using ElementType = typename decltype(glyphData)::element_type;
 
   // check if current row is full
@@ -85,11 +83,7 @@ TextureAtlas<IsColor>::AddGlyph(MdSpan2D auto glyphData) {
 
   // if current row is full and there's not enough space
   if (currentPos.y + glyphData.extent(0) > bufferSize.y) {
-    bool resetAtlas = Resize();
-    if (resetAtlas) {
-      *this = TextureAtlas(glyphSize, dpiScale);
-      return std::unexpected(TextureResetError());
-    }
+    Resize();
   }
 
   // fill data
@@ -135,3 +129,5 @@ TextureAtlas<IsColor>::AddGlyph(MdSpan2D auto glyphData) {
 
   return MakeRegion(regionPos, regionSize);
 }
+
+void ResetTextureAtlas(TextureResizeError error);

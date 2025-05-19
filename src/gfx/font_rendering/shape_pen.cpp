@@ -345,7 +345,7 @@ void Pen::DrawBraille(const Braille& desc) {
   // 6 7    8 80
   uint32_t hexVal = desc.charcode - 0x2800;
 
-  static const std::array<glm::vec2, 8> brailleOffsets({
+  static constexpr std::array<glm::vec2, 8> brailleOffsets({
     {1/4., 1/8.},
     {1/4., 3/8.},
     {1/4., 5/8.},
@@ -365,6 +365,25 @@ void Pen::DrawBraille(const Braille& desc) {
       auto centerPos = brailleOffsets[dotIndex] * charSize;
       ctx.fillCircle(centerPos.x, centerPos.y, radius);
     }
+  }
+}
+
+void Pen::DrawUnderline(const Underline& desc) {
+  switch (desc.underlineType) {
+    case UnderlineType::Underline:
+      break;
+
+    case UnderlineType::Undercurl:
+      break;
+
+    case UnderlineType::Underdouble:
+      break;
+
+    case UnderlineType::Underdotted:
+      break;
+
+    case UnderlineType::Underdashed:
+      break;
   }
 }
 
@@ -410,6 +429,7 @@ Pen::ImageData Pen::Draw(const DrawDesc& desc) {
     [this](const RightBlock& desc) { DrawRect(xsize - (desc.size * xsize), 0, desc.size * xsize, ysize); },
     [this](const Quadrant& desc) { DrawQuadrant(desc); },
     [this](const Braille& desc) { DrawBraille(desc); },
+    [this](const Underline& desc) { DrawUnderline(desc); },
   }, desc);
 
   // end -------------------------------
