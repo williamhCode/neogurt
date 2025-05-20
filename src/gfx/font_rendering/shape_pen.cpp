@@ -1,4 +1,5 @@
 #include "./shape_pen.hpp"
+#include "utils/logger.hpp"
 #include "utils/mdspan.hpp"
 #include "utils/variant.hpp"
 #include <algorithm>
@@ -7,13 +8,20 @@
 
 namespace shape {
 
-Pen::Pen(int width, int height, float dpiScale)
-    : xsize(width), ysize(height), dpiScale(dpiScale) {
+Pen::Pen(glm::vec2 charSize, float _underlineThickness, float _dpiScale)
+    : dpiScale(_dpiScale) {
+  xsize = charSize.x * dpiScale;
+  ysize = charSize.y * dpiScale;
+
   xhalf = xsize / 2;
   yhalf = ysize / 2;
 
   lightWidth = xsize * 0.11;
   heavyWidth = xsize * 0.22;
+
+  underlineThickness = _underlineThickness * dpiScale;
+  // make sure underline at least one virtual pixel
+  underlineThickness = std::max(underlineThickness, dpiScale);
 }
 
 float Pen::ToWidth(Weight weight) {
@@ -23,10 +31,6 @@ float Pen::ToWidth(Weight weight) {
     case Double: return lightWidth * 3;
     default: return 0;
   }
-}
-
-void Pen::DrawRect(float left, float top, float width, float height) {
-  ctx.fillRect(left, top, width, height);
 }
 
 void Pen::DrawHLine(float start, float end, Weight weight) {
@@ -73,7 +77,7 @@ void Pen::DrawCross(const Cross& desc) {
     DrawHLine(xhalf + halfWidth, xsize, desc[Right]);
   }
 
-  DrawRect(xhalf - halfWidth, yhalf - halfHeight, width, height);
+  ctx.fillRect(xhalf - halfWidth, yhalf - halfHeight, width, height);
 }
 
 void Pen::DrawHDash(const HDash& desc) {
@@ -179,7 +183,7 @@ void Pen::DrawDoubleCross(const DoubleCross& desc) {
   };
 
   int numSides = 0;
-  for (int i = 0; i < 4; i++) {
+  for (size_t i = 0; i < 4; i++) {
     auto weight = desc[i];
     if (weight != None) numSides++;
     FillSide(weight, Side(i));
@@ -193,7 +197,7 @@ void Pen::DrawDoubleCross(const DoubleCross& desc) {
       if (grid[row][col] >= numSides) {
         float left = gridLeft + (col * lightWidth);
         float top = gridTop + (row * lightWidth);
-        DrawRect(left, top, lightWidth, lightWidth);
+        ctx.fillRect(left, top, lightWidth, lightWidth);
       }
     }
   }
@@ -296,7 +300,7 @@ void Pen::DrawShade(const Shade& desc) {
     case SLight: {
       for (int y = 0; y < numVert; y++) {
         for (int x = 0; x < numHori; x++) {
-          DrawRect(x * horiSize, y * vertSize, horiHalf, vertHalf);
+          ctx.fillRect(x * horiSize, y * vertSize, horiHalf, vertHalf);
         }
       }
       break;
@@ -305,7 +309,7 @@ void Pen::DrawShade(const Shade& desc) {
       for (int y = 0; y < numVert * 2; y++) {
         for (int x = 0; x < numHori; x++) {
           float xPos = y % 2 == 0 ? x : x + 0.5;
-          DrawRect(xPos * horiSize, y * vertHalf, horiHalf, vertHalf);
+          ctx.fillRect(xPos * horiSize, y * vertHalf, horiHalf, vertHalf);
         }
       }
       break;
@@ -314,7 +318,7 @@ void Pen::DrawShade(const Shade& desc) {
       for (int y = 0; y < numVert * 2; y++) {
         for (int x = 0; x < numHori * 2; x++) {
           if (y % 2 == 1 && x % 2 == 1) continue;
-          DrawRect(x * horiHalf, y * vertHalf, horiHalf, vertHalf);
+          ctx.fillRect(x * horiHalf, y * vertHalf, horiHalf, vertHalf);
         }
       }
       break;
@@ -324,16 +328,16 @@ void Pen::DrawShade(const Shade& desc) {
 
 void Pen::DrawQuadrant(const Quadrant& desc) {
   if (desc.contains(UpLeft)) {
-    DrawRect(0, 0, xhalf, yhalf);
+    ctx.fillRect(0, 0, xhalf, yhalf);
   }
   if (desc.contains(UpRight)) {
-    DrawRect(xhalf, 0, xhalf, yhalf);
+    ctx.fillRect(xhalf, 0, xhalf, yhalf);
   }
   if (desc.contains(DownLeft)) {
-    DrawRect(0, yhalf, xhalf, yhalf);
+    ctx.fillRect(0, yhalf, xhalf, yhalf);
   }
   if (desc.contains(DownRight)) {
-    DrawRect(xhalf, yhalf, xhalf, yhalf);
+    ctx.fillRect(xhalf, yhalf, xhalf, yhalf);
   }
 }
 
@@ -369,21 +373,43 @@ void Pen::DrawBraille(const Braille& desc) {
 }
 
 void Pen::DrawUnderline(const Underline& desc) {
+  // ctx.setCompOp(BL_COMP_OP_SRC_OVER);
+
   switch (desc.underlineType) {
-    case UnderlineType::Underline:
+    case UnderlineType::Underline: {
+      ctx.fillRect(0, 0, xsize, underlineThickness);
       break;
+    }
 
-    case UnderlineType::Undercurl:
+    case UnderlineType::Undercurl: {
+      float height = underlineThickness * 3;
+      // TODO: finish ts
+      ctx.fillRect(0, 0, xsize, underlineThickness);
       break;
+    }
 
-    case UnderlineType::Underdouble:
+    case UnderlineType::Underdouble: {
+      ctx.fillRect(0, 0, xsize, underlineThickness);
+      ctx.fillRect(0, underlineThickness * 2, xsize, underlineThickness);
       break;
+    }
 
-    case UnderlineType::Underdotted:
+    case UnderlineType::Underdotted: {
+      float width = xsize / 8;
+      float height = underlineThickness * 1.5;
+      ctx.fillRect(0, 0, width, height);
+      ctx.fillRect(width * 2, 0, width, height);
+      ctx.fillRect(width * 4, 0, width, height);
+      ctx.fillRect(width * 6, 0, width, height);
       break;
+    }
 
-    case UnderlineType::Underdashed:
+    case UnderlineType::Underdashed: {
+      float width = xsize / 3;
+      ctx.fillRect(0, 0, width, underlineThickness);
+      ctx.fillRect(width * 2, 0, width, underlineThickness);
       break;
+    }
   }
 }
 
@@ -423,10 +449,10 @@ Pen::ImageData Pen::Draw(const DrawDesc& desc) {
     [this](const Diagonal& desc) { DrawDiagonal(desc); },
     [this](const HalfLine& desc) { DrawHalfLine(desc); },
     [this](const Shade& desc) { DrawShade(desc); },
-    [this](const UpperBlock& desc) { DrawRect(0, 0, xsize, desc.size * ysize); },
-    [this](const LowerBlock& desc) { DrawRect(0, ysize - (desc.size * ysize), xsize, desc.size * ysize); },
-    [this](const LeftBlock& desc) { DrawRect(0, 0, desc.size * xsize, ysize); },
-    [this](const RightBlock& desc) { DrawRect(xsize - (desc.size * xsize), 0, desc.size * xsize, ysize); },
+    [this](const UpperBlock& desc) { ctx.fillRect(0, 0, xsize, desc.size * ysize); },
+    [this](const LowerBlock& desc) { ctx.fillRect(0, ysize - (desc.size * ysize), xsize, desc.size * ysize); },
+    [this](const LeftBlock& desc) { ctx.fillRect(0, 0, desc.size * xsize, ysize); },
+    [this](const RightBlock& desc) { ctx.fillRect(xsize - (desc.size * xsize), 0, desc.size * xsize, ysize); },
     [this](const Quadrant& desc) { DrawQuadrant(desc); },
     [this](const Braille& desc) { DrawBraille(desc); },
     [this](const Underline& desc) { DrawUnderline(desc); },
@@ -440,7 +466,8 @@ Pen::ImageData Pen::Draw(const DrawDesc& desc) {
   std::extents shape{dataHeight, dataWidth};
   std::array strides{blData.stride / sizeof(uint32_t), 1uz};
   auto data = std::mdspan(
-    (uint32_t*)blData.pixelData, std::layout_stride::mapping{shape, strides}
+    static_cast<uint32_t*>(blData.pixelData),
+    std::layout_stride::mapping{shape, strides}
   );
 
   // memory optimization

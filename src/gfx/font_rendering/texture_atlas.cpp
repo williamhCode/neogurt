@@ -37,7 +37,7 @@ void TextureAtlas<IsColor>::Resize() {
   uint newBufferHeight = bufferSize.y + heightIncrease;
   uint textureBytes = bufferSize.x * newBufferHeight * sizeof(Pixel);
 
-  // return true if texture atlas if we exceed the max texture size or taking too much memory
+  // throw TexutreResizeError if texture atlas if we exceed the max texture size or taking too much memory
   if (newBufferHeight > ctx.limits.maxTextureDimension2D || textureBytes > maxBytes) {
     throw TextureResizeError{
       IsColor ? TextureResizeError::Colored : TextureResizeError::Normal

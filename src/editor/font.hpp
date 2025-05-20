@@ -1,5 +1,6 @@
 #pragma once
 
+#include "editor/highlight.hpp"
 #include "gfx/font_rendering/texture_atlas.hpp"
 #include "gfx/font_rendering/font.hpp"
 #include "gfx/font_rendering/shape_drawing.hpp"
@@ -48,7 +49,8 @@ struct FontFamily {
   glm::vec2 GetCharSize() const;
   float GetAscender() const;
 
-  const GlyphInfo& GetGlyphInfo(const std::string& text, bool bold, bool italic);
+  const GlyphInfo* GetGlyphInfo(const std::string& text, bool bold, bool italic);
+  const GlyphInfo* GetGlyphInfo(UnderlineType underlineType);
 
   void ResetTextureAtlas(TextureResizeError error);
 

@@ -1,14 +1,11 @@
 #include "shape_drawing.hpp"
 #include "utils/logger.hpp"
-#include "utils/timer.hpp"
 #include "utils/unicode.hpp"
 
 using namespace shape;
 
-ShapeDrawing::ShapeDrawing(glm::vec2 charSize, float dpiScale) {
-  int width = charSize.x * dpiScale;
-  int height = charSize.y * dpiScale;
-  pen = Pen(width, height, dpiScale);
+ShapeDrawing::ShapeDrawing(glm::vec2 charSize, float underlineThickness, float dpiScale)
+    : pen(charSize, underlineThickness, dpiScale) {
 }
 
 static const auto shapeDescMap = [] {

@@ -38,7 +38,6 @@
 #include <queue>
 #include <chrono>
 
-using namespace wgpu;
 using namespace std::chrono;
 
 WGPUContext ctx;

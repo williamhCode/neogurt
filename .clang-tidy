@@ -13,7 +13,6 @@ Checks: '
   -cppcoreguidelines-avoid-non-const-global-variables,
   -cppcoreguidelines-pro-type-union-access,
   -cppcoreguidelines-pro-bounds-constant-array-index,
-  -cppcoreguidelines-pro-type-cstyle-cast,
   -cppcoreguidelines-init-variables,
   -cppcoreguidelines-pro-bounds-pointer-arithmetic,
   -cppcoreguidelines-pro-type-vararg,

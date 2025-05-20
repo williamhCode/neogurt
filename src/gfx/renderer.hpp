@@ -51,8 +51,8 @@ struct Renderer {
   wgpu::utils::RenderPassDescriptor rectRPD;
   wgpu::utils::RenderPassDescriptor rectNoClearRPD;
 
-  // text and shapes
-  wgpu::utils::RenderPassDescriptor textAndShapesRPD;
+  // text
+  wgpu::utils::RenderPassDescriptor textRPD;
 
   // text mask
   QuadRenderData<TextMaskQuadVertex> textMaskData;

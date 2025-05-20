@@ -1,8 +1,6 @@
 #include "./pipeline.hpp"
-#include "utils/logger.hpp"
 #include "webgpu_utils/blend.hpp"
 #include "gfx/context.hpp"
-#include "app/path.hpp"
 #include <string>
 #include <vector>
 
@@ -30,33 +28,6 @@ Pipeline::Pipeline(const WGPUContext& ctx, SlangContext& slang, float gamma) {
   textureBGL = ctx.MakeBindGroupLayout({
     {0, ShaderStage::Fragment, TextureSampleType::Float},
     {1, ShaderStage::Fragment, SamplerBindingType::Filtering},
-  });
-
-  // shapes pipeline ---------------------------------------------
-  ShaderModule shapesShader = loadShaderModule("shapes");
-
-  shapesRPL = ctx.MakeRenderPipeline({
-    .vs = shapesShader,
-    .fs = shapesShader,
-    .bgls = {viewProjBGL},
-    .buffers = {
-      {
-        sizeof(ShapeQuadVertex),
-        {
-          {VertexFormat::Float32x2, offsetof(ShapeQuadVertex, position)},
-          {VertexFormat::Float32x2, offsetof(ShapeQuadVertex, size)},
-          {VertexFormat::Float32x2, offsetof(ShapeQuadVertex, coord)},
-          {VertexFormat::Float32x4, offsetof(ShapeQuadVertex, color)},
-          {VertexFormat::Uint32, offsetof(ShapeQuadVertex, shapeType)},
-        }
-      }
-    },
-    .targets = {
-      {
-        .format = TextureFormat::RGBA8UnormSrgb,
-        .blend = &utils::BlendState::AlphaBlending,
-      },
-    },
   });
 
   // rect pipeline -------------------------------------------

@@ -1,5 +1,8 @@
 .PHONY: build
 
+# REL = 1
+# TARGET = tests
+
 # flags
 REL ?= 0
 TARGET ?= neogurt
@@ -32,7 +35,7 @@ build-setup:
 
 run:
 ifeq ($(TARGET),tests)
-	ctest --test-dir $(BUILD_DIR) --output-on-failure -V
+	ctest --test-dir $(BUILD_DIR) --output-on-failure
 else
 	$(BUILD_DIR)/$(TARGET)
 endif

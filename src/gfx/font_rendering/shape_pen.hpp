@@ -109,21 +109,25 @@ private:
   BLImage img;
   BLContext ctx;
 
+  float dpiScale;
+
   float xsize;
   float ysize;
-  float dpiScale;
+
   float xhalf;
   float yhalf;
 
   float lightWidth;
   float heavyWidth;
 
+  float underlineThickness;
+
   // internal data after drawing
   // Draw() returns a view on blData.pixelData
   BLImageData blData;
 
+  // box drawing stuff
   float ToWidth(Weight weight);
-  void DrawRect(float left, float top, float width, float height);
   void DrawHLine(float start, float end, Weight weight);
   void DrawVLine(float start, float end, Weight weight);
 
@@ -136,6 +140,7 @@ private:
   void DrawHalfLine(const HalfLine& desc);
   void DrawShade(const Shade& desc);
   void DrawQuadrant(const Quadrant& desc);
+
   void DrawBraille(const Braille& desc);
 
   void DrawUnderline(const Underline& desc);
@@ -148,7 +153,7 @@ public:
   };
 
   Pen() = default;
-  Pen(int width, int height, float dpiScale);
+  Pen(glm::vec2 charSize, float underlineThickness, float dpiScale);
   ImageData Draw(const DrawDesc& desc);
 };
 

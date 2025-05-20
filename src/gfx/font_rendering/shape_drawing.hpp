@@ -21,7 +21,7 @@ struct ShapeDrawing {
   UnderlineGlyphInfoMap underlineGlyphInfoMap;
 
   ShapeDrawing() = default;
-  ShapeDrawing(glm::vec2 charSize, float dpiScale);
+  ShapeDrawing(glm::vec2 charSize, float underlineThickness, float dpiScale);
 
   // returns nullptr if not implemented
   const GlyphInfo*

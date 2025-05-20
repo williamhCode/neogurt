@@ -4,7 +4,6 @@
 #include "editor/window.hpp"
 #include "gfx/instance.hpp"
 #include "gfx/pipeline.hpp"
-#include "gfx/shapes.hpp"
 #include "utils/logger.hpp"
 #include "utils/region.hpp"
 #include "utils/color.hpp"
@@ -13,6 +12,7 @@
 #include <vector>
 #include <array>
 #include "glm/gtx/string_cast.hpp"
+#include "utils/round.hpp"
 
 using namespace wgpu;
 
@@ -43,7 +43,7 @@ Renderer::Renderer() {
   });
 
   // text and shapes
-  textAndShapesRPD = utils::RenderPassDescriptor({
+  textRPD = utils::RenderPassDescriptor({
     RenderPassColorAttachment{
       .loadOp = LoadOp::Load,
       .storeOp = StoreOp::Store,
@@ -103,17 +103,15 @@ void Renderer::Resize(const SizeHandler& sizes) {
   resize = true;
 
   auto stencilTextureView =
-    ctx.CreateRenderTexture({sizes.uiFbSize, TextureFormat::Stencil8})
-    .CreateView();
+    ctx.CreateRenderTexture({sizes.uiFbSize, TextureFormat::Stencil8}).CreateView();
   windowsRPD.cDepthStencilAttachmentInfo.view = stencilTextureView;
 }
 
 void Renderer::SetColors(const glm::vec4& color, float gamma) {
   clearColor = ToWGPUColor(color);
   linearClearColor = ToWGPUColor(ToLinear(color, gamma));
-  premultClearColor = ToWGPUColor(
-    ToSrgb(PremultiplyAlpha(ToLinear(color, gamma)), gamma)
-  );
+  premultClearColor =
+    ToWGPUColor(ToSrgb(PremultiplyAlpha(ToLinear(color, gamma)), gamma));
 
   auto linearColor = ToLinear(color, gamma);
   if (this->defaultBgLinear != linearColor) {
@@ -135,9 +133,7 @@ void Renderer::Begin() {
   timestamp.Write();
 }
 
-void Renderer::RenderToWindow(
-  Win& win, FontFamily& fontFamily, HlManager& hlManager
-) {
+void Renderer::RenderToWindow(Win& win, FontFamily& fontFamily, HlManager& hlManager) {
   // if for whatever reason (prob nvim events buggy, events not sent or offsync)
   // the grid is not the same size as the window
   if (win.grid.width != win.width || win.grid.height != win.height) {
@@ -157,23 +153,19 @@ textureReset:
   std::vector<int> rectIntervals; rectIntervals.reserve(rows + 1);
   std::vector<int> textIntervals; textIntervals.reserve(rows + 1);
   std::vector<int> emojiIntervals; emojiIntervals.reserve(rows + 1);
-  std::vector<int> shapeIntervals; shapeIntervals.reserve(rows + 1);
 
   auto& rectData = win.rectData;
   auto& textData = win.textData;
   auto& emojiData = win.emojiData;
-  auto& shapeData = win.shapeData;
 
   rectData.ResetCounts();
   textData.ResetCounts();
   emojiData.ResetCounts();
-  shapeData.ResetCounts();
 
   glm::vec2 textOffset(0, 0);
   const auto defaultBg = hlManager.GetDefaultBackground();
   const glm::vec2 charSize = fontFamily.GetCharSize();
   const float ascender = fontFamily.GetAscender();
-  const float underlineThickness = fontFamily.DefaultFont().underlineThickness;
   const float underlinePosition = fontFamily.DefaultFont().underlinePosition;
   const float dpiScale = fontFamily.dpiScale;
 
@@ -184,7 +176,6 @@ textureReset:
     rectIntervals.push_back(rectData.quadCount);
     textIntervals.push_back(textData.quadCount);
     emojiIntervals.push_back(emojiData.quadCount);
-    shapeIntervals.push_back(shapeData.quadCount);
 
     for (size_t col = 0; col < cols; col++) {
       auto& cell = line[col];
@@ -201,74 +192,69 @@ textureReset:
         }
       }
 
-      if (!cell.text.empty() && cell.text != " ") {
-        try {
-          // this may throw TextureResizeError
-          const auto& glyphInfo =
-            fontFamily.GetGlyphInfo(cell.text, hl.bold, hl.italic);
+      try {
+        if (!cell.text.empty() && cell.text != " ") {
+          // this may throw TextureResizeError (thrown by TextureAtlas::Resize())
+          if (const auto* glyphInfo =
+                fontFamily.GetGlyphInfo(cell.text, hl.bold, hl.italic)) {
 
-          glm::vec2 textQuadPos{
-            textOffset.x,
-            textOffset.y + (glyphInfo.useAscender ? ascender : 0),
-          };
+            glm::vec2 textQuadPos{
+              textOffset.x,
+              textOffset.y + (glyphInfo->useAscender ? ascender : 0),
+            };
 
-          glm::vec4 foreground{};
-          QuadRenderData<TextQuadVertex, true>* quadData;
-          if (glyphInfo.isEmoji) {
-            quadData = &emojiData;
-          } else {
-            foreground = hlManager.GetForeground(hl);
-            quadData = &textData;
+            glm::vec4 foreground{};
+            QuadRenderData<TextQuadVertex, true>* quadData;
+            if (glyphInfo->isEmoji) {
+              quadData = &emojiData;
+            } else {
+              foreground = hlManager.GetForeground(hl);
+              quadData = &textData;
+            }
+
+            auto& quad = quadData->NextQuad();
+            for (size_t i = 0; i < 4; i++) {
+              quad[i].position = textQuadPos + glyphInfo->localPoss[i];
+              quad[i].regionCoord = glyphInfo->atlasRegion[i];
+              quad[i].foreground = foreground;
+            }
           }
+        }
 
-          auto& quad = quadData->NextQuad();
-          for (size_t i = 0; i < 4; i++) {
-            quad[i].position = textQuadPos + glyphInfo.localPoss[i];
-            quad[i].regionCoord = glyphInfo.atlasRegion[i];
-            quad[i].foreground = foreground;
+        if (hl.underline.has_value()) {
+          auto underlineType = *hl.underline;
+
+          // this may throw TextureResizeError (thrown by TextureAtlas::Resize())
+          if (const auto* glyphInfo = fontFamily.GetGlyphInfo(underlineType)) {
+
+            const auto& region = glyphInfo->localPoss;
+            float thickness = region[3].y - region[0].y;
+
+            glm::vec2 quadPos{
+              textOffset.x,
+              textOffset.y + ascender - underlinePosition - (thickness / 2),
+            };
+            quadPos.y = RoundToPixel(quadPos.y, dpiScale);
+
+            glm::vec4 color = hlManager.GetSpecial(hl);
+
+            auto& quad = textData.NextQuad();
+            for (size_t i = 0; i < 4; i++) {
+              quad[i].position = quadPos + glyphInfo->localPoss[i];
+              quad[i].regionCoord = glyphInfo->atlasRegion[i];
+              quad[i].foreground = color;
+            }
           }
-
-        } catch (TextureResizeError e) {
-          fontFamily.ResetTextureAtlas(e);
-
-          LOG_INFO("Texture reset, re-rendering font glyphs for window: {}", win.id);
-
-          // redo entire rendering of current window if texture reset
-          // use goto cuz it makes the code cleaner
-          goto textureReset;
-        }
-      }
-
-      if (hl.underline.has_value()) {
-        auto underlineType = *hl.underline;
-
-        float thicknessScale = 1.0f;
-        if (underlineType == UnderlineType::Undercurl) {
-          thicknessScale = 3.5f;
-        } else if (underlineType == UnderlineType::Underdouble) {
-          thicknessScale = 3.0f;
-        } else if (underlineType == UnderlineType::Underdotted) {
-          thicknessScale = 1.5f;
-        }
-        float thickness = underlineThickness * thicknessScale;
-        // make sure underdouble is at least 4 physical pixels high
-        if (underlineType == UnderlineType::Underdouble) {
-          thickness = std::max(thickness, 4.0f / dpiScale);
         }
 
-        Rect quadRect{
-          .pos = {
-            textOffset.x,
-            textOffset.y + ascender - underlinePosition - (thickness / 2),
-          },
-          .size = {charSize.x, thickness},
-        };
-        quadRect.RoundToPixel(dpiScale);
+      } catch (TextureResizeError e) {
+        LOG_INFO("Texture reset, re-rendering font glyphs for window: {}", win.id);
 
-        auto underlineColor = hlManager.GetSpecial(hl);
-        AddShapeQuad(
-          shapeData, quadRect, underlineColor, std::to_underlying(underlineType)
-        );
+        fontFamily.ResetTextureAtlas(e);
+
+        // redo entire rendering of current window if texture reset
+        // use goto cuz it makes the code cleaner
+        goto textureReset;
       }
 
       textOffset.x += charSize.x;
@@ -280,12 +266,10 @@ textureReset:
   rectIntervals.push_back(rectData.quadCount);
   textIntervals.push_back(textData.quadCount);
   emojiIntervals.push_back(emojiData.quadCount);
-  shapeIntervals.push_back(shapeData.quadCount);
 
   rectData.WriteBuffers();
   textData.WriteBuffers();
   emojiData.WriteBuffers();
-  shapeData.WriteBuffers();
 
   // gpu texture is reallocated if resized.
   // old gpu texture is not referenced by texture atlas anymore, but still
@@ -327,12 +311,12 @@ textureReset:
     }
 
     // render text and shapes
-    textAndShapesRPD.cColorAttachments[0].view = renderTexture->textureView;
+    textRPD.cColorAttachments[0].view = renderTexture->textureView;
 
     start = textIntervals[range.start];
     end = textIntervals[range.end];
     if (start != end) {
-      RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textAndShapesRPD);
+      RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textRPD);
       passEncoder.SetPipeline(ctx.pipeline.textRPL);
       passEncoder.SetBindGroup(0, renderTexture->camera.viewProjBG);
       passEncoder.SetBindGroup(1, fontFamily.textureAtlas.textureSizeBG);
@@ -344,7 +328,7 @@ textureReset:
     start = emojiIntervals[range.start];
     end = emojiIntervals[range.end];
     if (start != end) {
-      RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textAndShapesRPD);
+      RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textRPD);
       passEncoder.SetPipeline(ctx.pipeline.emojiRPL);
       passEncoder.SetBindGroup(0, renderTexture->camera.viewProjBG);
       passEncoder.SetBindGroup(1, fontFamily.colorTextureAtlas.textureSizeBG);
@@ -352,21 +336,11 @@ textureReset:
       if (start != end) emojiData.Render(passEncoder, start, end - start);
       passEncoder.End();
     }
-
-    start = shapeIntervals[range.start];
-    end = shapeIntervals[range.end];
-    if (start != end) {
-      RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textAndShapesRPD);
-      passEncoder.SetPipeline(ctx.pipeline.shapesRPL);
-      passEncoder.SetBindGroup(0, renderTexture->camera.viewProjBG);
-      if (start != end) shapeData.Render(passEncoder, start, end - start);
-      passEncoder.End();
-    }
   }
 
   rectRPD.cColorAttachments[0].view = {};
   rectNoClearRPD.cColorAttachments[0].view = {};
-  textAndShapesRPD.cColorAttachments[0].view = {};
+  textRPD.cColorAttachments[0].view = {};
 }
 
 void Renderer::RenderCursorMask(
@@ -377,34 +351,46 @@ void Renderer::RenderCursorMask(
 
   if (!cell.text.empty() && cell.text != " ") {
     const auto& hl = hlManager.hlTable[cell.hlId];
-    const auto& glyphInfo = fontFamily.GetGlyphInfo(cell.text, hl.bold, hl.italic);
-    cursor.onEmoji = glyphInfo.isEmoji;
 
-    glm::vec2 textQuadPos{
-      0, glyphInfo.useAscender ? fontFamily.GetAscender() : 0
-    };
+    if (const auto* glyphInfo =
+          fontFamily.GetGlyphInfo(cell.text, hl.bold, hl.italic)) {
 
-    textMaskData.ResetCounts();
-    auto& quad = textMaskData.NextQuad();
-    for (size_t i = 0; i < 4; i++) {
-      quad[i].position = textQuadPos + glyphInfo.localPoss[i];
-      quad[i].regionCoord = glyphInfo.atlasRegion[i];
-    }
-    textMaskData.WriteBuffers();
+      cursor.onEmoji = glyphInfo->isEmoji;
 
-    textMaskRPD.cColorAttachments[0].view = cursor.maskRenderTexture.textureView;
-    RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textMaskRPD);
-    passEncoder.SetPipeline(glyphInfo.isEmoji ? ctx.pipeline.emojiMaskRPL : ctx.pipeline.textMaskRPL);
-    passEncoder.SetBindGroup(0, cursor.maskRenderTexture.camera.viewProjBG);
-    if (glyphInfo.isEmoji) {
-      passEncoder.SetBindGroup(1, fontFamily.colorTextureAtlas.textureSizeBG);
-      passEncoder.SetBindGroup(2, fontFamily.colorTextureAtlas.renderTexture.textureBG);
+      glm::vec2 textQuadPos{0, glyphInfo->useAscender ? fontFamily.GetAscender() : 0};
+
+      textMaskData.ResetCounts();
+      auto& quad = textMaskData.NextQuad();
+      for (size_t i = 0; i < 4; i++) {
+        quad[i].position = textQuadPos + glyphInfo->localPoss[i];
+        quad[i].regionCoord = glyphInfo->atlasRegion[i];
+      }
+      textMaskData.WriteBuffers();
+
+      textMaskRPD.cColorAttachments[0].view = cursor.maskRenderTexture.textureView;
+      RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textMaskRPD);
+      passEncoder.SetPipeline(
+        glyphInfo->isEmoji ? ctx.pipeline.emojiMaskRPL : ctx.pipeline.textMaskRPL
+      );
+      passEncoder.SetBindGroup(0, cursor.maskRenderTexture.camera.viewProjBG);
+      if (glyphInfo->isEmoji) {
+        passEncoder.SetBindGroup(1, fontFamily.colorTextureAtlas.textureSizeBG);
+        passEncoder.SetBindGroup(
+          2, fontFamily.colorTextureAtlas.renderTexture.textureBG
+        );
+      } else {
+        passEncoder.SetBindGroup(1, fontFamily.textureAtlas.textureSizeBG);
+        passEncoder.SetBindGroup(2, fontFamily.textureAtlas.renderTexture.textureBG);
+      }
+      textMaskData.Render(passEncoder);
+      passEncoder.End();
+
     } else {
-      passEncoder.SetBindGroup(1, fontFamily.textureAtlas.textureSizeBG);
-      passEncoder.SetBindGroup(2, fontFamily.textureAtlas.renderTexture.textureBG);
+      // just clear the texture if there's nothing
+      textMaskRPD.cColorAttachments[0].view = cursor.maskRenderTexture.textureView;
+      RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textMaskRPD);
+      passEncoder.End();
     }
-    textMaskData.Render(passEncoder);
-    passEncoder.End();
 
   } else {
     // just clear the texture if there's nothing
@@ -522,7 +508,9 @@ void Renderer::RenderCursor(const Cursor& cursor, HlManager& hlManager) {
 
   cursorRPD.cColorAttachments[0].view = nextTextureView;
   RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&cursorRPD);
-  passEncoder.SetPipeline(cursor.onEmoji ? ctx.pipeline.cursorEmojiRPL : ctx.pipeline.cursorRPL);
+  passEncoder.SetPipeline(
+    cursor.onEmoji ? ctx.pipeline.cursorEmojiRPL : ctx.pipeline.cursorRPL
+  );
   passEncoder.SetBindGroup(0, camera.viewProjBG);
   passEncoder.SetBindGroup(1, cursor.maskRenderTexture.camera.viewProjBG);
   passEncoder.SetBindGroup(2, cursor.maskPosBG);

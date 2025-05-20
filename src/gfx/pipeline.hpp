@@ -18,15 +18,6 @@ struct TextQuadVertex {
   glm::vec4 foreground;
 };
 
-// underlines, braille, box drawing
-struct ShapeQuadVertex {
-  glm::vec2 position;
-  glm::vec2 size;
-  glm::vec2 coord;
-  glm::vec4 color;
-  uint32_t shapeType;
-};
-
 struct TextMaskQuadVertex {
   glm::vec2 position;
   glm::vec2 regionCoord; // region in the font texture
@@ -46,8 +37,6 @@ struct CursorQuadVertex {
 struct Pipeline {
   wgpu::BindGroupLayout viewProjBGL;
   wgpu::BindGroupLayout textureBGL;
-
-  wgpu::RenderPipeline shapesRPL;
 
   wgpu::RenderPipeline rectRPL;
 

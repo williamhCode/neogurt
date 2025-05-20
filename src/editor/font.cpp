@@ -63,6 +63,7 @@ FontFamily::FromGuifont(std::string guifont, int linespace, float dpiScale) {
       .linespace = linespace,
       .topLinespace = RoundToPixel(linespace / 2.0, dpiScale),
       .dpiScale = dpiScale,
+
       .fonts =
         SplitStr(fontsStr, ",") | std::views::transform([&](std::string_view fontName) {
           FontSet fontSet;
@@ -99,9 +100,15 @@ FontFamily::FromGuifont(std::string guifont, int linespace, float dpiScale) {
           return fontSet;
         }) |
         std::ranges::to<std::vector>(),
-      .shapeDrawing{fontFamily.GetCharSize(), dpiScale},
-      .textureAtlas{fontFamily.DefaultFont().charSize.y, dpiScale},
-      .colorTextureAtlas{fontFamily.DefaultFont().charSize.y, dpiScale},
+      .shapeDrawing = ShapeDrawing(
+        fontFamily.GetCharSize(), fontFamily.DefaultFont().underlineThickness, dpiScale
+      ),
+
+      .textureAtlas =
+        TextureAtlas<false>(fontFamily.DefaultFont().charSize.y, dpiScale),
+      .colorTextureAtlas =
+        TextureAtlas<true>(fontFamily.DefaultFont().charSize.y, dpiScale),
+
       .defaultHeight = height,
       .defaultWidth = width,
     };
@@ -162,7 +169,8 @@ void FontFamily::UpdateFonts(std::function<FontHandle(const FontHandle&)> create
   }
 
   fonts = std::move(newFonts);
-  shapeDrawing = ShapeDrawing(GetCharSize(), dpiScale);
+  shapeDrawing =
+    ShapeDrawing(GetCharSize(), DefaultFont().underlineThickness, dpiScale);
   textureAtlas = TextureAtlas<false>(DefaultFont().charSize.y, dpiScale);
   colorTextureAtlas = TextureAtlas<true>(DefaultFont().charSize.y, dpiScale);
 }
@@ -171,14 +179,15 @@ void FontFamily::UpdateLinespace(int _linespace) {
   // NOTE: updates to new box drawing chars, but old ones stay in the atlas
   linespace = _linespace;
   topLinespace = RoundToPixel(linespace / 2.0, dpiScale);
-  shapeDrawing = ShapeDrawing(GetCharSize(), dpiScale);
+  shapeDrawing =
+    ShapeDrawing(GetCharSize(), DefaultFont().underlineThickness, dpiScale);
 }
 
-const GlyphInfo&
+const GlyphInfo*
 FontFamily::GetGlyphInfo(const std::string& text, bool bold, bool italic) {
   // shapes
   if (const auto *glyphInfo = shapeDrawing.GetGlyphInfo(text, textureAtlas)) {
-    return *glyphInfo;
+    return glyphInfo;
   }
 
   for (const auto& fontSet : fonts) {
@@ -197,18 +206,17 @@ FontFamily::GetGlyphInfo(const std::string& text, bool bold, bool italic) {
 
     if (const auto* glyphInfo =
           font->GetGlyphInfo(text, textureAtlas, colorTextureAtlas)) {
-      return *glyphInfo;
+      return glyphInfo;
     }
   }
 
-  // TODO: draw a question mark symbol instead
-  for (const auto& fontSet : fonts) {
-    if (const auto* glyphInfo =
-          fontSet.normal->GetGlyphInfo(" ", textureAtlas, colorTextureAtlas)) {
-      return *glyphInfo;
-    }
-  }
-  throw std::runtime_error("Failed to get glyph for space character");
+  // TODO: try to fetch a fallback font
+
+  return nullptr;
+}
+
+const GlyphInfo* FontFamily::GetGlyphInfo(UnderlineType underlineType) {
+  return shapeDrawing.GetGlyphInfo(underlineType, textureAtlas);
 }
 
 void FontFamily::ResetTextureAtlas(TextureResizeError error) {

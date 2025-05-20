@@ -51,7 +51,6 @@ struct Win {
   QuadRenderData<RectQuadVertex, true> rectData;
   QuadRenderData<TextQuadVertex, true> textData;
   QuadRenderData<TextQuadVertex, true> emojiData;
-  QuadRenderData<ShapeQuadVertex, true> shapeData;
 
   ScrollableRenderTexture sRenderTexture;
 

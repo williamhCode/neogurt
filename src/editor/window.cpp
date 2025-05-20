@@ -42,7 +42,6 @@ void WinManager::UpdateRenderData() {
       win.rectData.CreateBuffers(numQuads);
       win.textData.CreateBuffers(numQuads);
       win.emojiData.CreateBuffers(numQuads);
-      win.shapeData.CreateBuffers(numQuads);
 
       win.sRenderTexture = ScrollableRenderTexture(
         win.size, sizes.dpiScale, sizes.charSize, CalcMaxTexPerPage(win)
