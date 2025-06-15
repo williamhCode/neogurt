@@ -1,10 +1,13 @@
 #include "./shape_pen.hpp"
+#include "blend2d/path.h"
 #include "utils/logger.hpp"
 #include "utils/mdspan.hpp"
 #include "utils/variant.hpp"
 #include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <numbers>
+#include <vector>
 
 namespace shape {
 
@@ -382,9 +385,45 @@ void Pen::DrawUnderline(const Underline& desc) {
     }
 
     case UnderlineType::Undercurl: {
-      float height = underlineThickness * 3;
-      // TODO: finish ts
-      ctx.fillRect(0, 0, xsize, underlineThickness);
+      // based off this - https://www.desmos.com/calculator/s9n0m0lwfr
+      float w = xsize;
+      float h = underlineThickness * 3;
+
+      float girth = h * 0.2;
+      const float roundiness = 0.04;
+
+      // at least 2 steps, else is number of pixels / 2
+      int steps = std::max(2, int(w / 2));
+      float step = w / steps;
+
+      using namespace std::numbers;
+      auto centerEq = [=](int x) {
+        return std::cos(2 * pi * x / w) * (h / 2 - girth) + (h / 2);
+      };
+      auto makeRoundEq = [=](int x) {
+        return std::pow(std::sin(2 * pi * x / w), 2) * h * roundiness;
+      };
+
+      std::vector<BLPoint> points;
+      for (int i = 0; i <= steps; i++) {
+        float x = i * step;
+        float y = centerEq(x) + girth + makeRoundEq(x);
+        points.emplace_back(x, y);
+      }
+
+      for (int i = steps; i >= 0; i--) {
+        float x = i * step;
+        float y = centerEq(x) - girth - makeRoundEq(x);
+        points.emplace_back(x, y);
+      }
+
+      BLPath path;
+      path.moveTo(points[0]);
+      path.polyTo(points.data() + 1, points.size() - 1);
+      path.close();
+
+      ctx.fillPath(path);
+
       break;
     }
 
