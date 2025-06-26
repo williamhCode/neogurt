@@ -8,6 +8,8 @@
 #include "gfx/renderer.hpp"
 #include <deque>
 #include <memory>
+#include <string>
+#include <string_view>
 
 enum class SpawnMode {
   Child,
@@ -73,6 +75,7 @@ public:
   void OptionSet(SessionHandle& session, const event::OptionTable& optionTable);
 
   int SessionNew(const SessionNewOpts& opts = {});  // returns session id (raise error if failed)
+  bool SessionEdit(int id, std::string_view name);  // returns success
   bool SessionKill(int id);                         // returns success
   int SessionRestart(int id, bool currDir = false); // returns session id (0 if failed)
   bool SessionSwitch(int id);                       // returns success

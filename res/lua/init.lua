@@ -52,6 +52,11 @@ local cmds_table = {
     switch_to = true, -- switch to session after creating it
   },
   -- returns success (bool)
+  session_edit = {
+    id = 0,
+    name = "",
+  },
+  -- returns success (bool)
   session_kill = {
     id = 0
   },

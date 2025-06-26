@@ -10,7 +10,11 @@ void ProcessNeogurtCmd(
   try {
     auto [cmd, opts] = request.params.as<event::NeogurtCmd>();
 
-    auto convertId = [&](int id) {
+    auto conv = [&](std::string_view key) {
+      return opts.at(key).convert();
+    };
+    auto convId = [&] {
+      int id = conv("id");
       return id == 0 ? session->id : id;
     };
 
@@ -20,20 +24,22 @@ void ProcessNeogurtCmd(
 
     } else if (cmd == "session_new") {
       int id = sessionManager.SessionNew({
-        .name = opts.at("name").convert(),
-        .dir = opts.at("dir").convert(),
-        .switchTo = opts.at("switch_to").convert(),
+        .name = conv("name"),
+        .dir = conv("dir"),
+        .switchTo = conv("switch_to"),
       });
       request.SetResult(id);
 
+    } else if (cmd == "session_edit") {
+      bool success = sessionManager.SessionEdit(convId(), conv("name"));
+      request.SetResult(success);
+
     } else if (cmd == "session_kill") {
-      bool success = sessionManager.SessionKill(convertId(opts.at("id").convert()));
+      bool success = sessionManager.SessionKill(convId());
       request.SetResult(success);
 
     } else if (cmd == "session_restart") {
-      int id = sessionManager.SessionRestart(
-        convertId(opts.at("id").convert()), opts.at("curr_dir").convert()
-      );
+      int id = sessionManager.SessionRestart(convId(), conv("curr_dir"));
       if (id == 0) {
         request.SetResult(nil_t());
       } else {
@@ -41,7 +47,7 @@ void ProcessNeogurtCmd(
       }
 
     } else if (cmd == "session_switch") {
-      bool success = sessionManager.SessionSwitch(convertId(opts.at("id").convert()));
+      bool success = sessionManager.SessionSwitch(convId());
       request.SetResult(success);
 
     } else if (cmd == "session_prev") {
@@ -49,7 +55,7 @@ void ProcessNeogurtCmd(
       request.SetResult(success);
 
     } else if (cmd == "session_info") {
-      auto info = sessionManager.SessionInfo(convertId(opts.at("id").convert()));
+      auto info = sessionManager.SessionInfo(convId());
       if (info.id == 0) {
         request.SetResult(nil_t());
       } else {
@@ -58,19 +64,17 @@ void ProcessNeogurtCmd(
 
     } else if (cmd == "session_list") {
       std::vector<SessionListEntry> list = sessionManager.SessionList({
-        .sort = opts.at("sort").convert(),
-        .reverse = opts.at("reverse").convert(),
+        .sort = conv("sort"),
+        .reverse = conv("reverse"),
       });
       request.SetResult(list);
 
     } else if (cmd == "font_size_change") {
-      sessionManager.FontSizeChange(
-        opts.at("arg1").convert(), opts.at("all").convert()
-      );
+      sessionManager.FontSizeChange(conv("arg1"), conv("all"));
       request.SetResult(nil_t());
 
     } else if (cmd == "font_size_reset") {
-      sessionManager.FontSizeReset(opts.at("all").convert());
+      sessionManager.FontSizeReset(conv("all"));
       request.SetResult(nil_t());
 
     } else {

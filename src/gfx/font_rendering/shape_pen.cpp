@@ -1,6 +1,5 @@
 #include "./shape_pen.hpp"
 #include "blend2d/path.h"
-#include "utils/logger.hpp"
 #include "utils/mdspan.hpp"
 #include "utils/variant.hpp"
 #include <algorithm>
@@ -410,7 +409,6 @@ void Pen::DrawUnderline(const Underline& desc) {
         float y = centerEq(x) + girth + makeRoundEq(x);
         points.emplace_back(x, y);
       }
-
       for (int i = steps; i >= 0; i--) {
         float x = i * step;
         float y = centerEq(x) - girth - makeRoundEq(x);
