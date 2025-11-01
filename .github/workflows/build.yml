@@ -42,7 +42,7 @@ jobs:
 
     - name: Install dependencies on macOS
       run: |
-        brew install llvm@20
+        brew install llvm
         brew install boost
         brew install ninja
 
@@ -53,6 +53,7 @@ jobs:
         -GNinja
         -DCMAKE_C_COMPILER="$(brew --prefix llvm)/bin/clang"
         -DCMAKE_CXX_COMPILER="$(brew --prefix llvm)/bin/clang++"
+        -DCMAKE_OSX_SYSROOT="$(xcrun --show-sdk-path)"
         -DSDL_SHARED=OFF
         -DSDL_STATIC=ON
         -DBLEND2D_STATIC=ON
