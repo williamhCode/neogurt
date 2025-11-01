@@ -42,7 +42,7 @@ jobs:
 
     - name: Install dependencies on macOS
       run: |
-        brew install llvm
+        brew install llvm@20
         brew install boost
         brew install ninja
 
