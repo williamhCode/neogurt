@@ -1,6 +1,6 @@
 .PHONY: build
 
-# REL = 1
+REL = 1
 # TARGET = tests
 
 # flags
@@ -31,7 +31,8 @@ build-setup:
 		-D CMAKE_CXX_COMPILER=clang++ \
 		-D CMAKE_C_COMPILER_LAUNCHER=ccache \
 		-D CMAKE_CXX_COMPILER_LAUNCHER=ccache \
-		-D CMAKE_COLOR_DIAGNOSTICS=ON
+		-D CMAKE_COLOR_DIAGNOSTICS=ON \
+		-D CMAKE_OSX_SYSROOT=$$(xcrun --show-sdk-path)
 
 run:
 ifeq ($(TARGET),tests)
@@ -44,4 +45,4 @@ package:
 	cmake --build build/release --target package
 
 xcode-setup:
-	cmake . -B xcode -GXcode
+	cmake . -B xcode -GXcode -D CMAKE_OSX_SYSROOT=$$(xcrun --show-sdk-path)
