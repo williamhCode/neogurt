@@ -1,6 +1,7 @@
 #include "./font_locator.hpp"
 #include "app/path.hpp"
 #include "utils/logger.hpp"
+#include "utils/unicode.hpp"
 #import <AppKit/NSFontDescriptor.h>
 #import <Foundation/Foundation.h>
 #import <CoreText/CoreText.h>
@@ -123,63 +124,28 @@ std::string GetFontPathFromName(const FontDescriptorWithName& desc) {
   return path;
 }
 
-std::string FindFallbackFontForCharacter(uint32_t unicodeChar) {
-  // Convert the Unicode character to a CFStringRef
-  auto uniChar = static_cast<UniChar>(unicodeChar);
+std::string FindFallbackFontForCharacter(const std::string& text) {
+  std::u32string u32text = Utf8ToUtf32(text);
+  if (u32text.empty()) return "";
+
+  CTFontRef baseFont = CTFontCreateWithName(CFSTR("SF Mono"), 12.0, nullptr);
   CFStringRef charString =
-    CFStringCreateWithCharacters(kCFAllocatorDefault, &uniChar, 1);
+    CFStringCreateWithCString(kCFAllocatorDefault, text.c_str(), kCFStringEncodingUTF8);
+  if (!charString) return "";
 
-  // Ask CoreText to find a suitable font
-  CTFontRef fallbackFont =
-    CTFontCreateForString(nullptr, charString, CFRangeMake(0, 1));
+  CTFontRef fallbackFont = CTFontCreateForString(
+    baseFont, charString, CFRangeMake(0, CFStringGetLength(charString))
+  );
+  CFRelease(baseFont);
   CFRelease(charString);
+  if (!fallbackFont) return "";
 
-  if (!fallbackFont) {
-    return ""; // No suitable font found
-  }
-
-  // Get the font's PostScript name
   CFStringRef fontName = CTFontCopyPostScriptName(fallbackFont);
   CFRelease(fallbackFont);
+  if (!fontName) return "";
 
-  if (!fontName) {
-    return "";
-  }
-
-  // Convert CFStringRef to std::string
   std::string result = [(NSString*)fontName UTF8String];
   CFRelease(fontName);
 
   return result;
 }
-
-// std::string GetFontPathFromFamilyAndStyle(const FontDescriptor& desc) {
-
-//   NSString* ctName = @(desc.name.c_str());
-//   NSFontWeight ctWeight = FontWeightToNSFontWeight(desc.weight);
-//   CTFontSymbolicTraits ctSlant = SlantToCoreTextSlant(desc.slant);
-
-//   NSDictionary* traits = @{
-//     (NSString*)kCTFontWeightTrait : @(ctWeight),
-//     (NSString*)kCTFontSlantTrait : @(ctSlant),
-//   };
-
-//   NSDictionary* attributes = @{
-//     (NSString*)kCTFontNameAttribute : ctName,
-//     (NSString*)kCTFontTraitsAttribute : traits,
-//   };
-
-//   CTFontDescriptorRef ctDescriptor =
-//     CTFontDescriptorCreateWithAttributes((__bridge CFDictionaryRef)attributes);
-//   CFURLRef fontUrl =
-//     (CFURLRef)CTFontDescriptorCopyAttribute(ctDescriptor, kCTFontURLAttribute);
-
-//   std::string path;
-//   if (fontUrl) {
-//     path = [[(NSURL*)fontUrl path] UTF8String];
-//     CFRelease(fontUrl);
-//   }
-//   CFRelease(ctDescriptor);
-
-//   return path;
-// }

@@ -1,4 +1,6 @@
 #include "./font.hpp"
+#include "gfx/font_rendering/font_locator.hpp"
+#include "utils/logger.hpp"
 #include <ranges>
 #include <string>
 #include <algorithm>
@@ -185,11 +187,28 @@ void FontFamily::UpdateLinespace(int _linespace) {
 
 const GlyphInfo*
 FontFamily::GetGlyphInfo(const std::string& text, bool bold, bool italic) {
-  // shapes
+  // Check if this text is in the LastResort cache (unknown character)
+  if (lastResortCache.contains(text)) {
+    if (lastResortFontLoadFailed) {
+      return nullptr;
+    }
+
+    // Try to get glyph from loaded LastResort font
+    if (lastResortFont.has_value()) { // this should always return true
+      if (const auto* glyphInfo =
+            (*lastResortFont)->GetGlyphInfo(text, textureAtlas, colorTextureAtlas)) {
+        return glyphInfo;
+      }
+    }
+    return nullptr;
+  }
+
+  // Try to find glyph in shape drawing
   if (const auto *glyphInfo = shapeDrawing.GetGlyphInfo(text, textureAtlas)) {
     return glyphInfo;
   }
 
+  // Try to find glyph in existing fonts
   for (const auto& fontSet : fonts) {
     const auto& font = [&] {
       if (bold && italic) {
@@ -210,7 +229,98 @@ FontFamily::GetGlyphInfo(const std::string& text, bool bold, bool italic) {
     }
   }
 
-  // TODO: try to fetch a fallback font
+  // Try to find a fallback font
+  std::string fallbackFontName = FindFallbackFontForCharacter(text);
+
+  // If no font found or LastResort, cache it and load LastResort font
+  if (fallbackFontName.empty() ||
+      fallbackFontName == ".LastResort" ||
+      fallbackFontName == "LastResort") {
+
+    lastResortCache.insert(text);
+
+    // Load LastResort font if not already loaded, or has not failed to load before
+    if (!lastResortFont.has_value() && !lastResortFontLoadFailed) {
+      auto font = Font::FromName(
+        {
+          .name = "LastResort",
+          .height = DefaultFont().height,
+          .width = DefaultFont().width,
+          .bold = false,
+          .italic = false,
+        },
+        dpiScale
+      );
+
+      if (font.has_value()) {
+        lastResortFont = std::make_shared<Font>(std::move(*font));
+      } else {
+        lastResortFontLoadFailed = true;
+        return nullptr;
+      }
+    }
+
+    if (const auto* glyphInfo =
+          (*lastResortFont)->GetGlyphInfo(text, textureAtlas, colorTextureAtlas)) {
+      return glyphInfo;
+    }
+    return nullptr;
+  }
+
+  // Valid fallback font found - add to fonts vector
+  try {
+    FontSet fallbackSet;
+
+    auto makeFontHandle = [&](bool bold, bool italic) {
+      auto font = Font::FromName(
+        {
+          .name = fallbackFontName,
+          .height = DefaultFont().height,
+          .width = DefaultFont().width,
+          .bold = bold,
+          .italic = italic,
+        },
+        dpiScale
+      )
+      .value();
+
+      if (fallbackSet.normal && font.path == fallbackSet.normal->path) {
+        return fallbackSet.normal;
+      }
+      return std::make_shared<Font>(std::move(font));
+    };
+
+    fallbackSet.normal = makeFontHandle(false, false);
+    fallbackSet.bold = makeFontHandle(true, false);
+    fallbackSet.italic = makeFontHandle(false, true);
+    fallbackSet.boldItalic = makeFontHandle(true, true);
+
+    fonts.push_back(std::move(fallbackSet));
+
+    // Now try to get the glyph from the newly added font
+    const auto& newFontSet = fonts.back();
+    const auto& font = [&] {
+      if (bold && italic) {
+        return newFontSet.boldItalic ? newFontSet.boldItalic : newFontSet.normal;
+      }
+      if (bold) {
+        return newFontSet.bold ? newFontSet.bold : newFontSet.normal;
+      }
+      if (italic) {
+        return newFontSet.italic ? newFontSet.italic : newFontSet.normal;
+      }
+      return newFontSet.normal;
+    }();
+
+    if (const auto* glyphInfo =
+          font->GetGlyphInfo(text, textureAtlas, colorTextureAtlas)) {
+      return glyphInfo;
+    }
+
+  } catch (std::bad_expected_access<std::runtime_error>&) {
+    // Failed to load fallback font
+    LOG_WARN("Failed to load fallback font: {}", fallbackFontName);
+  }
 
   return nullptr;
 }
@@ -230,6 +340,9 @@ void FontFamily::ResetTextureAtlas(TextureResizeError error) {
         fontSet.italic->glyphInfoMap = {};
         fontSet.boldItalic->glyphInfoMap = {};
       }
+      if (lastResortFont.has_value()) {
+        (*lastResortFont)->glyphInfoMap = {};
+      }
       shapeDrawing.glyphInfoMap = {};
       shapeDrawing.underlineGlyphInfoMap = {};
       break;
@@ -242,6 +355,9 @@ void FontFamily::ResetTextureAtlas(TextureResizeError error) {
         fontSet.bold->emojiGlyphInfoMap = {};
         fontSet.italic->emojiGlyphInfoMap = {};
         fontSet.boldItalic->emojiGlyphInfoMap = {};
+      }
+      if (lastResortFont.has_value()) {
+        (*lastResortFont)->emojiGlyphInfoMap = {};
       }
       break;
   }

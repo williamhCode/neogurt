@@ -9,6 +9,8 @@
 #include <string>
 #include <vector>
 #include <expected>
+#include <unordered_set>
+#include <optional>
 
 using FontHandle = std::shared_ptr<Font>;
 // Font is shared with normal if bold/italic/boldItalic is not available
@@ -34,6 +36,11 @@ struct FontFamily {
 
   float defaultHeight;
   float defaultWidth;
+
+  // Cache for characters that fallback to LastResort (unknown characters)
+  std::unordered_set<std::string> lastResortCache;
+  std::optional<FontHandle> lastResortFont;
+  bool lastResortFontLoadFailed = false;
 
   static std::expected<FontFamily, std::runtime_error>
   Default(int linespace, float dpiScale);
