@@ -1,6 +1,6 @@
 .PHONY: build
 
-REL = 1
+# REL = 1
 # TARGET = tests
 
 # flags

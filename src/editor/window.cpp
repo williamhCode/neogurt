@@ -180,8 +180,9 @@ void WinManager::FloatPos(const event::WinFloatPos& e) {
 
   win.floatData = FloatData{
     .anchorGrid = e.anchorGrid,
-    .focusable = e.focusable,
+    .mouseEnabled = e.mouseEnabled,
     .zindex = e.zindex,
+    .compindex = e.compindex,
   };
 
   UpdateWinAttributes(win);
@@ -223,7 +224,7 @@ void WinManager::MsgSetPos(const event::MsgSetPos& e) {
   std::lock_guard lock(windowsMutex);
   auto gridIt = gridManager->grids.find(e.grid);
   if (gridIt == gridManager->grids.end()) {
-    LOG_ERR("WinManager::MsgSet: grid {} not found", e.grid);
+    LOG_ERR("WinManager::MsgSetPos: grid {} not found", e.grid);
     return;
   }
   auto [winIt, first] = windows.try_emplace(
@@ -239,6 +240,17 @@ void WinManager::MsgSetPos(const event::MsgSetPos& e) {
   win.height = win.grid.height;
 
   win.hidden = false;
+
+  // act as floating window if scrolled
+  // NOTE: e.zindex != 0 for compatibility with nvim -v < 0.12, for 0.12 onward should have zindex == 200
+  if (e.scrolled && e.zindex != 0) {
+    win.floatData = FloatData{
+      .zindex = e.zindex,
+      .compindex = e.compindex,
+    };
+  } else {
+    win.floatData.reset();
+  }
 
   if (msgWinId != -1 && msgWinId != e.grid) {
     Close({.grid = msgWinId});
@@ -300,15 +312,22 @@ MouseInfo WinManager::GetMouseInfo(glm::vec2 mousePos) const {
 
   std::vector<const Win*> sortedWins;
   for (const auto* win : windowsOrder) {
-    if (win->hidden || win->id == 1 || (win->floatData && !win->floatData->focusable)) {
+    if (win->hidden || win->id == 1 || (win->floatData && !win->floatData->mouseEnabled)) {
       continue;
     }
     sortedWins.push_back(win);
   }
 
+  // NOTE: sort by zindex for backward compatable, nvim 0.12 onward can use compindex
   std::ranges::stable_sort(sortedWins, [](const auto& a, const auto& b) {
-    return a->floatData.value_or(FloatData{.zindex = -1}).zindex >
-           b->floatData.value_or(FloatData{.zindex = -1}).zindex;
+    float za = a->floatData.value_or(FloatData{.zindex = -1}).zindex;
+    float zb = b->floatData.value_or(FloatData{.zindex = -1}).zindex;
+
+    if (za > zb) return true;
+    if (za < zb) return false;
+
+    return a->floatData.value_or(FloatData{.compindex = -1}).compindex >
+           b->floatData.value_or(FloatData{.compindex = -1}).compindex;
   });
 
   int grid = 1; // default grid number

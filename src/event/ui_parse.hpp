@@ -120,10 +120,23 @@ struct WinFloatPos {
   int anchorGrid;
   float anchorRow;
   float anchorCol;
-  bool focusable;
+  bool mouseEnabled;
   int zindex;
+  int compindex = 0; // backward compatibility (nvim 0.12+ use compindex)
+  int screenRow;
+  int screenCol;
   MSGPACK_DEFINE(
-    grid, win, anchor, anchorGrid, anchorRow, anchorCol, focusable, zindex
+    grid,
+    win,
+    anchor,
+    anchorGrid,
+    anchorRow,
+    anchorCol,
+    mouseEnabled,
+    zindex,
+    compindex,
+    screenRow,
+    screenCol
   );
 };
 struct WinExternalPos {
@@ -144,7 +157,9 @@ struct MsgSetPos {
   int row;
   bool scrolled;
   std::string sepChar;
-  MSGPACK_DEFINE(grid, row, scrolled, sepChar);
+  int zindex;
+  int compindex = 0; // backward compatibility (nvim 0.12+ use compindex)
+  MSGPACK_DEFINE(grid, row, scrolled, sepChar, zindex, compindex);
 };
 struct WinViewport {
   int grid;

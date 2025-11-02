@@ -16,8 +16,9 @@
 
 struct FloatData {
   int anchorGrid;
-  bool focusable;
+  bool mouseEnabled;
   int zindex;
+  int compindex;
 };
 
 struct Win {

@@ -85,8 +85,9 @@ void ImeHandler::Update() {
       .anchorGrid = editorState->cursor.cursorGoto.grid,
       .anchorRow = (float)editorState->cursor.cursorGoto.row,
       .anchorCol = (float)editorState->cursor.cursorGoto.col,
-      .focusable = false,
+      .mouseEnabled = false,
       .zindex = std::numeric_limits<int>::max(),
+      .compindex = std::numeric_limits<int>::max(),
     });
 
     active = true;

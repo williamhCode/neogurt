@@ -286,7 +286,7 @@ int main(int argc, char** argv) {
           std::vector<const Win*> windows;
           std::vector<const Win*> floatWindows;
           for (const auto* win : editorState->winManager.windowsOrder) {
-            if (win->id == 1 || win->id == editorState->winManager.msgWinId || win->hidden) {
+            if (win->id == 1 || win->hidden) {
               continue;
             }
             if (win->IsFloating()) {
@@ -300,14 +300,20 @@ int main(int argc, char** argv) {
             windows.push_back(&winIt->second);
           }
 
-          // sort floating windows by zindex
+          // sort floating windows
+          // NOTE: sort by zindex for backward compatable, nvim 0.12 onward can use compindex
           std::ranges::stable_sort(floatWindows, [](const Win* win, const Win* other) {
-            return win->floatData->zindex > other->floatData->zindex;
+            if (win->floatData->zindex > other->floatData->zindex) {
+              return true;
+            }
+            if (win->floatData->zindex < other->floatData->zindex) {
+              return false;
+            }
+            return win->floatData->compindex > other->floatData->compindex;
           });
 
-          renderer.RenderWindows(
-            editorState->winManager.GetMsgWin(), windows, floatWindows
-          );
+          renderer.RenderWindows(windows, floatWindows);
+
           // reset reattached flag after rendering
           session->reattached = false;
         }

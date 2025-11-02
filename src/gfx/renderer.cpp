@@ -403,7 +403,7 @@ void Renderer::RenderCursorMask(
 }
 
 void Renderer::RenderWindows(
-  const Win* msgWin, std::span<const Win*> windows, std::span<const Win*> floatWindows
+  std::span<const Win*> windows, std::span<const Win*> floatWindows
 ) {
   if (resize) {
     // reset texture, since we're rendering to a new texture
@@ -418,15 +418,11 @@ void Renderer::RenderWindows(
   // this is the window ordering priority:
   // - normal windows covers normal windows
   // - floating window covers normal + floating windows
-  // - msg window covers normal + floating windows
-  // - ime window covers all windows
 
   // we assign priority numbers to each type of window,
   // and use CompareFunction::Greater for replacement
   // - normal: 1
   // - floating: 2
-  // - msg: 2
-  // - ime: 3
 
   windowsRPD.cColorAttachments[0].view = CurrFinalRenderTexture().textureView;
   windowsRPD.cColorAttachments[0].clearValue = linearClearColor;
@@ -438,13 +434,6 @@ void Renderer::RenderWindows(
     passEncoder.SetBindGroup(0, CurrFinalRenderTexture().camera.viewProjBG);
     passEncoder.SetBindGroup(1, defaultBgLinearBG);
 
-    if (msgWin != nullptr) {
-      // msg window
-      passEncoder.SetStencilReference(2);
-      msgWin->sRenderTexture.Render(passEncoder, 2);
-    }
-
-    // normal window
     passEncoder.SetStencilReference(1);
     for (const Win* win : windows) {
       win->sRenderTexture.Render(passEncoder, 2);
@@ -460,16 +449,12 @@ void Renderer::RenderWindows(
     passEncoder.SetPipeline(ctx.pipeline.textureRPL);
     passEncoder.SetBindGroup(0, CurrFinalRenderTexture().camera.viewProjBG);
     passEncoder.SetBindGroup(1, defaultBgLinearBG);
+    
+    passEncoder.SetStencilReference(2);
     for (const Win* win : floatWindows) {
-      if (win->floatData->zindex == std::numeric_limits<int>::max()) {
-        // ime window
-        passEncoder.SetStencilReference(3);
-      } else {
-        // floating window
-        passEncoder.SetStencilReference(2);
-      }
       win->sRenderTexture.Render(passEncoder, 2);
     }
+
     passEncoder.End();
   }
 
