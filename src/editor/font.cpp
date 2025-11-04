@@ -210,19 +210,7 @@ FontFamily::GetGlyphInfo(const std::string& text, bool bold, bool italic) {
 
   // Try to find glyph in existing fonts
   for (const auto& fontSet : fonts) {
-    const auto& font = [&] {
-      if (bold && italic) {
-        return fontSet.boldItalic ? fontSet.boldItalic : fontSet.normal;
-      }
-      if (bold) {
-        return fontSet.bold ? fontSet.bold : fontSet.normal;
-      }
-      if (italic) {
-        return fontSet.italic ? fontSet.italic : fontSet.normal;
-      }
-      return fontSet.normal;
-    }();
-
+    const auto& font = fontSet.GetFontHandle(bold, italic);
     if (const auto* glyphInfo =
           font->GetGlyphInfo(text, textureAtlas, colorTextureAtlas)) {
       return glyphInfo;
@@ -299,19 +287,7 @@ FontFamily::GetGlyphInfo(const std::string& text, bool bold, bool italic) {
 
     // Now try to get the glyph from the newly added font
     const auto& newFontSet = fonts.back();
-    const auto& font = [&] {
-      if (bold && italic) {
-        return newFontSet.boldItalic ? newFontSet.boldItalic : newFontSet.normal;
-      }
-      if (bold) {
-        return newFontSet.bold ? newFontSet.bold : newFontSet.normal;
-      }
-      if (italic) {
-        return newFontSet.italic ? newFontSet.italic : newFontSet.normal;
-      }
-      return newFontSet.normal;
-    }();
-
+    const auto& font = newFontSet.GetFontHandle(bold, italic);
     if (const auto* glyphInfo =
           font->GetGlyphInfo(text, textureAtlas, colorTextureAtlas)) {
       return glyphInfo;
@@ -319,7 +295,8 @@ FontFamily::GetGlyphInfo(const std::string& text, bool bold, bool italic) {
 
   } catch (std::bad_expected_access<std::runtime_error>&) {
     // Failed to load fallback font
-    LOG_WARN("Failed to load fallback font: {}", fallbackFontName);
+    // Shouldn't happen, because we got the font name from the system
+    LOG_ERR("Failed to load fallback font: {}", fallbackFontName);
   }
 
   return nullptr;

@@ -20,6 +20,19 @@ struct FontSet {
   FontHandle bold;
   FontHandle italic;
   FontHandle boldItalic;
+
+  const FontHandle& GetFontHandle(bool isBold, bool isItalic) const {
+    if (isBold && isItalic) {
+      return boldItalic ? boldItalic : normal;
+    }
+    if (isBold) {
+      return bold ? bold : normal;
+    }
+    if (isItalic) {
+      return italic ? italic : normal;
+    }
+    return normal;
+  }
 };
 
 // list of fonts: primary font and fallback fonts
