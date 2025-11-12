@@ -83,7 +83,7 @@ FontFamily::FromGuifont(std::string guifont, int linespace, float dpiScale) {
             .value(); // allow exception to propagate
             // (yes we're using exceptions for control flow but this code doesn't needa run super fast)
 
-            // reuse the existing FontHandle
+            // reuse the existing FontHandle, if font is same as normal font
             if (fontSet.normal && font.path == fontSet.normal->path) {
               return fontSet.normal;
             }
@@ -272,9 +272,11 @@ FontFamily::GetGlyphInfo(const std::string& text, bool bold, bool italic) {
       )
       .value();
 
+      // reuse the existing FontHandle, if font is same as normal font
       if (fallbackSet.normal && font.path == fallbackSet.normal->path) {
         return fallbackSet.normal;
       }
+      // otherwise, create a new FontHandle
       return std::make_shared<Font>(std::move(font));
     };
 

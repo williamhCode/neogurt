@@ -2,6 +2,7 @@
 
 # REL = 1
 # TARGET = tests
+# TARGET = freetype_test
 
 # flags
 REL ?= 0

@@ -160,6 +160,17 @@ const GlyphInfo* Font::GetGlyphInfo(
     }
   }
 
+  // if (text == "😀") {
+  //   LOG_INFO(
+  //     "Font path: {}, text: {}, charcode: {:#x}, glyphIndex: {}",
+  //     path, text, (uint32_t)u32text[0], glyphIndex
+  //   );
+  //   // also log the whole u32 text
+  //   for (auto c : u32text) {
+  //     LOG_INFO("U32 char: {:#x}", (uint32_t)c);
+  //   }
+  // }
+
   if (glyphIndex == 0) return nullptr;
 
   FT_Load_Glyph(face.get(), glyphIndex, FT_LOAD_COLOR);
