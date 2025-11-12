@@ -6,11 +6,134 @@
 #include <cstdlib>
 #include <mdspan>
 #include <span>
+#include <unordered_set>
 
 #include "freetype/ftmodapi.h"
 #include "utils/unicode.hpp"
 
 using namespace wgpu;
+
+// Check if a character is emoji-by-default (no FE0F needed)
+// These are fully-qualified emoji from emoji-test.txt that don't require U+FE0F
+// Data source: docs/emoji/emoji-test.txt
+static bool IsEmojiByDefault(char32_t c) {
+  static const std::unordered_set<char32_t> emojiByDefault = {
+    0x231A, // ⌚ watch
+    0x231B, // ⌛ hourglass done
+    0x23E9, // ⏩ fast-forward button
+    0x23EA, // ⏪ fast reverse button
+    0x23EB, // ⏫ fast up button
+    0x23EC, // ⏬ fast down button
+    0x23F0, // ⏰ alarm clock
+    0x23F3, // ⏳ hourglass not done
+    0x25FD, // ◽ white medium-small square
+    0x25FE, // ◾ black medium-small square
+    0x2614, // ☔ umbrella with rain drops
+    0x2615, // ☕ hot beverage
+    0x2648, 0x2649, 0x264A, 0x264B, 0x264C, 0x264D, // ♈-♍ zodiac
+    0x264E, 0x264F, 0x2650, 0x2651, 0x2652, 0x2653, // ♎-♓ zodiac
+    0x267F, // ♿ wheelchair symbol
+    0x2693, // ⚓ anchor
+    0x26A1, // ⚡ high voltage
+    0x26AA, // ⚪ white circle
+    0x26AB, // ⚫ black circle
+    0x26BD, // ⚽ soccer ball
+    0x26BE, // ⚾ baseball
+    0x26C4, // ⛄ snowman without snow
+    0x26C5, // ⛅ sun behind cloud
+    0x26CE, // ⛎ ophiuchus
+    0x26D4, // ⛔ no entry
+    0x26EA, // ⛪ church
+    0x26F2, // ⛲ fountain
+    0x26F3, // ⛳ flag in hole
+    0x26F5, // ⛵ sailboat
+    0x26FA, // ⛺ tent
+    0x26FD, // ⛽ fuel pump
+    0x2705, // ✅ check mark button
+    0x270A, // ✊ raised fist
+    0x270B, // ✋ raised hand
+    0x2728, // ✨ sparkles
+    0x274C, // ❌ cross mark
+    0x274E, // ❎ cross mark button
+    0x2753, // ❓ red question mark
+    0x2754, // ❔ white question mark
+    0x2755, // ❕ white exclamation mark
+    0x2757, // ❗ red exclamation mark
+    0x2795, // ➕ plus
+    0x2796, // ➖ minus
+    0x2797, // ➗ divide
+    0x27B0, // ➰ curly loop
+    0x27BF, // ➿ double curly loop
+    0x2B1B, // ⬛ black large square
+    0x2B1C, // ⬜ white large square
+    0x2B50, // ⭐ star
+    0x2B55, // ⭕ hollow red circle
+  };
+
+  return emojiByDefault.contains(c);
+}
+
+// Check if a character should always be rendered as text (never emoji)
+// These characters have emoji variants but they are non-colored as well
+static bool AlwaysText(char32_t c) {
+  static const std::unordered_set<char32_t> textOnly = {
+    0x2640, // ♀ female sign
+    0x2642, // ♂ male sign
+    0x2695, // ⚕ medical symbol
+  };
+  return textOnly.contains(c);
+}
+
+// Check if a rendered glyph should be accepted based on emoji presentation rules
+// Returns true if glyph should be accepted, false if it should be rejected
+static bool ShouldAcceptGlyphForEmojiPresentation(
+  const std::u32string& u32text,
+  bool isColorEmoji
+) {
+  // Text-only characters should always render
+  if (AlwaysText(u32text[0])) {
+    return true;
+  }
+
+  // Check for variation selectors to determine if we should accept this glyph
+  bool hasEmojiSelector = false;  // U+FE0F - emoji presentation
+  for (char32_t c : u32text) {
+    if (c == 0xFE0F) {
+      hasEmojiSelector = true;
+      break;
+    }
+  }
+
+  // Check if character is in a "text-default but emoji-capable" range
+  // These characters are TEXT by default and only become emoji with FE0F
+  // If no FE0F is present, treat them as having FE0E (text selector)
+  bool hasTextSelector = false;   // U+FE0E - text presentation
+  if (!hasEmojiSelector && u32text.size() == 1) {
+    char32_t c = u32text[0];
+    bool isTextDefaultRange =
+      (c >= 0x2000 && c <= 0x27BF) ||  // Misc symbols, dingbats, arrows
+      (c >= 0x2900 && c <= 0x2BFF) ||  // Misc math symbols, arrows, geometric
+      (c >= 0x3000 && c <= 0x303F) ||  // CJK symbols
+      (c >= 0x3200 && c <= 0x32FF);    // Enclosed CJK
+
+    // Exclude emoji-by-default characters from text-default treatment
+    if (isTextDefaultRange && !IsEmojiByDefault(c)) {
+      hasTextSelector = true;
+    }
+  }
+
+  // Reject glyph if variation selector doesn't match glyph type
+  if (hasEmojiSelector && !isColorEmoji) {
+    // Text requested emoji presentation but font returned text glyph
+    return false;
+  }
+  if (hasTextSelector && isColorEmoji) {
+    // Text requested text presentation but font returned emoji glyph
+    return false;
+  }
+
+  return true;
+}
 
 static FT_FacePtr
 CreateFace(FT_Library library, const char* filepath, FT_Long face_index) {
@@ -160,17 +283,6 @@ const GlyphInfo* Font::GetGlyphInfo(
     }
   }
 
-  // if (text == "😀") {
-  //   LOG_INFO(
-  //     "Font path: {}, text: {}, charcode: {:#x}, glyphIndex: {}",
-  //     path, text, (uint32_t)u32text[0], glyphIndex
-  //   );
-  //   // also log the whole u32 text
-  //   for (auto c : u32text) {
-  //     LOG_INFO("U32 char: {:#x}", (uint32_t)c);
-  //   }
-  // }
-
   if (glyphIndex == 0) return nullptr;
 
   FT_Load_Glyph(face.get(), glyphIndex, FT_LOAD_COLOR);
@@ -178,6 +290,16 @@ const GlyphInfo* Font::GetGlyphInfo(
 
   FT_GlyphSlot slot = face->glyph;
   FT_Bitmap& bitmap = slot->bitmap;
+
+  if (bitmap.width == 0 || bitmap.rows == 0) {
+    return nullptr;
+  }
+
+  // Check emoji presentation rules
+  bool isColorEmoji = (bitmap.pixel_mode == FT_PIXEL_MODE_BGRA);
+  if (!ShouldAcceptGlyphForEmojiPresentation(u32text, isColorEmoji)) {
+    return nullptr;
+  }
 
   GlyphInfo glyphInfo{
     .localPoss = MakeRegion(
@@ -193,7 +315,7 @@ const GlyphInfo* Font::GetGlyphInfo(
   };
 
   // emoji glyphs
-  if (bitmap.pixel_mode == FT_PIXEL_MODE_BGRA) {
+  if (isColorEmoji) {
     std::extents shape{bitmap.rows, bitmap.width};
     // NOTE: assuming pitch is positive here, glyph will be flipped vertically if negative
     // https://freetype.org/freetype2/docs/glyphs/glyphs-7.html
