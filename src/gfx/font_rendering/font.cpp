@@ -13,10 +13,10 @@
 
 using namespace wgpu;
 
-// Check if a character is emoji-by-default (no FE0F needed)
-// These are fully-qualified emoji from emoji-test.txt that don't require U+FE0F
+// Check if a character is in the "text by default" range
+// These characters are rendered as text unless followed by U+FE0F
 // Data source: docs/emoji/emoji-test.txt
-static bool IsEmojiByDefault(char32_t c) {
+static bool IsTextByDefault(char32_t c) {
   static const std::unordered_set<char32_t> emojiByDefault = {
     0x231A, // ⌚ watch
     0x231B, // ⌛ hourglass done
@@ -70,7 +70,13 @@ static bool IsEmojiByDefault(char32_t c) {
     0x2B55, // ⭕ hollow red circle
   };
 
-  return emojiByDefault.contains(c);
+  bool isTextDefaultRange =
+    (c >= 0x2000 && c <= 0x27BF) ||  // Misc symbols, dingbats, arrows
+    (c >= 0x2900 && c <= 0x2BFF) ||  // Misc math symbols, arrows, geometric
+    (c >= 0x3000 && c <= 0x303F) ||  // CJK symbols
+    (c >= 0x3200 && c <= 0x32FF);    // Enclosed CJK
+
+  return isTextDefaultRange && !emojiByDefault.contains(c);
 }
 
 // Check if a character should always be rendered as text (never emoji)
@@ -109,15 +115,7 @@ static bool ShouldAcceptGlyphForEmojiPresentation(
   // If no FE0F is present, treat them as having FE0E (text selector)
   bool hasTextSelector = false;   // U+FE0E - text presentation
   if (!hasEmojiSelector && u32text.size() == 1) {
-    char32_t c = u32text[0];
-    bool isTextDefaultRange =
-      (c >= 0x2000 && c <= 0x27BF) ||  // Misc symbols, dingbats, arrows
-      (c >= 0x2900 && c <= 0x2BFF) ||  // Misc math symbols, arrows, geometric
-      (c >= 0x3000 && c <= 0x303F) ||  // CJK symbols
-      (c >= 0x3200 && c <= 0x32FF);    // Enclosed CJK
-
-    // Exclude emoji-by-default characters from text-default treatment
-    if (isTextDefaultRange && !IsEmojiByDefault(c)) {
+    if (IsTextByDefault(u32text[0])) {
       hasTextSelector = true;
     }
   }
@@ -207,10 +205,9 @@ Font::Font(
   if (FT_HAS_COLOR(face)) {
     std::span bitmapSizes(face->available_sizes, face->num_fixed_sizes);
     for (size_t i = 0; i < bitmapSizes.size(); i++) {
-      const FT_Bitmap_Size& size = bitmapSizes[i];
+      int y_ppem = bitmapSizes[i].y_ppem >> 6;
 
-      int y_ppem = size.y_ppem >> 6;
-      // choose the bitmap size if: equal size, at least 1.x size, or last size
+      // choose the bitmap size if it's of equal size, at least 1.x the size, or the last size
       // at least 1.x size makes sure emoji is crisp
       if (y_ppem == trueHeight || y_ppem >= trueHeight * 1.2 ||
           i + 1 == bitmapSizes.size()) {
@@ -230,7 +227,16 @@ Font::Font(
   }
 
   FT_Set_Pixel_Sizes(face.get(), trueWidth, trueHeight);
-  charSize.x = (face->size->metrics.max_advance >> 6) / dpiScale;
+
+  // Measure ASCII character width instead of max_advance to avoid issues
+  // with fonts containing wide characters (e.g., Chinese characters)
+  FT_UInt glyphIndex = FT_Get_Char_Index(face.get(), 'M');
+  if (glyphIndex != 0) {
+    FT_Load_Glyph(face.get(), glyphIndex, FT_LOAD_DEFAULT);
+    charSize.x = (face->glyph->advance.x >> 6) / dpiScale;
+  } else {
+    charSize.x = (face->size->metrics.max_advance >> 6) / dpiScale;
+  }
   charSize.y = (face->size->metrics.height >> 6) / dpiScale;
   ascender = (face->size->metrics.ascender >> 6) / dpiScale;
 
