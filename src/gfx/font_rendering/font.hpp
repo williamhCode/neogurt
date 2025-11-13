@@ -4,8 +4,9 @@
 #include "./glyph_info.hpp"
 #include "./texture_atlas.hpp"
 #include <expected>
-#include <string>
 #include <stdexcept>
+#include <string>
+#include <vector>
 
 #include <hb-cplusplus.hh>
 #include <hb-ft.h>
@@ -39,6 +40,9 @@ struct Font {
   using GlyphInfoMap = std::unordered_map<std::string, GlyphInfo>;
   GlyphInfoMap glyphInfoMap;
   GlyphInfoMap emojiGlyphInfoMap;
+
+  // OpenType font features (e.g., stylistic sets, character variants)
+  std::vector<hb_feature_t> features;
 
   static std::expected<Font, std::runtime_error>
   FromName(const FontDescriptorWithName& desc, float dpiScale);

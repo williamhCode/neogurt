@@ -5,6 +5,7 @@
 #include "glm/gtx/string_cast.hpp"
 #include <cstdlib>
 #include <mdspan>
+#include <optional>
 #include <span>
 #include <unordered_set>
 
@@ -120,17 +121,64 @@ static bool ShouldAcceptGlyphForEmojiPresentation(
     }
   }
 
-  // Reject glyph if variation selector doesn't match glyph type
+  // Text requested emoji presentation but font returned text glyph
   if (hasEmojiSelector && !isColorEmoji) {
-    // Text requested emoji presentation but font returned text glyph
     return false;
   }
+  // Text requested text presentation but font returned emoji glyph
   if (hasTextSelector && isColorEmoji) {
-    // Text requested text presentation but font returned emoji glyph
     return false;
   }
 
   return true;
+}
+
+// Parse OpenType feature string and convert to hb_feature_t
+// Format: "+<feature>", "-<feature>", or "<feature>=<value>"
+// Examples: "+ss01", "-calt", "cv35=1"
+static std::optional<hb_feature_t> ParseFontFeature(const std::string& featureStr) {
+  if (featureStr.empty()) return std::nullopt;
+
+  std::string tag;
+  uint32_t value = 1;
+
+  // Parse "+feature" (shorthand for feature=1)
+  if (featureStr[0] == '+') {
+    if (featureStr.length() < 2) return std::nullopt;
+    tag = featureStr.substr(1);
+    value = 1;
+  }
+  // Parse "-feature" (shorthand for feature=0)
+  else if (featureStr[0] == '-') {
+    if (featureStr.length() < 2) return std::nullopt;
+    tag = featureStr.substr(1);
+    value = 0;
+  }
+  // Parse "feature=value"
+  else {
+    size_t equalPos = featureStr.find('=');
+    if (equalPos != std::string::npos) {
+      tag = featureStr.substr(0, equalPos);
+      try {
+        value = std::stoul(featureStr.substr(equalPos + 1));
+      } catch (...) {
+        return std::nullopt;
+      }
+    } else {
+      // No +/- prefix and no =, invalid format
+      return std::nullopt;
+    }
+  }
+
+  if (tag.length() != 4) return std::nullopt;
+
+  hb_feature_t feature;
+  feature.tag = HB_TAG(tag[0], tag[1], tag[2], tag[3]);
+  feature.value = value;
+  feature.start = HB_FEATURE_GLOBAL_START;
+  feature.end = HB_FEATURE_GLOBAL_END;
+
+  return feature;
 }
 
 static FT_FacePtr
@@ -273,14 +321,17 @@ const GlyphInfo* Font::GetGlyphInfo(
   uint32_t glyphIndex = 0;
   std::u32string u32text = Utf8ToUtf32(text);
 
-  if (u32text.size() == 1) {
+  // Use HarfBuzz shaping if: multi-char text OR features enabled
+  if (u32text.size() == 1 && features.empty()) {
+    // Fast path: single character, no features
     glyphIndex = FT_Get_Char_Index(face.get(), u32text[0]);
 
-  } else { // shape the text if not single unicode character (e.g. ZWJ emojis)
+  } else {
+    // HarfBuzz path: shape with features (for multi-char or when features enabled)
     hb_buffer_reset(hbBuffer);
     hb_buffer_add_utf8(hbBuffer, text.c_str(), -1, 0, -1);
     hb_buffer_guess_segment_properties(hbBuffer);
-    hb_shape(hbFont, hbBuffer, nullptr, 0);
+    hb_shape(hbFont, hbBuffer, features.data(), features.size());
 
     uint len = hb_buffer_get_length(hbBuffer);
     if (len > 0) {
