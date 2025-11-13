@@ -18,13 +18,13 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [macos-15, macos-13]
+        os: [macos-15, macos-15-intel]
         include:
           - os: macos-15
             os-name: macos
             arch: arm64
 
-          - os: macos-13
+          - os: macos-15-intel
             os-name: macos
             arch: x86
 
