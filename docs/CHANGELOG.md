@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add icon to app
 - Add session_edit command
 - Add automatic font fallback
+- Add proper emoji rendering behavior, adheres to Unicode standard
 
 ### Changed
 - Use compindex for floating window (nvim 0.12+)

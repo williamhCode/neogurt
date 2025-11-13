@@ -176,10 +176,9 @@ void FontFamily::UpdateFonts(std::function<FontHandle(const FontHandle&)> create
   textureAtlas = TextureAtlas<false>(DefaultFont().charSize.y, dpiScale);
   colorTextureAtlas = TextureAtlas<true>(DefaultFont().charSize.y, dpiScale);
 
-  // Clear LastResort cache so it gets recreated at the new size
-  lastResortCache.clear();
-  lastResortFont.reset();
-  lastResortFontLoadFailed = false;
+  if (lastResortFont.has_value()) {
+    lastResortFont = createFont(*lastResortFont);
+  }
 }
 
 void FontFamily::UpdateLinespace(int _linespace) {
