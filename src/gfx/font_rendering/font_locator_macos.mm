@@ -147,5 +147,12 @@ std::string FindFallbackFontForCharacter(const std::string& text) {
   std::string result = [(NSString*)fontName UTF8String];
   CFRelease(fontName);
 
+  // Reject private system fonts (names starting with ".")
+  // CoreText may return private font names like ".AppleColorEmojiUI",
+  // but these can't be loaded directly. Return empty to prevent loading attempts.
+  if (!result.empty() && result[0] == '.') {
+    return "";
+  }
+
   return result;
 }
