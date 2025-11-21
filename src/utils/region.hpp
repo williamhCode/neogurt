@@ -2,7 +2,6 @@
 
 #include <array>
 #include "utils/round.hpp"
-#include "glm/common.hpp"
 #include "glm/ext/vector_float2.hpp"
 
 using Region = std::array<glm::vec2, 4>;

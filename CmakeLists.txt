@@ -63,7 +63,6 @@ target_link_libraries(HarfBuzz INTERFACE ${HARFBUZZ_LINK_LIBRARIES})
 
 # set(UTFCPP_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/deps/utfcpp/source)
 
-# temp fix for https://github.com/blend2d/blend2d/issues/216
 set(BLEND2D_NO_JIT OFF)
 set(BLEND2D_STATIC ON)
 add_subdirectory(deps/blend2d EXCLUDE_FROM_ALL)

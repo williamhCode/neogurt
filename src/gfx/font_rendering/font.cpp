@@ -133,54 +133,6 @@ static bool ShouldAcceptGlyphForEmojiPresentation(
   return true;
 }
 
-// Parse OpenType feature string and convert to hb_feature_t
-// Format: "+<feature>", "-<feature>", or "<feature>=<value>"
-// Examples: "+ss01", "-calt", "cv35=1"
-static std::optional<hb_feature_t> ParseFontFeature(const std::string& featureStr) {
-  if (featureStr.empty()) return std::nullopt;
-
-  std::string tag;
-  uint32_t value = 1;
-
-  // Parse "+feature" (shorthand for feature=1)
-  if (featureStr[0] == '+') {
-    if (featureStr.length() < 2) return std::nullopt;
-    tag = featureStr.substr(1);
-    value = 1;
-  }
-  // Parse "-feature" (shorthand for feature=0)
-  else if (featureStr[0] == '-') {
-    if (featureStr.length() < 2) return std::nullopt;
-    tag = featureStr.substr(1);
-    value = 0;
-  }
-  // Parse "feature=value"
-  else {
-    size_t equalPos = featureStr.find('=');
-    if (equalPos != std::string::npos) {
-      tag = featureStr.substr(0, equalPos);
-      try {
-        value = std::stoul(featureStr.substr(equalPos + 1));
-      } catch (...) {
-        return std::nullopt;
-      }
-    } else {
-      // No +/- prefix and no =, invalid format
-      return std::nullopt;
-    }
-  }
-
-  if (tag.length() != 4) return std::nullopt;
-
-  hb_feature_t feature;
-  feature.tag = HB_TAG(tag[0], tag[1], tag[2], tag[3]);
-  feature.value = value;
-  feature.start = HB_FEATURE_GLOBAL_START;
-  feature.end = HB_FEATURE_GLOBAL_END;
-
-  return feature;
-}
-
 static FT_FacePtr
 CreateFace(FT_Library library, const char* filepath, FT_Long face_index) {
   FT_Face face;

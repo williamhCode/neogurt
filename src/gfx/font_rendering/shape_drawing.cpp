@@ -219,7 +219,7 @@ static const auto shapeDescMap = [] {
   c[0x259f] = Quadrant{UR, DL, DR};
 
   // braille characters
-  for (char32_t charcode = 0x2801; charcode <= 0x28FF; charcode++) {
+  for (char32_t charcode = 0x2800; charcode <= 0x28FF; charcode++) {
     c[charcode] = Braille{charcode};
   }
 
@@ -230,7 +230,7 @@ const GlyphInfo*
 ShapeDrawing::GetGlyphInfo(const std::string& text, TextureAtlas<false>& textureAtlas) {
   char32_t charcode = Utf8ToChar32(text);
   bool isShape = (charcode >= 0x2500 && charcode <= 0x259F) ||
-                 (charcode >= 0x2801 && charcode <= 0x28FF);
+                 (charcode >= 0x2800 && charcode <= 0x28FF);
   if (!isShape) {
     return nullptr;
   }
@@ -248,10 +248,6 @@ ShapeDrawing::GetGlyphInfo(const std::string& text, TextureAtlas<false>& texture
   }
 
   auto [data, localPoss] = pen.Draw(shapeDescIt->second);
-  if (data.empty()) {
-    LOG_ERR("BoxDrawing::GetGlyphInfo: empty data for charcode: 0x{:x}", (uint32_t)charcode);
-    return nullptr;
-  }
 
   auto pair = glyphInfoMap.emplace(
     charcode,

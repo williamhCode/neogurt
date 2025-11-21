@@ -65,6 +65,7 @@ void ShowTitle(SDL_Window* sdlWindow, bool show) {
   }
 }
 
+// call in main thread only
 void SetTitlebarStyle(SDL_Window* sdlWindow, std::string_view titlebar) {
   NSWindow* window = GetNSWindow(sdlWindow);
 
