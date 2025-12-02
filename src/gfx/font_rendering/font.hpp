@@ -3,6 +3,7 @@
 #include "./font_descriptor.hpp"
 #include "./glyph_info.hpp"
 #include "./texture_atlas.hpp"
+#include "utils/logger.hpp"
 #include <expected>
 #include <stdexcept>
 #include <string>

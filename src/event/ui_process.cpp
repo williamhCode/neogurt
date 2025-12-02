@@ -171,29 +171,7 @@ void ProcessUiEvents(SessionHandle& session) {
           for (auto *event : winEvents) {
             std::visit(overloaded{
               [&](WinPos& e) {
-                // TODO: find a more robust way to handle
-                // grid and win events not syncing up
-
-                // LOG_INFO("WinPos {} {} {}", e.grid, e.width, e.height);
-                // if no corresponding GridResize was sent, defer event
-                // auto it = editorState.gridManager.grids.find(e.grid);
-                // if (it == editorState.gridManager.grids.end()) {
-                //   LOG_WARN("WinPos: grid {} not found", e.grid);
-                //   // uiEvents.queue[0].emplace_front(e);
-                //   return;
-                // }
-
                 editorState.winManager.Pos(e);
-
-                // // defer event to next flush if size mismatch
-                // auto& grid = it->second;
-                // if (grid.width == e.width && grid.height == e.height) {
-                //   editorState.winManager.Pos(e);
-                // } else {
-                //   LOG_INFO("deferred WinPos {} {} {} {} {}",
-                //     e.grid, grid.width, grid.height, e.width, e.height);
-                //   uiEvents.queue[0].emplace_front(e);
-                // }
               },
               [&](WinFloatPos& e) {
                 editorState.winManager.FloatPos(e);

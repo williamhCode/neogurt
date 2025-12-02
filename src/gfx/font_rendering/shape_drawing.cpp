@@ -273,7 +273,6 @@ const GlyphInfo* ShapeDrawing::GetGlyphInfo(
   auto [data, localPoss] = pen.Draw(Underline{underlineType});
   if (data.empty()) {
     LOG_ERR("BoxDrawing::GetGlyphInfo: empty data for underline ({})", (int)underlineType);
-    return nullptr;
   }
 
   auto pair = underlineGlyphInfoMap.emplace(

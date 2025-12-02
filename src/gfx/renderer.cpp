@@ -193,31 +193,29 @@ textureReset:
       }
 
       try {
-        if (!cell.text.empty() && cell.text != " ") {
-          // this may throw TextureResizeError (thrown by TextureAtlas::Resize())
-          if (const auto* glyphInfo =
-                fontFamily.GetGlyphInfo(cell.text, hl.bold, hl.italic)) {
+        // this may throw TextureResizeError (thrown by TextureAtlas::Resize())
+        if (const auto* glyphInfo =
+              fontFamily.GetGlyphInfo(cell.text, hl.bold, hl.italic)) {
 
-            glm::vec2 textQuadPos{
-              textOffset.x,
-              textOffset.y + (glyphInfo->useAscender ? ascender : 0),
-            };
+          glm::vec2 textQuadPos{
+            textOffset.x,
+            textOffset.y + (glyphInfo->useAscender ? ascender : 0),
+          };
 
-            glm::vec4 foreground{};
-            QuadRenderData<TextQuadVertex, true>* quadData;
-            if (glyphInfo->isEmoji) {
-              quadData = &emojiData;
-            } else {
-              foreground = hlManager.GetForeground(hl);
-              quadData = &textData;
-            }
+          glm::vec4 foreground{};
+          QuadRenderData<TextQuadVertex, true>* quadData;
+          if (glyphInfo->isEmoji) {
+            quadData = &emojiData;
+          } else {
+            foreground = hlManager.GetForeground(hl);
+            quadData = &textData;
+          }
 
-            auto& quad = quadData->NextQuad();
-            for (size_t i = 0; i < 4; i++) {
-              quad[i].position = textQuadPos + glyphInfo->localPoss[i];
-              quad[i].regionCoord = glyphInfo->atlasRegion[i];
-              quad[i].foreground = foreground;
-            }
+          auto& quad = quadData->NextQuad();
+          for (size_t i = 0; i < 4; i++) {
+            quad[i].position = textQuadPos + glyphInfo->localPoss[i];
+            quad[i].regionCoord = glyphInfo->atlasRegion[i];
+            quad[i].foreground = foreground;
           }
         }
 
@@ -349,48 +347,39 @@ void Renderer::RenderCursorMask(
   if (!win.grid.ValidCoords(cursor.row, cursor.col)) return;
   auto& cell = win.grid.lines[cursor.row][cursor.col];
 
-  if (!cell.text.empty() && cell.text != " ") {
-    const auto& hl = hlManager.hlTable[cell.hlId];
+  const auto& hl = hlManager.hlTable[cell.hlId];
+  if (const auto* glyphInfo =
+        fontFamily.GetGlyphInfo(cell.text, hl.bold, hl.italic)) {
 
-    if (const auto* glyphInfo =
-          fontFamily.GetGlyphInfo(cell.text, hl.bold, hl.italic)) {
+    cursor.onEmoji = glyphInfo->isEmoji;
 
-      cursor.onEmoji = glyphInfo->isEmoji;
+    glm::vec2 textQuadPos{0, glyphInfo->useAscender ? fontFamily.GetAscender() : 0};
 
-      glm::vec2 textQuadPos{0, glyphInfo->useAscender ? fontFamily.GetAscender() : 0};
-
-      textMaskData.ResetCounts();
-      auto& quad = textMaskData.NextQuad();
-      for (size_t i = 0; i < 4; i++) {
-        quad[i].position = textQuadPos + glyphInfo->localPoss[i];
-        quad[i].regionCoord = glyphInfo->atlasRegion[i];
-      }
-      textMaskData.WriteBuffers();
-
-      textMaskRPD.cColorAttachments[0].view = cursor.maskRenderTexture.textureView;
-      RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textMaskRPD);
-      passEncoder.SetPipeline(
-        glyphInfo->isEmoji ? ctx.pipeline.emojiMaskRPL : ctx.pipeline.textMaskRPL
-      );
-      passEncoder.SetBindGroup(0, cursor.maskRenderTexture.camera.viewProjBG);
-      if (glyphInfo->isEmoji) {
-        passEncoder.SetBindGroup(1, fontFamily.colorTextureAtlas.textureSizeBG);
-        passEncoder.SetBindGroup(
-          2, fontFamily.colorTextureAtlas.renderTexture.textureBG
-        );
-      } else {
-        passEncoder.SetBindGroup(1, fontFamily.textureAtlas.textureSizeBG);
-        passEncoder.SetBindGroup(2, fontFamily.textureAtlas.renderTexture.textureBG);
-      }
-      textMaskData.Render(passEncoder);
-      passEncoder.End();
-
-    } else {
-      // just clear the texture if there's nothing
-      textMaskRPD.cColorAttachments[0].view = cursor.maskRenderTexture.textureView;
-      RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textMaskRPD);
-      passEncoder.End();
+    textMaskData.ResetCounts();
+    auto& quad = textMaskData.NextQuad();
+    for (size_t i = 0; i < 4; i++) {
+      quad[i].position = textQuadPos + glyphInfo->localPoss[i];
+      quad[i].regionCoord = glyphInfo->atlasRegion[i];
     }
+    textMaskData.WriteBuffers();
+
+    textMaskRPD.cColorAttachments[0].view = cursor.maskRenderTexture.textureView;
+    RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textMaskRPD);
+    passEncoder.SetPipeline(
+      glyphInfo->isEmoji ? ctx.pipeline.emojiMaskRPL : ctx.pipeline.textMaskRPL
+    );
+    passEncoder.SetBindGroup(0, cursor.maskRenderTexture.camera.viewProjBG);
+    if (glyphInfo->isEmoji) {
+      passEncoder.SetBindGroup(1, fontFamily.colorTextureAtlas.textureSizeBG);
+      passEncoder.SetBindGroup(
+        2, fontFamily.colorTextureAtlas.renderTexture.textureBG
+      );
+    } else {
+      passEncoder.SetBindGroup(1, fontFamily.textureAtlas.textureSizeBG);
+      passEncoder.SetBindGroup(2, fontFamily.textureAtlas.renderTexture.textureBG);
+    }
+    textMaskData.Render(passEncoder);
+    passEncoder.End();
 
   } else {
     // just clear the texture if there's nothing

@@ -300,10 +300,6 @@ const GlyphInfo* Font::GetGlyphInfo(
   FT_GlyphSlot slot = face->glyph;
   FT_Bitmap& bitmap = slot->bitmap;
 
-  if (bitmap.width == 0 || bitmap.rows == 0) {
-    return nullptr;
-  }
-
   // Check emoji presentation rules
   bool isColorEmoji = (bitmap.pixel_mode == FT_PIXEL_MODE_BGRA);
   if (!ShouldAcceptGlyphForEmojiPresentation(u32text, isColorEmoji)) {

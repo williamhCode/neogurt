@@ -18,16 +18,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Simplify msg window and ime window rendering logic
 
 ### Fixed
-- FontFamily::UpdateLinespace not setting topLinespace.
-- Bundle SF Mono (default font) so no crashing if system doesn't have SF Mono.
+- FontFamily::UpdateLinespace not setting topLinespace
+- Bundle SF Mono (default font) so no crashing if system doesn't have SF Mono
 - Fix dpiScale not updating for fonts
 - Proper TextureAtlas resizing (wasn't clearing all the glyph info maps before leading
 to rendering artifacts)
+- Fix rendering whitespace characters causing repeated font creation
 
 ## [0.2.2] - 2025-05-08
 
 ### Fixed
-- `Client::DoRead()` crashing due to use after free error. (0.2.1 was incorrect fix)
+- `Client::DoRead()` crashing due to use after free error (0.2.1 was incorrect fix)
 
 ## [0.2.1] - 2025-05-05 [YANKED]
 
@@ -37,14 +38,14 @@ to rendering artifacts)
 ## [0.2.0] - 2025-05-05
 
 ### Added
-- Emoji Rendering for joined emojis.
-- Options can be set dynamically.
+- Emoji Rendering for joined emojis
+- Options can be set dynamically
 
 ### Changed
-- Rewrote startup code to be async.
+- Rewrote startup code to be async
 
 ### Fixed
 - Texture atlas blowing up
 - A lot of stuff
 
-> Previous changes before 0.2.0 were untracked in this changelog.
+> Previous changes before 0.2.0 were untracked in this changelog

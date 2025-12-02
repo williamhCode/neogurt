@@ -122,6 +122,7 @@ FontFamily::FromGuifont(std::string guifont, int linespace, float dpiScale) {
 }
 
 void FontFamily::TryChangeDpiScale(float _dpiScale) {
+  if (dpiScale == _dpiScale) return;
   dpiScale = _dpiScale;
 
   UpdateFonts([&](const FontHandle& fontHandle) -> FontHandle {
@@ -191,6 +192,9 @@ void FontFamily::UpdateLinespace(int _linespace) {
 
 const GlyphInfo*
 FontFamily::GetGlyphInfo(const std::string& text, bool bold, bool italic) {
+  // optimize for empty text
+  if (text.empty() || text == " ") return nullptr;
+
   // Check if this text is in the LastResort cache (unknown character)
   if (lastResortCache.contains(text)) {
     if (lastResortFontLoadFailed) {

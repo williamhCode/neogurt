@@ -46,4 +46,5 @@ package:
 	cmake --build build/release --target package
 
 xcode-setup:
-	cmake . -B xcode -GXcode -D CMAKE_OSX_SYSROOT=$$(xcrun --show-sdk-path)
+	cmake . -B xcode \
+		-G Xcode
