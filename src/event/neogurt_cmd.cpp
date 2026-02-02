@@ -39,8 +39,8 @@ void ProcessNeogurtCmd(
       request.SetResult(success);
 
     } else if (cmd == "session_restart") {
-      int id = sessionManager.SessionRestart(convId(), conv("curr_dir"));
-      if (id == 0) {
+      int id = sessionManager.SessionRestart(convId(), conv("cmd"), conv("curr_dir"));
+      if (id == -1) {
         request.SetResult(nil_t());
       } else {
         request.SetResult(id);
@@ -82,6 +82,6 @@ void ProcessNeogurtCmd(
     }
 
   } catch (const std::exception& e) {
-    request.SetError(std::string("Neogurt client error: ") + e.what());
+    request.SetError(e.what());
   }
 }

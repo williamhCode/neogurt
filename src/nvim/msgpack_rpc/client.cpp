@@ -203,9 +203,26 @@ void Client::DoRead() {
                   msgpack::object_handle(response.result, std::move(handle.zone()))
                 );
               } else {
-                promise.set_exception(std::make_exception_ptr(std::runtime_error(
-                  "rpc::Client response error: " + ToString(response.error)
-                )));
+                // nvim error format: [error_type, error_message]
+                std::string errMsg;
+                if (response.error.type == msgpack::type::ARRAY &&
+                    response.error.via.array.size >= 2 &&
+                    response.error.via.array.ptr[1].type == msgpack::type::STR) {
+                  auto& str = response.error.via.array.ptr[1].via.str;
+                  errMsg = std::string(str.ptr, str.size);
+
+                  // Strip "Lua: " prefix
+                  if (errMsg.starts_with("Lua: ")) {
+                    errMsg = errMsg.substr(5);
+                  }
+                  // Remove stack traceback
+                  if (auto pos = errMsg.find("\nstack traceback:"); pos != std::string::npos) {
+                    errMsg = errMsg.substr(0, pos);
+                  }
+                } else {
+                  errMsg = ToString(response.error);
+                }
+                promise.set_exception(std::make_exception_ptr(std::runtime_error(errMsg)));
               }
               responses.erase(it);
 

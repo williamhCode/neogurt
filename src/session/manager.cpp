@@ -251,14 +251,42 @@ bool SessionManager::SessionKill(int id) {
   return true;
 }
 
-int SessionManager::SessionRestart(int id, bool currDir) {
+int SessionManager::SessionRestart(int id, const std::string& cmd, bool currDir) {
+  using namespace std::chrono_literals;
+
   auto it = sessions.find(id);
   if (it == sessions.end()) {
-    return 0;
+    return -1;
   }
   auto& session = it->second;
 
-  session->nvim.client->TryDisconnect();
+  // force disconnect if cmd is empty
+  if (cmd.empty()) {
+    session->nvim.client->TryDisconnect();
+
+  } else {
+    auto response = session->nvim.ExecLua(R"(
+      local cmd = ...
+      vim.v.errmsg = ''
+      vim.cmd('silent! ' .. cmd)
+      if vim.v.errmsg ~= '' then
+        error(vim.v.errmsg, 0)
+      end
+      error('session_restart cmd=' .. cmd .. ' did not quit, change it to command that quits nvim', 0)
+    )", {cmd});
+
+    for (int i = 0; i < 50; i++) { // 500ms max
+      if (response.wait_for(10ms) == std::future_status::ready) {
+        // Will throw if quit failed - propagates to ProcessNeogurtCmd
+        response.get();
+        break;
+      }
+
+      if (!session->nvim.client->IsConnected()) {
+        break;
+      }
+    }
+  }
 
   auto dir = currDir ? session->editorState.currDir : session->dir;
   int newId = SessionNew({session->name, dir});

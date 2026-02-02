@@ -63,6 +63,10 @@ local cmds_table = {
   -- returns new session id
   session_restart = {
     id = 0,
+    -- use cmd as the kill command (e.g. qall)
+    -- if empty, will force kill session (like session_kill)
+    -- if cmd returns an error when run, restart will not happen
+    cmd = "",
     curr_dir = false, -- use cwd instead of session dir
   },
   -- returns success (bool)
@@ -113,7 +117,11 @@ vim.api.nvim_create_user_command("Neogurt", function(cmd_opts)
   end
 
   -- print command output
-  local result = vim.g.neogurt_cmd(cmd, opts)
+  local ok, result = pcall(vim.g.neogurt_cmd, cmd, opts)
+  if not ok then
+    vim.api.nvim_err_writeln(result)
+    return
+  end
   if result ~= vim.NIL then
     vim.print(result)
   end

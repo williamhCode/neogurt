@@ -123,6 +123,10 @@ local cmds_table = {
   -- returns new session id
   session_restart = {
     id = 0,
+    -- use cmd as the kill command (e.g. qall)
+    -- if empty, will force kill session (like session_kill)
+    -- if cmd returns an error when run, restart will not happen
+    cmd = "", 
     curr_dir = false, -- use cwd instead of session dir
   },
   -- returns success (bool)
@@ -182,7 +186,7 @@ if vim.g.neogurt then
   -- session mappings
   map(mode, "<D-l>", "<cmd>Neogurt session_prev<cr>")
   map(mode, "<D-r>", "<cmd>Neogurt session_select sort=time<cr>")
-  map(mode, "<D-R>", "<cmd>Neogurt session_restart<cr>")
+  map(mode, "<D-R>", "<cmd>Neogurt session_restart cmd=qa<cr>")
 
   -- sessionizer (create or select session)
   local choose_session = function(startup)
