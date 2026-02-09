@@ -228,9 +228,12 @@ textureReset:
             const auto& region = glyphInfo->localPoss;
             float thickness = region[3].y - region[0].y;
 
+            float relPos = ascender - underlinePosition - thickness / 2;
+            relPos = std::min(relPos, charSize.y - thickness); // don't go below the cell
+
             glm::vec2 quadPos{
               textOffset.x,
-              textOffset.y + ascender - underlinePosition - (thickness / 2),
+              textOffset.y + relPos
             };
             quadPos.y = RoundToPixel(quadPos.y, dpiScale);
 
@@ -348,6 +351,7 @@ void Renderer::RenderCursorMask(
   auto& cell = win.grid.lines[cursor.row][cursor.col];
 
   const auto& hl = hlManager.hlTable[cell.hlId];
+
   if (const auto* glyphInfo =
         fontFamily.GetGlyphInfo(cell.text, hl.bold, hl.italic)) {
 

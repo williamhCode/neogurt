@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Proper TextureAtlas resizing (wasn't clearing all the glyph info maps before leading
 to rendering artifacts)
 - Fix rendering whitespace characters causing repeated font creation
+- Fix underline rendering cutting off sometimes (made it so underline always renders within cell)
 
 ## [0.2.2] - 2025-05-08
 
