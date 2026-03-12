@@ -167,6 +167,7 @@ textureReset:
   const glm::vec2 charSize = fontFamily.GetCharSize();
   const float ascender = fontFamily.GetAscender();
   const float underlinePosition = fontFamily.DefaultFont().underlinePosition;
+  const float strikeoutPosition = fontFamily.DefaultFont().strikeoutPosition;
   const float dpiScale = fontFamily.dpiScale;
 
   for (size_t row = 0; row < rows; row++) {
@@ -216,6 +217,28 @@ textureReset:
             quad[i].position = textQuadPos + glyphInfo->localPoss[i];
             quad[i].regionCoord = glyphInfo->atlasRegion[i];
             quad[i].foreground = foreground;
+          }
+        }
+
+        if (hl.strikethrough) {
+          if (const auto* glyphInfo = fontFamily.GetGlyphInfo(StrikethroughTag{})) {
+            const auto& region = glyphInfo->localPoss;
+            float thickness = region[3].y - region[0].y;
+
+            float relPos = ascender - strikeoutPosition - thickness / 2;
+            relPos = std::min(relPos, charSize.y - thickness);
+
+            glm::vec2 quadPos{textOffset.x, textOffset.y + relPos};
+            quadPos.y = RoundToPixel(quadPos.y, dpiScale);
+
+            glm::vec4 color = hlManager.GetForeground(hl);
+
+            auto& quad = textData.NextQuad();
+            for (size_t i = 0; i < 4; i++) {
+              quad[i].position = quadPos + glyphInfo->localPoss[i];
+              quad[i].regionCoord = glyphInfo->atlasRegion[i];
+              quad[i].foreground = color;
+            }
           }
         }
 

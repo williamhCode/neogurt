@@ -4,8 +4,10 @@
 
 using namespace shape;
 
-ShapeDrawing::ShapeDrawing(glm::vec2 charSize, float underlineThickness, float dpiScale)
-    : pen(charSize, underlineThickness, dpiScale) {
+ShapeDrawing::ShapeDrawing(
+  glm::vec2 charSize, float underlineThickness, float strikeoutThickness, float dpiScale
+)
+    : pen(charSize, underlineThickness, strikeoutThickness, dpiScale) {
 }
 
 static const auto shapeDescMap = [] {
@@ -285,4 +287,25 @@ const GlyphInfo* ShapeDrawing::GetGlyphInfo(
   );
 
   return &(pair.first->second);
+}
+
+const GlyphInfo* ShapeDrawing::GetGlyphInfo(
+  StrikethroughTag /*unused*/, TextureAtlas<false>& textureAtlas
+) {
+  if (strikethroughGlyphInfo.has_value()) {
+    return &(*strikethroughGlyphInfo);
+  }
+
+  auto [data, localPoss] = pen.Draw(Strikethrough{});
+  if (data.empty()) {
+    LOG_ERR("ShapeDrawing::GetGlyphInfo: empty data for strikethrough");
+  }
+
+  strikethroughGlyphInfo = GlyphInfo{
+    .localPoss = localPoss,
+    .atlasRegion = textureAtlas.AddGlyph(data),
+    .useAscender = false,
+  };
+
+  return &(*strikethroughGlyphInfo);
 }

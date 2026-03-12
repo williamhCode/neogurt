@@ -37,6 +37,8 @@ struct Font {
   float ascender; // doesn't take in account linespace
   float underlinePosition;
   float underlineThickness;
+  float strikeoutPosition;
+  float strikeoutThickness;
 
   using GlyphInfoMap = std::unordered_map<std::string, GlyphInfo>;
   GlyphInfoMap glyphInfoMap;

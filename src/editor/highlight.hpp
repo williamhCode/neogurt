@@ -7,6 +7,8 @@
 #include <unordered_map>
 #include <string>
 
+struct StrikethroughTag {};
+
 enum class UnderlineType : uint32_t {
   Underline,
   Undercurl,

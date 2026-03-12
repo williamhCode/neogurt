@@ -71,6 +71,7 @@ struct FontFamily {
 
   const GlyphInfo* GetGlyphInfo(const std::string& text, bool bold, bool italic);
   const GlyphInfo* GetGlyphInfo(UnderlineType underlineType);
+  const GlyphInfo* GetGlyphInfo(StrikethroughTag);
 
   void ResetTextureAtlas(TextureResizeError error);
 

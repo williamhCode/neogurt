@@ -85,6 +85,8 @@ struct Underline {
   UnderlineType underlineType;
 };
 
+struct Strikethrough {};
+
 using DrawDesc = std::variant<
   HLine,
   VLine,
@@ -102,7 +104,8 @@ using DrawDesc = std::variant<
   Shade,
   Quadrant,
   Braille,
-  Underline>;
+  Underline,
+  Strikethrough>;
 
 struct Pen {
 private:
@@ -121,6 +124,7 @@ private:
   float heavyWidth;
 
   float underlineThickness;
+  float strikeoutThickness;
 
   // internal data after drawing
   // Draw() returns a view on blData.pixelData
@@ -144,6 +148,7 @@ private:
   void DrawBraille(const Braille& desc);
 
   void DrawUnderline(const Underline& desc);
+  void DrawStrikethrough();
 
 public:
   using BufType = std::mdspan<uint32_t, std::dextents<size_t, 2>, std::layout_stride>;
@@ -153,7 +158,12 @@ public:
   };
 
   Pen() = default;
-  Pen(glm::vec2 charSize, float underlineThickness, float dpiScale);
+  Pen(
+    glm::vec2 charSize,
+    float underlineThickness,
+    float strikeoutThickness,
+    float dpiScale
+  );
   ImageData Draw(const DrawDesc& desc);
 };
 

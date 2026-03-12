@@ -10,7 +10,12 @@
 
 namespace shape {
 
-Pen::Pen(glm::vec2 charSize, float _underlineThickness, float _dpiScale)
+Pen::Pen(
+  glm::vec2 charSize,
+  float _underlineThickness,
+  float _strikeoutThickness,
+  float _dpiScale
+)
     : dpiScale(_dpiScale) {
   xsize = charSize.x * dpiScale;
   ysize = charSize.y * dpiScale;
@@ -22,8 +27,7 @@ Pen::Pen(glm::vec2 charSize, float _underlineThickness, float _dpiScale)
   heavyWidth = xsize * 0.22;
 
   underlineThickness = _underlineThickness * dpiScale;
-  // make sure underline at least one virtual pixel
-  underlineThickness = std::max(underlineThickness, dpiScale);
+  strikeoutThickness = _strikeoutThickness * dpiScale;
 }
 
 float Pen::ToWidth(Weight weight) {
@@ -450,6 +454,10 @@ void Pen::DrawUnderline(const Underline& desc) {
   }
 }
 
+void Pen::DrawStrikethrough() {
+  ctx.fillRect(0, 0, xsize, strikeoutThickness);
+}
+
 Pen::ImageData Pen::Draw(const DrawDesc& desc) {
   // init ---------------------------
   int xoffset = 0;
@@ -493,6 +501,7 @@ Pen::ImageData Pen::Draw(const DrawDesc& desc) {
     [this](const Quadrant& desc) { DrawQuadrant(desc); },
     [this](const Braille& desc) { DrawBraille(desc); },
     [this](const Underline& desc) { DrawUnderline(desc); },
+    [this](const Strikethrough&) { DrawStrikethrough(); },
   }, desc);
 
   // end -------------------------------

@@ -103,7 +103,8 @@ FontFamily::FromGuifont(std::string guifont, int linespace, float dpiScale) {
         }) |
         std::ranges::to<std::vector>(),
       .shapeDrawing = ShapeDrawing(
-        fontFamily.GetCharSize(), fontFamily.DefaultFont().underlineThickness, dpiScale
+        fontFamily.GetCharSize(), fontFamily.DefaultFont().underlineThickness,
+        fontFamily.DefaultFont().strikeoutThickness, dpiScale
       ),
 
       .textureAtlas =
@@ -172,8 +173,10 @@ void FontFamily::UpdateFonts(std::function<FontHandle(const FontHandle&)> create
   }
 
   fonts = std::move(newFonts);
-  shapeDrawing =
-    ShapeDrawing(GetCharSize(), DefaultFont().underlineThickness, dpiScale);
+  shapeDrawing = ShapeDrawing(
+    GetCharSize(), DefaultFont().underlineThickness, DefaultFont().strikeoutThickness,
+    dpiScale
+  );
   textureAtlas = TextureAtlas<false>(DefaultFont().charSize.y, dpiScale);
   colorTextureAtlas = TextureAtlas<true>(DefaultFont().charSize.y, dpiScale);
 
@@ -186,8 +189,10 @@ void FontFamily::UpdateLinespace(int _linespace) {
   // NOTE: updates to new box drawing chars, but old ones stay in the atlas
   linespace = _linespace;
   topLinespace = RoundToPixel(linespace / 2.0, dpiScale);
-  shapeDrawing =
-    ShapeDrawing(GetCharSize(), DefaultFont().underlineThickness, dpiScale);
+  shapeDrawing = ShapeDrawing(
+    GetCharSize(), DefaultFont().underlineThickness, DefaultFont().strikeoutThickness,
+    dpiScale
+  );
 }
 
 const GlyphInfo*
@@ -316,6 +321,10 @@ const GlyphInfo* FontFamily::GetGlyphInfo(UnderlineType underlineType) {
   return shapeDrawing.GetGlyphInfo(underlineType, textureAtlas);
 }
 
+const GlyphInfo* FontFamily::GetGlyphInfo(StrikethroughTag tag) {
+  return shapeDrawing.GetGlyphInfo(tag, textureAtlas);
+}
+
 void FontFamily::ResetTextureAtlas(TextureResizeError error) {
   switch (error) {
     case TextureResizeError::Normal:
@@ -332,6 +341,7 @@ void FontFamily::ResetTextureAtlas(TextureResizeError error) {
       }
       shapeDrawing.glyphInfoMap = {};
       shapeDrawing.underlineGlyphInfoMap = {};
+      shapeDrawing.strikethroughGlyphInfo = {};
       break;
 
     case TextureResizeError::Colored:

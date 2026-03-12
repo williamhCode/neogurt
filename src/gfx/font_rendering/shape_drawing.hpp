@@ -20,8 +20,15 @@ struct ShapeDrawing {
   using UnderlineGlyphInfoMap = std::unordered_map<UnderlineType, GlyphInfo>;
   UnderlineGlyphInfoMap underlineGlyphInfoMap;
 
+  std::optional<GlyphInfo> strikethroughGlyphInfo;
+
   ShapeDrawing() = default;
-  ShapeDrawing(glm::vec2 charSize, float underlineThickness, float dpiScale);
+  ShapeDrawing(
+    glm::vec2 charSize,
+    float underlineThickness,
+    float strikeoutThickness,
+    float dpiScale
+  );
 
   // returns nullptr if not implemented
   const GlyphInfo*
@@ -29,4 +36,7 @@ struct ShapeDrawing {
 
   const GlyphInfo*
   GetGlyphInfo(UnderlineType underlineType, TextureAtlas<false>& textureAtlas);
+
+  const GlyphInfo*
+  GetGlyphInfo(StrikethroughTag, TextureAtlas<false>& textureAtlas);
 };

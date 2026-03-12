@@ -1,4 +1,5 @@
 #include "./font.hpp"
+#include <freetype/tttables.h>
 #include "./font_locator.hpp"
 #include "utils/logger.hpp"
 #include "utils/region.hpp"
@@ -240,16 +241,26 @@ Font::Font(
   charSize.y = (face->size->metrics.height >> 6) / dpiScale;
   ascender = (face->size->metrics.ascender >> 6) / dpiScale;
 
-  float y_scale = face->size->metrics.y_scale;
-  underlinePosition = (FT_MulFix(face->underline_position, y_scale) >> 6) / dpiScale;
-  underlineThickness = (FT_MulFix(face->underline_thickness, y_scale) >> 6) / dpiScale;
-  underlineThickness = std::max(underlineThickness, 1.0f / dpiScale);
+  FT_Fixed y_scale = face->size->metrics.y_scale;
+  underlinePosition = ((float)FT_MulFix(face->underline_position, y_scale) / 64) / dpiScale;
+  underlineThickness = ((float)FT_MulFix(face->underline_thickness, y_scale) / 64) / dpiScale;
+  // underlineThickness = std::max(underlineThickness, 1.0f / dpiScale);
+
+  auto* os2 = (TT_OS2*)FT_Get_Sfnt_Table(face.get(), FT_SFNT_OS2);
+  if (os2) {
+    strikeoutPosition = ((float)FT_MulFix(os2->yStrikeoutPosition, y_scale) / 64) / dpiScale;
+    strikeoutThickness = ((float)FT_MulFix(os2->yStrikeoutSize, y_scale) / 64) / dpiScale;
+  } else {
+    strikeoutPosition = ascender * 0.3;
+    strikeoutThickness = underlineThickness;
+  }
+  // strikeoutThickness = std::max(strikeoutThickness, 1.0f / dpiScale);
 
   // LOG_INFO(
   //   "Font: {}, size: {}, dpiScale: {}, charSize: {}, ascender: {}, underlinePosition: "
-  //   "{}, underlineThickness: {}",
+  //   "{}, underlineThickness: {}, strikeoutPosition: {}, strikeoutThickness: {}",
   //   path, height, dpiScale, glm::to_string(charSize), ascender, underlinePosition,
-  //   underlineThickness
+  //   underlineThickness, strikeoutPosition, strikeoutThickness
   // );
 }
 
