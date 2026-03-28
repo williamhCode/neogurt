@@ -7,12 +7,26 @@
 #include "utils/logger.hpp"
 #include "utils/region.hpp"
 #include "utils/color.hpp"
+#include "utils/unicode.hpp"
 #include <limits>
 #include <utility>
 #include <vector>
 #include <array>
 #include "glm/gtx/string_cast.hpp"
 #include "utils/round.hpp"
+#include <boost/locale/utf.hpp>
+
+// RTL scripts: Hebrew, Arabic, Syriac, Thaana, NKo, Samaritan, Mandaic,
+// Arabic Presentation Forms A/B (sent by Neovim with arabicshape).
+static bool IsRTLText(const std::string& text) {
+  using namespace boost::locale::utf;
+  if (text.empty()) return false;
+  char32_t c = Utf8ToChar32(text);
+  if (c == incomplete || c == illegal) return false;
+  return (c >= 0x0590 && c <= 0x08FF) ||
+         (c >= 0xFB1D && c <= 0xFDFF) ||
+         (c >= 0xFE70 && c <= 0xFEFF);
+}
 
 using namespace wgpu;
 
@@ -187,7 +201,7 @@ textureReset:
     }
   } run;
 
-  auto addGlyph = [&](const GlyphInfo& glyphInfo, glm::vec2 offset, const Highlight& hl) {
+  auto addTextGlyph = [&](const GlyphInfo& glyphInfo, glm::vec2 offset, const Highlight& hl) {
     glm::vec2 textQuadPos{
       offset.x,
       offset.y + (glyphInfo.useAscender ? ascender : 0),
@@ -223,7 +237,7 @@ textureReset:
           startX + cellAdvance + xOff,
           textOffset.y,
         };
-        addGlyph(*sg.glyphInfo, offset, hl);
+        addTextGlyph(*sg.glyphInfo, offset, hl);
       }
       cellAdvance += sg.numCells * charSize.x;
     }
@@ -254,24 +268,38 @@ textureReset:
       }
 
       try {
-        FontHandle font = fontFamily.ResolveFont(cell.text, hl.bold, hl.italic);
-        if (!font || font != run.font || cell.hlId != run.hlId) {
-          flushRun();
-          run = RunData{
-            .font = font,
-            .hlId = cell.hlId,
-            .startCol = col,
-          };
-        }
+        auto [kind, font] = fontFamily.ResolveFont(cell.text, hl.bold, hl.italic);
+        using Kind = FontFamily::ResolvedFont::Kind;
 
-        if (font) {
-          run.text += cell.text;
+        if (kind == Kind::Regular) {
+          // RTL cells: Neovim pre-shapes and sends in visual order.
+          // Shape per-cell so HarfBuzz handles base + combining diacritics correctly.
+          if (IsRTLText(cell.text)) {
+            flushRun();
+            for (auto& sg : fontFamily.ShapeText(cell.text, font)) {
+              if (sg.glyphInfo) {
+                float xOff = sg.glyphInfo->isEmoji ? 0 : sg.xOffset;
+                addTextGlyph(*sg.glyphInfo, {textOffset.x + xOff, textOffset.y}, hl);
+              }
+            }
 
-        } else if (ShapeDrawing::ShouldRenderText(cell.text)) {
-          // this may throw TextureResizeError (thrown by TextureAtlas::Resize())
-          if (const auto* glyphInfo = fontFamily.GetGlyphInfo(cell.text)) {
-            addGlyph(*glyphInfo, textOffset, hl);
+          } else if (font != run.font || cell.hlId != run.hlId) {
+            flushRun();
+            run = RunData{.font = font, .hlId = cell.hlId, .startCol = col};
+            run.text += cell.text;
+
+          } else {
+            run.text += cell.text;
           }
+
+        } else if (kind == Kind::ShapeDrawing) {
+          flushRun();
+          if (const auto* glyphInfo = fontFamily.GetGlyphInfo(cell.text)) {
+            addTextGlyph(*glyphInfo, textOffset, hl);
+          }
+
+        } else {
+          flushRun(); // Skip: empty/space — flush pending run, nothing to render
         }
 
         if (hl.strikethrough) {
@@ -283,7 +311,10 @@ textureReset:
             float relPos = ascender - strikeoutPosition - thickness / 2;
             relPos = std::min(relPos, charSize.y - thickness);
 
-            glm::vec2 quadPos{textOffset.x, textOffset.y + relPos};
+            glm::vec2 quadPos{
+              textOffset.x,
+              textOffset.y + relPos,
+            };
             quadPos.y = RoundToPixel(quadPos.y, dpiScale);
 
             glm::vec4 color = hlManager.GetForeground(hl);
@@ -302,7 +333,6 @@ textureReset:
 
           // this may throw TextureResizeError (thrown by TextureAtlas::Resize())
           if (const auto* glyphInfo = fontFamily.GetGlyphInfo(underlineType)) {
-
             const auto& region = glyphInfo->localPoss;
             float thickness = region[3].y - region[0].y;
 
@@ -311,7 +341,7 @@ textureReset:
 
             glm::vec2 quadPos{
               textOffset.x,
-              textOffset.y + relPos
+              textOffset.y + relPos,
             };
             quadPos.y = RoundToPixel(quadPos.y, dpiScale);
 

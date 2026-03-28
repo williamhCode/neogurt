@@ -195,36 +195,29 @@ void FontFamily::UpdateLinespace(int _linespace) {
   );
 }
 
-FontHandle FontFamily::ResolveFont(const std::string& text, bool bold, bool italic) {
-  // optimize for empty text
-  if (text.empty() || text == " ") return nullptr;
+FontFamily::ResolvedFont FontFamily::ResolveFont(const std::string& text, bool bold, bool italic) {
+  using Kind = ResolvedFont::Kind;
+
+  // optimize for empty text / space
+  if (text.empty() || text == " ") return {Kind::Skip};
+
+  // box drawing / undercurl shapes — rendered by ShapeDrawing, not a font
+  if (ShapeDrawing::ShouldRenderText(text)) return {Kind::ShapeDrawing};
 
   // Check if this text is in the LastResort cache (unknown character)
   if (lastResortCache.contains(text)) {
-    if (lastResortFontLoadFailed) {
-      return nullptr;
-    }
+    if (lastResortFontLoadFailed) return {Kind::Skip};
 
-    // Try to get glyph from loaded LastResort font
-    if (lastResortFont.has_value()) { // this should always return true
-      if ((*lastResortFont)->ShouldRenderText(text)){
-        *lastResortFont;
-      }
+    if (lastResortFont.has_value() && (*lastResortFont)->ShouldRenderText(text)) {
+      return {Kind::Regular, *lastResortFont};
     }
-    return nullptr;
-  }
-
-  // return no font if text should be rendered as shape
-  if (ShapeDrawing::ShouldRenderText(text)) {
-    return nullptr;
+    return {Kind::Skip};
   }
 
   // Try to find glyph in existing fonts
   for (const auto& fontSet : fonts) {
     const auto& font = fontSet.GetFontHandle(bold, italic);
-    if (font->ShouldRenderText(text)) {
-      return font;
-    }
+    if (font->ShouldRenderText(text)) return {Kind::Regular, font};
   }
 
   // Try to find a fallback font
@@ -237,7 +230,6 @@ FontHandle FontFamily::ResolveFont(const std::string& text, bool bold, bool ital
 
     lastResortCache.insert(text);
 
-    // Load LastResort font if not already loaded, or has not failed to load before
     if (!lastResortFont.has_value() && !lastResortFontLoadFailed) {
       auto font = Font::FromName(
         {
@@ -254,14 +246,14 @@ FontHandle FontFamily::ResolveFont(const std::string& text, bool bold, bool ital
         lastResortFont = std::make_shared<Font>(std::move(*font));
       } else {
         lastResortFontLoadFailed = true;
-        return nullptr;
+        return {Kind::Skip};
       }
     }
 
-    if ((*lastResortFont)->ShouldRenderText(text)){
-      *lastResortFont;
+    if (lastResortFont.has_value() && (*lastResortFont)->ShouldRenderText(text)) {
+      return {Kind::Regular, *lastResortFont};
     }
-    return nullptr;
+    return {Kind::Skip};
   }
 
   // Valid fallback font found - add to fonts vector
@@ -281,11 +273,9 @@ FontHandle FontFamily::ResolveFont(const std::string& text, bool bold, bool ital
       )
       .value();
 
-      // reuse the existing FontHandle, if font is same as normal font
       if (fallbackSet.normal && font.path == fallbackSet.normal->path) {
         return fallbackSet.normal;
       }
-      // otherwise, create a new FontHandle
       return std::make_shared<Font>(std::move(font));
     };
 
@@ -296,20 +286,14 @@ FontHandle FontFamily::ResolveFont(const std::string& text, bool bold, bool ital
 
     fonts.push_back(std::move(fallbackSet));
 
-    // Now try to get the glyph from the newly added font
-    const auto& newFontSet = fonts.back();
-    const auto& font = newFontSet.GetFontHandle(bold, italic);
-    if (font->ShouldRenderText(text)) {
-      return font;
-    }
+    const auto& font = fonts.back().GetFontHandle(bold, italic);
+    if (font->ShouldRenderText(text)) return {Kind::Regular, font};
 
   } catch (std::bad_expected_access<std::runtime_error>&) {
-    // Failed to load fallback font
-    // Shouldn't happen, because we got the font name from the system
     LOG_ERR("Failed to load fallback font: {}", fallbackFontName);
   }
 
-  return nullptr;
+  return {Kind::Skip};
 }
 
 std::vector<ShapedGlyph> FontFamily::ShapeText(const std::string& text, const FontHandle& font) {

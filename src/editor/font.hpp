@@ -69,7 +69,13 @@ struct FontFamily {
   glm::vec2 GetCharSize() const;
   float GetAscender() const;
 
-  FontHandle ResolveFont(const std::string& text, bool bold, bool italic);
+  struct ResolvedFont {
+    enum class Kind { Skip, ShapeDrawing, Regular };
+    Kind kind;
+    FontHandle font; // only valid when kind == Regular
+  };
+
+  ResolvedFont ResolveFont(const std::string& text, bool bold, bool italic);
 
   std::vector<ShapedGlyph> ShapeText(const std::string& text, const FontHandle& font);
   const GlyphInfo* GetGlyphInfo(const std::string& text); // box drawing, no font

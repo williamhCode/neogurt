@@ -229,8 +229,6 @@ static const auto shapeDescMap = [] {
 }();
 
 bool ShapeDrawing::ShouldRenderText(const std::string& text) {
-  if (text.empty() || text == " ") return false;
-
   char32_t charcode = Utf8ToChar32(text);
   bool isShape = (charcode >= 0x2500 && charcode <= 0x259F) ||
                  (charcode >= 0x2800 && charcode <= 0x28FF);
