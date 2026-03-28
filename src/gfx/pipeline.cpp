@@ -189,6 +189,21 @@ Pipeline::Pipeline(const WGPUContext& ctx, SlangContext& slang, float gamma) {
     .targets = {{.format = TextureFormat::BGRA8Unorm}},
   });
 
+  // post-processing pipeline -------------------------------------
+  ShaderModule postFxShader = loadShaderModule("crt");
+
+  postFxTimeBGL = ctx.MakeBindGroupLayout({
+    {0, ShaderStage::Fragment, BufferBindingType::Uniform},
+  });
+
+  postFxRPL = ctx.MakeRenderPipeline({
+    .vs = postFxShader,
+    .fs = postFxShader,
+    .bgls = {viewProjBGL, textureBGL, postFxTimeBGL},
+    .buffers = {textureQuadVBL},
+    .targets = {{.format = TextureFormat::BGRA8Unorm}},
+  });
+
   // cursor pipeline ------------------------------------------------
   ShaderModule cursorShader = loadShaderModule("cursor");
 

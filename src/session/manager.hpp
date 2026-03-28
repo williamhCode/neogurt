@@ -72,6 +72,8 @@ public:
     return it == sessionsOrder.end() ? nullSession : **it;
   }
 
+  bool pendingCtxResize = false;
+
   void OptionSet(SessionHandle& session, const event::OptionTable& optionTable);
 
   int SessionNew(const SessionNewOpts& opts = {});  // returns session id (raise error if failed)

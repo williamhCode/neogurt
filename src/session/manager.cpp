@@ -34,7 +34,6 @@ void SessionManager::OptionSet(
 
   bool setOpacity = false;
   bool updateSizes = false;
-  bool resizeCtx = false;
 
   for (const auto& [key, value] : optionTable) {
     // returns true if option changed
@@ -88,7 +87,8 @@ void SessionManager::OptionSet(
 
     } else if (key == "vsync") {
       if (convertOption(globalOpts.vsync)) {
-        resizeCtx = true;
+        // defer ctx resize to before next GetNextTexture to avoid using a destroyed surface texture
+        pendingCtxResize = true;
       }
 
     } else if (key == "fps") {
@@ -127,6 +127,11 @@ void SessionManager::OptionSet(
       if (convertOption(globalOpts.scrollSpeed)) {
         InputHandler::scrollSpeed = globalOpts.scrollSpeed;
       }
+
+    } else if (key == "post_processing") {
+      if (convertOption(globalOpts.postProcessing)) {
+        renderer.postProcessing = globalOpts.postProcessing;
+      }
     }
 
     // session specific options ----------------------------------
@@ -154,11 +159,6 @@ void SessionManager::OptionSet(
   // only do this if current session, cuz it's gna be updated anyway when switching sessions
   if (isCurrent && updateSizes) {
     UpdateSessionSizes(session);
-  }
-
-  // change vsync
-  if (resizeCtx) {
-    ctx.Resize(sizes.fbSize, globalOpts.vsync);
   }
 }
 

@@ -41,6 +41,8 @@ local cmds_table = {
     cursor_idle_time = "number",
     scroll_speed = "number",
 
+    post_processing = "boolean",
+
     bg_color = "number",
     opacity = "number",
   },

@@ -14,6 +14,7 @@
 #include <array>
 #include "glm/gtx/string_cast.hpp"
 #include "utils/round.hpp"
+#include <chrono>
 #include <hb.h>
 #include <boost/locale/utf.hpp>
 
@@ -112,6 +113,18 @@ Renderer::Renderer() {
       .storeOp = StoreOp::Store,
     },
   });
+
+  // post-processing
+  float initialTime = 0.0f;
+  postFxTimeBuffer = ctx.CreateUniformBuffer(sizeof(float), &initialTime);
+  postFxTimeBG = ctx.MakeBindGroup(ctx.pipeline.postFxTimeBGL, {{0, postFxTimeBuffer}});
+  postFxRPD = utils::RenderPassDescriptor({
+    RenderPassColorAttachment{
+      .loadOp = LoadOp::Clear,
+      .storeOp = StoreOp::Store,
+      .clearValue = {0.0, 0.0, 0.0, 0.0},
+    },
+  });
 }
 
 void Renderer::Resize(const SizeHandler& sizes) {
@@ -120,6 +133,9 @@ void Renderer::Resize(const SizeHandler& sizes) {
   OtherFinalRenderTexture() =
     RenderTexture(sizes.uiSize, sizes.dpiScale, TextureFormat::RGBA8UnormSrgb);
   OtherFinalRenderTexture().UpdatePos(sizes.offset);
+
+  preEffectsTexture = RenderTexture(sizes.size, sizes.dpiScale, TextureFormat::BGRA8Unorm);
+
   resize = true;
 
   auto stencilTextureView =
@@ -558,7 +574,7 @@ void Renderer::RenderWindows(
 }
 
 void Renderer::RenderFinalTexture() {
-  finalRPD.cColorAttachments[0].view = nextTextureView;
+  finalRPD.cColorAttachments[0].view = EffectsTarget();
   finalRPD.cColorAttachments[0].clearValue = premultClearColor;
 
   auto passEncoder = commandEncoder.BeginRenderPass(&finalRPD);
@@ -587,7 +603,7 @@ void Renderer::RenderCursor(const Cursor& cursor, HlManager& hlManager) {
   }
   cursorData.WriteBuffers();
 
-  cursorRPD.cColorAttachments[0].view = nextTextureView;
+  cursorRPD.cColorAttachments[0].view = EffectsTarget();
   RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&cursorRPD);
   passEncoder.SetPipeline(
     cursor.onEmoji ? ctx.pipeline.cursorEmojiRPL : ctx.pipeline.cursorRPL
@@ -632,7 +648,7 @@ void Renderer::RenderCursorEmoji(
   if (cursorEmojiOverlayData.quadCount == 0) return;
   cursorEmojiOverlayData.WriteBuffers();
 
-  cursorEmojiOverlayRPD.cColorAttachments[0].view = nextTextureView;
+  cursorEmojiOverlayRPD.cColorAttachments[0].view = EffectsTarget();
   auto passEncoder = commandEncoder.BeginRenderPass(&cursorEmojiOverlayRPD);
   passEncoder.SetPipeline(ctx.pipeline.cursorEmojiOverlayRPL);
   passEncoder.SetBindGroup(0, camera.viewProjBG);
@@ -642,6 +658,26 @@ void Renderer::RenderCursorEmoji(
   passEncoder.End();
   cursorEmojiOverlayRPD.cColorAttachments[0].view = {};
 }
+
+void Renderer::RenderPostFx() {
+  using namespace std::chrono;
+  static auto startTime = steady_clock::now();
+  float t = duration<float>(steady_clock::now() - startTime).count();
+  ctx.queue.WriteBuffer(postFxTimeBuffer, 0, &t, sizeof(float));
+
+  postFxRPD.cColorAttachments[0].view = nextTextureView;
+
+  auto passEncoder = commandEncoder.BeginRenderPass(&postFxRPD);
+  passEncoder.SetPipeline(ctx.pipeline.postFxRPL);
+  passEncoder.SetBindGroup(0, camera.viewProjBG);
+  passEncoder.SetBindGroup(1, preEffectsTexture.textureBG);
+  passEncoder.SetBindGroup(2, postFxTimeBG);
+  preEffectsTexture.renderData.Render(passEncoder);
+
+  passEncoder.End();
+  postFxRPD.cColorAttachments[0].view = {};
+}
+
 
 void Renderer::End() {
   timestamp.Write();

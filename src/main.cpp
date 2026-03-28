@@ -192,6 +192,11 @@ int main(int argc, char** argv) {
         }
         LOG_ENABLE();
 
+        if (sessionManager.pendingCtxResize) {
+          sessionManager.pendingCtxResize = false;
+          ctx.Resize(sizes.fbSize, globalOpts.vsync);
+        }
+
         // timing (run before nvim ui-events to minimize latency) --------
         renderer.GetNextTexture(); // blocks until next frame if vsync is on
 
@@ -328,6 +333,10 @@ int main(int argc, char** argv) {
               editorState->hlManager
             );
           }
+        }
+
+        if (globalOpts.postProcessing) {
+          renderer.RenderPostFx();
         }
 
         renderer.End();

@@ -52,6 +52,9 @@ struct Pipeline {
 
   wgpu::RenderPipeline textureFinalRPL;
 
+  wgpu::BindGroupLayout postFxTimeBGL;
+  wgpu::RenderPipeline postFxRPL;
+
   wgpu::BindGroupLayout cursorMaskPosBGL;
   wgpu::RenderPipeline cursorRPL;
   wgpu::RenderPipeline cursorEmojiRPL;

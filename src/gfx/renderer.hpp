@@ -34,6 +34,7 @@ struct Renderer {
   Ortho2D camera;
 
   bool resize = false;
+  bool postProcessing = false;
 
   int currTextureIndex = 0;
   std::array<RenderTexture, 2> finalRenderTextures;
@@ -64,6 +65,14 @@ struct Renderer {
   // final texture
   wgpu::utils::RenderPassDescriptor finalRPD;
 
+  // pre-effects: cursor + windows composited here before post-processing pass
+  RenderTexture preEffectsTexture;
+
+  // post-processing pass (reads preEffectsTexture, writes to surface)
+  wgpu::utils::RenderPassDescriptor postFxRPD;
+  wgpu::Buffer postFxTimeBuffer;
+  wgpu::BindGroup postFxTimeBG;
+
   // cursor
   QuadRenderData<CursorQuadVertex> cursorData;
   wgpu::utils::RenderPassDescriptor cursorRPD;
@@ -89,5 +98,11 @@ struct Renderer {
   void RenderCursorEmoji(
     const Win& win, const Cursor& cursor, FontFamily& fontFamily, HlManager& hlManager
   );
+  void RenderPostFx();
   void End();
+
+private:
+  wgpu::TextureView& EffectsTarget() {
+    return postProcessing ? preEffectsTexture.textureView : nextTextureView;
+  }
 };

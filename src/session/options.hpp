@@ -19,6 +19,8 @@ struct GlobalOptions {
   std::string macosOptionIsMeta = "none"; // "none", "only_left", "only_right", "both"
   float cursorIdleTime = 10;
   float scrollSpeed = 1;
+
+  bool postProcessing = false;
 };
 
 // session specific options
