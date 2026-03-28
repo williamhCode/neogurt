@@ -344,6 +344,7 @@ int main(int argc, char** argv) {
         ctx.surface.Present();
         ctx.device.Tick();
 
+        // timer1.End();
         // auto t1 = TimeToMs(timer1.GetAverageDuration());
         // if (t1 > 1ms) {
         //   LOG_INFO("render: {}", t1);
