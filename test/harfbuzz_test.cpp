@@ -230,10 +230,108 @@ static void runLigatureTest() {
 }
 
 // ----------------------------------------------------------------
+// emoji ZWJ clustering test
+// ----------------------------------------------------------------
+
+static void runEmojiClusterTest() {
+  std::println("=== Emoji ZWJ Cluster Test (Apple Color Emoji) ===\n");
+
+  FT_Library library;
+  FT_Init_FreeType(&library);
+
+  FT_Face face;
+  if (FT_New_Face(library, "/System/Library/Fonts/Apple Color Emoji.ttc", 0, &face) != 0) {
+    std::println("ERROR: could not load Apple Color Emoji");
+    FT_Done_FreeType(library);
+    return;
+  }
+  FT_Set_Pixel_Sizes(face, 0, 32);
+
+  hb::unique_ptr<hb_font_t>   hbFont(hb_ft_font_create(face, nullptr));
+  hb::unique_ptr<hb_buffer_t> hbBuffer(hb_buffer_create());
+
+  // helper: shape a single emoji string and print full cluster breakdown,
+  // showing both utf8-based and utf32-based cluster indices side by side
+  auto shapeEmoji = [&](const std::string& label, const std::string& text) {
+    auto u32 = Utf8ToUtf32(text);
+
+    std::print("  {} codepoints (U+", label);
+    for (size_t i = 0; i < u32.size(); i++) {
+      std::print("{:04X}", (uint32_t)u32[i]);
+      if (i + 1 < u32.size()) std::print(" U+");
+    }
+    std::println(")  u32_len={}", u32.size());
+
+    // --- utf8 clusters ---
+    hb_buffer_reset(hbBuffer);
+    hb_buffer_add_utf8(hbBuffer, text.c_str(), -1, 0, -1);
+    hb_buffer_guess_segment_properties(hbBuffer);
+    hb_shape(hbFont, hbBuffer, nullptr, 0);
+
+    unsigned    len8   = hb_buffer_get_length(hbBuffer);
+    auto*       info8  = hb_buffer_get_glyph_infos(hbBuffer, nullptr);
+
+    std::println("  utf8  → {} glyph(s):", len8);
+    for (unsigned i = 0; i < len8; i++) {
+      uint32_t clusterStart = info8[i].cluster;
+      uint32_t clusterEnd   = (i + 1 < len8) ? info8[i+1].cluster : (uint32_t)text.size();
+      char name[64] = {};
+      hb_font_get_glyph_name(hbFont, info8[i].codepoint, name, sizeof(name));
+      int numCells = (int)(clusterEnd - clusterStart);
+      std::println("    glyph[{}] id={:<6} name={:<30} cluster_bytes=[{}, {})  num_cells={}",
+        i, info8[i].codepoint, name, clusterStart, clusterEnd, numCells);
+    }
+
+    // --- utf32 clusters ---
+    hb_buffer_reset(hbBuffer);
+    hb_buffer_add_utf32(
+      hbBuffer, reinterpret_cast<const uint32_t*>(u32.data()), u32.size(), 0, -1
+    );
+    hb_buffer_guess_segment_properties(hbBuffer);
+    hb_shape(hbFont, hbBuffer, nullptr, 0);
+
+    unsigned    len32  = hb_buffer_get_length(hbBuffer);
+    auto*       info32 = hb_buffer_get_glyph_infos(hbBuffer, nullptr);
+
+    std::println("  utf32 → {} glyph(s):", len32);
+    for (unsigned i = 0; i < len32; i++) {
+      uint32_t clusterStart = info32[i].cluster;
+      uint32_t clusterEnd   = (i + 1 < len32) ? info32[i+1].cluster : (uint32_t)u32.size();
+      char name[64] = {};
+      hb_font_get_glyph_name(hbFont, info32[i].codepoint, name, sizeof(name));
+      int numCells = (int)(clusterEnd - clusterStart);
+      std::println("    glyph[{}] id={:<6} name={:<30} cluster_codepoints=[{}, {})  num_cells={}",
+        i, info32[i].codepoint, name, clusterStart, clusterEnd, numCells);
+    }
+    std::println();
+  };
+
+  // single emoji — baseline
+  shapeEmoji("🔥", "🔥");
+  // simple ZWJ sequences
+  shapeEmoji("👨‍💻", "👨‍💻"); // man technologist (2 emoji + ZWJ)
+  shapeEmoji( "👩‍❤️‍💋‍👨👩‍❤️‍💋‍👨", "👩‍❤️‍💋‍👨👩‍❤️‍💋‍👨"); // kiss: woman man (7 codepoints)
+  shapeEmoji("👨‍👩‍👧", "👨‍👩‍👧"); // family (5 codepoints)
+  shapeEmoji( "👨‍👩‍👧‍👦", "👨‍👩‍👧‍👦"); // family of 4 (7 codepoints)
+  // flag sequences (regional indicator pairs)
+  shapeEmoji("🇺🇸", "🇺🇸"); // US flag (2 regional indicators)
+  shapeEmoji("🇯🇵", "🇯🇵"); // Japan flag
+  // skin tone modifier
+  shapeEmoji("👍🏽", "👍🏽"); // thumbs up + medium skin tone
+  // mixed in a string — shows how clusters look mid-string
+  std::println("  --- mixed string: \"hi👨‍💻bye\" ---");
+  shapeEmoji("hi👨‍💻bye", "hi👨‍💻bye");
+
+  FT_Done_Face(face);
+  FT_Done_FreeType(library);
+}
+
+// ----------------------------------------------------------------
 // main
 // ----------------------------------------------------------------
 
 int main() {
   runEmojiTest();
   runLigatureTest();
+  runEmojiClusterTest();
 }

@@ -235,8 +235,7 @@ textureReset:
       if (sg.glyphInfo) {
         float xOff = sg.glyphInfo->isEmoji ? 0 : sg.xOffset;
         glm::vec2 offset{
-          // startX + cellAdvance + xOff,
-          startX + cellAdvance,
+          startX + cellAdvance + xOff,
           textOffset.y,
         };
         addTextGlyph(*sg.glyphInfo, offset, hl);

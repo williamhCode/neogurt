@@ -306,21 +306,28 @@ std::vector<ShapedGlyph> Font::ShapeText(
   TextureAtlas<false>& textureAtlas,
   TextureAtlas<true>& colorTextureAtlas
 ) {
+  std::u32string u32 = Utf8ToUtf32(text);
+
   hb_buffer_reset(hbBuffer);
-  hb_buffer_add_utf8(hbBuffer, text.c_str(), -1, 0, -1);
+  hb_buffer_add_utf32(
+    hbBuffer, reinterpret_cast<const uint32_t*>(u32.data()), u32.size(), 0, -1
+  );
   hb_buffer_guess_segment_properties(hbBuffer);
   hb_shape(hbFont, hbBuffer, features.data(), features.size());
 
   hb_glyph_info_t* infos = hb_buffer_get_glyph_infos(hbBuffer, nullptr);
   hb_glyph_position_t* pos = hb_buffer_get_glyph_positions(hbBuffer, nullptr);
   uint len = hb_buffer_get_length(hbBuffer);
-  std::u32string u32 = Utf8ToUtf32(text);
 
   std::vector<ShapedGlyph> result;
   for (uint i = 0; i < len; i++) {
     int clusterStart = infos[i].cluster;
     int clusterEnd = (i + 1 < len) ? infos[i + 1].cluster : (int)u32.size();
 
+    // numCell uses cluster, which is based on number of codepoints consumed
+    // so ZWJ characters techinically have incorrect numCell, but nvim always includes a
+    // "" character at the end of double width characters, so it gets flushed
+    // immediately by the renderer and doesn't cause any issues
     result.push_back({
       .glyphInfo = RasterizeGlyph(infos[i].codepoint, textureAtlas, colorTextureAtlas),
       .numCells = clusterEnd - clusterStart,
