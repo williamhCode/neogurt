@@ -234,27 +234,25 @@ Font::Font(
   FT_UInt glyphIndex = FT_Get_Char_Index(face.get(), 'M');
   if (glyphIndex != 0) {
     FT_Load_Glyph(face.get(), glyphIndex, FT_LOAD_DEFAULT);
-    charSize.x = (face->glyph->advance.x >> 6) / dpiScale;
+    charSize.x = ((face->glyph->advance.x + 32) >> 6) / dpiScale;
   } else {
-    charSize.x = (face->size->metrics.max_advance >> 6) / dpiScale;
+    charSize.x = ((face->size->metrics.max_advance + 32) >> 6) / dpiScale;
   }
-  charSize.y = (face->size->metrics.height >> 6) / dpiScale;
-  ascender = (face->size->metrics.ascender >> 6) / dpiScale;
+  charSize.y = ((face->size->metrics.height + 32) >> 6) / dpiScale;
+  ascender = (face->size->metrics.ascender / 64.f) / dpiScale;
 
   FT_Fixed y_scale = face->size->metrics.y_scale;
-  underlinePosition = ((float)FT_MulFix(face->underline_position, y_scale) / 64) / dpiScale;
-  underlineThickness = ((float)FT_MulFix(face->underline_thickness, y_scale) / 64) / dpiScale;
-  // underlineThickness = std::max(underlineThickness, 1.0f / dpiScale);
+  underlinePosition = (FT_MulFix(face->underline_position, y_scale) / 64.f) / dpiScale;
+  underlineThickness = (FT_MulFix(face->underline_thickness, y_scale) / 64.f) / dpiScale;
 
   auto* os2 = (TT_OS2*)FT_Get_Sfnt_Table(face.get(), FT_SFNT_OS2);
   if (os2) {
-    strikeoutPosition = ((float)FT_MulFix(os2->yStrikeoutPosition, y_scale) / 64) / dpiScale;
-    strikeoutThickness = ((float)FT_MulFix(os2->yStrikeoutSize, y_scale) / 64) / dpiScale;
+    strikeoutPosition = (FT_MulFix(os2->yStrikeoutPosition, y_scale) / 64.f) / dpiScale;
+    strikeoutThickness = (FT_MulFix(os2->yStrikeoutSize, y_scale) / 64.f) / dpiScale;
   } else {
     strikeoutPosition = ascender * 0.3;
     strikeoutThickness = underlineThickness;
   }
-  // strikeoutThickness = std::max(strikeoutThickness, 1.0f / dpiScale);
 
   // LOG_INFO(
   //   "Font: {}, size: {}, dpiScale: {}, charSize: {}, ascender: {}, underlinePosition: "
@@ -322,7 +320,6 @@ std::vector<ShapedGlyph> Font::ShapeText(
   for (uint i = 0; i < len; i++) {
     int clusterStart = infos[i].cluster;
     int clusterEnd = (i + 1 < len) ? infos[i + 1].cluster : (int)u32.size();
-    if (clusterStart > clusterEnd) std::swap(clusterStart, clusterEnd); // RTL
 
     result.push_back({
       .glyphInfo = RasterizeGlyph(infos[i].codepoint, textureAtlas, colorTextureAtlas),

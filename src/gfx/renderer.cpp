@@ -14,18 +14,16 @@
 #include <array>
 #include "glm/gtx/string_cast.hpp"
 #include "utils/round.hpp"
+#include <hb.h>
 #include <boost/locale/utf.hpp>
 
-// RTL scripts: Hebrew, Arabic, Syriac, Thaana, NKo, Samaritan, Mandaic,
-// Arabic Presentation Forms A/B (sent by Neovim with arabicshape).
 static bool IsRTLText(const std::string& text) {
-  using namespace boost::locale::utf;
   if (text.empty()) return false;
   char32_t c = Utf8ToChar32(text);
+  using namespace boost::locale::utf;
   if (c == incomplete || c == illegal) return false;
-  return (c >= 0x0590 && c <= 0x08FF) ||
-         (c >= 0xFB1D && c <= 0xFDFF) ||
-         (c >= 0xFE70 && c <= 0xFEFF);
+  hb_script_t script = hb_unicode_script(hb_unicode_funcs_get_default(), c);
+  return hb_script_get_horizontal_direction(script) == HB_DIRECTION_RTL;
 }
 
 using namespace wgpu;
@@ -201,11 +199,14 @@ textureReset:
     }
   } run;
 
+  // test
+
   auto addTextGlyph = [&](const GlyphInfo& glyphInfo, glm::vec2 offset, const Highlight& hl) {
-    glm::vec2 textQuadPos{
+    glm::vec2 quadPos{
       offset.x,
       offset.y + (glyphInfo.useAscender ? ascender : 0),
     };
+    quadPos.y = RoundToPixel(quadPos.y, dpiScale);
 
     glm::vec4 foreground{};
     QuadRenderData<TextQuadVertex, true>* quadData;
@@ -218,7 +219,7 @@ textureReset:
 
     auto& quad = quadData->NextQuad();
     for (size_t i = 0; i < 4; i++) {
-      quad[i].position = textQuadPos + glyphInfo.localPoss[i];
+      quad[i].position = quadPos + glyphInfo.localPoss[i];
       quad[i].regionCoord = glyphInfo.atlasRegion[i];
       quad[i].foreground = foreground;
     }
@@ -234,7 +235,8 @@ textureReset:
       if (sg.glyphInfo) {
         float xOff = sg.glyphInfo->isEmoji ? 0 : sg.xOffset;
         glm::vec2 offset{
-          startX + cellAdvance + xOff,
+          // startX + cellAdvance + xOff,
+          startX + cellAdvance,
           textOffset.y,
         };
         addTextGlyph(*sg.glyphInfo, offset, hl);
@@ -302,58 +304,43 @@ textureReset:
           flushRun(); // Skip: empty/space — flush pending run, nothing to render
         }
 
-        if (hl.strikethrough) {
-          // this may throw TextureResizeError (thrown by TextureAtlas::Resize())
-          if (const auto* glyphInfo = fontFamily.GetGlyphInfo(StrikethroughTag{})) {
-            const auto& region = glyphInfo->localPoss;
-            float thickness = region[3].y - region[0].y;
+        auto addDecoration = [&](const GlyphInfo* glyphInfo, float centerPos, glm::vec4 color) {
+          if (!glyphInfo) return;
 
-            float relPos = ascender - strikeoutPosition - thickness / 2;
-            relPos = std::min(relPos, charSize.y - thickness);
+          const auto& region = glyphInfo->localPoss;                                                                                                                                                                 
+          float thickness = region[3].y - region[0].y;                                                                                                                                                               
 
-            glm::vec2 quadPos{
-              textOffset.x,
-              textOffset.y + relPos,
-            };
-            quadPos.y = RoundToPixel(quadPos.y, dpiScale);
+          float relPos = centerPos - thickness / 2;                                                                                                                                               
+          relPos = std::min(relPos, charSize.y - thickness); // don't go below the cell                                                                                                                              
 
-            glm::vec4 color = hlManager.GetForeground(hl);
+          glm::vec2 quadPos{                                                                                                                                                                                         
+            textOffset.x,                                                                                                                                                                                            
+            textOffset.y + relPos,                                                                                                                                                                                   
+          };                                                                                                                                                                                                         
+          quadPos.y = RoundToPixel(quadPos.y, dpiScale);                                                                                                                                                             
 
-            auto& quad = textData.NextQuad();
-            for (size_t i = 0; i < 4; i++) {
-              quad[i].position = quadPos + glyphInfo->localPoss[i];
-              quad[i].regionCoord = glyphInfo->atlasRegion[i];
-              quad[i].foreground = color;
-            }
+          auto& quad = textData.NextQuad();
+          for (size_t i = 0; i < 4; i++) {
+            quad[i].position = quadPos + glyphInfo->localPoss[i];
+            quad[i].regionCoord = glyphInfo->atlasRegion[i];
+            quad[i].foreground = color;
           }
+        };
+
+        if (hl.strikethrough) {
+          addDecoration(
+            fontFamily.GetGlyphInfo(StrikethroughTag{}),
+            ascender - strikeoutPosition,
+            hlManager.GetForeground(hl)
+          );
         }
 
-        if (hl.underline.has_value()) {
-          auto underlineType = *hl.underline;
-
-          // this may throw TextureResizeError (thrown by TextureAtlas::Resize())
-          if (const auto* glyphInfo = fontFamily.GetGlyphInfo(underlineType)) {
-            const auto& region = glyphInfo->localPoss;
-            float thickness = region[3].y - region[0].y;
-
-            float relPos = ascender - underlinePosition - thickness / 2;
-            relPos = std::min(relPos, charSize.y - thickness); // don't go below the cell
-
-            glm::vec2 quadPos{
-              textOffset.x,
-              textOffset.y + relPos,
-            };
-            quadPos.y = RoundToPixel(quadPos.y, dpiScale);
-
-            glm::vec4 color = hlManager.GetSpecial(hl);
-
-            auto& quad = textData.NextQuad();
-            for (size_t i = 0; i < 4; i++) {
-              quad[i].position = quadPos + glyphInfo->localPoss[i];
-              quad[i].regionCoord = glyphInfo->atlasRegion[i];
-              quad[i].foreground = color;
-            }
-          }
+        if (hl.underline) {
+          addDecoration(
+            fontFamily.GetGlyphInfo(*hl.underline),
+            ascender - underlinePosition,
+            hlManager.GetSpecial(hl)
+          );
         }
 
       } catch (TextureResizeError e) {
@@ -368,7 +355,8 @@ textureReset:
 
       textOffset.x += charSize.x;
     }
-    flushRun();
+
+    flushRun(); // flush any run pending at end of row
 
     textOffset.y += charSize.y;
   }
@@ -458,49 +446,55 @@ void Renderer::RenderCursorMask(
 ) {
   if (!win.grid.ValidCoords(cursor.row, cursor.col)) return;
   auto& cell = win.grid.lines[cursor.row][cursor.col];
-
   const auto& hl = hlManager.hlTable[cell.hlId];
+  const float ascender = fontFamily.GetAscender();
 
-  // if (const auto* glyphInfo =
-  //       fontFamily.GetGlyphInfo(cell.text, hl.bold, hl.italic)) {
+  // resolve the glyph at the cursor cell using the new shaping path
+  const GlyphInfo* glyphInfo = nullptr;
+  auto [kind, font] = fontFamily.ResolveFont(cell.text, hl.bold, hl.italic);
+  using Kind = FontFamily::ResolvedFont::Kind;
 
-  //   cursor.onEmoji = glyphInfo->isEmoji;
+  if (kind == Kind::Regular) {
+    auto shaped = fontFamily.ShapeText(cell.text, font);
+    // use the first non-null glyph (primary character in the cell)
+    for (auto& sg : shaped) {
+      if (sg.glyphInfo) { glyphInfo = sg.glyphInfo; break; }
+    }
+  } else if (kind == Kind::ShapeDrawing) {
+    glyphInfo = fontFamily.GetGlyphInfo(cell.text);
+  }
 
-  //   glm::vec2 textQuadPos{0, glyphInfo->useAscender ? fontFamily.GetAscender() : 0};
+  textMaskRPD.cColorAttachments[0].view = cursor.maskRenderTexture.textureView;
+  RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textMaskRPD);
 
-  //   textMaskData.ResetCounts();
-  //   auto& quad = textMaskData.NextQuad();
-  //   for (size_t i = 0; i < 4; i++) {
-  //     quad[i].position = textQuadPos + glyphInfo->localPoss[i];
-  //     quad[i].regionCoord = glyphInfo->atlasRegion[i];
-  //   }
-  //   textMaskData.WriteBuffers();
+  if (glyphInfo) {
+    cursor.onEmoji = glyphInfo->isEmoji;
 
-  //   textMaskRPD.cColorAttachments[0].view = cursor.maskRenderTexture.textureView;
-  //   RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textMaskRPD);
-  //   passEncoder.SetPipeline(
-  //     glyphInfo->isEmoji ? ctx.pipeline.emojiMaskRPL : ctx.pipeline.textMaskRPL
-  //   );
-  //   passEncoder.SetBindGroup(0, cursor.maskRenderTexture.camera.viewProjBG);
-  //   if (glyphInfo->isEmoji) {
-  //     passEncoder.SetBindGroup(1, fontFamily.colorTextureAtlas.textureSizeBG);
-  //     passEncoder.SetBindGroup(
-  //       2, fontFamily.colorTextureAtlas.renderTexture.textureBG
-  //     );
-  //   } else {
-  //     passEncoder.SetBindGroup(1, fontFamily.textureAtlas.textureSizeBG);
-  //     passEncoder.SetBindGroup(2, fontFamily.textureAtlas.renderTexture.textureBG);
-  //   }
-  //   textMaskData.Render(passEncoder);
-  //   passEncoder.End();
+    glm::vec2 textQuadPos{0, glyphInfo->useAscender ? ascender : 0};
 
-  // } else {
-  //   // just clear the texture if there's nothing
-  //   textMaskRPD.cColorAttachments[0].view = cursor.maskRenderTexture.textureView;
-  //   RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textMaskRPD);
-  //   passEncoder.End();
-  // }
+    textMaskData.ResetCounts();
+    auto& quad = textMaskData.NextQuad();
+    for (size_t i = 0; i < 4; i++) {
+      quad[i].position = textQuadPos + glyphInfo->localPoss[i];
+      quad[i].regionCoord = glyphInfo->atlasRegion[i];
+    }
+    textMaskData.WriteBuffers();
 
+    passEncoder.SetPipeline(
+      glyphInfo->isEmoji ? ctx.pipeline.emojiMaskRPL : ctx.pipeline.textMaskRPL
+    );
+    passEncoder.SetBindGroup(0, cursor.maskRenderTexture.camera.viewProjBG);
+    if (glyphInfo->isEmoji) {
+      passEncoder.SetBindGroup(1, fontFamily.colorTextureAtlas.textureSizeBG);
+      passEncoder.SetBindGroup(2, fontFamily.colorTextureAtlas.renderTexture.textureBG);
+    } else {
+      passEncoder.SetBindGroup(1, fontFamily.textureAtlas.textureSizeBG);
+      passEncoder.SetBindGroup(2, fontFamily.textureAtlas.renderTexture.textureBG);
+    }
+    textMaskData.Render(passEncoder);
+  }
+
+  passEncoder.End();
   textMaskRPD.cColorAttachments[0].view = {};
 }
 

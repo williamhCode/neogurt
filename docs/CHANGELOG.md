@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add automatic font fallback
 - Add proper emoji rendering behavior, adheres to Unicode standard
 - Add cmd argument to session_restart
+- Add ligature rendering yay!! (this one has been put off for a while haha)
 
 ### Changed
 - Use compindex for floating window (nvim 0.12+)
