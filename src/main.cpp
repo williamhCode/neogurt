@@ -322,6 +322,12 @@ int main(int argc, char** argv) {
 
         if (editorState->cursor.ShouldRender()) {
           renderer.RenderCursor(editorState->cursor, editorState->hlManager);
+          if (currWin != nullptr) {
+            renderer.RenderCursorEmoji(
+              *currWin, editorState->cursor, editorState->fontFamily,
+              editorState->hlManager
+            );
+          }
         }
 
         renderer.End();

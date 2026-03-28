@@ -63,7 +63,7 @@ Renderer::Renderer() {
   });
 
   // text mask
-  textMaskData.CreateBuffers(1);
+  textMaskData.CreateBuffers(2);
   textMaskRPD = utils::RenderPassDescriptor({
     RenderPassColorAttachment{
       .loadOp = LoadOp::Clear,
@@ -99,6 +99,14 @@ Renderer::Renderer() {
   // cursor
   cursorData.CreateBuffers(1);
   cursorRPD = utils::RenderPassDescriptor({
+    RenderPassColorAttachment{
+      .loadOp = LoadOp::Load,
+      .storeOp = StoreOp::Store,
+    },
+  });
+
+  cursorEmojiOverlayData.CreateBuffers(2);
+  cursorEmojiOverlayRPD = utils::RenderPassDescriptor({
     RenderPassColorAttachment{
       .loadOp = LoadOp::Load,
       .storeOp = StoreOp::Store,
@@ -199,14 +207,12 @@ textureReset:
     }
   } run;
 
-  // test
-
   auto addTextGlyph = [&](const GlyphInfo& glyphInfo, glm::vec2 offset, const Highlight& hl) {
     glm::vec2 quadPos{
       offset.x,
       offset.y + (glyphInfo.useAscender ? ascender : 0),
     };
-    quadPos.y = RoundToPixel(quadPos.y, dpiScale);
+    quadPos = RoundToPixel(quadPos, dpiScale);
 
     glm::vec4 foreground{};
     QuadRenderData<TextQuadVertex, true>* quadData;
@@ -233,9 +239,12 @@ textureReset:
 
     for (ShapedGlyph& sg : fontFamily.ShapeText(run.text, run.font)) {
       if (sg.glyphInfo) {
-        float xOff = sg.glyphInfo->isEmoji ? 0 : sg.xOffset;
+        float xOffset = sg.glyphInfo->isEmoji ? 0 : sg.xOffset;
+        if (xOffset > 0) {
+          LOG_INFO("xOffset {} for text: '{}'", xOffset, run.text);
+        }
         glm::vec2 offset{
-          startX + cellAdvance + xOff,
+          startX + cellAdvance + xOffset,
           textOffset.y,
         };
         addTextGlyph(*sg.glyphInfo, offset, hl);
@@ -279,8 +288,8 @@ textureReset:
             flushRun();
             for (auto& sg : fontFamily.ShapeText(cell.text, font)) {
               if (sg.glyphInfo) {
-                float xOff = sg.glyphInfo->isEmoji ? 0 : sg.xOffset;
-                addTextGlyph(*sg.glyphInfo, {textOffset.x + xOff, textOffset.y}, hl);
+                float xOffset = sg.glyphInfo->isEmoji ? 0 : sg.xOffset;
+                addTextGlyph(*sg.glyphInfo, {textOffset.x + xOffset, textOffset.y}, hl);
               }
             }
 
@@ -316,7 +325,7 @@ textureReset:
             textOffset.x,                                                                                                                                                                                            
             textOffset.y + relPos,                                                                                                                                                                                   
           };                                                                                                                                                                                                         
-          quadPos.y = RoundToPixel(quadPos.y, dpiScale);                                                                                                                                                             
+          quadPos = RoundToPixel(quadPos, dpiScale);
 
           auto& quad = textData.NextQuad();
           for (size_t i = 0; i < 4; i++) {
@@ -448,29 +457,28 @@ void Renderer::RenderCursorMask(
   const auto& hl = hlManager.hlTable[cell.hlId];
   const float ascender = fontFamily.GetAscender();
 
-  // resolve the glyph at the cursor cell using the new shaping path
   const GlyphInfo* glyphInfo = nullptr;
   auto [kind, font] = fontFamily.ResolveFont(cell.text, hl.bold, hl.italic);
   using Kind = FontFamily::ResolvedFont::Kind;
 
   if (kind == Kind::Regular) {
-    auto shaped = fontFamily.ShapeText(cell.text, font);
-    // use the first non-null glyph (primary character in the cell)
-    for (auto& sg : shaped) {
+    for (auto& sg : fontFamily.ShapeText(cell.text, font)) {
       if (sg.glyphInfo) { glyphInfo = sg.glyphInfo; break; }
     }
   } else if (kind == Kind::ShapeDrawing) {
     glyphInfo = fontFamily.GetGlyphInfo(cell.text);
   }
 
+  cursor.onEmoji = glyphInfo && glyphInfo->isEmoji;
+
+  // emoji cursor is rendered directly on top via RenderCursorEmoji — no mask needed
+  if (cursor.onEmoji) return;
+
   textMaskRPD.cColorAttachments[0].view = cursor.maskRenderTexture.textureView;
   RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textMaskRPD);
 
   if (glyphInfo) {
-    cursor.onEmoji = glyphInfo->isEmoji;
-
     glm::vec2 textQuadPos{0, glyphInfo->useAscender ? ascender : 0};
-
     textMaskData.ResetCounts();
     auto& quad = textMaskData.NextQuad();
     for (size_t i = 0; i < 4; i++) {
@@ -479,17 +487,10 @@ void Renderer::RenderCursorMask(
     }
     textMaskData.WriteBuffers();
 
-    passEncoder.SetPipeline(
-      glyphInfo->isEmoji ? ctx.pipeline.emojiMaskRPL : ctx.pipeline.textMaskRPL
-    );
+    passEncoder.SetPipeline(ctx.pipeline.textMaskRPL);
     passEncoder.SetBindGroup(0, cursor.maskRenderTexture.camera.viewProjBG);
-    if (glyphInfo->isEmoji) {
-      passEncoder.SetBindGroup(1, fontFamily.colorTextureAtlas.textureSizeBG);
-      passEncoder.SetBindGroup(2, fontFamily.colorTextureAtlas.renderTexture.textureBG);
-    } else {
-      passEncoder.SetBindGroup(1, fontFamily.textureAtlas.textureSizeBG);
-      passEncoder.SetBindGroup(2, fontFamily.textureAtlas.renderTexture.textureBG);
-    }
+    passEncoder.SetBindGroup(1, fontFamily.textureAtlas.textureSizeBG);
+    passEncoder.SetBindGroup(2, fontFamily.textureAtlas.renderTexture.textureBG);
     textMaskData.Render(passEncoder);
   }
 
@@ -598,6 +599,48 @@ void Renderer::RenderCursor(const Cursor& cursor, HlManager& hlManager) {
   cursorData.Render(passEncoder);
   passEncoder.End();
   cursorRPD.cColorAttachments[0].view = {};
+}
+
+void Renderer::RenderCursorEmoji(
+  const Win& win, const Cursor& cursor, FontFamily& fontFamily, HlManager& hlManager
+) {
+  if (!cursor.onEmoji) return;
+  if (!win.grid.ValidCoords(cursor.row, cursor.col)) return;
+
+  auto& cell = win.grid.lines[cursor.row][cursor.col];
+  const auto& hl = hlManager.hlTable[cell.hlId];
+  auto [kind, font] = fontFamily.ResolveFont(cell.text, hl.bold, hl.italic);
+  using Kind = FontFamily::ResolvedFont::Kind;
+  if (kind != Kind::Regular) return;
+
+  const float ascender = fontFamily.GetAscender();
+
+  cursorEmojiOverlayData.ResetCounts();
+  for (ShapedGlyph& sg : fontFamily.ShapeText(cell.text, font)) {
+    if (!sg.glyphInfo || !sg.glyphInfo->isEmoji) continue;
+    glm::vec2 quadPos{
+      cursor.maskPos.x,
+      cursor.maskPos.y + (sg.glyphInfo->useAscender ? ascender : 0),
+    };
+    auto& quad = cursorEmojiOverlayData.NextQuad();
+    for (size_t i = 0; i < 4; i++) {
+      quad[i].position = quadPos + sg.glyphInfo->localPoss[i];
+      quad[i].regionCoord = sg.glyphInfo->atlasRegion[i];
+      quad[i].foreground = {};
+    }
+  }
+  if (cursorEmojiOverlayData.quadCount == 0) return;
+  cursorEmojiOverlayData.WriteBuffers();
+
+  cursorEmojiOverlayRPD.cColorAttachments[0].view = nextTextureView;
+  auto passEncoder = commandEncoder.BeginRenderPass(&cursorEmojiOverlayRPD);
+  passEncoder.SetPipeline(ctx.pipeline.cursorEmojiOverlayRPL);
+  passEncoder.SetBindGroup(0, camera.viewProjBG);
+  passEncoder.SetBindGroup(1, fontFamily.colorTextureAtlas.textureSizeBG);
+  passEncoder.SetBindGroup(2, fontFamily.colorTextureAtlas.renderTexture.textureBG);
+  cursorEmojiOverlayData.Render(passEncoder);
+  passEncoder.End();
+  cursorEmojiOverlayRPD.cColorAttachments[0].view = {};
 }
 
 void Renderer::End() {

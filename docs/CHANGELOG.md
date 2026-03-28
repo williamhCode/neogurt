@@ -13,11 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add automatic font fallback
 - Add proper emoji rendering behavior, adheres to Unicode standard
 - Add cmd argument to session_restart
-- Add ligature rendering yay!! (this one has been put off for a while haha)
+- Add ligature rendering yay!! (this one has been put off for a while haha, also fixes some emojis)
 
 ### Changed
 - Use compindex for floating window (nvim 0.12+)
 - Simplify msg window and ime window rendering logic
+- Emoji renders on top of cursor instead of using alpha mask
 
 ### Fixed
 - FontFamily::UpdateLinespace not setting topLinespace

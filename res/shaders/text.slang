@@ -32,10 +32,14 @@ ParameterBlock<TextureInfo> texture;
 float4 fs_main(VertexOut in) {
 #ifdef EMOJI
   let color = texture.Sample(in.uv);
+  #ifdef SURFACE
+    return color;
+  #else
+    return ToLinear(color);
+  #endif
 #else
   let alpha = texture.Sample(in.uv).r;
   let color = float4(in.foreground.rgb, in.foreground.a * alpha);
-#endif
-
   return ToLinear(color);
+#endif
 }

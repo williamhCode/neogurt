@@ -55,7 +55,7 @@ struct Renderer {
   wgpu::utils::RenderPassDescriptor textRPD;
 
   // text mask
-  QuadRenderData<TextMaskQuadVertex> textMaskData;
+  QuadRenderData<TextMaskQuadVertex, true> textMaskData;
   wgpu::utils::RenderPassDescriptor textMaskRPD;
 
   // windows
@@ -67,6 +67,10 @@ struct Renderer {
   // cursor
   QuadRenderData<CursorQuadVertex> cursorData;
   wgpu::utils::RenderPassDescriptor cursorRPD;
+
+  // emoji cursor overlay
+  QuadRenderData<TextQuadVertex, true> cursorEmojiOverlayData;
+  wgpu::utils::RenderPassDescriptor cursorEmojiOverlayRPD;
 
   Renderer();
 
@@ -82,5 +86,8 @@ struct Renderer {
   void RenderWindows(std::span<const Win*> windows, std::span<const Win*> floatWindows);
   void RenderFinalTexture();
   void RenderCursor(const Cursor& cursor, HlManager& hlManager);
+  void RenderCursorEmoji(
+    const Win& win, const Cursor& cursor, FontFamily& fontFamily, HlManager& hlManager
+  );
   void End();
 };

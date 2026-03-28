@@ -36,13 +36,8 @@ float4 fs_main(VertexOut in) {
   float2 uv = (maskPos / in.maskPos.w) * 0.5 + 0.5;
   float mask = maskTexture.Sample(uv).r;
 
-#ifdef EMOJI
   float4 color = in.background;
-  if (mask >= 0.8) {
-    discard;
-  }
-#else
-  float4 color = in.background;
+#ifndef EMOJI
   color.a = 1.0 - mask;
   color = Blend(color, in.foreground);
 #endif

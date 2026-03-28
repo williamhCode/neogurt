@@ -55,6 +55,7 @@ struct Pipeline {
   wgpu::BindGroupLayout cursorMaskPosBGL;
   wgpu::RenderPipeline cursorRPL;
   wgpu::RenderPipeline cursorEmojiRPL;
+  wgpu::RenderPipeline cursorEmojiOverlayRPL;
 
   Pipeline() = default;
   Pipeline(const WGPUContext& ctx, SlangContext& slang, float gamma);

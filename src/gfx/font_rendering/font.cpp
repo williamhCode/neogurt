@@ -183,10 +183,9 @@ Font::FromName(const FontDescriptorWithName& desc, float dpiScale) {
   }
 }
 
-Font::Font(
-  std::string _path, float _height, float _width, float _dpiScale
-)
+Font::Font(std::string _path, float _height, float _width, float _dpiScale)
     : path(std::move(_path)), height(_height), width(_width), dpiScale(_dpiScale) {
+
   if (face = CreateFace(library, path.c_str(), 0); face == nullptr) {
     throw std::runtime_error("Failed to create FT_Face for: " + path);
   }
@@ -290,7 +289,6 @@ bool Font::ShouldRenderText(const std::string& text) {
   if (glyphIndex == 0) return false;
 
   FT_Load_Glyph(face.get(), glyphIndex, FT_LOAD_BITMAP_METRICS_ONLY);
-  FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL);
 
   bool isColorEmoji = (face->glyph->bitmap.pixel_mode == FT_PIXEL_MODE_BGRA);
   if (!ShouldAcceptGlyphForEmojiPresentation(u32text, isColorEmoji)) {
@@ -331,7 +329,7 @@ std::vector<ShapedGlyph> Font::ShapeText(
     result.push_back({
       .glyphInfo = RasterizeGlyph(infos[i].codepoint, textureAtlas, colorTextureAtlas),
       .numCells = clusterEnd - clusterStart,
-      .xOffset = (pos[i].x_offset >> 6) / dpiScale,
+      .xOffset = pos[i].x_offset / 64.f / dpiScale,
     });
   }
   return result;

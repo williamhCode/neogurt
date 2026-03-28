@@ -222,4 +222,30 @@ Pipeline::Pipeline(const WGPUContext& ctx, SlangContext& slang, float gamma) {
   cursorRPLDesc.fs = cursorEmojiShader;
 
   cursorEmojiRPL = ctx.MakeRenderPipeline(cursorRPLDesc);
+
+  // emoji cursor overlay — renders emoji directly onto the surface after the cursor rect
+  ShaderModule cursorEmojiOverlayShader =
+    loadShaderModule("text", {{"EMOJI"}, {"SURFACE"}});
+
+  cursorEmojiOverlayRPL = ctx.MakeRenderPipeline({
+    .vs = cursorEmojiOverlayShader,
+    .fs = cursorEmojiOverlayShader,
+    .bgls = {viewProjBGL, textureSizeBGL, textureBGL},
+    .buffers = {
+      {
+        sizeof(TextQuadVertex),
+        {
+          {VertexFormat::Float32x2, offsetof(TextQuadVertex, position)},
+          {VertexFormat::Float32x2, offsetof(TextQuadVertex, regionCoord)},
+          {VertexFormat::Float32x4, offsetof(TextQuadVertex, foreground)},
+        }
+      }
+    },
+    .targets = {
+      {
+        .format = TextureFormat::BGRA8Unorm,
+        .blend = &utils::BlendState::AlphaBlending,
+      },
+    },
+  });
 }
