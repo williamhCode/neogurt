@@ -195,8 +195,7 @@ void FontFamily::UpdateLinespace(int _linespace) {
   );
 }
 
-const GlyphInfo*
-FontFamily::GetGlyphInfo(const std::string& text, bool bold, bool italic) {
+FontHandle FontFamily::ResolveFont(const std::string& text, bool bold, bool italic) {
   // optimize for empty text
   if (text.empty() || text == " ") return nullptr;
 
@@ -208,25 +207,23 @@ FontFamily::GetGlyphInfo(const std::string& text, bool bold, bool italic) {
 
     // Try to get glyph from loaded LastResort font
     if (lastResortFont.has_value()) { // this should always return true
-      if (const auto* glyphInfo =
-            (*lastResortFont)->GetGlyphInfo(text, textureAtlas, colorTextureAtlas)) {
-        return glyphInfo;
+      if ((*lastResortFont)->ShouldRenderText(text)){
+        *lastResortFont;
       }
     }
     return nullptr;
   }
 
-  // Try to find glyph in shape drawing
-  if (const auto *glyphInfo = shapeDrawing.GetGlyphInfo(text, textureAtlas)) {
-    return glyphInfo;
+  // return no font if text should be rendered as shape
+  if (ShapeDrawing::ShouldRenderText(text)) {
+    return nullptr;
   }
 
   // Try to find glyph in existing fonts
   for (const auto& fontSet : fonts) {
     const auto& font = fontSet.GetFontHandle(bold, italic);
-    if (const auto* glyphInfo =
-          font->GetGlyphInfo(text, textureAtlas, colorTextureAtlas)) {
-      return glyphInfo;
+    if (font->ShouldRenderText(text)) {
+      return font;
     }
   }
 
@@ -261,9 +258,8 @@ FontFamily::GetGlyphInfo(const std::string& text, bool bold, bool italic) {
       }
     }
 
-    if (const auto* glyphInfo =
-          (*lastResortFont)->GetGlyphInfo(text, textureAtlas, colorTextureAtlas)) {
-      return glyphInfo;
+    if ((*lastResortFont)->ShouldRenderText(text)){
+      *lastResortFont;
     }
     return nullptr;
   }
@@ -303,9 +299,8 @@ FontFamily::GetGlyphInfo(const std::string& text, bool bold, bool italic) {
     // Now try to get the glyph from the newly added font
     const auto& newFontSet = fonts.back();
     const auto& font = newFontSet.GetFontHandle(bold, italic);
-    if (const auto* glyphInfo =
-          font->GetGlyphInfo(text, textureAtlas, colorTextureAtlas)) {
-      return glyphInfo;
+    if (font->ShouldRenderText(text)) {
+      return font;
     }
 
   } catch (std::bad_expected_access<std::runtime_error>&) {
@@ -315,6 +310,14 @@ FontFamily::GetGlyphInfo(const std::string& text, bool bold, bool italic) {
   }
 
   return nullptr;
+}
+
+std::vector<ShapedGlyph> FontFamily::ShapeText(const std::string& text, const FontHandle& font) {
+  return font->ShapeText(text, textureAtlas, colorTextureAtlas);
+}
+
+const GlyphInfo* FontFamily::GetGlyphInfo(const std::string& text) {
+  return shapeDrawing.GetGlyphInfo(text, textureAtlas);
 }
 
 const GlyphInfo* FontFamily::GetGlyphInfo(UnderlineType underlineType) {

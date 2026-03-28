@@ -21,7 +21,7 @@ char32_t Utf8ToChar32(const std::string& utf8String) {
   auto it = utf8String.begin();
   auto codepoint = utf_traits<char>::decode(it, utf8String.end());
   if (codepoint == incomplete || codepoint == illegal) {
-    LOG_ERR("Utf8ToUtf32 - bad string: {}", utf8String);
+    LOG_ERR("Utf8ToChar32 - bad string: {}", utf8String);
   }
   return codepoint;
 }

@@ -69,7 +69,10 @@ struct FontFamily {
   glm::vec2 GetCharSize() const;
   float GetAscender() const;
 
-  const GlyphInfo* GetGlyphInfo(const std::string& text, bool bold, bool italic);
+  FontHandle ResolveFont(const std::string& text, bool bold, bool italic);
+
+  std::vector<ShapedGlyph> ShapeText(const std::string& text, const FontHandle& font);
+  const GlyphInfo* GetGlyphInfo(const std::string& text); // box drawing, no font
   const GlyphInfo* GetGlyphInfo(UnderlineType underlineType);
   const GlyphInfo* GetGlyphInfo(StrikethroughTag);
 

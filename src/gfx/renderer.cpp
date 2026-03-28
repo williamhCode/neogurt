@@ -170,6 +170,66 @@ textureReset:
   const float strikeoutPosition = fontFamily.DefaultFont().strikeoutPosition;
   const float dpiScale = fontFamily.dpiScale;
 
+  struct RunData {
+    FontHandle font;
+    int hlId = -1;
+    size_t startCol = 0;
+    std::string text;
+
+    bool empty() const {
+      return text.empty();
+    }
+
+    void reset() {
+      hlId = -1;
+      font = nullptr;
+      text.clear();
+    }
+  } run;
+
+  auto addGlyph = [&](const GlyphInfo& glyphInfo, glm::vec2 offset, const Highlight& hl) {
+    glm::vec2 textQuadPos{
+      offset.x,
+      offset.y + (glyphInfo.useAscender ? ascender : 0),
+    };
+
+    glm::vec4 foreground{};
+    QuadRenderData<TextQuadVertex, true>* quadData;
+    if (glyphInfo.isEmoji) {
+      quadData = &emojiData;
+    } else {
+      foreground = hlManager.GetForeground(hl);
+      quadData = &textData;
+    }
+
+    auto& quad = quadData->NextQuad();
+    for (size_t i = 0; i < 4; i++) {
+      quad[i].position = textQuadPos + glyphInfo.localPoss[i];
+      quad[i].regionCoord = glyphInfo.atlasRegion[i];
+      quad[i].foreground = foreground;
+    }
+  };
+
+  auto flushRun = [&]() {
+    if (run.empty()) return;
+    float startX = run.startCol * charSize.x;
+    float cellAdvance = 0;
+    Highlight& hl = hlManager.hlTable[run.hlId];
+
+    for (ShapedGlyph& sg : fontFamily.ShapeText(run.text, run.font)) {
+      if (sg.glyphInfo) {
+        float xOff = sg.glyphInfo->isEmoji ? 0 : sg.xOffset;
+        glm::vec2 offset{
+          startX + cellAdvance + xOff,
+          textOffset.y,
+        };
+        addGlyph(*sg.glyphInfo, offset, hl);
+      }
+      cellAdvance += sg.numCells * charSize.x;
+    }
+    run.reset();
+  };
+
   for (size_t row = 0; row < rows; row++) {
     auto& line = win.grid.lines[row];
     textOffset.x = 0;
@@ -194,33 +254,28 @@ textureReset:
       }
 
       try {
-        // this may throw TextureResizeError (thrown by TextureAtlas::Resize())
-        if (const auto* glyphInfo =
-              fontFamily.GetGlyphInfo(cell.text, hl.bold, hl.italic)) {
-
-          glm::vec2 textQuadPos{
-            textOffset.x,
-            textOffset.y + (glyphInfo->useAscender ? ascender : 0),
+        FontHandle font = fontFamily.ResolveFont(cell.text, hl.bold, hl.italic);
+        if (!font || font != run.font || cell.hlId != run.hlId) {
+          flushRun();
+          run = RunData{
+            .font = font,
+            .hlId = cell.hlId,
+            .startCol = col,
           };
+        }
 
-          glm::vec4 foreground{};
-          QuadRenderData<TextQuadVertex, true>* quadData;
-          if (glyphInfo->isEmoji) {
-            quadData = &emojiData;
-          } else {
-            foreground = hlManager.GetForeground(hl);
-            quadData = &textData;
-          }
+        if (font) {
+          run.text += cell.text;
 
-          auto& quad = quadData->NextQuad();
-          for (size_t i = 0; i < 4; i++) {
-            quad[i].position = textQuadPos + glyphInfo->localPoss[i];
-            quad[i].regionCoord = glyphInfo->atlasRegion[i];
-            quad[i].foreground = foreground;
+        } else if (ShapeDrawing::ShouldRenderText(cell.text)) {
+          // this may throw TextureResizeError (thrown by TextureAtlas::Resize())
+          if (const auto* glyphInfo = fontFamily.GetGlyphInfo(cell.text)) {
+            addGlyph(*glyphInfo, textOffset, hl);
           }
         }
 
         if (hl.strikethrough) {
+          // this may throw TextureResizeError (thrown by TextureAtlas::Resize())
           if (const auto* glyphInfo = fontFamily.GetGlyphInfo(StrikethroughTag{})) {
             const auto& region = glyphInfo->localPoss;
             float thickness = region[3].y - region[0].y;
@@ -283,6 +338,7 @@ textureReset:
 
       textOffset.x += charSize.x;
     }
+    flushRun();
 
     textOffset.y += charSize.y;
   }
@@ -375,45 +431,45 @@ void Renderer::RenderCursorMask(
 
   const auto& hl = hlManager.hlTable[cell.hlId];
 
-  if (const auto* glyphInfo =
-        fontFamily.GetGlyphInfo(cell.text, hl.bold, hl.italic)) {
+  // if (const auto* glyphInfo =
+  //       fontFamily.GetGlyphInfo(cell.text, hl.bold, hl.italic)) {
 
-    cursor.onEmoji = glyphInfo->isEmoji;
+  //   cursor.onEmoji = glyphInfo->isEmoji;
 
-    glm::vec2 textQuadPos{0, glyphInfo->useAscender ? fontFamily.GetAscender() : 0};
+  //   glm::vec2 textQuadPos{0, glyphInfo->useAscender ? fontFamily.GetAscender() : 0};
 
-    textMaskData.ResetCounts();
-    auto& quad = textMaskData.NextQuad();
-    for (size_t i = 0; i < 4; i++) {
-      quad[i].position = textQuadPos + glyphInfo->localPoss[i];
-      quad[i].regionCoord = glyphInfo->atlasRegion[i];
-    }
-    textMaskData.WriteBuffers();
+  //   textMaskData.ResetCounts();
+  //   auto& quad = textMaskData.NextQuad();
+  //   for (size_t i = 0; i < 4; i++) {
+  //     quad[i].position = textQuadPos + glyphInfo->localPoss[i];
+  //     quad[i].regionCoord = glyphInfo->atlasRegion[i];
+  //   }
+  //   textMaskData.WriteBuffers();
 
-    textMaskRPD.cColorAttachments[0].view = cursor.maskRenderTexture.textureView;
-    RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textMaskRPD);
-    passEncoder.SetPipeline(
-      glyphInfo->isEmoji ? ctx.pipeline.emojiMaskRPL : ctx.pipeline.textMaskRPL
-    );
-    passEncoder.SetBindGroup(0, cursor.maskRenderTexture.camera.viewProjBG);
-    if (glyphInfo->isEmoji) {
-      passEncoder.SetBindGroup(1, fontFamily.colorTextureAtlas.textureSizeBG);
-      passEncoder.SetBindGroup(
-        2, fontFamily.colorTextureAtlas.renderTexture.textureBG
-      );
-    } else {
-      passEncoder.SetBindGroup(1, fontFamily.textureAtlas.textureSizeBG);
-      passEncoder.SetBindGroup(2, fontFamily.textureAtlas.renderTexture.textureBG);
-    }
-    textMaskData.Render(passEncoder);
-    passEncoder.End();
+  //   textMaskRPD.cColorAttachments[0].view = cursor.maskRenderTexture.textureView;
+  //   RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textMaskRPD);
+  //   passEncoder.SetPipeline(
+  //     glyphInfo->isEmoji ? ctx.pipeline.emojiMaskRPL : ctx.pipeline.textMaskRPL
+  //   );
+  //   passEncoder.SetBindGroup(0, cursor.maskRenderTexture.camera.viewProjBG);
+  //   if (glyphInfo->isEmoji) {
+  //     passEncoder.SetBindGroup(1, fontFamily.colorTextureAtlas.textureSizeBG);
+  //     passEncoder.SetBindGroup(
+  //       2, fontFamily.colorTextureAtlas.renderTexture.textureBG
+  //     );
+  //   } else {
+  //     passEncoder.SetBindGroup(1, fontFamily.textureAtlas.textureSizeBG);
+  //     passEncoder.SetBindGroup(2, fontFamily.textureAtlas.renderTexture.textureBG);
+  //   }
+  //   textMaskData.Render(passEncoder);
+  //   passEncoder.End();
 
-  } else {
-    // just clear the texture if there's nothing
-    textMaskRPD.cColorAttachments[0].view = cursor.maskRenderTexture.textureView;
-    RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textMaskRPD);
-    passEncoder.End();
-  }
+  // } else {
+  //   // just clear the texture if there's nothing
+  //   textMaskRPD.cColorAttachments[0].view = cursor.maskRenderTexture.textureView;
+  //   RenderPassEncoder passEncoder = commandEncoder.BeginRenderPass(&textMaskRPD);
+  //   passEncoder.End();
+  // }
 
   textMaskRPD.cColorAttachments[0].view = {};
 }

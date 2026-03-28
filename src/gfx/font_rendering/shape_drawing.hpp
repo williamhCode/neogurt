@@ -30,6 +30,8 @@ struct ShapeDrawing {
     float dpiScale
   );
 
+  static bool ShouldRenderText(const std::string& text);
+
   // returns nullptr if not implemented
   const GlyphInfo*
   GetGlyphInfo(const std::string& text, TextureAtlas<false>& textureAtlas);

@@ -264,33 +264,19 @@ Font::Font(
   // );
 }
 
-const GlyphInfo* Font::GetGlyphInfo(
-  const std::string& text,
-  TextureAtlas<false>& textureAtlas,
-  TextureAtlas<true>& colorTextureAtlas
-) {
-  // look for cached glyphs
-  auto it = glyphInfoMap.find(text);
-  if (it != glyphInfoMap.end()) {
-    return &(it->second);
+bool Font::ShouldRenderText(const std::string& text) {
+  if (supportedTexts.contains(text)) {
+    return true;
   }
 
-  it = emojiGlyphInfoMap.find(text);
-  if (it != emojiGlyphInfoMap.end()) {
-    return &(it->second);
-  }
-
-  // load glyph
   uint32_t glyphIndex = 0;
   std::u32string u32text = Utf8ToUtf32(text);
 
   // Use HarfBuzz shaping if: multi-char text OR features enabled
   if (u32text.size() == 1 && features.empty()) {
-    // Fast path: single character, no features
     glyphIndex = FT_Get_Char_Index(face.get(), u32text[0]);
 
   } else {
-    // HarfBuzz path: shape with features (for multi-char or when features enabled)
     hb_buffer_reset(hbBuffer);
     hb_buffer_add_utf8(hbBuffer, text.c_str(), -1, 0, -1);
     hb_buffer_guess_segment_properties(hbBuffer);
@@ -303,7 +289,65 @@ const GlyphInfo* Font::GetGlyphInfo(
     }
   }
 
-  if (glyphIndex == 0) return nullptr;
+  if (glyphIndex == 0) return false;
+
+  FT_Load_Glyph(face.get(), glyphIndex, FT_LOAD_BITMAP_METRICS_ONLY);
+  FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL);
+
+  bool isColorEmoji = (face->glyph->bitmap.pixel_mode == FT_PIXEL_MODE_BGRA);
+  if (!ShouldAcceptGlyphForEmojiPresentation(u32text, isColorEmoji)) {
+    return false;
+  }
+
+  supportedTexts.insert(text);
+  return true;
+}
+
+std::vector<ShapedGlyph> Font::ShapeText(
+  const std::string& text,
+  TextureAtlas<false>& textureAtlas,
+  TextureAtlas<true>& colorTextureAtlas
+) {
+  hb_buffer_reset(hbBuffer);
+  hb_buffer_add_utf8(hbBuffer, text.c_str(), -1, 0, -1);
+  hb_buffer_guess_segment_properties(hbBuffer);
+  hb_shape(hbFont, hbBuffer, features.data(), features.size());
+
+  hb_glyph_info_t* infos = hb_buffer_get_glyph_infos(hbBuffer, nullptr);
+  hb_glyph_position_t* pos = hb_buffer_get_glyph_positions(hbBuffer, nullptr);
+  uint len = hb_buffer_get_length(hbBuffer);
+  std::u32string u32 = Utf8ToUtf32(text);
+
+  std::vector<ShapedGlyph> result;
+  for (uint i = 0; i < len; i++) {
+    int clusterStart = infos[i].cluster;
+    int clusterEnd = (i + 1 < len) ? infos[i + 1].cluster : (int)u32.size();
+    if (clusterStart > clusterEnd) std::swap(clusterStart, clusterEnd); // RTL
+
+    result.push_back({
+      .glyphInfo = RasterizeGlyph(infos[i].codepoint, textureAtlas, colorTextureAtlas),
+      .numCells = clusterEnd - clusterStart,
+      .xOffset = (pos[i].x_offset >> 6) / dpiScale,
+    });
+  }
+  return result;
+}
+
+GlyphInfo* Font::RasterizeGlyph(
+  uint32_t glyphIndex,
+  TextureAtlas<false>& textureAtlas,
+  TextureAtlas<true>& colorTextureAtlas
+) {
+  // check if glyph is already cached
+  auto it = glyphInfoMap.find(glyphIndex);
+  if (it != glyphInfoMap.end()) {
+    return &(it->second);
+  }
+
+  auto emojiIt = emojiGlyphInfoMap.find(glyphIndex);
+  if (emojiIt != emojiGlyphInfoMap.end()) {
+    return &(emojiIt->second);
+  }
 
   FT_Load_Glyph(face.get(), glyphIndex, FT_LOAD_COLOR);
   FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL);
@@ -313,9 +357,9 @@ const GlyphInfo* Font::GetGlyphInfo(
 
   // Check emoji presentation rules
   bool isColorEmoji = (bitmap.pixel_mode == FT_PIXEL_MODE_BGRA);
-  if (!ShouldAcceptGlyphForEmojiPresentation(u32text, isColorEmoji)) {
-    return nullptr;
-  }
+  // if (!ShouldAcceptGlyphForEmojiPresentation(u32text, isColorEmoji)) {
+  //   return nullptr;
+  // }
 
   GlyphInfo glyphInfo{
     .localPoss = MakeRegion(
@@ -333,8 +377,8 @@ const GlyphInfo* Font::GetGlyphInfo(
   // emoji glyphs
   if (isColorEmoji) {
     std::extents shape{bitmap.rows, bitmap.width};
-    // NOTE: assuming pitch is positive here, glyph will be flipped vertically if negative
-    // https://freetype.org/freetype2/docs/glyphs/glyphs-7.html
+    // NOTE: assuming pitch is positive here, glyph will be flipped vertically if
+    // negative https://freetype.org/freetype2/docs/glyphs/glyphs-7.html
     std::array strides{std::abs(bitmap.pitch) / sizeof(uint32_t), 1uz};
     auto view = std::mdspan(
       // should be safe since freetype treats bitmap.buffer as typeless
@@ -346,7 +390,7 @@ const GlyphInfo* Font::GetGlyphInfo(
     glyphInfo.atlasRegion = colorTextureAtlas.AddGlyph(view);
     glyphInfo.isEmoji = true;
 
-    auto pair = emojiGlyphInfoMap.emplace(text, glyphInfo);
+    auto pair = emojiGlyphInfoMap.emplace(glyphIndex, glyphInfo);
     return &(pair.first->second);
   }
   // non-emoji glyphs
@@ -357,7 +401,7 @@ const GlyphInfo* Font::GetGlyphInfo(
 
     glyphInfo.atlasRegion = textureAtlas.AddGlyph(view);
 
-    auto pair = glyphInfoMap.emplace(text, glyphInfo);
+    auto pair = glyphInfoMap.emplace(glyphIndex, glyphInfo);
     return &(pair.first->second);
   }
 }

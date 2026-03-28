@@ -8,3 +8,8 @@ struct GlyphInfo {
   bool isEmoji = false;
 };
 
+struct ShapedGlyph {
+  const GlyphInfo* glyphInfo; // null = blank/skip
+  int numCells;               // >1 for true liga, always 1 for calt
+  float xOffset;              // HarfBuzz x_offset in pixels — needed for calt shifting
+};

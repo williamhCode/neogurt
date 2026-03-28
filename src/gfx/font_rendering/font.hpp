@@ -5,6 +5,7 @@
 #include "./texture_atlas.hpp"
 #include "utils/logger.hpp"
 #include <expected>
+#include <set>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -30,8 +31,8 @@ struct Font {
   std::string path;
   float height;     // font size
   float width;
-  float emojiRatio;
   float dpiScale;
+  float emojiRatio;
 
   glm::vec2 charSize; // doesn't take in account linespace
   float ascender; // doesn't take in account linespace
@@ -40,7 +41,10 @@ struct Font {
   float strikeoutPosition;
   float strikeoutThickness;
 
-  using GlyphInfoMap = std::unordered_map<std::string, GlyphInfo>;
+ // for quick lookup of whether a char is supported by this font
+  std::set<std::string> supportedTexts;
+
+  using GlyphInfoMap = std::unordered_map<uint32_t, GlyphInfo>;
   GlyphInfoMap glyphInfoMap;
   GlyphInfoMap emojiGlyphInfoMap;
 
@@ -52,10 +56,17 @@ struct Font {
 
   Font(std::string path, float height, float width, float dpiScale);
 
-  // returns nullptr when charcode is not found.
-  // updates glyphInfoMap when charcode not in map.
-  const GlyphInfo* GetGlyphInfo(
+  bool ShouldRenderText(const std::string& text);
+
+  std::vector<ShapedGlyph> ShapeText(
     const std::string& text,
+    TextureAtlas<false>& textureAtlas,
+    TextureAtlas<true>& colorTextureAtlas
+  );
+
+  // private
+  GlyphInfo* RasterizeGlyph(
+    uint32_t glyphIndex,
     TextureAtlas<false>& textureAtlas,
     TextureAtlas<true>& colorTextureAtlas
   );
