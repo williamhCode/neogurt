@@ -185,23 +185,6 @@ Font::FromName(const FontDescriptorWithName& desc, float dpiScale) {
   }
 }
 
-void Font::SetFeatures(std::string_view featuresStr) {
-  features.clear();
-  for (auto part : std::views::split(featuresStr, std::string_view{","})) {
-    std::string_view token(part);
-
-    // trim whitespace
-    size_t start = token.find_first_not_of(' ');
-    if (start == std::string_view::npos) continue;
-    token = token.substr(start, token.find_last_not_of(' ') - start + 1);
-
-    hb_feature_t feature;
-    if (hb_feature_from_string(token.data(), token.size(), &feature)) {
-      features.push_back(feature);
-    }
-  }
-}
-
 Font::Font(std::string _path, float _height, float _width, float _dpiScale)
     : path(std::move(_path)), familyName(GetFontFamilyName(path)),
       height(_height), width(_width), dpiScale(_dpiScale) {
@@ -279,6 +262,23 @@ Font::Font(std::string _path, float _height, float _width, float _dpiScale)
   //   path, height, dpiScale, glm::to_string(charSize), ascender, underlinePosition,
   //   underlineThickness, strikeoutPosition, strikeoutThickness
   // );
+}
+
+void Font::SetFeatures(std::string_view featuresStr) {
+  features.clear();
+  for (auto part : std::views::split(featuresStr, std::string_view{","})) {
+    std::string_view token(part);
+
+    // trim whitespace
+    size_t start = token.find_first_not_of(' ');
+    if (start == std::string_view::npos) continue;
+    token = token.substr(start, token.find_last_not_of(' ') - start + 1);
+
+    hb_feature_t feature;
+    if (hb_feature_from_string(token.data(), token.size(), &feature)) {
+      features.push_back(feature);
+    }
+  }
 }
 
 bool Font::ShouldRenderText(const std::string& text) {

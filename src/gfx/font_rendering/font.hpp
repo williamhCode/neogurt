@@ -52,12 +52,12 @@ struct Font {
   // OpenType font features (e.g., stylistic sets, character variants)
   std::vector<hb_feature_t> features;
 
-  void SetFeatures(std::string_view featuresStr);
-
   static std::expected<Font, std::runtime_error>
   FromName(const FontDescriptorWithName& desc, float dpiScale);
 
   Font(std::string path, float height, float width, float dpiScale);
+
+  void SetFeatures(std::string_view featuresStr);
 
   bool ShouldRenderText(const std::string& text);
 

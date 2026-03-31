@@ -218,13 +218,13 @@ void FontFamily::ApplyFeaturesToFontSet(const FontSet& fontSet) {
     auto it = fontFeatures.find(font->familyName);
     if (it != fontFeatures.end()) {
       font->SetFeatures(it->second);
-      return;
+      continue;
     }
 
     auto fallback = fontFeatures.find("");
     if (fallback != fontFeatures.end()) {
       font->SetFeatures(fallback->second);
-      return;
+      continue;
     }
 
     font->SetFeatures("");
