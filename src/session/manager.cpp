@@ -30,7 +30,8 @@ void SessionManager::OptionSet(
   SessionHandle& session, const event::OptionTable& optionTable
 ) {
   bool isCurrent = session == CurrSession();
-  SessionOptions& sessionOpts = session->sessionOpts;
+  auto& sessionOpts = session->sessionOpts;
+  auto& editorState = session->editorState;
 
   bool setOpacity = false;
   bool updateSizes = false;
@@ -88,7 +89,7 @@ void SessionManager::OptionSet(
     } else if (key == "vsync") {
       if (convertOption(globalOpts.vsync)) {
         // defer ctx resize to before next GetNextTexture to avoid using a destroyed surface texture
-        pendingCtxResize = true;
+        updateVsync = true;
       }
 
     } else if (key == "fps") {
@@ -147,13 +148,18 @@ void SessionManager::OptionSet(
         updateSizes = true;
       }
 
+    } else if (key == "font_features") {
+      if (convertOption(sessionOpts.fontFeatures)) {
+        editorState.fontFamily.SetFontFeatures(sessionOpts.fontFeatures);
+      }
+
     } else {
       LOG_WARN("Unknown option: {}", key);
     }
   }
 
   if (setOpacity) {
-    session->editorState.hlManager.SetOpacity(sessionOpts.opacity, sessionOpts.bgColor);
+    editorState.hlManager.SetOpacity(sessionOpts.opacity, sessionOpts.bgColor);
   }
 
   // only do this if current session, cuz it's gna be updated anyway when switching sessions
@@ -440,6 +446,8 @@ void SessionManager::UpdateUiOptions(SessionHandle& session) {
           return FontFamily::Default(linespace, window.dpiScale);
         })
         .value();
+    fontFamily.SetFontFeatures(session->sessionOpts.fontFeatures);
+
     UpdateSessionSizes(session);
     uiOptions.guifont.reset();
     uiOptions.linespace.reset();

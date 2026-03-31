@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <unordered_map>
 
 // global options (shared across all sessions)
 struct GlobalOptions {
@@ -27,5 +28,7 @@ struct GlobalOptions {
 struct SessionOptions {
   uint32_t bgColor = 0x000000;
   float opacity = 1;
+
+  std::unordered_map<std::string, std::string> fontFeatures;
 };
 

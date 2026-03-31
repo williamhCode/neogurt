@@ -192,8 +192,8 @@ int main(int argc, char** argv) {
         }
         LOG_ENABLE();
 
-        if (sessionManager.pendingCtxResize) {
-          sessionManager.pendingCtxResize = false;
+        if (sessionManager.updateVsync) {
+          sessionManager.updateVsync = false;
           ctx.Resize(sizes.fbSize, globalOpts.vsync);
         }
 

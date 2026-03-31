@@ -72,7 +72,7 @@ public:
     return it == sessionsOrder.end() ? nullSession : **it;
   }
 
-  bool pendingCtxResize = false;
+  bool updateVsync = false;
 
   void OptionSet(SessionHandle& session, const event::OptionTable& optionTable);
 

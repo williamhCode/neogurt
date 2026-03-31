@@ -124,6 +124,24 @@ std::string GetFontPathFromName(const FontDescriptorWithName& desc) {
   return path;
 }
 
+std::string GetFontFamilyName(const std::string& path) {
+  NSURL* url = [NSURL fileURLWithPath:@(path.c_str())];
+  CTFontDescriptorRef desc =
+    CTFontDescriptorCreateWithAttributes((CFDictionaryRef)@{
+      (NSString*)kCTFontURLAttribute: url
+    });
+  if (!desc) return "";
+
+  auto family =
+    (NSString*)CTFontDescriptorCopyAttribute(desc, kCTFontFamilyNameAttribute);
+  CFRelease(desc);
+  if (!family) return "";
+
+  std::string result = [family UTF8String];
+  CFRelease(family);
+  return result;
+}
+
 std::string FindFallbackFontForCharacter(const std::string& text) {
   std::u32string u32text = Utf8ToUtf32(text);
   if (u32text.empty()) return "";

@@ -7,29 +7,42 @@
 
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 #include <vector>
 #include <expected>
 #include <unordered_set>
 #include <optional>
+#include <ranges>
 
 using FontHandle = std::shared_ptr<Font>;
 // Font is shared with normal if bold/italic/boldItalic is not available
 // If variation exists, it owns its own Font
+// Fields are never null
 struct FontSet {
   FontHandle normal;
   FontHandle bold;
   FontHandle italic;
   FontHandle boldItalic;
 
-  const FontHandle& GetFontHandle(bool isBold, bool isItalic) const {
+  std::vector<const FontHandle*> UniqueFonts() const {
+    std::vector<const FontHandle*> result = {&normal};
+    for (const FontHandle* fh : {&bold, &italic, &boldItalic}) {
+      if (*fh != normal) {
+        result.push_back(fh);
+      }
+    }
+    return result;
+  }
+
+  const FontHandle& GetFont(bool isBold, bool isItalic) const {
     if (isBold && isItalic) {
-      return boldItalic ? boldItalic : normal;
+      return boldItalic;
     }
     if (isBold) {
-      return bold ? bold : normal;
+      return bold;
     }
     if (isItalic) {
-      return italic ? italic : normal;
+      return italic;
     }
     return normal;
   }
@@ -50,6 +63,9 @@ struct FontFamily {
   float defaultHeight;
   float defaultWidth;
 
+  using FontFeatures = std::unordered_map<std::string, std::string>;
+  FontFeatures fontFeatures;
+
   // Cache for characters that fallback to LastResort (unknown characters)
   std::unordered_set<std::string> lastResortCache;
   std::optional<FontHandle> lastResortFont;
@@ -64,6 +80,7 @@ struct FontFamily {
   void ChangeSize(float delta);
   void ResetSize();
   void UpdateLinespace(int linespace);
+  void SetFontFeatures(const FontFeatures& fontFeatures);
 
   const Font& DefaultFont() const;
   glm::vec2 GetCharSize() const;
@@ -86,6 +103,7 @@ struct FontFamily {
 
 private:
   void UpdateFonts(std::function<FontHandle(const FontHandle&)> createFont);
+  void ApplyFeaturesToFontSet(const FontSet& fontSet);
 };
 
 inline const Font& FontFamily::DefaultFont() const {

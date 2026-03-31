@@ -52,6 +52,13 @@ if vim.g.neogurt then
     -- session specific options
     bg_color = 0x000000, -- used when opacity < 1
     opacity = 1,
+
+    -- Map of font family name -> comma-separated OpenType features.
+    -- Use "" as a fallback that applies to fonts without a specific entry.
+    -- Feature format: https://harfbuzz.github.io/harfbuzz-hb-common.html#hb-feature-from-string
+    -- Example (disable ligatures globally, enable for JetBrains Mono):
+    --   font_features = { [""] = "-liga,-calt", ["JetBrains Mono"] = "liga,calt" }
+    font_features = {},
   })
 
   -- options provided by neovim
@@ -74,6 +81,11 @@ Neogurt cmd_name arg=value arg1 arg2
 For example, to spawn a new session with the name `nvim config` and directory `~/.config/nvim`, do
 ```vim
 Neogurt session_new name=nvim\ config dir=~/.config/nvim
+```
+
+And for tables, use the vim dictionary syntax. Here I'm disabling ligatures.
+```vim
+Neogurt option_set font_features={'': '-liga,-calt'}
 ```
 
 The lua equivalent is to use the `neogurt_cmd` function:

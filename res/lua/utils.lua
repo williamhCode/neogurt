@@ -67,6 +67,9 @@ M.convert_opts = function(default_opts, opts)
         new_val = tonumber(opts[key])
       elseif expected_type == "string" then
         new_val = opts[key]
+      elseif expected_type == "table" then
+        local ok, result = pcall(vim.fn.eval, opts[key])
+        new_val = (ok and type(result) == "table") and result or nil
       end
 
       if new_val == nil then

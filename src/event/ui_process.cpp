@@ -47,7 +47,7 @@ void ProcessUiEvents(SessionHandle& session) {
 
   for (int i = 0; i < uiEvents.numFlushes; i++) {
     assert(!uiEvents.queue.empty());
-    auto redrawEvents = std::move(uiEvents.queue.front());
+    std::deque<UiEvent> redrawEvents = std::move(uiEvents.queue.front());
     uiEvents.queue.pop_front();
 
     // don't need this, since win events are executed last,
@@ -60,7 +60,7 @@ void ProcessUiEvents(SessionHandle& session) {
     std::vector<WinViewportMargins*> margins;
     std::vector<MsgSetPos*> msgSetPos;
 
-    for (auto& event : redrawEvents) {
+    for (UiEvent& event : redrawEvents) {
       std::visit(overloaded{
         [&](SetTitle& e) {
           // LOG("set_title");

@@ -9,6 +9,7 @@
 #include <optional>
 #include <span>
 #include <unordered_set>
+#include <ranges>
 
 #include "freetype/ftmodapi.h"
 #include "utils/unicode.hpp"
@@ -177,14 +178,33 @@ Font::FromName(const FontDescriptorWithName& desc, float dpiScale) {
     return std::unexpected(std::runtime_error("Failed to find font for: " + desc.name));
   }
   try {
-    return Font(fontPath, desc.height, desc.width, dpiScale);
+    Font font(fontPath, desc.height, desc.width, dpiScale);
+    return font;
   } catch (std::runtime_error& e) {
     return std::unexpected(std::move(e));
   }
 }
 
+void Font::SetFeatures(std::string_view featuresStr) {
+  features.clear();
+  for (auto part : std::views::split(featuresStr, std::string_view{","})) {
+    std::string_view token(part);
+
+    // trim whitespace
+    size_t start = token.find_first_not_of(' ');
+    if (start == std::string_view::npos) continue;
+    token = token.substr(start, token.find_last_not_of(' ') - start + 1);
+
+    hb_feature_t feature;
+    if (hb_feature_from_string(token.data(), token.size(), &feature)) {
+      features.push_back(feature);
+    }
+  }
+}
+
 Font::Font(std::string _path, float _height, float _width, float _dpiScale)
-    : path(std::move(_path)), height(_height), width(_width), dpiScale(_dpiScale) {
+    : path(std::move(_path)), familyName(GetFontFamilyName(path)),
+      height(_height), width(_width), dpiScale(_dpiScale) {
 
   if (face = CreateFace(library, path.c_str(), 0); face == nullptr) {
     throw std::runtime_error("Failed to create FT_Face for: " + path);

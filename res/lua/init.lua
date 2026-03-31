@@ -24,6 +24,7 @@ local utils = require("utils")
 local cmds_table = {
   -- sets neogurt options
   option_set = {
+    -- global options (shared across all sessions)
     show_title = "boolean",
     titlebar = "string",
 
@@ -43,8 +44,11 @@ local cmds_table = {
 
     post_processing = "boolean",
 
+    -- session specific options
     bg_color = "number",
     opacity = "number",
+
+    font_features = "table",
   },
 
   -- returns session id

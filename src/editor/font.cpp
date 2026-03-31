@@ -93,7 +93,13 @@ FontFamily::FromGuifont(std::string guifont, int linespace, float dpiScale) {
 
           fontSet.normal = makeFontHandle(bold, italic);
 
-          if (!(bold || italic)) {
+          // if bold or italic, entire fontset is the same
+          if (bold || italic) {
+            fontSet.bold = fontSet.normal;
+            fontSet.italic = fontSet.normal;
+            fontSet.boldItalic = fontSet.normal;
+
+          } else {
             fontSet.bold = makeFontHandle(true, false);
             fontSet.italic = makeFontHandle(false, true);
             fontSet.boldItalic = makeFontHandle(true, true);
@@ -159,8 +165,8 @@ void FontFamily::UpdateFonts(std::function<FontHandle(const FontHandle&)> create
     FontSet& newFontSet = newFonts.emplace_back();
 
     auto makeFontHandle = [&](const FontHandle& fontHandle) -> FontHandle {
-      // check if the normal font can be reused
-      if (newFontSet.normal && fontHandle->path == newFontSet.normal->path) {
+      // resuse new normal font, if font handle is same as old normal font
+      if (newFontSet.normal && fontHandle == fontSet.normal) {
         return newFontSet.normal;
       }
       return createFont(fontHandle);
@@ -170,6 +176,8 @@ void FontFamily::UpdateFonts(std::function<FontHandle(const FontHandle&)> create
     newFontSet.bold = makeFontHandle(fontSet.bold);
     newFontSet.italic = makeFontHandle(fontSet.italic);
     newFontSet.boldItalic = makeFontHandle(fontSet.boldItalic);
+
+    ApplyFeaturesToFontSet(newFontSet);
   }
 
   fonts = std::move(newFonts);
@@ -195,6 +203,34 @@ void FontFamily::UpdateLinespace(int _linespace) {
   );
 }
 
+void FontFamily::SetFontFeatures(const FontFeatures& _fontFeatures) {
+  fontFeatures = _fontFeatures;
+
+  for (auto& fontSet : fonts) {
+    ApplyFeaturesToFontSet(fontSet);
+  }
+}
+
+void FontFamily::ApplyFeaturesToFontSet(const FontSet& fontSet) {
+  for (const FontHandle* fontPtr : fontSet.UniqueFonts()) {
+    const auto& font = *fontPtr;
+
+    auto it = fontFeatures.find(font->familyName);
+    if (it != fontFeatures.end()) {
+      font->SetFeatures(it->second);
+      return;
+    }
+
+    auto fallback = fontFeatures.find("");
+    if (fallback != fontFeatures.end()) {
+      font->SetFeatures(fallback->second);
+      return;
+    }
+
+    font->SetFeatures("");
+  }
+}
+
 FontFamily::ResolvedFont FontFamily::ResolveFont(const std::string& text, bool bold, bool italic) {
   using Kind = ResolvedFont::Kind;
 
@@ -216,7 +252,7 @@ FontFamily::ResolvedFont FontFamily::ResolveFont(const std::string& text, bool b
 
   // Try to find glyph in existing fonts
   for (const auto& fontSet : fonts) {
-    const auto& font = fontSet.GetFontHandle(bold, italic);
+    const auto& font = fontSet.GetFont(bold, italic);
     if (font->ShouldRenderText(text)) return {Kind::Regular, font};
   }
 
@@ -284,9 +320,11 @@ FontFamily::ResolvedFont FontFamily::ResolveFont(const std::string& text, bool b
     fallbackSet.italic = makeFontHandle(false, true);
     fallbackSet.boldItalic = makeFontHandle(true, true);
 
+    ApplyFeaturesToFontSet(fallbackSet);
+
     fonts.push_back(std::move(fallbackSet));
 
-    const auto& font = fonts.back().GetFontHandle(bold, italic);
+    const auto& font = fonts.back().GetFont(bold, italic);
     if (font->ShouldRenderText(text)) return {Kind::Regular, font};
 
   } catch (std::bad_expected_access<std::runtime_error>&) {
