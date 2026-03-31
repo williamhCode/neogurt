@@ -53,7 +53,7 @@ if vim.g.neogurt then
     bg_color = 0x000000, -- used when opacity < 1
     opacity = 1,
 
-    -- Map of font family name -> comma-separated OpenType features.
+    -- Table of font family name (string) -> comma-separated OpenType features (string).
     -- Use "" as a fallback that applies to fonts without a specific entry.
     -- Feature format: https://harfbuzz.github.io/harfbuzz-hb-common.html#hb-feature-from-string
     -- Example (disable ligatures globally, enable for JetBrains Mono):
