@@ -8,12 +8,11 @@ Neovim GUI Smooth like Yogurt!
 
 ## About
 Neogurt is a fast and efficient Neovim GUI written in C++23 and WebGPU. It is currently
-supported only on macOS, support for other platforms are to be determined. Features
-include:
+supported on macOS. Features include:
 - Smooth scrolling and smooth cursor out of the box.
 - Support for managing multiple neovim sessions.
 - Easy to use commands/API.
-- Accurate font rendering and color blending.
+- Accurate font rendering and color blending, with full support for ligatures and emojis.
 
 Planned Features: https://github.com/williamhCode/neogurt/issues/2 \
 Known issues: https://github.com/williamhCode/neogurt/issues/3
