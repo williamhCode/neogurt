@@ -328,19 +328,19 @@ textureReset:
           flushRun(); // Skip: empty/space — flush pending run, nothing to render
         }
 
-        auto addDecoration = [&](const GlyphInfo* glyphInfo, float centerPos, glm::vec4 color) {
+        auto addDecoration = [&](const GlyphInfo* glyphInfo, float targetY, bool centered, glm::vec4 color) {
           if (!glyphInfo) return;
 
-          const auto& region = glyphInfo->localPoss;                                                                                                                                                                 
-          float thickness = region[3].y - region[0].y;                                                                                                                                                               
+          const auto& region = glyphInfo->localPoss;
+          float thickness = region[3].y - region[0].y;
 
-          float relPos = centerPos - thickness / 2;                                                                                                                                               
-          relPos = std::min(relPos, charSize.y - thickness); // don't go below the cell                                                                                                                              
+          float relPos = centered ? targetY - thickness / 2 : targetY;
+          relPos = std::min(relPos, charSize.y - thickness); // don't go below the cell
 
-          glm::vec2 quadPos{                                                                                                                                                                                         
-            textOffset.x,                                                                                                                                                                                            
-            textOffset.y + relPos,                                                                                                                                                                                   
-          };                                                                                                                                                                                                         
+          glm::vec2 quadPos{
+            textOffset.x,
+            textOffset.y + relPos,
+          };
           quadPos = RoundToPixel(quadPos, dpiScale);
 
           auto& quad = textData.NextQuad();
@@ -355,6 +355,7 @@ textureReset:
           addDecoration(
             fontFamily.GetGlyphInfo(StrikethroughTag{}),
             ascender - strikeoutPosition,
+            true,
             hlManager.GetForeground(hl)
           );
         }
@@ -363,6 +364,7 @@ textureReset:
           addDecoration(
             fontFamily.GetGlyphInfo(*hl.underline),
             ascender - underlinePosition,
+            true,
             hlManager.GetSpecial(hl)
           );
         }

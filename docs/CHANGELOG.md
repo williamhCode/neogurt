@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Use compindex for floating window (nvim 0.12+)
 - Simplify msg window and ime window rendering logic
 - Emoji renders on top of cursor instead of using alpha mask
+- Use CoreText instead of Freetype for text rendering
 
 ### Fixed
 - FontFamily::UpdateLinespace not setting topLinespace

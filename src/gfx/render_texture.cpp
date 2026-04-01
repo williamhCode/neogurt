@@ -45,7 +45,7 @@ RenderTexture::RenderTexture(
   UpdatePos({0, 0});
 }
 
-void RenderTexture::UpdatePos(glm::vec2 pos, std::optional<Rect> region) {
+void RenderTexture::UpdatePos(glm::vec2 pos, std::optional<GRect> region) {
   renderData.ResetCounts();
 
   Region positions;
@@ -298,7 +298,7 @@ void ScrollableRenderTexture::SetTexturePositions() {
     if (yposTop < 0) {
       texture.UpdatePos(
         posOffset,
-        Rect{
+        GRect{
           .pos = {0, -yposTop},
           .size = {size.x, textureHeight + yposTop},
         }
@@ -307,7 +307,7 @@ void ScrollableRenderTexture::SetTexturePositions() {
     } else if (yposBottom > size.y) {
       texture.UpdatePos(
         posOffset + glm::vec2(0, yposTop),
-        Rect{
+        GRect{
           .pos = {0, 0},
           .size = {size.x, textureHeight - (yposBottom - size.y)},
         }
@@ -374,7 +374,7 @@ std::vector<RenderInfo> ScrollableRenderTexture::GetRenderInfos(int maxRows) con
     if (first) continue;
 
     if (top < innerTopOffset && scrollDist > 0) {
-      renderInfo.clearRegion = Rect{
+      renderInfo.clearRegion = GRect{
         .pos = {0, start * charSize.y},
         .size =
           {
@@ -383,7 +383,7 @@ std::vector<RenderInfo> ScrollableRenderTexture::GetRenderInfos(int maxRows) con
           },
       };
     } else if (bottom > innerBottomOffset && scrollDist < 0) {
-      renderInfo.clearRegion = Rect{
+      renderInfo.clearRegion = GRect{
         .pos = {0, start * charSize.y},
         .size =
           {

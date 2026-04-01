@@ -96,7 +96,7 @@ set(NEOGURT_SRC
   gfx/camera.cpp
   gfx/render_texture.cpp
   
-  gfx/font_rendering/font.cpp
+  gfx/font_rendering/font_coretext.cpp
   gfx/font_rendering/font_locator.mm
   gfx/font_rendering/shape_drawing.cpp
   gfx/font_rendering/shape_drawing.hpp

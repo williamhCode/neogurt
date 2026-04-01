@@ -2,7 +2,7 @@
 
 #include "editor/highlight.hpp"
 #include "gfx/font_rendering/texture_atlas.hpp"
-#include "gfx/font_rendering/font.hpp"
+#include "gfx/font_rendering/font_coretext.hpp"
 #include "gfx/font_rendering/shape_drawing.hpp"
 
 #include <stdexcept>

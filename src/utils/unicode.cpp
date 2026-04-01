@@ -26,6 +26,10 @@ char32_t Utf8ToChar32(const std::string& utf8String) {
   return codepoint;
 }
 
+std::u16string Utf8ToUtf16(const std::string& utf8String) {
+  return boost::locale::conv::utf_to_utf<char16_t>(utf8String);
+}
+
 std::u32string Utf8ToUtf32(const std::string& utf8String) {
   return boost::locale::conv::utf_to_utf<char32_t>(utf8String);
 }

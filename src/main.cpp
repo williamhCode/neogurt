@@ -60,10 +60,10 @@ int main(int argc, char** argv) {
   }
 
   // Freetype -------------------------------------------
-  if (int error = FtInit()) {
-    LOG_ERR("Unable to initialize freetype: {}", FT_Error_String(error));
-    return 1;
-  }
+  // if (int error = FtInit()) {
+  //   LOG_ERR("Unable to initialize freetype: {}", FT_Error_String(error));
+  //   return 1;
+  // }
 
   try {
     // init variables ---------------------
@@ -460,6 +460,6 @@ int main(int argc, char** argv) {
   }
 
   // destructors cleans up window and font before quitting sdl and freetype
-  FtDone();
+  // FtDone();
   SDL_Quit();
 }

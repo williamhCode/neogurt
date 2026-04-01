@@ -186,8 +186,8 @@ Font::FromName(const FontDescriptorWithName& desc, float dpiScale) {
 }
 
 Font::Font(std::string _path, float _height, float _width, float _dpiScale)
-    : path(std::move(_path)), familyName(GetFontFamilyName(path)),
-      height(_height), width(_width), dpiScale(_dpiScale) {
+    : path(std::move(_path)), familyName(GetFontFamilyName(path)), height(_height),
+      width(_width), dpiScale(_dpiScale) {
 
   if (face = CreateFace(library, path.c_str(), 0); face == nullptr) {
     throw std::runtime_error("Failed to create FT_Face for: " + path);
@@ -379,9 +379,6 @@ GlyphInfo* Font::RasterizeGlyph(
 
   // Check emoji presentation rules
   bool isColorEmoji = (bitmap.pixel_mode == FT_PIXEL_MODE_BGRA);
-  // if (!ShouldAcceptGlyphForEmojiPresentation(u32text, isColorEmoji)) {
-  //   return nullptr;
-  // }
 
   GlyphInfo glyphInfo{
     .localPoss = MakeRegion(

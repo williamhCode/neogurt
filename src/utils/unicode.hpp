@@ -6,6 +6,7 @@
 
 std::string Char32ToUtf8(char32_t unicode);
 char32_t Utf8ToChar32(const std::string& utf8String);
+std::u16string Utf8ToUtf16(const std::string& utf8String);
 std::u32string Utf8ToUtf32(const std::string& utf8String);
 
 struct GraphemeInfo {

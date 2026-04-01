@@ -15,7 +15,7 @@ inline Region MakeRegion(glm::vec2 pos, glm::vec2 size) {
   };
 }
 
-struct Rect {
+struct GRect {
   glm::vec2 pos;
   glm::vec2 size;
 
