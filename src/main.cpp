@@ -269,7 +269,7 @@ int main(int argc, char** argv) {
         auto color = editorState->hlManager.GetDefaultBackground();
         renderer.SetColors(color, globalOpts.gamma);
 
-        bool renderWindows = true;
+        bool renderWindows = false;
         for (auto& [id, win] : editorState->winManager.windows) {
           if (win.grid.dirty && !win.hidden) {
             renderer.RenderToWindow(win, editorState->fontFamily, editorState->hlManager);
