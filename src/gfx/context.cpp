@@ -26,7 +26,7 @@ WGPUContext::WGPUContext(SDL_Window* window, glm::uvec2 size, bool vsync, float 
 
   InstanceDescriptor desc{
     .nextInChain = &toggles,
-    .features = {.timedWaitAnyEnable = true},
+    .capabilities = {.timedWaitAnyEnable = true},
   };
   instance = CreateInstance(&desc);
   if (!instance) {
@@ -41,13 +41,10 @@ WGPUContext::WGPUContext(SDL_Window* window, glm::uvec2 size, bool vsync, float 
     instance,
     {
       .compatibleSurface = surface,
-      .powerPreference = PowerPreference::Undefined,
     }
   );
 
-  SupportedLimits supportedLimits;
-  adapter.GetLimits(&supportedLimits);
-  limits = supportedLimits.limits;
+  adapter.GetLimits(&limits);
   // utils::PrintLimits(limits);
 
   // FeatureName features[256];
@@ -55,11 +52,6 @@ WGPUContext::WGPUContext(SDL_Window* window, glm::uvec2 size, bool vsync, float 
   // for (size_t i = 0; i < featureCount; i++) {
   //   LOG_INFO("feature: {}", magic_enum::enum_name(features[i]));
   // }
-
-  // set limits to supported to maximize texture and buffer size
-  RequiredLimits requiredLimits{
-    .limits = limits,
-  };
 
   // SurfaceCapabilities surfaceCaps;
   // surface.GetCapabilities(adapter, &surfaceCaps);
@@ -74,22 +66,22 @@ WGPUContext::WGPUContext(SDL_Window* window, glm::uvec2 size, bool vsync, float 
   DeviceDescriptor deviceDesc({
     .requiredFeatureCount = requiredFeatures.size(),
     .requiredFeatures = requiredFeatures.data(),
-    .requiredLimits = &requiredLimits,
+    .requiredLimits = &limits,
   });
 
   deviceDesc.SetUncapturedErrorCallback(
-    [](const Device& _, ErrorType type, const char* message) {
+    [](const Device& _, ErrorType type, StringView message) {
       std::ostringstream() << type;
-      LOG_ERR("Device error: {} ({})", ToString(type), message);
+      LOG_ERR("Device error: {} ({})", ToString(type), std::string_view(message));
       // LOG_TRACE();
     }
   );
 
   deviceDesc.SetDeviceLostCallback(
     CallbackMode::AllowSpontaneous,
-    [](const Device& _, DeviceLostReason reason, const char* message) {
+    [](const Device& _, DeviceLostReason reason, StringView message) {
       if (reason != DeviceLostReason::Destroyed) {
-        LOG_ERR("Device lost: {} ({})", ToString(reason), message);
+        LOG_ERR("Device lost: {} ({})", ToString(reason), std::string_view(message));
       }
     }
   );

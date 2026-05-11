@@ -6,26 +6,12 @@
 #include <algorithm>
 #include <set>
 #include <utility>
+#include <cctype>
 
+// Non-SCANCODE_MASK keys that need named form (for S- modifier support etc.)
 static const std::set<SDL_Keycode> specialKeys{
-  SDLK_SPACE,  SDLK_UP,     SDLK_DOWN,     SDLK_LEFT,     SDLK_RIGHT, SDLK_BACKSPACE,
-  SDLK_DELETE, SDLK_END,    SDLK_RETURN,   SDLK_ESCAPE,   SDLK_TAB,   SDLK_F1,
-  SDLK_F2,     SDLK_F3,     SDLK_F4,       SDLK_F5,       SDLK_F6,    SDLK_F7,
-  SDLK_F8,     SDLK_F9,     SDLK_F10,      SDLK_F11,      SDLK_F12,   SDLK_HOME,
-  SDLK_INSERT, SDLK_PAGEUP, SDLK_PAGEDOWN, SDLK_KP_ENTER,
+  SDLK_SPACE, SDLK_BACKSPACE, SDLK_RETURN, SDLK_ESCAPE, SDLK_TAB, SDLK_DELETE,
 };
-
-static bool IsUpperLetter(SDL_Keycode key) {
-  return key >= 65 && key <= 90;
-}
-
-// static bool IsLowerLetter(SDL_Keycode key) {
-//   return key >= 97 && key <= 122;
-// }
-
-static bool IsProcessableKey(SDL_Keycode key) {
-  return key < SDLK_CAPSLOCK || key > SDLK_ENDCALL || specialKeys.contains(key);
-}
 
 static void PrintMods(bool down, SDL_Keymod mod) {
   std::string modStr;
@@ -63,18 +49,17 @@ void InputHandler::HandleKeyboard(const SDL_KeyboardEvent& event) {
       modstate &= ~SDL_KMOD_ALT;
       sendMeta = true;
     }
-
     // PrintMods(event.down, mod);
 
     auto keycode = SDL_GetKeyFromScancode(scancode, modstate, false);
 
-    // NOTE: dunno if this is correct
-    if (!IsProcessableKey(keycode)) return;
+    // dont send raw modifers
+    if (keycode >= SDLK_LCTRL && keycode <= SDLK_RGUI) return;
 
-    bool isSpecialKey = specialKeys.contains(keycode);
+    bool isSpecialKey = (keycode & SDLK_SCANCODE_MASK) || specialKeys.contains(keycode);
 
     std::string keyname;
-    if (keycode & SDLK_SCANCODE_MASK || isSpecialKey) {
+    if (isSpecialKey) {
       keyname = SDL_GetKeyName(keycode);
     } else {
       keyname = Char32ToUtf8(keycode);
@@ -102,7 +87,7 @@ void InputHandler::HandleKeyboard(const SDL_KeyboardEvent& event) {
 
     // add S- to special keys or uppercase ctrl sequences (due to legacy reasons)
     if ((mod & SDL_KMOD_SHIFT) &&
-        (isSpecialKey || (IsUpperLetter(keycode) && (mod & SDL_KMOD_CTRL)))) {
+        (isSpecialKey || (isupper((unsigned char)keycode) && (mod & SDL_KMOD_CTRL)))) {
       inputStr += "S-";
       modApplied = true;
     }
@@ -110,12 +95,8 @@ void InputHandler::HandleKeyboard(const SDL_KeyboardEvent& event) {
     if (!modApplied && keyname == "<") keyname = "<lt>";
     inputStr += keyname;
 
-    if (modApplied) {
+    if (modApplied || isSpecialKey) {
       inputStr = "<" + inputStr + ">";
-    } else {
-      if (specialKeys.contains(keycode)) {
-        inputStr = "<" + inputStr + ">";
-      }
     }
 
     // LOG_INFO("Key: {}", inputStr);
@@ -128,21 +109,18 @@ void InputHandler::HandleTextEditing(const SDL_TextEditingEvent& event) {
   if (!text.empty()) {
     editingText = std::move(text);
   }
+  // LOG_INFO("Editing: {}", editingText);
 }
 
 void InputHandler::HandleTextInput(const SDL_TextInputEvent& event) {
-  // std::string inputStr = event.text;
-  // LOG_INFO("Text: {}", inputStr);
+  std::string_view inputStr = event.text;
 
-  // TODO: don't return for emojis
-  if (editingText.empty()) return;
+  bool noIme = editingText.empty();
+  bool singleByte = inputStr.size() == 1 && isascii(inputStr[0]);
+  // LOG_INFO("Text: {}, Enabled: {}", event.text, !(noIme && singleByte));
+  if (noIme && singleByte) return;
+
   editingText = "";
-
-  std::string inputStr = event.text;
-  // if (inputStr == " ") return;
-  // if (inputStr == "<") inputStr = "<lt>";
-
-  // LOG_INFO("Text: {}", inputStr);
   nvim->Input(inputStr);
 }
 

@@ -3,6 +3,7 @@
 # REL = 1
 # TARGET = tests
 # TARGET = freetype_test
+# TARGET = harfbuzz_test
 
 # flags
 REL ?= 0

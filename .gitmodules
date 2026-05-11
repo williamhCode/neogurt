@@ -4,12 +4,6 @@
 [submodule "deps/msgpack"]
 	path = deps/msgpack
 	url = https://github.com/msgpack/msgpack-c.git
-[submodule "deps/utfcpp"]
-	path = deps/utfcpp
-	url = https://github.com/nemtrif/utfcpp.git
-[submodule "deps/freetype"]
-	path = deps/freetype
-	url = https://github.com/freetype/freetype.git
 [submodule "deps/blend2d"]
 	path = deps/blend2d
 	url = https://github.com/blend2d/blend2d

@@ -61,8 +61,6 @@ add_library(HarfBuzz INTERFACE)
 target_include_directories(HarfBuzz INTERFACE ${HARFBUZZ_INCLUDE_DIRS})
 target_link_libraries(HarfBuzz INTERFACE ${HARFBUZZ_LINK_LIBRARIES})
 
-# set(UTFCPP_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/deps/utfcpp/source)
-
 set(BLEND2D_NO_JIT OFF)
 set(BLEND2D_STATIC ON)
 add_subdirectory(deps/blend2d EXCLUDE_FROM_ALL)
