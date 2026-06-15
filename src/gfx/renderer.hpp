@@ -86,7 +86,7 @@ struct Renderer {
   void Resize(const SizeHandler& sizes);
   void SetColors(const glm::vec4& color, float gamma);
 
-  void GetNextTexture();
+  bool GetNextTexture();
   void Begin();
   void RenderToWindow(Win& win, FontFamily& fontFamily, HlManager& hlManager);
   void RenderCursorMask(

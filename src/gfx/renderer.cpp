@@ -156,11 +156,18 @@ void Renderer::SetColors(const glm::vec4& color, float gamma) {
   }
 }
 
-void Renderer::GetNextTexture() {
+bool Renderer::GetNextTexture() {
   SurfaceTexture surfaceTexture;
   ctx.surface.GetCurrentTexture(&surfaceTexture);
+
+  if (surfaceTexture.status != SurfaceGetCurrentTextureStatus::SuccessOptimal &&
+      surfaceTexture.status != SurfaceGetCurrentTextureStatus::SuccessSuboptimal) {
+    return false;
+  }
+
   nextTexture = surfaceTexture.texture;
   nextTextureView = nextTexture.CreateView();
+  return true;
 }
 
 void Renderer::Begin() {

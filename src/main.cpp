@@ -198,7 +198,7 @@ int main(int argc, char** argv) {
         }
 
         // timing (run before nvim ui-events to minimize latency) --------
-        renderer.GetNextTexture(); // blocks until next frame if vsync is on
+        bool hasTexture = renderer.GetNextTexture(); // blocks until next frame if vsync is on
 
         // SDL_DisplayID displayID = SDL_GetDisplayForWindow(window.Get());
         // const SDL_DisplayMode* currentMode = SDL_GetCurrentDisplayMode(displayID);
@@ -209,6 +209,13 @@ int main(int argc, char** argv) {
           targetFps = windowOccluded ? 10 : 60;
         }
         float dt = clock.Tick(targetFps);
+
+        // surface texture unavailable (e.g. Timeout/Outdated during a resize):
+        // skip the frame instead of presenting an uninitialized (magenta) drawable.
+        if (!hasTexture) {
+          ctx.device.Tick();
+          continue;
+        }
 
         // frameCount++;
         // if (frameCount % 60 == 0) {
