@@ -9,6 +9,7 @@
 #include "app/sdl_event.hpp"
 #include "app/options.hpp"
 #include "app/task_helper.hpp"
+#include "app/window_funcs.h"
 #include "editor/grid.hpp"
 #include "editor/highlight.hpp"
 #include "editor/state.hpp"
@@ -140,6 +141,12 @@ int main(int argc, char** argv) {
             const auto& event = resizeEvent.windowPixelSizeChanged;
             window.fbSize = {event.window.data1, event.window.data2};
             window.dpiScale = (float)window.fbSize.x / window.size.x;
+
+            window.titlebarHeight =
+              (!window.fullscreen && globalOpts.titlebar == "transparent")
+                ? window.realTitlebarHeight
+                : 0;
+            InputHandler::titlebarHeight = window.titlebarHeight;
 
             sessionManager.UpdateSessionSizes(session);
             ctx.Resize(sizes.fbSize, globalOpts.vsync);
@@ -375,6 +382,17 @@ int main(int argc, char** argv) {
           currResizeEvents = {};
           break;
         }
+
+        case SDL_EVENT_WINDOW_ENTER_FULLSCREEN:
+          window.fullscreen = true;
+          break;
+        case SDL_EVENT_WINDOW_LEAVE_FULLSCREEN:
+          window.fullscreen = false;
+          // macOS native fullscreen can reset NSWindowStyleMaskFullSizeContentView,
+          // which shifts SDL's content-area origin down by the titlebar height.
+          // Re-applying the style on leave restores the correct coordinate system.
+          SetTitlebarStyle(window.Get(), globalOpts.titlebar);
+          break;
 
         case SDL_EVENT_QUIT: {
           const bool* state = SDL_GetKeyboardState(nullptr);

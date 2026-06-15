@@ -31,6 +31,8 @@ to rendering artifacts)
 - Fix rendering whitespace characters causing repeated font creation
 - Fix underline rendering cutting off sometimes (made it so underline always renders within cell)
 - Fix keyboard input: F13-F24 and other extended keys now work, emoji input via picker supported
+- Fix purple flickering bug (maybe lol)
+- Fix titlebar issue when toggling fullscreen
 
 ## [0.2.2] - 2025-05-08
 

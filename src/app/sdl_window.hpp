@@ -2,6 +2,7 @@
 
 #include "session/options.hpp"
 #include "glm/ext/vector_uint2.hpp"
+#include <atomic>
 #include <memory>
 
 struct SDL_Window;
@@ -23,6 +24,7 @@ struct Window {
 
   int realTitlebarHeight;
   int titlebarHeight;
+  std::atomic<bool> fullscreen = false; // written on main thread, read on render thread
 
   Window(glm::uvec2 size, const std::string& title, const GlobalOptions& globalOpts);
 
