@@ -210,13 +210,6 @@ int main(int argc, char** argv) {
         }
         float dt = clock.Tick(targetFps);
 
-        // surface texture unavailable (e.g. Timeout/Outdated during a resize):
-        // skip the frame instead of presenting an uninitialized (magenta) drawable.
-        if (!hasTexture) {
-          ctx.device.Tick();
-          continue;
-        }
-
         // frameCount++;
         // if (frameCount % 60 == 0) {
         //   frameCount = 0;
@@ -271,6 +264,12 @@ int main(int argc, char** argv) {
         }
 
         // render ----------------------------------------------
+        // surface texture unavailable (e.g. Timeout/Outdated during a resize):
+        if (!hasTexture) {
+          ctx.device.Tick();
+          continue;
+        }
+
         renderer.Begin();
 
         auto color = editorState->hlManager.GetDefaultBackground();
