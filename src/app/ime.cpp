@@ -48,7 +48,7 @@ void ImeHandler::Update() {
           if (u32idx >= start && u32idx < end) {
             hlId = imeSelectedHlId;
           }
-          if (u32idx == end) {
+          if (u32idx == end && !info.str.empty()) {
             col = colIdx;
           }
         }
