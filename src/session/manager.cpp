@@ -237,10 +237,12 @@ bool SessionManager::SessionEdit(int id, std::string_view name) {
 
   if (!name.empty()) {
     session.name = name;
-    ExecuteOnMainThread([win = window.Get(),
-                         title = std::format("Neogurt - {}", session.name)] {
-      SDL_SetWindowTitle(win, title.c_str());
-    });
+    if (it->second == CurrSession()) {
+      ExecuteOnMainThread([win = window.Get(),
+                           title = std::format("Neogurt - {}", session.name)] {
+        SDL_SetWindowTitle(win, title.c_str());
+      });
+    }
   }
 
   return true;
@@ -532,4 +534,3 @@ void SessionManager::SessionSwitchInternal(SessionHandle& session) {
 //   bp::child child(cmd);
 //   child.detach();
 // }
-
