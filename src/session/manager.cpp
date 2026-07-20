@@ -233,11 +233,11 @@ bool SessionManager::SessionEdit(int id, std::string_view name) {
   if (it == sessions.end()) {
     return false;
   }
-  auto& session = *it->second;
+  auto& session = it->second;
 
   if (!name.empty()) {
-    session.name = name;
-    if (it->second == CurrSession()) {
+    session->name = name;
+    if (session == CurrSession()) {
       ExecuteOnMainThread([win = window.Get(),
                            title = std::format("Neogurt - {}", session.name)] {
         SDL_SetWindowTitle(win, title.c_str());
@@ -253,9 +253,9 @@ bool SessionManager::SessionKill(int id) {
   if (it == sessions.end()) {
     return false;
   }
-  auto& session = *it->second;
+  auto& session = it->second;
 
-  session.nvim.client->TryDisconnect();
+  session->nvim.client->TryDisconnect();
   return true;
 }
 
