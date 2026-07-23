@@ -201,6 +201,9 @@ void WinManager::Hide(const event::WinHide& e) {
   auto& win = it->second;
   win.hidden = true;
 
+  // redraw if nothing else triggers a redraw (e.g. ime preedit cleared)
+  dirty = true;
+
   // save memory when window gets hidden (e.g. switching tabs)
   win.sRenderTexture = {};
 }
@@ -210,6 +213,10 @@ void WinManager::Close(const event::WinClose& e) {
   std::erase_if(windowsOrder, [id = e.grid](const Win* win) {
     return win->id == id;
   });
+
+  // redraw in case nothing else triggers a redraw
+  dirty = true;
+
   auto removed = windows.erase(e.grid);
   if (removed == 1) {
 
