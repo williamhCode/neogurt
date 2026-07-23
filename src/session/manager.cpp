@@ -239,7 +239,7 @@ bool SessionManager::SessionEdit(int id, std::string_view name) {
     session->name = name;
     if (session == CurrSession()) {
       ExecuteOnMainThread([win = window.Get(),
-                           title = std::format("Neogurt - {}", session.name)] {
+                           title = std::format("Neogurt - {}", session->name)] {
         SDL_SetWindowTitle(win, title.c_str());
       });
     }
