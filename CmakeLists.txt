@@ -140,15 +140,21 @@ if(NOT DEFINED ENV{LLVM_PATH})
   set(ENV{LLVM_PATH} "${LLVM_PATH}")
 endif()
 
-# https://github.com/Homebrew/homebrew-core/issues/67427
+# Use the ICU dependency recorded for the installed Boost.
 execute_process(
-  COMMAND brew --prefix icu4c
+  COMMAND brew deps boost
+  OUTPUT_VARIABLE BOOST_BREW_DEPS
+  ERROR_QUIET
+)
+string(REGEX MATCH "(^|\n)(icu4c(@[0-9]+)?)(\n|$)" BOOST_BREW_ICU "${BOOST_BREW_DEPS}")
+execute_process(
+  COMMAND brew --prefix --installed "${CMAKE_MATCH_2}"
   OUTPUT_VARIABLE ICU_PATH
   OUTPUT_STRIP_TRAILING_WHITESPACE
+  ERROR_QUIET
 )
-target_link_directories(neogurt_core PUBLIC
-  "${ICU_PATH}/lib"
-)
+target_link_directories(neogurt_core PUBLIC "${ICU_PATH}/lib")
+
 target_link_libraries(neogurt_core PUBLIC 
   Boost::locale
   Boost::process

@@ -378,7 +378,7 @@ void SessionManager::SessionVimCmd(int id, const std::string& cmd, rpc::Request&
   }
 
   std::thread([client = session->nvim.client, response = std::move(response),
-               promise = std::move(request.promise)] mutable {
+               request = std::move(request)] mutable {
     using namespace std::chrono_literals;
     using msgpack::type::nil_t;
 
@@ -390,19 +390,19 @@ void SessionManager::SessionVimCmd(int id, const std::string& cmd, rpc::Request&
 
           auto outputIt = map.find("output");
           if (outputIt == map.end()) {
-            rpc::SetPromiseResult(promise, nil_t());
+            request.SetResult(nil_t());
           } else {
-            rpc::SetPromiseResult(promise, outputIt->second.as<std::string>());
+            request.SetResult(outputIt->second.as<std::string>());
           }
 
         } catch (const std::exception& e) {
-          rpc::SetPromiseError(promise, std::string(e.what()));
+          request.SetError(std::string(e.what()));
         }
         return;
       }
 
       if (!client->IsConnected()) {
-        rpc::SetPromiseResult(promise, nil_t());
+        request.SetResult(nil_t());
         return;
       }
     }
