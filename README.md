@@ -1,4 +1,5 @@
 # Neogurt
+
 Neovim GUI Smooth like Yogurt!
 
 > [!NOTE]  
@@ -7,8 +8,10 @@ Neovim GUI Smooth like Yogurt!
 <img width="840" alt="Neogurt screenshot" src="https://github.com/user-attachments/assets/6affed8f-88fe-4e4c-8698-9a543c0f9f57">
 
 ## About
+
 Neogurt is a fast and efficient Neovim GUI written in C++23 and WebGPU. It is currently
 supported on macOS. Features include:
+
 - Smooth scrolling and smooth cursor out of the box.
 - Support for managing multiple neovim sessions.
 - Easy to use commands/API.
@@ -18,6 +21,7 @@ Planned Features: https://github.com/williamhCode/neogurt/issues/2 \
 Known issues: https://github.com/williamhCode/neogurt/issues/3
 
 ## Installation
+
 Download the latest release at: \
 https://github.com/williamhCode/neogurt/releases/latest
 
@@ -73,21 +77,25 @@ end
 ## Commands/API
 
 Neogurt commands can be invoked in this format:
+
 ```vim
 Neogurt cmd_name arg=value arg1 arg2
 ```
 
 For example, to spawn a new session with the name `nvim config` and directory `~/.config/nvim`, do
+
 ```vim
 Neogurt session_new name=nvim\ config dir=~/.config/nvim
 ```
 
 And for tables, use the vim dictionary syntax. Here I'm disabling ligatures.
+
 ```vim
 Neogurt option_set font_features={'': '-liga,-calt'}
 ```
 
 The lua equivalent is to use the `neogurt_cmd` function:
+
 ```lua
 --- @param cmd string: command to send.
 --- @param opts table: command options
@@ -96,13 +104,16 @@ vim.g.neogurt_cmd = function(cmd, opts)
   ...
 end
 ```
+
 Let's do the same thing with the lua api:
+
 ```lua
 vim.g.neogurt_cmd("session_new", { name = "nvim config", dir = "~/.config/nvim" } )
 ```
 
 Below are all the commands and their arguments \
 Note that:
+
 - `arg = value` are optional named arguments
 - `arg = "lua_type"` are required named arguments
 - `[i] = value` are optional positional arguments
@@ -137,7 +148,7 @@ local cmds_table = {
     -- use cmd as the kill command (e.g. qall)
     -- if empty, will force kill session (like session_kill)
     -- if cmd returns an error when run, restart will not happen
-    cmd = "", 
+    cmd = "",
     curr_dir = false, -- use cwd instead of session dir
   },
   -- returns success (bool)
@@ -173,7 +184,7 @@ local cmds_table = {
     cmd = "string",
   },
 
-  -- exits the app and all sessions immediately
+  -- exits the app and all sessions, bypassing neogurt_on_quit
   kill = {},
 
   font_size_change = {
@@ -189,14 +200,23 @@ local cmds_table = {
 > [!Important]  
 > Aside from `option_set`, don't call any Neogurt commands directly during startup!
 
-Lastly, you can execute code after starting up the application for the first time with
+You can execute code after starting up the application for the first time with
+
 ```lua
 vim.g.neogurt_startup = function()
   ...
 end
 ```
 
+Neogurt calls `vim.g.neogurt_on_quit` in the active session when it receives a
+quit request, including macOS Cmd+Q, menu Quit, and window close. Return
+`true` to exit or `false` or `nil` to keep the app open. The default callback
+returns `true`. Set `vim.g.neogurt_on_quit = nil` to restore that behavior.
+Callback errors and non-boolean, non-nil return values keep the app open and
+show an error.
+
 Below are some configurations I find useful:
+
 ```lua
 if vim.g.neogurt then
   -- all modes
@@ -221,7 +241,7 @@ if vim.g.neogurt then
     echo "$({
       echo ~/;
       echo ~/.dotfiles;
-      echo ~/.config/nvim; 
+      echo ~/.config/nvim;
       echo ~/Documents/Notes;
       echo ~/Documents/Work/Resume stuff;
       find ~/Documents/Coding -mindepth 2 -maxdepth 2 -type d | sort -r;
@@ -271,10 +291,29 @@ if vim.g.neogurt then
   vim.g.neogurt_startup = function()
     choose_session(true)
   end
+
+  vim.g.neogurt_on_quit = function()
+    local cmd = vim.g.neogurt_cmd
+    local sessions = cmd("session_list")
+    local current = cmd("session_info")
+    if not sessions or not current then return false end
+
+    for _, session in ipairs(sessions) do
+      if session.id ~= current.id then
+        if cmd("session_vim_cmd", { id = session.id, cmd = "qa" }) == nil then
+          return false
+        end
+      end
+    end
+
+    -- quit the session running this callback last because a successful :qa disconnects it
+    return cmd("session_vim_cmd", { id = current.id, cmd = "qa" }) ~= nil
+  end
 end
 ```
 
 ## Build Instructions
+
 ```sh
 git clone https://github.com/williamhCode/neogurt.git --recurse-submodules
 git submodule update  # if submodules become out of sync
@@ -290,6 +329,7 @@ git submodule update  # if submodules become out of sync
   - Others are bundled
 
 Example on macOS:
+
 ```sh
 brew install llvm
 brew install ninja
@@ -300,6 +340,7 @@ brew install harfbuzz
 ```
 
 Building:
+
 ```sh
 make build-setup
 make build

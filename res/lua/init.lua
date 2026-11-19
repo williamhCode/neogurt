@@ -1,5 +1,6 @@
 vim.g.neogurt = true
 vim.g.neogurt_startup = function() end
+vim.g.neogurt_on_quit = function() return true end
 
 local autocmd = vim.api.nvim_create_autocmd
 autocmd("VimEnter", {
@@ -51,7 +52,7 @@ local cmds_table = {
     font_features = "table",
   },
 
-  -- exits the app and all sessions immediately
+  -- exits the app and all sessions, bypassing neogurt_on_quit
   kill = {},
 
   -- returns session id
