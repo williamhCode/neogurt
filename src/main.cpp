@@ -55,6 +55,7 @@ int main(int argc, char** argv) {
   // SDL ------------------------------------------------
   SDL_SetHint(SDL_HINT_IME_IMPLEMENTED_UI, "composition");
   SDL_SetHint(SDL_HINT_MAC_SCROLL_MOMENTUM, "1");
+  SDL_SetHintWithPriority(SDL_HINT_QUIT_ON_LAST_WINDOW_CLOSE, "0", SDL_HINT_OVERRIDE);
   if (!SDL_Init(SDL_INIT_VIDEO)) {
     LOG_ERR("Unable to initialize SDL: {}", SDL_GetError());
     return 1;
@@ -85,6 +86,7 @@ int main(int argc, char** argv) {
 
     // main loop -----------------------------------
     std::atomic_bool exitWindow = false;
+    std::atomic_bool isQuitRequested = false;
     struct ResizeEvents {
       std::optional<SDL_Event> windowResized;
       SDL_Event windowPixelSizeChanged;
@@ -97,6 +99,8 @@ int main(int argc, char** argv) {
     std::jthread renderThread([&](std::stop_token stopToken) {
       bool windowFocused = true;
       bool windowOccluded = false;
+      Nvim::Response quitResponse;
+      std::weak_ptr<Session> quitSession;
 
       bool idle = false;
       float idleElasped = 0;
@@ -121,12 +125,34 @@ int main(int argc, char** argv) {
             editorState = &session->editorState;
           }
         } else {
-          // quit if no sessions left
-          SDL_Event quitEvent;
-          SDL_zero(quitEvent);
-          quitEvent.type = SDL_EVENT_QUIT;
-          SDL_PushEvent(&quitEvent);
+          if (!sdl::PushAppExit()) {
+            LOG_ERR("Could not post app exit: {}", SDL_GetError());
+            exitWindow = true;
+          }
           break;
+        }
+
+        // Keep the request set until Lua decides so repeated quit events coalesce.
+        if (isQuitRequested) {
+          if (!quitResponse.valid()) {
+            quitResponse = nvim->RequestQuit();
+            quitSession = session;
+            if (!quitResponse.valid()) isQuitRequested = false;
+          } else if (quitResponse.wait_for(milliseconds(0)) == std::future_status::ready) {
+            try {
+              if (quitResponse.get().get().as<bool>()) {
+                if (sdl::PushAppExit()) break;
+                LOG_ERR("Could not post app exit: {}", SDL_GetError());
+              }
+            } catch (const std::exception& e) {
+              LOG_ERR("Neogurt quit callback failed: {}", e.what());
+            }
+            isQuitRequested = false;
+          } else if (auto pendingSession = quitSession.lock();
+                     !pendingSession || !pendingSession->nvim.IsConnected()) {
+            quitResponse = {};
+            isQuitRequested = false;
+          }
         }
 
         // resize handling -------------------------------------------
@@ -370,6 +396,7 @@ int main(int argc, char** argv) {
 
     // resize handling
     ResizeEvents currResizeEvents{};
+    const SDL_WindowID windowId = SDL_GetWindowID(window.Get());
 
     sdl::SetEventFilter([&](SDL_Event& event) {
       switch (event.type) {
@@ -394,7 +421,9 @@ int main(int argc, char** argv) {
           SetTitlebarStyle(window.Get(), globalOpts.titlebar);
           break;
 
-        case SDL_EVENT_QUIT: {
+        case SDL_EVENT_WINDOW_CLOSE_REQUESTED: {
+          if (event.window.windowID != windowId) break;
+
           const bool* state = SDL_GetKeyboardState(nullptr);
           SDL_Keymod mods = SDL_GetModState();
 
@@ -416,17 +445,34 @@ int main(int argc, char** argv) {
       auto success = SDL_WaitEvent(&event);
       if (!success) {
         LOG_ERR("SDL_WaitEvent error: {}", SDL_GetError());
+        continue;
+      }
+
+      if (event.type == sdl::EVENT_APP_EXIT) {
+        LOG_INFO("quitting...");
+        exitWindow = true;
+        break;
       }
 
       switch (event.type) {
         case SDL_EVENT_QUIT:
-          LOG_INFO("quitting...");
-          exitWindow = true;
+          isQuitRequested = true;
+          break;
+
+        case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
+          if (event.window.windowID == windowId) isQuitRequested = true;
           break;
 
         // keyboard handling ----------------------
         case SDL_EVENT_KEY_DOWN:
         case SDL_EVENT_KEY_UP: {
+#if defined(SDL_PLATFORM_MACOS)
+          const auto mods = event.key.mod;
+          const auto otherMods = SDL_KMOD_SHIFT | SDL_KMOD_CTRL | SDL_KMOD_ALT;
+          if (event.key.key == SDLK_Q && (mods & SDL_KMOD_GUI) && !(mods & otherMods)) {
+            break; // AppKit delivers Quit separately.
+          }
+#endif
           // we dont want ime moving around, so disable keyboard
           if (currSession && !currSession->ime.active.load()) {
             currSession->input.HandleKeyboard(event.key);

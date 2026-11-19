@@ -102,7 +102,6 @@ Client::Call(std::string_view func_name, auto... args) {
   };
   msgpack::sbuffer buffer;
   msgpack::pack(buffer, msg);
-  Write(std::move(buffer));
 
   std::promise<msgpack::object_handle> promise;
   auto future = promise.get_future();
@@ -111,6 +110,7 @@ Client::Call(std::string_view func_name, auto... args) {
     responses[msg.msgid] = std::move(promise);
   }
 
+  Write(std::move(buffer));
   return future;
 }
 

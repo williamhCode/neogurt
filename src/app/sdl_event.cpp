@@ -15,4 +15,10 @@ void SetEventFilter(EventFilter&& callback) {
   SDL_SetEventFilter(eventFilter.first, &eventFilter.second);
 }
 
+bool PushAppExit() {
+  SDL_Event event{};
+  event.type = EVENT_APP_EXIT;
+  return SDL_PushEvent(&event);
+}
+
 } // namespace sdl

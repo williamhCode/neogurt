@@ -136,6 +136,24 @@ Nvim::Response Nvim::ExecLua(std::string_view code, VectorRef args) {
   return client->Call("nvim_exec_lua", code, args);
 }
 
+Nvim::Response Nvim::RequestQuit() {
+  return ExecLua(R"lua(
+    local callback = vim.g.neogurt_on_quit
+    if callback == nil then return true end
+
+    local ok, decision = pcall(callback)
+    if not ok then
+      vim.notify("Neogurt quit callback failed: " .. tostring(decision), vim.log.levels.ERROR)
+      return false
+    end
+    if decision ~= nil and type(decision) ~= "boolean" then
+      vim.notify("neogurt_on_quit must return true, false, or nil", vim.log.levels.ERROR)
+      return false
+    end
+    return decision == true
+  )lua", {});
+}
+
 Nvim::Response Nvim::Command(std::string_view command) {
   return client->Call("nvim_command", command);
 }

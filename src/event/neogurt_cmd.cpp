@@ -1,5 +1,7 @@
 #include "./neogurt_cmd.hpp"
+#include "app/sdl_event.hpp"
 #include "session/manager.hpp"
+#include <format>
 #include <string_view>
 
 void ProcessNeogurtCmd(
@@ -21,6 +23,13 @@ void ProcessNeogurtCmd(
     if (cmd == "option_set") {
       sessionManager.OptionSet(session, opts);
       request.SetResult(nil_t());
+
+    } else if (cmd == "kill") {
+      if (sdl::PushAppExit()) {
+        request.SetResult(nil_t());
+      } else {
+        request.SetError(std::format("Could not quit Neogurt: {}", SDL_GetError()));
+      }
 
     } else if (cmd == "session_new") {
       int id = sessionManager.SessionNew({
