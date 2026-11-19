@@ -121,11 +121,10 @@ int main(int argc, char** argv) {
             editorState = &session->editorState;
           }
         } else {
-          // quit if no sessions left
-          SDL_Event quitEvent;
-          SDL_zero(quitEvent);
-          quitEvent.type = SDL_EVENT_QUIT;
-          SDL_PushEvent(&quitEvent);
+          if (!sdl::PushAppExit()) {
+            LOG_ERR("Could not post app exit: {}", SDL_GetError());
+            exitWindow = true;
+          }
           break;
         }
 
@@ -416,6 +415,13 @@ int main(int argc, char** argv) {
       auto success = SDL_WaitEvent(&event);
       if (!success) {
         LOG_ERR("SDL_WaitEvent error: {}", SDL_GetError());
+        continue;
+      }
+
+      if (event.type == sdl::EVENT_APP_EXIT) {
+        LOG_INFO("quitting...");
+        exitWindow = true;
+        break;
       }
 
       switch (event.type) {

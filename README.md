@@ -173,6 +173,9 @@ local cmds_table = {
     cmd = "string",
   },
 
+  -- exits the app and all sessions immediately
+  kill = {},
+
   font_size_change = {
     [1] = "number",
     all = false,  -- change in all sessions

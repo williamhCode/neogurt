@@ -51,6 +51,9 @@ local cmds_table = {
     font_features = "table",
   },
 
+  -- exits the app and all sessions immediately
+  kill = {},
+
   -- returns session id
   session_new = {
     name = "",
